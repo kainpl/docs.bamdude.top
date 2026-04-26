@@ -38,6 +38,6 @@ Pages are language-paired: `topic.md` (English) + `topic.uk.md` (Ukrainian). Kee
 
 ## Deploy
 
-`main`-branch pushes auto-build via `mkdocs build --strict` and rsync to the production nginx server (Cloudflare in front, `Full (Strict)` SSL). PRs into `main` / `dev` run the same strict build as a CI gate so broken cross-links are caught before merge.
+`main`-branch pushes auto-build via `mkdocs build --strict` on a **self-hosted GitHub Actions runner running on the production server itself**, then rsync the static site into the local nginx web root. Cloudflare sits in front of nginx (proxied DNS, `Full (Strict)` SSL). No SSH keys in GH Secrets — the runner is already on the host. PRs into `main` / `dev` run the same strict build on `ubuntu-latest` as a CI gate so broken cross-links are caught before merge.
 
-See **[`DEPLOY.md`](DEPLOY.md)** for required GitHub Actions secrets, the nginx server block, Cloudflare settings, and the one-time server-setup recipe.
+See **[`DEPLOY.md`](DEPLOY.md)** for required GitHub Actions secrets, the runner-install recipe, the nginx server block, and Cloudflare settings.

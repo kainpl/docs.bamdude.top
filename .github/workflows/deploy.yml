@@ -14,9 +14,11 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build + rsync to server
-    runs-on: ubuntu-latest
-    environment: production
+    name: Build + sync to nginx
+    # Self-hosted runner ON the production server. The label-set narrows
+    # this beyond "any self-hosted runner the org has" to specifically the
+    # docs-deploy runner — see DEPLOY.md for the runner-install recipe.
+    runs-on: [self-hosted, linux, docs-deploy]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,38 +31,29 @@ jobs:
       - name: Install build deps
         run: pip install -r requirements.txt
 
+      # --strict turns broken cross-links + missing-anchor warnings into
+      # build failures so a typo doesn't reach the live nginx root.
       - name: Build (strict)
         run: mkdocs build --strict
 
-      - name: Set up SSH
+      # Runner user owns DEPLOY_PATH (chown done in one-time server setup).
+      # No SSH, no rsync-over-network — both source (./site/) and
+      # destination are on the same host, so this is a local copy.
+      # --delete prunes files that no longer exist in the source build
+      # (e.g. renamed pages / removed locales). Trailing slash on ./site/
+      # copies the *contents* into DEPLOY_PATH, not a nested site/ dir.
+      - name: Sync to web root
         env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Deploy with rsync
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # --delete prunes files that no longer exist in the source build
-          # (e.g. renamed pages, removed locales). Trailing slash on ./site/
-          # copies the *contents* into DEPLOY_PATH, not a nested site/ dir.
-          rsync -az --delete --human-readable --stats \
-            -e "ssh -i ~/.ssh/id_ed25519 -p ${DEPLOY_PORT:-22}" \
-            ./site/ \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+          if [ -z "$DEPLOY_PATH" ]; then
+            echo "DEPLOY_PATH secret is not set" >&2
+            exit 1
+          fi
+          rsync -a --delete --human-readable --stats ./site/ "${DEPLOY_PATH%/}/"
 
       - name: Purge Cloudflare cache
-        if: ${{ secrets.CLOUDFLARE_ZONE_ID && secrets.CLOUDFLARE_API_TOKEN }}
+        if: ${{ secrets.CLOUDFLARE_ZONE_ID != '' && secrets.CLOUDFLARE_API_TOKEN != '' }}
         env:
           ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
