@@ -1,0 +1,6 @@
+# Pinned to ranges that match the BamDude main repo so the docs build the same
+# way locally and in CI. Bump in lockstep with the main project's
+# requirements-dev.txt when mkdocs-material gets a major release.
+mkdocs>=1.6.0,<2.0.0
+mkdocs-material>=9.5.0
+mkdocs-static-i18n>=1.2.0

@@ -1,0 +1,67 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Serialize deploys so a fast follow-up push doesn't race the previous run's
+# rsync. cancel-in-progress aborts the older one — the newer build is what
+# we want live.
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build + sync to nginx
+    # Self-hosted runner ON the production server. The label-set narrows
+    # this beyond "any self-hosted runner the org has" to specifically the
+    # docs-deploy runner — see DEPLOY.md for the runner-install recipe.
+    runs-on: [self-hosted, linux, docs-deploy]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install build deps
+        run: pip install -r requirements.txt
+
+      # --strict turns broken cross-links + missing-anchor warnings into
+      # build failures so a typo doesn't reach the live nginx root.
+      - name: Build (strict)
+        run: mkdocs build --strict
+
+      # Runner user owns DEPLOY_PATH (chown done in one-time server setup).
+      # No SSH, no rsync-over-network — both source (./site/) and
+      # destination are on the same host, so this is a local copy.
+      # --delete prunes files that no longer exist in the source build
+      # (e.g. renamed pages / removed locales). Trailing slash on ./site/
+      # copies the *contents* into DEPLOY_PATH, not a nested site/ dir.
+      - name: Sync to web root
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          if [ -z "$DEPLOY_PATH" ]; then
+            echo "DEPLOY_PATH secret is not set" >&2
+            exit 1
+          fi
+          rsync -a --delete --human-readable --stats ./site/ "${DEPLOY_PATH%/}/"
+
+      - name: Purge Cloudflare cache
+        if: ${{ secrets.CLOUDFLARE_ZONE_ID != '' && secrets.CLOUDFLARE_API_TOKEN != '' }}
+        env:
+          ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}' \
+            | head -c 200
+          echo
