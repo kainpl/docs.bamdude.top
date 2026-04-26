@@ -1,6 +1,6 @@
 # BamDude Documentation
 
-Source for the BamDude documentation site (built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)).
+Source for the BamDude documentation site at **<https://docs.bamdude.top/>** (built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)).
 
 The companion code repository lives at [kainpl/bamdude](https://github.com/kainpl/bamdude); issues, releases, and the application itself stay there. This repo only ships docs content + the static-site build config.
 
@@ -29,8 +29,8 @@ mkdocs serve
 
 ## Branches
 
-- **`main`** — production. Once the docs site goes live (`https://docs.bamdude.top/`) it tracks this branch.
-- **`dev`** — active development; default working branch. Promote to `main` when a doc set is ready to publish.
+- **`main`** — production. The published site at <https://docs.bamdude.top/> tracks this branch.
+- **`dev`** — active development; default working branch. Promote to `main` (fast-forward merge) when a doc set is ready to publish.
 
 ## Contributing
 
@@ -38,4 +38,4 @@ Pages are language-paired: `topic.md` (English) + `topic.uk.md` (Ukrainian). Kee
 
 ## Deploy
 
-No automated deploy yet — domain registration is pending. When the workflow ships it will live under `.github/workflows/` and rebuild the static site on `main`-branch pushes.
+Auto-deploy isn't wired up yet — the domain is registered and `site_url` is set to `https://docs.bamdude.top/`, but there's no `.github/workflows/` build/publish job yet. Pick a deploy target (GitHub Pages, Cloudflare Pages, custom server) and add the workflow in a follow-up.

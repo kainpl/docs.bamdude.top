@@ -1,14 +1,13 @@
 site_name: BamDude Documentation
 site_description: Self-hosted 3D print farm management for Bambu Lab printers
-# site_url is filled in once the domain is registered (https://docs.bamdude.top/).
-# Left empty for now so canonical URLs aren't pinned to a placeholder.
-site_url: ""
+# Canonical URL — populates <link rel="canonical"> + sitemap absolute paths.
+site_url: https://docs.bamdude.top/
 # Pages still link back to the source-code repo (issues / releases live there);
 # the docs repo is separate but is what the "Edit this page" button targets.
 repo_url: https://github.com/kainpl/bamdude
 repo_name: kainpl/bamdude
 # "Edit this page" — opens the matching .md in the docs repo for community PRs.
-edit_uri: https://github.com/kainpl/docs.bamdude.top/edit/dev/docs/
+edit_uri: https://github.com/kainpl/docs.bamdude.top/edit/main/docs/
 
 theme:
   name: material
