@@ -52,12 +52,18 @@ jobs:
           fi
           rsync -a --delete --human-readable --stats ./site/ "${DEPLOY_PATH%/}/"
 
+      # ``secrets`` context is forbidden in step ``if:`` expressions, so we
+      # check at shell level instead. Step always runs but no-ops cleanly
+      # when the optional Cloudflare secrets aren't set.
       - name: Purge Cloudflare cache
-        if: ${{ secrets.CLOUDFLARE_ZONE_ID != '' && secrets.CLOUDFLARE_API_TOKEN != '' }}
         env:
           ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          if [ -z "$ZONE" ] || [ -z "$TOKEN" ]; then
+            echo "Cloudflare secrets not set — skipping cache purge."
+            exit 0
+          fi
           curl -fsS -X POST \
             "https://api.cloudflare.com/client/v4/zones/${ZONE}/purge_cache" \
             -H "Authorization: Bearer ${TOKEN}" \
