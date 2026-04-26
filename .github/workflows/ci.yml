@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: mkdocs build (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install build deps
+        run: pip install -r requirements.txt
+
+      # --strict turns broken cross-links + missing-anchor warnings into
+      # build failures so they don't reach main and end up live.
+      - name: Build (strict)
+        run: mkdocs build --strict

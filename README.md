@@ -38,4 +38,6 @@ Pages are language-paired: `topic.md` (English) + `topic.uk.md` (Ukrainian). Kee
 
 ## Deploy
 
-Auto-deploy isn't wired up yet — the domain is registered and `site_url` is set to `https://docs.bamdude.top/`, but there's no `.github/workflows/` build/publish job yet. Pick a deploy target (GitHub Pages, Cloudflare Pages, custom server) and add the workflow in a follow-up.
+`main`-branch pushes auto-build via `mkdocs build --strict` and rsync to the production nginx server (Cloudflare in front, `Full (Strict)` SSL). PRs into `main` / `dev` run the same strict build as a CI gate so broken cross-links are caught before merge.
+
+See **[`DEPLOY.md`](DEPLOY.md)** for required GitHub Actions secrets, the nginx server block, Cloudflare settings, and the one-time server-setup recipe.
