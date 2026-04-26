@@ -82,11 +82,19 @@ The runner now appears as **Idle** under **Repo → Settings → Actions → Run
 
 ### 3. Python on the runner
 
-`actions/setup-python` needs to download Python into the runner's tool cache on first run. Either let it do that (works out of the box on most Linux distros — needs only `glibc` + `tar`), or pre-install Python 3.12 via the system package manager and the action will pick it up:
+`actions/setup-python` provisions Python 3.12 into the runner's tool cache on first run (downloads from `actions/python-versions`, works out of the box on Linux distros with `glibc 2.31+` — covers Ubuntu 20.04+ / Debian 11+). **You usually don't need to do anything on the server.** The first workflow run will fetch Python and cache it for subsequent runs.
+
+If you want a system Python 3.12 separately (e.g. for running `mkdocs build` by hand outside the runner), and your distro doesn't ship 3.12 in the default repo (Ubuntu 22.04 ships 3.10, for example):
 
 ```bash
-# Debian / Ubuntu (after adding deadsnakes if 3.12 isn't in the default repo):
-sudo apt install python3.12 python3.12-venv python3.12-distutils
+# Debian / Ubuntu — add deadsnakes PPA, then install 3.12.
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv
+# Note: python3.12-distutils does NOT exist — distutils was removed from
+# Python 3.12's stdlib. setuptools provides the replacement and pip pulls
+# it in automatically.
 ```
 
 ### 4. nginx server block
