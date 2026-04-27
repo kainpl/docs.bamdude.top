@@ -165,6 +165,7 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 | **m020** | `spool_purchase_date` | Adds three columns to `spool`: `purchase_date DATETIME`, `filament_diameter VARCHAR(8) NOT NULL DEFAULT '1.75'`, `lot INTEGER`. Backfills `filament_diameter` to `'1.75'` (Bambu default). | yes | 0.4.0 (post-b2) |
 | **m021** | `drop_auto_light_off` | Drops the legacy `printers.auto_light_off` column. Replaced by the macro framework (configure a `chamber_light_off` mqtt-action macro on the `print_started` event for the same effect, plus optional symmetric `chamber_light_on` on `print_finished`). | no | 0.4.0 |
 | **m022** | `label_object_metadata_backfill` | Opens every existing 3MF still on disk, extracts `gcode_label_objects` + `exclude_object` from `Metadata/project_settings.config`, merges them into `library_files.file_metadata` and `print_archives.extra_data`. **Long startup on first boot if you have many archives** — see [§5 Notable upgrade paths](#5-notable-upgrade-paths). | yes | 0.4.1 |
+| **m023** | `per_plate_metadata_backfill` | Opens every 3MF on disk again and serialises the full per-plate breakdown (`plates[]` payload + `is_multi_plate` flag) into the same `library_files.file_metadata` and `print_archives.extra_data` JSON columns. Backs the per-plate gallery in the file manager + the multi-plate UI in PrintModal without re-opening the 3MF on every list query. **Same long-startup cost profile as m022** — runs once. | yes | 0.4.1 |
 
 ---
 
@@ -207,7 +208,7 @@ After the service is back up:
 2. **Settings → System → version** reflects the new release.
 3. **Connect to a printer that was working pre-upgrade** — should reconnect within 30 seconds; check the printer card on the Printers page.
 4. **Open the latest few archives** — thumbnails should still render, the 3D preview should work, the printer-icon click should jump to the owning printer.
-5. **Trigger a queue dispatch** — the bottom-right toast should show serialised dispatch progress (one job at a time across the farm; see [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour-one-job-at-a-time)).
+5. **Trigger a queue dispatch on two printers at once** — the bottom-right toast should show both jobs progressing in parallel. The DB-insert phase is briefly serialised (startup-lock), but FTP upload + start happen concurrently. See [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour).
 6. **Log in again** (if upgrading 0.3.x → 0.4.x) so a refresh-token cookie is issued and the sliding-session flow takes over.
 
 Migration log fragments to grep for:
@@ -332,7 +333,7 @@ Existing PG installs run the same migration chain on every boot — same `_migra
 |---------|-------------|
 | **Per-Printer Queues** | Independent queue per printer with card-based UI; quantity > 1 routes every copy through the queue (no special "primary"). |
 | **Queue↔archive refactor** | Live queue auto-cleans; queue history lives on `print_archives` (m019). |
-| **Serialised dispatch** | One dispatch at a time across the whole farm — eliminates the SQLite `database is locked` race on `INSERT INTO print_archives`. |
+| **Parallel dispatch** | Multiple printers can receive jobs simultaneously. The brief DB-write phase is wrapped in a startup-lock (still serialised) to keep SQLite from racing on `INSERT INTO print_archives`; everything else — FTP upload, the actual MQTT start command — runs in parallel. The earlier "one job at a time across the farm" gate that landed mid-0.4.1 was scrapped once the startup-lock was in. |
 | **Sliding-session auth** | Access JWT TTL 1 h; rotating refresh cookie keeps users signed in transparently. Remember-me opts into 30-day persistence. |
 | **MFA + OIDC** | TOTP, email OTP, 10 backup codes, OIDC SSO with PKCE + JWKS + SSRF guards. Encrypted at rest with `MFA_ENCRYPTION_KEY`. |
 | **MQTT-action macros** | Macros can invoke an MQTT command (`chamber_light_off` / `chamber_light_on`) on `print_started` / `print_finished` with optional delay. Supersedes the legacy `auto_light_off` flag. |

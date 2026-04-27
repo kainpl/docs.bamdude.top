@@ -117,16 +117,16 @@ When you set quantity to **N**, **all N copies** are added to the queue at once.
 
 ---
 
-## :material-database-arrow-right: Dispatch behaviour: one job at a time
+## :material-database-arrow-right: Dispatch behaviour {#dispatch-behaviour}
 
-When you queue prints to multiple printers, BamDude dispatches them **one at a time across the whole farm** — not in parallel per printer. The second printer's start is delayed by the first dispatch's FTP upload + MQTT `start_print` round-trip (typically a few seconds; occasionally tens of seconds for very large 3MFs).
+Background dispatch runs **in parallel across printers** — three idle printers with three queued items get all three started effectively at the same time.
 
-!!! info "Why serialised?"
-    Two dispatches racing on `INSERT INTO print_archives` would hit SQLite's single-writer semantics and the second one could fail mid-FTP with `database is locked` after the busy timeout. Serialisation trades a few seconds of latency on the second printer for a guarantee that no dispatch dies after the upload phase. PostgreSQL deployments inherit the same behaviour for symmetry.
+!!! info "What's serialised, what's parallel"
+    The brief DB-write phase (`INSERT INTO print_archives`) sits behind a startup-lock so SQLite doesn't trip on `database is locked` from concurrent inserts. The lock is held only for the few milliseconds the row needs to commit; FTP upload, the `start_print` MQTT command, and any swap-mode macros run in parallel with whatever the next dispatcher does. PostgreSQL inherits the same lock for symmetry, even though it doesn't strictly need it.
 
-The active-job toast in the bottom-right shows which job is dispatching and which jobs are queued behind it. The progress bar tracks the FTP upload phase; once a print is *running* on a printer, the dispatcher moves on to the next job — you don't wait for prints to **finish**, only for the dispatch step (upload + start command) to finish.
+The active-job toast in the bottom-right tracks each dispatch independently — multiple FTP-upload progress bars can be on screen at once. Once a print is *running* on a printer, that dispatcher releases its slot; the dispatch tracker doesn't wait for the print to **finish**, only for the upload + start command to land.
 
-This is **dispatch** serialisation only. With three idle printers and three queue items you'll have all three printers running within a few tens of seconds — they just don't all start in the exact same instant.
+The earlier "one job at a time across the whole farm" gate that landed in mid-0.4.1 was scrapped once the startup-lock was in (`c485db1`).
 
 ---
 

@@ -93,8 +93,13 @@ G-code макроси, що активуються подіями друку, з
 </div>
 
 <div class="feature-card" markdown>
-### [:material-bell-ring: Сповіщення](notifications.md)
-Багатопровайдерні сповіщення через WhatsApp, Telegram, Discord, Email та інше.
+### [:material-bell-ring: Сповіщення](notifications.uk.md)
+Вісім каналів доставки — Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, власні webhook. Тихі години, щоденний digest і шаблони — кожному провайдеру свої.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-robot-confused: AI-детекція фейлів Obico](obico.uk.md)
+Опційна ML-детекція фейлів друку. Чутливість і список увімкнених принтерів конфігуруються; при стійкому фейлі — нотифай, пауза або пауза + вимкнення розетки.
 </div>
 
 </div>
@@ -129,8 +134,8 @@ G-code макроси, що активуються подіями друку, з
 </div>
 
 <div class="feature-card" markdown>
-### [:material-lock: Автентифікація](authentication.md)
-Необов'язкова автентифікація користувачів з рольовим контролем доступу та 80+ гранульованими дозволами.
+### [:material-lock: Автентифікація](authentication.uk.md)
+Завжди-увімкнена автентифікація з рольовим контролем доступу, 80+ гранульованими дозволами, MFA (TOTP / email OTP / backup-коди), OIDC SSO та LDAP.
 </div>
 
 <div class="feature-card" markdown>
@@ -142,22 +147,50 @@ G-code макроси, що активуються подіями друку, з
 
 ---
 
+## :material-folder-multiple: Бібліотека, інвентар і проєкти
+
+<div class="feature-grid" markdown>
+
+<div class="feature-card" markdown>
+### [:material-package-variant: Інвентар котушок](inventory.uk.md)
+Вбудований облік пластику: ціна / lot / дата покупки, призначення слотів AMS на принтер, авто-облік витрати на друк, каталог кольорів з урахуванням виробника.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-folder-multiple: Проєкти та print plan](projects.uk.md)
+Групуй друки в проєкти зі впорядкованим print plan. Stepper копій на файл, live-обчислення пластику/часу/ціни, експорт ZIP / JSON.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-tune-variant: K-профілі](kprofiles.uk.md)
+Print-профілі на принтер з обмеженнями для двосопельних, імпорт/експорт та інтеграція з Git-бекапом.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-chart-bar: Статистика і енергія](stats.uk.md)
+Сумарна стата друку, облік енергії на друк з розетки, фермові підсумки за період, розбивка на принтер.
+</div>
+
+</div>
+
+---
+
 ## :material-puzzle: Інтеграції
 
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
-### [:material-spool: Spoolman](spoolman.md)
-Синхронізація інвентарю філаменту зі Spoolman для повного відстеження котушок.
+### [:material-spool: Spoolman](spoolman.uk.md)
+Двостороння синхронізація інвентарю філаменту зі Spoolman.
 </div>
 
 <div class="feature-card" markdown>
-### [:material-wifi: MQTT Publishing](mqtt.md)
-Публікація подій до зовнішніх MQTT-брокерів для Home Assistant та Node-RED.
+### [:material-wifi: MQTT Publishing](mqtt.uk.md)
+Публікація стану принтерів до зовнішніх MQTT-брокерів для Home Assistant та Node-RED.
 </div>
 
 <div class="feature-card" markdown>
-### [:material-chart-line: Prometheus Metrics](prometheus.md)
+### [:material-chart-line: Prometheus Metrics](prometheus.uk.md)
 Експорт телеметрії принтерів для дашбордів Grafana та систем моніторингу.
 </div>
 

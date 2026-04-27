@@ -82,7 +82,7 @@ G-code macros triggered by print events (start, end, pause). Built-in editor wit
 
 <div class="feature-card" markdown>
 ### :material-bell-ring: Notifications
-Multi-provider alerts via WhatsApp, Telegram, Discord, Email, Pushover, ntfy, and custom webhooks. Quiet hours and daily digest support.
+Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
 </div>
 
 </div>

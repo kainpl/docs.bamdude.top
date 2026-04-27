@@ -94,7 +94,12 @@ G-code macros triggered by print events with a built-in editor.
 
 <div class="feature-card" markdown>
 ### [:material-bell-ring: Notifications](notifications.md)
-Multi-provider alerts via WhatsApp, Telegram, Discord, Email, and more.
+Eight delivery channels — Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, custom webhooks. Per-provider quiet hours, daily digest, customisable templates.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-robot-confused: Obico AI Failure Detection](obico.md)
+Optional ML-driven print-failure detection. Configurable sensitivity and per-printer enablement; on sustained failure, can notify, pause, or pause-and-power-off via your smart plug.
 </div>
 
 </div>
@@ -130,12 +135,40 @@ Schedule and track maintenance tasks with interval reminders and detailed histor
 
 <div class="feature-card" markdown>
 ### [:material-lock: Authentication](authentication.md)
-Optional user authentication with role-based access control and 80+ granular permissions.
+Always-on authentication with role-based access control, 80+ granular permissions, MFA (TOTP / email OTP / backup codes), OIDC SSO, and LDAP.
 </div>
 
 <div class="feature-card" markdown>
 ### [:material-backup-restore: Backup & Restore](backup.md)
 Full database backup and restore for data protection.
+</div>
+
+</div>
+
+---
+
+## :material-folder-multiple: Library, Inventory & Projects
+
+<div class="feature-grid" markdown>
+
+<div class="feature-card" markdown>
+### [:material-package-variant: Spool Inventory](inventory.md)
+Built-in filament inventory with cost / lot / purchase-date tracking, AMS slot assignment per printer, automatic per-print consumption, and a manufacturer-aware colour catalog.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-folder-multiple: Projects & Print Plan](projects.md)
+Group prints into projects with an ordered print plan. Per-file copies stepper, live filament / time / cost totals, ZIP / JSON export.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-tune-variant: K-Profiles](kprofiles.md)
+Per-printer print profiles with dual-nozzle gating, import/export, and Git-backup integration.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-chart-bar: Stats & Energy](stats.md)
+Cumulative print stats, per-print energy capture from your smart plug, date-range farm-wide totals, per-printer breakdowns.
 </div>
 
 </div>
@@ -148,12 +181,12 @@ Full database backup and restore for data protection.
 
 <div class="feature-card" markdown>
 ### [:material-spool: Spoolman](spoolman.md)
-Sync filament inventory with Spoolman for complete spool tracking.
+Two-way filament inventory sync with Spoolman.
 </div>
 
 <div class="feature-card" markdown>
 ### [:material-wifi: MQTT Publishing](mqtt.md)
-Publish events to external MQTT brokers for Home Assistant and Node-RED.
+Publish printer state to external MQTT brokers for Home Assistant and Node-RED.
 </div>
 
 <div class="feature-card" markdown>

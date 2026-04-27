@@ -101,14 +101,29 @@ nano .env
 | `TRUSTED_PROXY_IPS` | empty | Comma-separated reverse-proxy IPs whose `X-Forwarded-For` is trusted (right-to-left resolution). Required behind nginx for accurate per-IP rate limiting. |
 | `AUTH_REFRESH_COOKIE_SECURE` | unset (auto-detect) | Force `Secure` polarity on the refresh-token cookie. Auto-detect from the request scheme is the right default; set `true` to force, `false` to disable (LAN HTTP dev only). |
 | `MFA_ENCRYPTION_KEY` | unset | URL-safe base64 Fernet key. When set, TOTP secrets and OIDC client secrets are encrypted at rest. Plaintext fallback works without it but logs a warning at boot. |
-| `APP_URL` | `http://localhost:5173` | Public-facing URL of BamDude. Used in WebAuthn / passkey RP-ID resolution and in notification deep-links. |
+| `APP_URL` | `http://localhost:5173` | Public-facing base URL of BamDude. Used to build absolute links in password-reset / MFA-recovery emails, OIDC callback URL, and the Obico cached-frame URL the Obico ML API fetches back. The `external_url` setting under Settings → System overrides this when set. |
 
 #### Integrations (optional)
 
 | Variable | Description |
 |----------|-------------|
-| `HA_URL`, `HA_TOKEN` | Home Assistant base URL + long-lived token, used by the HA notification provider. |
+| `HA_URL`, `HA_TOKEN` | Home Assistant base URL + long-lived token. When **both** are set, HA integration is auto-enabled and the matching DB settings become read-only (env wins). Recommended for the HA Add-on; native installs can also enable HA via Settings → Integrations without env vars. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | Override the FTP-PASV address advertised by the virtual printer (set this if BamDude runs behind NAT and slicers can't reach the bind IP). |
+
+#### Container detection
+
+Either of these env vars (any non-empty value) marks the runtime as a container, which adjusts SSDP discovery behaviour. Normally set automatically by the container runtime — only override if you're running native but want container-style discovery.
+
+| Variable | Description |
+|----------|-------------|
+| `CONTAINER` | Generic container marker. |
+| `DOCKER_CONTAINER` | Docker-specific marker. |
+
+#### Docker compose helpers (read by `docker-compose.yml`, not by BamDude itself)
+
+| Variable | Description |
+|----------|-------------|
+| `PUID` / `PGID` | UID / GID the bamdude container runs as. Match these to the owner of your mounted volumes to avoid permission errors on archive writes. Get them with `id -u && id -g`. |
 
 ---
 
@@ -122,9 +137,9 @@ Open BamDude in a browser. The frontend reads `/api/v1/auth/status`, sees `requi
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| Username | yes | Becomes the first admin. |
-| Password | yes | Min 8 chars, must include upper + lower + digit. Stored as a bcrypt hash. |
-| Email | optional | Used for password-reset flows + email-OTP MFA later. |
+| Username | yes | Becomes the first admin. Max 150 chars. |
+| Password | yes | Min 8 chars, must include upper + lower + digit + special character (e.g. `!@#$%^&*`). Max 256 chars. Stored as a bcrypt hash. |
+| Email | optional | Max 254 chars. Used for password-reset flows + email-OTP MFA later. |
 
 Submit creates the admin, drops the setup gate, and signs you in. The form never shows again — once any admin exists, navigating to `/setup` redirects to `/login`.
 
@@ -208,11 +223,31 @@ The CLI refuses to run while at least one admin still exists — delete the dead
 
 ## :material-network: Network Requirements
 
-| Port | Protocol | Direction | Purpose |
-|------|----------|-----------|---------|
-| 8000 | HTTP | Inbound | BamDude web interface |
-| 8883 | MQTT/TLS | Outbound | Printer communication |
-| 990 | FTPS | Outbound | File transfers from printer |
+**Outbound to your printers** (BamDude → printer):
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 8883 | MQTT/TLS | Live state, control commands |
+| 990 | FTPS | 3MF upload, archive download |
+
+**Inbound to BamDude** (browser / slicer / Telegram → BamDude):
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 8000 | HTTP / WS | Web UI + REST API + WebSocket for live updates |
+
+**Inbound to BamDude when the virtual-printer feature is enabled** (slicer "Send to Printer" → BamDude pretending to be a printer). Only required if you use Virtual Printer; native installs can run with just port 8000:
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 322 | RTSP | Camera proxy (X1 / H2 / P2 series) |
+| 990 | FTPS control | Slicer upload session |
+| 3000, 3002 | TCP | Bambu proprietary bind/detect protocol |
+| 6000 | TCP | File-transfer tunnel |
+| 8883 | MQTTS | Slicer→printer MQTT emulation |
+| 50000–50100 | TCP | FTP passive-mode data range |
+
+Linux deployments using `network_mode: host` in compose pick all of these up automatically. Bridge-mode Docker on macOS / Windows needs every port mapped explicitly — see the [Docker guide](docker.md#bridge-mode).
 
 ---
 
