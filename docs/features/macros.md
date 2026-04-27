@@ -93,7 +93,7 @@ Both action types share the same filter set. A macro fires only when **every** f
 | `enabled` | Global toggle. Disabled macros are skipped without further evaluation. |
 | `printer_models` | JSON array of model codes (e.g. `["A1 Mini", "X1 Carbon"]`) or `["*"]` for all models. |
 | `swap_mode_only` | Fire only when the printer has swap mode enabled. Hidden in the UI for non-swap events. |
-| `swap_profile` | Fire only when the printer's selected swap profile matches this value (e.g. `a1mini_v1`). Lets multiple swap-mode G-code variants coexist. |
+| `swap_profile` | Fire only when the printer's selected swap profile matches this value (`a1mini_kit`, `a1mini_stl`, or `jobox-a1` — see [Swap Mode](swap-mode.md)). Lets multiple swap-mode G-code variants coexist. |
 | `delay_seconds` | 0–3600. Defer the action by N seconds after the trigger. 0 = immediate. |
 
 ### Why `delay_seconds` matters

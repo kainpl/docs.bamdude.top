@@ -105,6 +105,15 @@ The startup-restore code path, the create route, and the update route all funnel
     Combine auto power-off with a `print_finished` macro to turn off
     chamber lights at the same time. See [Macros](macros.md).
 
+!!! info "`auto_light_off` is gone — macros replaced it"
+    The legacy `auto_light_off` flag on each printer was dropped in
+    migration `m021`. Recreate the behaviour with a `chamber_light_off`
+    MQTT-action macro on `print_finished` (and a symmetric
+    `chamber_light_on` on `print_started` if you want full cycling).
+    The macro framework adds delay control, on/off symmetry, per-model
+    targeting, and per-swap-profile filtering — none of which the old
+    boolean had.
+
 !!! tip "Energy reporting"
     Switch the energy display mode to `print` if you charge customers
     per-print. Use `total` for personal "what does my farm cost"

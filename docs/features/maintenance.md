@@ -24,18 +24,29 @@ The maintenance tracker helps you:
 
 ### Default Types
 
-BamDude includes model-aware maintenance tasks:
+BamDude includes nine bundled maintenance task types with **model-aware filtering**: a "Lubricate Linear Rails" task only appears on A1 / H2 series, never on X1 (which doesn't have linear rails). The filter is keyed by the printer's mechanical class, derived from its model code:
 
-| Type | Default Interval | Applies To |
-|------|-----------------|------------|
+| Mechanical class | Models | Tasks that appear |
+|---|---|---|
+| **Carbon rods** | X1, X1 Carbon, X1E, P1P, P1S | Clean / Lubricate Carbon Rods |
+| **Steel rods** | P2S, X2D | Clean / Lubricate Steel Rods |
+| **Linear rails** | A1, A1 Mini, H2D, H2D Pro, H2C, H2S | Clean / Lubricate Linear Rails |
+| **Universal** | every model | Clean Build Plate / Clean Nozzle / Check Belt Tension / Check PTFE Tube |
+
+| Type | Default interval | Applies to |
+|---|---|---|
 | **Clean Build Plate** | Every 25 hours | All printers |
-| **Clean Nozzle/Hotend** | Every 100 hours | All printers |
+| **Clean Nozzle / Hotend** | Every 100 hours | All printers |
 | **Check Belt Tension** | Every 200 hours | All printers |
 | **Check PTFE Tube** | Every 500 hours | All printers |
-| **Lubricate Carbon Rods** | Every 50 hours | X1/P1 |
-| **Clean Carbon Rods** | Every 100 hours | X1/P1 |
-| **Lubricate Linear Rails** | Every 50 hours | A1/H2D |
-| **Clean Linear Rails** | Every 100 hours | A1/H2D |
+| **Lubricate Carbon Rods** | Every 50 hours | X1 series, P1 series |
+| **Clean Carbon Rods** | Every 100 hours | X1 series, P1 series |
+| **Lubricate Steel Rods** | Every 50 hours | P2S, X2D |
+| **Clean Steel Rods** | Every 100 hours | P2S, X2D |
+| **Lubricate Linear Rails** | Every 50 hours | A1, A1 Mini, H2 series |
+| **Clean Linear Rails** | Every 100 hours | A1, A1 Mini, H2 series |
+
+Defaults seed once on first boot. Hidden defaults can be restored later via **Restore Default Tasks**.
 
 ### Custom Types
 
@@ -87,7 +98,7 @@ View detailed history for each printer:
 | **Notes** | What was done |
 | **Parts** | Any parts replaced |
 
-Export history to CSV with date range selection, per-printer or all printers.
+Export history to **Excel (.xlsx)** with date range selection, per-printer or all printers. The export includes operator, date, hours-at-performance, and notes — useful for warranty / service records.
 
 ---
 

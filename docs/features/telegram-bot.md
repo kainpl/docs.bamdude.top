@@ -134,6 +134,76 @@ Notifications sent to Telegram include inline action buttons:
 
 ---
 
+## :material-account-multiple: Multi-Chat Roles & Authorization
+
+BamDude treats every Telegram chat (private *or* group) as an independent
+identity with its own role. Add as many chats as you want — typical layouts:
+
+- **Owner private chat** — `Administrators` group, gets every event.
+- **Workshop group chat** — `Operators`, only print-lifecycle events.
+- **Read-only viewer chat** — `Viewers` group, can browse status but cannot
+  pause/stop prints.
+
+The bot is **token-shared, role-isolated**: one bot user serves all chats, but
+`auth_middleware` resolves the per-chat group on every keypress before letting
+the handler proceed. A chat without a group (auto-registered, pending setup)
+can read nothing and do nothing until an admin assigns one in
+**Settings → Notifications → Telegram Chats**.
+
+Optionally link a chat to a BamDude system user (`user_id`) for audit logging.
+Linking does **not** override the group's permissions — the group is the
+authority on what the chat can do.
+
+---
+
+## :material-bell-cog: Per-Chat Notification Preferences
+
+Each Telegram chat has its own notification configuration, edited in
+**Settings → Notifications → Telegram Chats → <chat>**. None of these
+preferences leak between chats — set them once per chat.
+
+### Event filter
+
+Pick which of the 25+ event types this chat should receive. The defaults
+mirror what most operators care about:
+
+| Default events ON |
+|---|
+| `print_complete`, `print_failed`, `print_stopped`, `plate_not_empty`, `queue_job_waiting`, `queue_job_skipped`, `queue_job_failed` |
+
+Everything else (`print_start`, `print_progress`, `printer_offline`,
+`maintenance_due`, AMS humidity/temperature, queue lifecycle, etc.) is
+opt-in. A workshop chat can subscribe only to `print_failed`; an admin
+chat can subscribe to everything.
+
+`should_notify(event_type)` runs on every notification: the chat must be
+**active**, **outside quiet hours**, and the event must be in its enabled
+list before a message is sent.
+
+### Quiet hours
+
+Suppress notifications during a daily window (e.g. 22:00 → 07:00). Both
+same-day (`08:00 → 18:00`) and overnight (`22:00 → 07:00`) windows are
+supported — the comparison wraps midnight automatically.
+
+| Field | Purpose |
+|-------|---------|
+| `quiet_hours_enabled` | Master on/off toggle |
+| `quiet_hours_start` | Start time, `HH:MM` (24-hour) |
+| `quiet_hours_end` | End time, `HH:MM` (24-hour) |
+
+Quiet hours apply to *all* events for this chat — there's no per-event
+override. Pair with the event filter to keep critical events on while
+silencing low-priority ones.
+
+### Daily digest
+
+Toggle `daily_digest` on a chat to additionally receive a once-per-day
+summary message (yesterday's prints, failures, queue depth). The digest
+respects quiet hours just like any other notification.
+
+---
+
 ## :material-translate: Internationalization
 
 All bot UI strings are translatable. Strings are stored in `backend/app/data/telegram_ui_{lang}.json` and accessed via `t(lang, "telegram_ui", "key")`.
