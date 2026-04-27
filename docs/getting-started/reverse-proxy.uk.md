@@ -66,7 +66,7 @@ APP_URL=https://bamdude.example.com
 
 ---
 
-## :material-nginx: Конфіг nginx
+## :simple-nginx: Конфіг nginx
 
 Поставити в `/etc/nginx/sites-available/bamdude` і `ln -s` в `sites-enabled/`. Порти + шляхи припускають, що BamDude слухає на `127.0.0.1:8000` на тому ж хості що й nginx.
 
