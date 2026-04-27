@@ -165,6 +165,7 @@ BamDude трекає застосовані міграції в таблиці `
 | **m020** | `spool_purchase_date` | Додає три колонки в `spool`: `purchase_date DATETIME`, `filament_diameter VARCHAR(8) NOT NULL DEFAULT '1.75'`, `lot INTEGER`. Бекфілить `filament_diameter` у `'1.75'` (дефолт Bambu). | yes | 0.4.0 (post-b2) |
 | **m021** | `drop_auto_light_off` | Дропає спадкову колонку `printers.auto_light_off`. Замінено фреймворком макросів (сконфігуруйте mqtt-action макрос `chamber_light_off` на події `print_started` для того самого ефекту, плюс опційний симетричний `chamber_light_on` на `print_finished`). | no | 0.4.0 |
 | **m022** | `label_object_metadata_backfill` | Відкриває кожен наявний на диску 3MF, витягає `gcode_label_objects` + `exclude_object` з `Metadata/project_settings.config`, вмерджує їх у `library_files.file_metadata` та `print_archives.extra_data`. **Довгий старт на першому завантаженні, якщо у вас багато архівів** -- див. [§5 Помітні шляхи оновлення](#5-pomitni-shlyakhy-onovlennya). | yes | 0.4.1 |
+| **m023** | `per_plate_metadata_backfill` | Відкриває кожен 3MF на диску ще раз і серіалізує повний per-plate breakdown (`plates[]` payload + `is_multi_plate` flag) у ті ж самі JSON-колонки `library_files.file_metadata` та `print_archives.extra_data`. Це робить можливою per-plate galleryв File Manager + multi-plate UI у PrintModal без перевідкривання 3MF на кожен запит списку. **Той самий профіль довгого старту, що й m022** — запускається один раз. | yes | 0.4.1 |
 
 ---
 
@@ -207,7 +208,7 @@ BamDude трекає застосовані міграції в таблиці `
 2. **Параметри → Система → версія** відображає новий реліз.
 3. **Підключіться до принтера, який працював до оновлення** -- має реконектнутись за 30 секунд; перевірте картку принтера на сторінці Принтери.
 4. **Відкрийте кілька найновіших архівів** -- мініатюри мають усе ще рендеритись, 3D-перегляд -- працювати, клік на іконку принтера -- стрибати на принтер-власник.
-5. **Тригерніть диспатч черги** -- тост у нижньому правому куті має показати серіалізований прогрес диспатчу (одне завдання за раз через усю ферму; див. [Черги для кожного принтера → Поведінка диспатчу](../features/print-queue.md#materialdatabasearrowright-povedinka-dyspatchu-odne-zavdannya-za-raz)).
+5. **Тригерніть диспатч на двох принтерах одночасно** -- тост у нижньому правому куті має показати, як обидва завдання прогресять паралельно. Фаза DB-insert ненадовго серіалізована (startup-lock), але FTP-завантаження + старт відбуваються одночасно. Див. [Черги для кожного принтера → Поведінка диспатчу](../features/print-queue.md#dispatch-behaviour).
 6. **Перелогіньтесь** (якщо оновлюєтесь з 0.3.x → 0.4.x), щоб видали refresh-token cookie і перебрав на себе sliding-session флоу.
 
 Фрагменти лог міграції, які корисно грепнути:
@@ -332,7 +333,7 @@ sqlite3.OperationalError: no such column: ...
 |---------|------|
 | **Per-Printer Queues** | Незалежна черга для кожного принтера з картковим UI; quantity > 1 пропускає кожну копію через чергу (без особливої "primary"). |
 | **Рефакторинг queue↔archive** | Жива черга авточиститься; історія черги живе на `print_archives` (m019). |
-| **Серіалізований диспатч** | Один диспатч за раз через усю ферму -- усуває гонку SQLite `database is locked` на `INSERT INTO print_archives`. |
+| **Паралельний диспатч** | Кілька принтерів отримують завдання одночасно. Коротка фаза DB-write обгорнута в startup-lock (там залишається серіалізація), щоб SQLite не гонився на `INSERT INTO print_archives`; усе інше — FTP-завантаження, MQTT-команда старту — паралельно. Тимчасовий "один за раз через усю ферму" gate, що приземлився в середині 0.4.1, прибрали, як тільки startup-lock у дисптачер заїхав. |
 | **Sliding-session auth** | TTL access JWT -- 1 г; ротуючий refresh-cookie тримає юзерів залогіненими прозоро. Remember-me опт-іниться на 30-денну персистентність. |
 | **MFA + OIDC** | TOTP, email OTP, 10 backup-кодів, OIDC SSO з PKCE + JWKS + SSRF-захистом. Шифрується at rest з `MFA_ENCRYPTION_KEY`. |
 | **MQTT-action макроси** | Макроси можуть інвокувати MQTT-команду (`chamber_light_off` / `chamber_light_on`) на `print_started` / `print_finished` з опційною затримкою. Заміняє спадковий прапорець `auto_light_off`. |

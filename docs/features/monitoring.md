@@ -68,6 +68,18 @@ Real-time fan speed monitoring:
 | :material-weather-windy: **Auxiliary** | Controls airflow in chamber |
 | :material-air-filter: **Chamber** | Exhausts hot air from enclosure |
 
+### Door / lid sensor (X1 Series only)
+
+X1 / X1 Carbon / X1E expose a door-open MQTT signal (printer status bit 23). When the printer reports the door open mid-print the card flags it; on other models BamDude doesn't fake the indicator — A1, P1, P2 and H2 series don't ship the sensor.
+
+### Group printers by location
+
+Above the grid, group printers by **location** (the free-form string set on each printer card). Useful when the farm spans rooms / floors — collapse the room you're not watching.
+
+### Per-permission live state
+
+WebSocket subscriptions are filtered server-side by the connected user's permissions. A Viewer connection sees the same live temperatures + state as an Operator, but doesn't receive macro-execution acks, dispatch progress for jobs they didn't queue, or any `printers:control`-gated signals.
+
 ---
 
 ## :material-alert-decagram: HMS Error Monitoring
@@ -97,10 +109,15 @@ graph LR
     B -->|WebSocket| E[Mobile]
 ```
 
-- **Auto-reconnect** on disconnect
-- **Delta updates** -- only changed data is sent
+- **Auto-reconnect** on disconnect (3 s back-off)
+- **Delta updates** — only changed data is sent
 - **Multi-tab** support
 - **< 1 second** typical latency
+- **Visibility-sync recovery** — when a backgrounded tab returns to focus, BamDude pings the WS + invalidates React-Query so stale data refreshes immediately. A "Reconnecting…" toast only appears after a >2 s outage to suppress flicker on quick blips.
+
+## :material-key-variant: Camera-stream tokens
+
+Live MJPEG, snapshots, archive thumbnails, and the cover image all come back as `<img>`/`<video>` GETs that can't carry an `Authorization` header. BamDude issues a short-lived (60 minute) query-param token from `POST /printers/camera/stream-token`; the frontend threads it through every camera URL automatically. Tokens are scoped to the logged-in user — login / logout invalidates the cache, and the `useStreamTokenSync` hook walks the DOM to retrofit any `<img>` source rendered before a token landed. See [Camera Streaming](camera.md) for the gory details.
 
 ---
 

@@ -34,6 +34,8 @@ jobs:
       # --strict turns broken cross-links + missing-anchor warnings into
       # build failures so a typo doesn't reach the live nginx root.
       - name: Build (strict)
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         run: mkdocs build --strict
 
       # Runner user owns DEPLOY_PATH (chown done in one-time server setup).

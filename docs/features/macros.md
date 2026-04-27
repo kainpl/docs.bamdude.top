@@ -67,14 +67,17 @@ A macro's `action_type` decides what happens when its event fires.
 
 ## :material-lightning-bolt: Events
 
-Each macro is bound to exactly one event. Both action types support every event below, but practical fits differ.
+Each macro is bound to exactly one event. **Action-type support is not symmetric across events** — see the table below.
 
-| Event | When It Fires | Good Fit |
-|-------|--------------|----------|
-| **`print_started`** | When `gcode_state` transitions to `RUNNING` (via `on_print_start`) | MQTT-action (e.g. `chamber_light_on`). G-code is dangerous here. |
-| **`print_finished`** | When the print reaches a terminal state (`FINISH`, `FAILED`, or `IDLE`-aborted), via `on_print_complete` | Symmetrical to `print_started` — pair with MQTT-action for clean lights-off automation. |
-| **`swap_mode_start`** | Before the print starts, when dispatch knows it's running with a swap-mode profile | G-code that prepares the swap mechanism. |
-| **`swap_mode_change_table`** | After the print completes, before the queue picks up the next item | G-code that physically swaps plates. See [Swap Mode](swap-mode.md). |
+| Event | When It Fires | Allowed action types |
+|-------|--------------|----------------------|
+| **`print_started`** | When `gcode_state` transitions to `RUNNING` (via `on_print_start`) | **`mqtt_action` only.** A G-code macro bound to this event is silently skipped at runtime (`macro_trigger.py` logs *"Skipping gcode macro — only mqtt_action macros are supported for event-driven triggers"*). G-code mid-print would fight the print itself. |
+| **`print_finished`** | When the print reaches a terminal state (`FINISH`, `FAILED`, or `IDLE`-aborted), via `on_print_complete` | **`mqtt_action` only**, same reason — gcode here isn't wired yet (the trigger is shared with `print_started`). |
+| **`swap_mode_start`** | Before the print starts, when dispatch knows it's running with a swap-mode profile | **G-code only** in practice — the swap-mode dispatcher executes the macro synchronously and waits for `stg_cur` to return to idle. Pick G-code that prepares the swap mechanism. |
+| **`swap_mode_change_table`** | After the print completes, before the queue picks up the next item | **G-code only**, same reason. The macro physically swaps plates. See [Swap Mode](swap-mode.md). |
+
+!!! warning "Don't bind G-code to `print_started` / `print_finished`"
+    The macro UI lets you save the combination, but it won't run. If you want chamber lights or external relays toggled on print events, use **MQTT-action** macros (e.g. `chamber_light_on` / `chamber_light_off`). G-code on these events is a planned future extension, not a current feature.
 
 !!! tip "`print_finished` covers all terminal states"
     Whether the print finished cleanly, failed, or was aborted from the
@@ -93,7 +96,7 @@ Both action types share the same filter set. A macro fires only when **every** f
 | `enabled` | Global toggle. Disabled macros are skipped without further evaluation. |
 | `printer_models` | JSON array of model codes (e.g. `["A1 Mini", "X1 Carbon"]`) or `["*"]` for all models. |
 | `swap_mode_only` | Fire only when the printer has swap mode enabled. Hidden in the UI for non-swap events. |
-| `swap_profile` | Fire only when the printer's selected swap profile matches this value (e.g. `a1mini_v1`). Lets multiple swap-mode G-code variants coexist. |
+| `swap_profile` | Fire only when the printer's selected swap profile matches this value (`a1mini_kit`, `a1mini_stl`, or `jobox-a1` — see [Swap Mode](swap-mode.md)). Lets multiple swap-mode G-code variants coexist. |
 | `delay_seconds` | 0–3600. Defer the action by N seconds after the trigger. 0 = immediate. |
 
 ### Why `delay_seconds` matters

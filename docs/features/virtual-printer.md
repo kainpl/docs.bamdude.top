@@ -14,7 +14,7 @@ The Virtual Printer (VP) makes BamDude appear as one or more Bambu Lab printers 
 Each VP:
 
 - Advertises itself over **SSDP** with a real Bambu model code (X1C / P1S / A1 Mini / H2D / …) so slicers discover it automatically.
-- Runs its **own FTPS + MQTT + SSDP servers** bound to a dedicated IP. Multiple VPs run side-by-side without port conflicts because each has its own IP, not its own port.
+- Runs its **own FTPS + MQTT + SSDP servers**. By default they listen on `0.0.0.0` (the host's all interfaces); when you want multiple VPs side-by-side, give each a dedicated `bind_ip` so they don't fight for the same ports.
 - Carries an **access code** like a real printer — slicers prompt for it on first use and cache it afterwards.
 - Has a **serial number** and **model code** that match Bambu's real format, so the slicer's compatibility checks pass.
 
@@ -22,12 +22,16 @@ Each VP:
 
 ## :material-swap-horizontal: Modes
 
+A VP runs in **exactly one of three modes**. The mode is set per-VP and validated server-side — anything else is rejected with HTTP 400.
+
 | Mode | What happens to uploads | Use case |
 |------|-------------------------|----------|
-| **immediate** | File is parsed and a `print_archives` row is created right away. Nothing prints. | Pure print archive — slicer is the source, BamDude is the catalogue. |
-| **file_manager** | File lands in the **library** (`/library`) for later use. | Building a library you'll dispatch from later, manually or via the queue. |
-| **print_queue** | File is archived **and** added to the print queue. Auto-dispatch + a target printer make this a one-click workflow. | The most common production mode: slice → send → BamDude prints it. |
-| **proxy** | TCP-proxied straight to a real printer behind BamDude's TLS endpoint. | Remote printing — your slicer talks to BamDude over LAN/VPN, BamDude talks to the printer. |
+| **`file_manager`** (default) | Upload lands in `/pending-uploads` as a **review item**. From the review modal an operator can dispatch to a real printer, archive in bulk (no print), or reject. | Multi-user / multi-machine inbox where every upload gets a sanity check before printing — also the right mode if you only want to **archive** without printing (use the bulk-archive action in the review modal). |
+| **`print_queue`** | Upload is archived **and** queued on a target printer. With `auto_dispatch=true` the queue item starts immediately; with `auto_dispatch=false` it waits for an explicit Start click. | Hands-off production: slice → send → BamDude prints it. |
+| **`proxy`** | The slicer's TLS session is TCP-proxied to a real `target_printer_id` — BamDude is just the public endpoint. | Remote printing — slicer reaches BamDude over LAN/VPN, BamDude reaches the printer. |
+
+!!! info "There is no separate ‘archive only’ mode"
+    Earlier versions of this page mentioned an `immediate` mode that auto-created an archive row without involving the queue or library. **That mode was never in the code** — the docs were wrong. The code's mode enum is exactly the three above (see `backend/app/models/virtual_printer.py` and the validator in `backend/app/api/routes/virtual_printers.py`). To get archive-only behaviour, use `file_manager` mode and bulk-archive uploads from the review modal — they get a `print_archives` row without ever touching a printer.
 
 ---
 
@@ -39,9 +43,9 @@ Each VP:
 |-------|-------|
 | Name | Display label (e.g. `Studio inbox`). |
 | Model | SSDP model code — pick the printer model you want the VP to impersonate so slicer compatibility checks pass. |
-| Bind IP | Dedicated IP for this VP. On Linux the simplest path is a virtual interface (alias) on the host. |
+| Bind IP | Optional. Leave empty to listen on `0.0.0.0` (host's all interfaces) — fine if you only need one VP on the standard ports. Set a dedicated IP only when running **multiple VPs side-by-side** so each gets its own FTPS / MQTT / SSDP listener. On Linux the easiest way to provision extra IPs is a virtual interface (alias) on the host. |
 | Access code | 8-character code the slicer authenticates with. |
-| Mode | One of the four above. |
+| Mode | One of the three above (`file_manager` / `print_queue` / `proxy`). |
 | Auto-dispatch | `print_queue` mode only — see below. |
 | Target printer | `proxy` mode only — the real printer to forward to. |
 
@@ -95,10 +99,11 @@ The FTPS server boots, logs `FTP PASV address override: 192.168.1.100`, and from
 
 ## :material-rocket: Use Cases
 
-- **Print archiving without printing** — `immediate` mode turns slice → send into a permanent record (thumbnails, metadata, source 3MF) without committing to a print.
-- **Library building** — `file_manager` lands files in the library so you can attach them to projects, batch-print, or share with the team before the first build.
 - **Multi-user farm inbox** — `file_manager` + review modal lets several people slice into the same VP without stepping on each other.
+- **Print archiving without printing** — `file_manager` + the **bulk-archive** action in the review modal turns slice → send into a permanent record (thumbnails, metadata, source 3MF) without committing to a print.
+- **Library building** — same `file_manager` mode: archive uploads from the review modal so you can attach them to projects, batch-print, or share with the team before the first build.
 - **Hands-off dispatch** — `print_queue` + `auto_dispatch=true` is the closest you get to "Cloud Print but local".
+- **Manual gate on a queue** — `print_queue` + `auto_dispatch=false` queues the upload but waits for an explicit Start click before the dispatcher picks it up.
 - **Remote printing** — `proxy` mode forwards a remote slicer's TLS session straight to a real printer, with BamDude's certificate as the public face.
 
 ---

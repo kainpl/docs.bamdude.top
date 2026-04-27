@@ -29,7 +29,15 @@ The cycle continues until the queue is empty.
 
 1. Go to **Settings → Queue**.
 2. Enable **Swap Mode** for your A1 Mini printer.
-3. Pick a **Swap Profile** (e.g. `a1mini_v1`) if you have multiple mechanical revisions.
+3. Pick a **Swap Profile** matching your hardware:
+
+    | Profile | For |
+    |---|---|
+    | `a1mini_kit` | Bambu's official A1 Mini Plate Swapper Kit |
+    | `a1mini_stl` | Community-printable A1 Mini swappers (printable kit / STL designs) |
+    | `jobox-a1` | JoBox plate-swap automation |
+
+    The profile binds to the right set of `swap_mode_start` / `swap_mode_change_table` macros. **`a1mini_stl` and `jobox-a1` ship pre-seeded built-in macros**; **`a1mini_kit` does not** (Bambu's official kit currently relies on operator-supplied G-code — write your own pair under **Settings → Macros** and tag them with `swap_profile=a1mini_kit`). Any profile's built-ins can be overridden by editing the macro in the UI.
 
 ### Swap G-code Macros
 
@@ -77,22 +85,19 @@ Swap intent is **persisted to disk**, not held in memory. Restarting BamDude mid
 
 ---
 
-## :material-lock-clock: Dispatch Serialization on Multi-Printer Farms
+## :material-lock-clock: Dispatch and the DB-write startup-lock
 
-Background dispatch processes **one job at a time across the whole farm**, not one per printer in parallel.
+Background dispatch runs **in parallel across printers** — sending prints to two A1 Minis with swappers really does start both jobs concurrently.
+
+**What's serialised**
+
+The brief DB-insert phase (`INSERT INTO print_archives`) sits behind a startup-lock so SQLite's single-writer semantics don't trip on `database is locked`. The lock is released as soon as the row is committed; FTP upload and the `start_print` MQTT round-trip then run concurrently.
 
 **What you'll observe**
 
-- Queueing prints to two printers at the same time: the second printer's `swap_mode_start` fires a few seconds after the first — after the first job finishes its FTP upload and `start_print` MQTT round-trip.
-- During an FTP upload, no other printer can dispatch.
-
-**Why**
-
-SQLite's single-writer semantics meant parallel `INSERT INTO print_archives` from two dispatch jobs intermittently failed with `database is locked` once the busy-timeout expired. Symptoms surfaced as random "second printer of a pair never started" failures mid-upload. Serializing dispatch eliminates the race entirely.
-
-**Trade-off**
-
-A queued second printer waits a few extra seconds before its swap_mode_start fires. In practice the wait is the FTP upload time of the first job, typically 2–10 s. Reliable strictly-serial dispatch beats fast-but-flaky parallel dispatch for unattended overnight runs.
+- Two printers get their `swap_mode_start` macros nearly simultaneously.
+- Their FTP uploads happen in parallel (you'll see two upload progress bars in the dispatch toast).
+- The earlier "one job at a time across the whole farm" gate that landed in mid-0.4.1 was scrapped once the startup-lock was in.
 
 ---
 

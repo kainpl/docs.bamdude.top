@@ -87,6 +87,12 @@ plugins:
             Virtual Printer: Віртуальний принтер
             Macros: Макроси
             Notifications: Сповіщення
+            "Obico AI Failure Detection": "AI-детекція фейлів Obico"
+            "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
+            "Spool Inventory": "Інвентар котушок"
+            "Projects & Print Plan": "Проєкти та print plan"
+            "K-Profiles": "K-профілі"
+            "Stats & Energy": "Статистика і енергія"
             Telegram Bot: Telegram-бот
             Bot Setup: Налаштування бота
             "Multi-Chat Auth": Мультичат-авторизація
@@ -102,6 +108,7 @@ plugins:
             "Backup & Restore": "Резервне копіювання"
             Reference: Довідка
             Supported Printers: Підтримувані принтери
+            "Settings reference": "Reference налаштувань"
             API Reference: Довідка API
             Troubleshooting: Усунення неполадок
 
@@ -147,6 +154,9 @@ markdown_extensions:
   - pymdownx.tilde
 
 extra:
+  analytics:
+    provider: google
+    property: !ENV PUBLIC_GA_ID
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kainpl/bamdude
@@ -185,6 +195,12 @@ nav:
       - Virtual Printer: features/virtual-printer.md
       - Macros: features/macros.md
       - Notifications: features/notifications.md
+      - Obico AI Failure Detection: features/obico.md
+    - Library, Inventory & Projects:
+      - Spool Inventory: features/inventory.md
+      - Projects & Print Plan: features/projects.md
+      - K-Profiles: features/kprofiles.md
+      - Stats & Energy: features/stats.md
     - Telegram Bot:
       - Bot Setup: features/telegram-bot.md
       - Multi-Chat Auth: features/telegram-auth.md
@@ -202,6 +218,7 @@ nav:
   - Reference:
     - reference/index.md
     - Supported Printers: reference/printers.md
+    - Settings reference: reference/settings.md
     - API Reference: reference/api.md
     - Troubleshooting: reference/troubleshooting.md
 

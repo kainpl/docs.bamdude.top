@@ -95,7 +95,7 @@ Solutions for common issues with BamDude.
 
 ### Second printer waits a few seconds before starting
 
-Not a bug. Since 0.4.1, BamDude's dispatch loop runs strictly one job at a time across the whole farm to avoid `database is locked` errors when two prints land on the printer in parallel. The second printer's FTP upload starts as soon as the first job's start command returns -- typically a few seconds. See [Staggered Start > Dispatch is always serialized](../features/staggered-start.md#material-shield-check-dispatch-is-always-serialized).
+Not a bug — but the diagnostic changed. Since `c485db1`, BamDude's dispatch runs **in parallel across printers**; only the brief DB-insert phase is wrapped in a startup-lock. The two printers really do receive their jobs simultaneously, and the dispatch toast shows two FTP progress bars side-by-side. The earlier "one job at a time across the whole farm" gate that landed in mid-0.4.1 was scrapped once the startup-lock was in. See [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour) for the full description.
 
 ---
 
@@ -123,9 +123,13 @@ Fixed in 0.4.1, no action needed. Earlier versions periodically swapped the prin
 
 ### "Server takes minutes to come up" on first boot after 0.4.1
 
-Migration `m022` opens every existing 3MF on disk to backfill two new metadata fields. Roughly 50-200 ms per file. An install with thousands of archives can spend several minutes inside the migration step before the API responds. Watch for `m022 library_files: progress` and `m022 print_archives: progress` log lines -- if you see them advancing in batches of 100, the migration is healthy and just needs to finish.
+Migrations `m022` and `m023` both open every existing 3MF on disk to backfill metadata. `m022` extracts the `gcode_label_objects` / `exclude_object` flags; `m023` extracts the full per-plate breakdown that powers the per-plate gallery in File Manager. Roughly 50-200 ms per file each, and they run sequentially — an install with thousands of archives can spend several minutes inside the migration step before the API responds. Watch for `m022 library_files: progress`, `m022 print_archives: progress`, then the matching `m023` lines — if they're advancing in batches of 100, the migrations are healthy and just need to finish.
 
-This is one-shot -- subsequent boots skip the migration via the `_migrations` table.
+Both are one-shot — subsequent boots skip them via the `_migrations` table.
+
+### Browser console floods with 401s after a long-idle tab
+
+Fixed in `dd1d9eb`, no action needed on 0.4.1+. Earlier versions waited for a 401 to fire `/auth/refresh` reactively; when a backgrounded tab returned with five React-Query keys all firing simultaneously, the network panel briefly logged 20–40 401s before the first refresh response unblocked them. The client now decodes the JWT `exp` claim, schedules a one-shot refresh ~60 s before expiry, and a near-expiry pre-flight check awaits the same coalesced refresh promise. Result: the access token is fresh by the time the visibility-sync invalidates queries, and no 401 leaves the browser. The reactive path stays as a fallback for binary / streaming endpoints.
 
 ---
 

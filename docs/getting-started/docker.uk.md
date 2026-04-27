@@ -33,7 +33,7 @@ Docker -- найпростіший спосіб запустити BamDude. Од
 
 ## :material-cog: Конфігурація
 
-### docker-compose.yml
+### docker-compose.yml (host mode — Linux, рекомендовано)
 
 ```yaml
 services:
@@ -41,12 +41,62 @@ services:
     image: ghcr.io/kainpl/bamdude:latest
     build: .
     container_name: bamdude
+    # Прибирає warnings про permissions volumes: ставимо в UID/GID хоста,
+    # який володіє /var/lib/docker/volumes (зазвичай 1000:1000 на Debian / Ubuntu).
+    # Дізнатись: id -u && id -g
+    user: "${PUID:-1000}:${PGID:-1000}"
+    # Дозволяє bind на привілейовані порти (322 RTSP, 990 FTPS) як non-root.
+    cap_add:
+      - NET_BIND_SERVICE
+    # Тільки Linux — Docker Desktop на macOS / Windows host-mode не підтримує.
+    # Там закоментуй цей рядок і використай bridge-mode-блок нижче.
     network_mode: host
     volumes:
       - bamdude_data:/app/data
       - bamdude_logs:/app/logs
+      # Поділ virtual-printer сертів з паралельною натив-інсталяцією, якщо є.
+      - ./virtual_printer:/app/data/virtual_printer
     environment:
-      - TZ=Europe/Berlin
+      - TZ=${TZ:-Europe/Kyiv}
+      - PORT=${PORT:-8000}
+    restart: unless-stopped
+
+volumes:
+  bamdude_data:
+  bamdude_logs:
+```
+
+### docker-compose.yml (bridge mode — macOS / Windows / strict networking) {#bridge-mode}
+
+Docker Desktop на macOS / Windows не підтримує `network_mode: host`, та й деякі hardened-Linux setups його уникають. У bridge-режимі треба замапити кожен порт, з яким говорить принтер, і кожен порт, який слухає віртуальний принтер. Авто-discovery фізичних принтерів вмирає — додавай по IP вручну з UI.
+
+```yaml
+services:
+  bamdude:
+    image: ghcr.io/kainpl/bamdude:latest
+    container_name: bamdude
+    user: "${PUID:-1000}:${PGID:-1000}"
+    cap_add:
+      - NET_BIND_SERVICE
+    ports:
+      - "${PORT:-8000}:8000"            # Web UI + REST + WebSocket
+      - "322:322"                        # Virtual-printer RTSP camera proxy
+      - "990:990"                        # Virtual-printer FTPS control
+      - "3000:3000"                      # Virtual-printer bind/detect
+      - "3002:3002"                      # Virtual-printer bind/detect alt
+      - "6000:6000"                      # Virtual-printer file tunnel
+      - "8883:8883"                      # Virtual-printer MQTT
+      - "2024-2026:2024-2026"            # Virtual-printer A1 / P1S range
+      - "50000-50100:50000-50100"        # Virtual-printer FTP PASV data
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+    environment:
+      - TZ=${TZ:-Europe/Kyiv}
+      - PORT=${PORT:-8000}
+      # Обов'язково для FTP PASV за NAT — постав LAN-IP Docker-хоста.
+      # Слайсеру це треба, щоб відкрити data-з'єднання.
+      - VIRTUAL_PRINTER_PASV_ADDRESS=${VIRTUAL_PRINTER_PASV_ADDRESS:-}
     restart: unless-stopped
 
 volumes:
@@ -67,8 +117,10 @@ volumes:
 | `TRUSTED_PROXY_IPS` | порожньо | Розділені комою IP реверс-проксі, що довіряються для `X-Forwarded-For` (встановлюйте, коли BamDude стоїть за nginx / Caddy / Traefik) |
 | `AUTH_REFRESH_COOKIE_SECURE` | не задано (auto) | Примусово встановити прапорець `Secure` для refresh-cookie. За замовчуванням -- автовизначення зі схеми запиту. |
 | `MFA_ENCRYPTION_KEY` | не задано | URL-safe base64 Fernet-ключ для at-rest шифрування TOTP / OIDC секретів. |
-| `APP_URL` | `http://localhost:5173` | Публічний URL BamDude (використовується в WebAuthn RP-ID + посиланнях сповіщень). |
+| `APP_URL` | `http://localhost:5173` | Публічний базовий URL — використовується в password-reset / MFA листах, OIDC callback-ах і Obico cached-frame URL. Налаштування `external_url` в Settings → System перебиває цю змінну. |
 | `JWT_SECRET_KEY` | автогенерація, зберігається | Не змінюйте на запущеній інсталяції -- це анулює всі видані токени. |
+| `PUID` / `PGID` | `1000` / `1000` | UID / GID, від якого працює контейнер. Виставляй у відповідність власника mounted volumes, щоб уникнути permission-помилок. |
+| `VIRTUAL_PRINTER_PASV_ADDRESS` | не задано | Перевизначити FTP-PASV IP, який анонсує віртуальний принтер. Обов'язково в **bridge mode** (LAN-IP Docker-хоста); у host-mode лиши порожнім. |
 
 Повний перелік, включно з опціональними інтеграціями, див. у [Інсталяція > Змінні середовища](installation.uk.md#змінні-середовища).
 
@@ -143,7 +195,10 @@ services:
 ```
 
 !!! note "macOS / Windows"
-    Docker Desktop на macOS та Windows потребує перенаправлення портів замість режиму host. Використовуйте `ports: ["8000:8000"]` та додавайте принтери вручну за IP-адресою.
+    Docker Desktop на macOS / Windows потребує перенаправлення портів замість host-режиму. Скопіюй [bridge-mode compose-блок вище](#bridge-mode) — мапінгу тільки `ports: ["8000:8000"]` достатньо для веб-UI, але це ламає виявлення принтерів, віртуальний принтер і FTP-завантаження архівів. Фізичні принтери додавай по IP вручну з UI.
+
+!!! warning "DEBUG=true на першому boot великої інсталяції"
+    `DEBUG=true` змушує BamDude перезапускати останню міграцію на кожному старті. Якщо в тебе тисячі архівів — це означає прохід по всім 3MF на диску перед тим, як API підніметься. Вимикай DEBUG після того, як міграція встояла.
 
 ---
 

@@ -36,25 +36,37 @@ Navigate to **Settings > Network > MQTT Publishing**.
 
 ## :material-broadcast: Published Topics
 
-All topics are prefixed with your configured prefix (default: `bamdude`).
+All topics are prefixed with your configured prefix. **The default prefix is `bambuddy`** (inherited from upstream Bambuddy and never auto-rotated to avoid breaking existing HA integrations on upgrade). Change it under Settings → Network if you'd rather subscribe to `bamdude/...`. The examples below use `bambuddy/` to match an out-of-the-box install — substitute your actual prefix.
 
-### Printer Events
-
-| Topic | Description |
-|-------|-------------|
-| `bamdude/printers/{serial}/status` | Real-time printer state (throttled) |
-| `bamdude/printers/{serial}/print/started` | Print job started |
-| `bamdude/printers/{serial}/print/completed` | Print completed |
-| `bamdude/printers/{serial}/print/failed` | Print failed |
-| `bamdude/printers/{serial}/ams/changed` | AMS filament changed |
-
-### Queue Events
+### Printer events
 
 | Topic | Description |
 |-------|-------------|
-| `bamdude/queue/added` | Job added to queue |
-| `bamdude/queue/started` | Job started printing |
-| `bamdude/queue/completed` | Job completed |
+| `bambuddy/printers/{serial}/status` | Real-time printer state (throttled) |
+| `bambuddy/printers/{serial}/online` | Printer just came online |
+| `bambuddy/printers/{serial}/offline` | Printer just went offline |
+| `bambuddy/printers/{serial}/print/started` | Print job started |
+| `bambuddy/printers/{serial}/print/completed` | Print completed (status=`completed`) |
+| `bambuddy/printers/{serial}/print/failed` | Print failed (status=`failed`) |
+| `bambuddy/printers/{serial}/ams/changed` | AMS filament changed |
+| `bambuddy/printers/{serial}/error` | HMS / firmware error |
+
+### Queue events
+
+| Topic | Description |
+|-------|-------------|
+| `bambuddy/queue/job_added` | Job added to queue |
+| `bambuddy/queue/job_started` | Job started printing |
+| `bambuddy/queue/job_completed` | Job completed successfully |
+| `bambuddy/queue/job_failed` | Job ended with status=`failed` (same publisher as `job_completed`, branched on status) |
+
+### Maintenance events
+
+| Topic | Description |
+|-------|-------------|
+| `bambuddy/maintenance/alert` | A maintenance task tripped its threshold |
+| `bambuddy/maintenance/acknowledged` | A maintenance alert was acknowledged in the UI |
+| `bambuddy/maintenance/reset` | A maintenance counter was reset (task marked done) |
 
 ---
 
@@ -64,7 +76,7 @@ All topics are prefixed with your configured prefix (default: `bamdude`).
 mqtt:
   sensor:
     - name: "Printer Status"
-      state_topic: "bamdude/printers/YOUR_SERIAL/status"
+      state_topic: "bambuddy/printers/YOUR_SERIAL/status"
       value_template: "{{ value_json.state }}"
 ```
 

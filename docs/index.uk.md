@@ -82,7 +82,7 @@ G-code макроси, що активуються подіями друку (с
 
 <div class="feature-card" markdown>
 ### :material-bell-ring: Сповіщення
-Багатопровайдерні сповіщення через WhatsApp, Telegram, Discord, Email, Pushover, ntfy та власні webhook. Підтримка тихих годин та щоденного дайджесту.
+Багатопровайдерні сповіщення через Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant та власні webhook. Тихі години й щоденний digest на кожен провайдер окремо.
 </div>
 
 </div>

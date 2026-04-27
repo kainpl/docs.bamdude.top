@@ -200,11 +200,12 @@ The login page renders an "Sign in with `<provider>`" button per configured prov
 
 ### Self-signed CAs
 
-If your provider runs behind a self-signed certificate (common for self-hosted Authentik / Keycloak), point BamDude at the CA bundle:
+If your provider runs behind a self-signed certificate (common for self-hosted Authentik / Keycloak), make the CA chain visible to BamDude's HTTP client. There is **no dedicated `OIDC_CA_BUNDLE_PATH` env var** — instead, mount the trusted root onto the system bundle the Python `ssl` module reads:
 
-```ini
-OIDC_CA_BUNDLE_PATH=/etc/ssl/certs/my-internal-ca.pem
-```
+- **Container deploys**: bind-mount your CA into `/usr/local/share/ca-certificates/` and run `update-ca-certificates` in your image, or set the standard env vars `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` to a PEM file mounted into the container.
+- **Native installs**: drop the CA into the OS trust store (`/etc/ssl/certs/` on Debian/Ubuntu via `update-ca-certificates`).
+
+These are the same knobs every Python HTTPS client respects — `httpx` (used for the discovery + token + JWKS fetches) reads them transparently.
 
 !!! warning "Don't auto-link by email lightly"
     Auto-create + auto-link to existing local accounts means a compromised IdP can hijack any local user with a matching email. Leave both off unless you trust the provider as much as your local password hashes.
