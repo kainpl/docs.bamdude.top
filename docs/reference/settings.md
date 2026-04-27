@@ -90,7 +90,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `energy_cost_per_kwh` | `0.15` | Cost per kWh for archive / project cost calculations. Set to your local rate. |
 | `energy_tracking_mode` | `total` | `total` shows lifetime plug consumption on stats; `print` shows the sum of per-print energy deltas. See [Smart plugs → Energy display mode](../features/smart-plugs.md#energy-display-mode). |
 
-## :material-spool-of-thread: Spoolman
+## :material-cassette: Spoolman
 
 | Key | Default | Effect |
 |---|---|---|

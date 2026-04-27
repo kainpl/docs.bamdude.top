@@ -90,7 +90,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `energy_cost_per_kwh` | `0.15` | Ціна за kWh для розрахунків ціни архіву / проєкту. Постав свою локальну. |
 | `energy_tracking_mode` | `total` | `total` показує lifetime-споживання розетки на стат-сторінці; `print` показує суму per-print-дельт. Див. [Smart plugs → Energy display mode](../features/smart-plugs.uk.md#energy-display-mode). |
 
-## :material-spool-of-thread: Spoolman
+## :material-cassette: Spoolman
 
 | Key | Default | Ефект |
 |---|---|---|

@@ -65,7 +65,7 @@ The `Settings → System → External URL` field in the UI is the same value as 
 
 ---
 
-## :material-nginx: nginx config
+## :simple-nginx: nginx config
 
 Drop this in `/etc/nginx/sites-available/bamdude` and `ln -s` it into `sites-enabled/`. Ports + paths assume BamDude listens on `127.0.0.1:8000` on the same host as nginx.
 

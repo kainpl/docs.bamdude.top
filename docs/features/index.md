@@ -180,7 +180,7 @@ Cumulative print stats, per-print energy capture from your smart plug, date-rang
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
-### [:material-spool: Spoolman](spoolman.md)
+### [:material-cassette: Spoolman](spoolman.md)
 Two-way filament inventory sync with Spoolman.
 </div>
 
