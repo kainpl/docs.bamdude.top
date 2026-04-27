@@ -180,7 +180,7 @@ Print-профілі на принтер з обмеженнями для дво
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
-### [:material-cassette: Spoolman](spoolman.uk.md)
+### [:lucide-spool: Spoolman](spoolman.uk.md)
 Двостороння синхронізація інвентарю філаменту зі Spoolman.
 </div>
 
