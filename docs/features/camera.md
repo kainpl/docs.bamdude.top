@@ -85,7 +85,7 @@ Customize with query parameters: `?size=large&fps=30&show=progress,eta,filename`
 Camera endpoints (live stream, snapshot, cover thumbnail, plate-detection reference) are not Bearer-token-friendly -- a `<img src>` tag can't attach an `Authorization` header. BamDude routes these through a short-lived query-param token instead:
 
 1. The frontend hits `POST /api/v1/printers/camera/stream-token` to mint a token tied to the current user (TTL 60 min).
-2. The token is appended as `?stream_token=...` to every camera URL via `withStreamToken()` in the API client.
+2. The token is appended as `?token=...` to every camera URL via `withStreamToken()` in the API client.
 3. Already-rendered DOM nodes (e.g. an `<img>` mounted before the token arrived) are retrofitted by `rewriteMediaSrcWithToken()`.
 4. The token is keyed by `user.id` in React-Query so login/logout invalidates the cache.
 

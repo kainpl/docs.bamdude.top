@@ -85,7 +85,7 @@ BamDude включає оверлей для стрімів за адресою 
 Camera-ендпоінти (live-стрім, snapshot, cover-мініатюра, plate-detection reference) не дружать з Bearer-токеном -- тег `<img src>` не може причепити заголовок `Authorization`. BamDude натомість пропускає їх через короткоживучий query-param токен:
 
 1. Фронт стукає в `POST /api/v1/printers/camera/stream-token`, щоб отримати токен, прив'язаний до поточного користувача (TTL 60 хв).
-2. Токен дописується як `?stream_token=...` до кожного camera-URL через `withStreamToken()` в API-клієнті.
+2. Токен дописується як `?token=...` до кожного camera-URL через `withStreamToken()` в API-клієнті.
 3. Уже відрендерені DOM-вузли (наприклад, `<img>`, змонтований до приходу токена) ретрофітяться через `rewriteMediaSrcWithToken()`.
 4. Токен у React-Query кешується по `user.id`, тож логін/логаут інвалідує кеш.
 

@@ -70,9 +70,9 @@ Import is symmetric: open Projects → Import, drop the file, pick whether to ke
 
 The schema (m016) splits state across two tables:
 
-- `projects` — name, description, owner.
-- `project_print_plan` — the ordered plan, with per-row `(library_file_id, copies, sequence, notes)`.
+- `projects` — name, description, status, color, target counts, notes, attachments, tags, due date, priority, budget, plus self-FK `parent_id` for sub-projects and a `is_template` flag. Projects do **not** carry an `owner_id` — they're install-wide objects, gated by the `projects:*` permission set rather than ownership.
+- `project_print_plan_items` — the ordered plan, one row per `(project_id, library_file_id)`. Columns: `copies` and `order_index`. Per-row "notes" / "sequence" don't exist as columns — sequence is `order_index`, and notes belong on the project itself.
 
-Plan rows are FK'd to `library_files` with `ON DELETE SET NULL` (m018) — deleting a file referenced by a plan blanks the row out instead of cascading the project deletion. Archives that came from the file still carry their `library_file_id` link (set NULL on file delete) so completed-copy counters keep tracking even after the source file is gone.
+Both FKs (`project_id` → `projects.id` and `library_file_id` → `library_files.id`) are `ON DELETE CASCADE`. Deleting a project or a referenced library file removes the matching plan rows. Archives that came from the file are independent — `print_archives.library_file_id` is `ON DELETE SET NULL` (m018, separately) so completed-copy counters keep tracking even after the source file is gone.
 
 Per-row completed counts are computed on read from `print_archives` rather than stored on the plan row. Reprints, plate-by-plate dispatches, and dedup-by-hash all increment the row consistently — no drift between the live plan and historical archives.

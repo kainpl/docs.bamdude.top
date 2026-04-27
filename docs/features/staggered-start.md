@@ -54,16 +54,19 @@ Configure default stagger values in **Settings > Queue > Staggered Start**. Thes
 
 ---
 
-## :material-shield-check: Dispatch is always serialized
+## :material-shield-check: Stagger vs. dispatch parallelism
 
-Even with stagger disabled, BamDude's dispatch loop processes one job at a time across the whole farm. This is a 0.4.1 reliability change -- back-to-back dispatches to two different printers used to race on `INSERT INTO print_archives` and SQLite's single-writer semantics could fail the second job mid-FTP with `database is locked`. Now jobs run strictly one-at-a-time.
+Stagger is a **soft** schedule layered on top of the queue — it spreads queue items across time by stamping `scheduled_time` on each one. It does **not** serialize the dispatcher.
 
-What this means in practice:
+BamDude's dispatcher itself runs **in parallel across printers** since `c485db1` (mid-0.4.1 reverted the brief "always-serialised" gate). The only thing serialised is the millisecond-long `INSERT INTO print_archives` write, which sits behind a startup-lock so SQLite doesn't trip on concurrent writers. FTP upload, the `start_print` MQTT command, and swap-mode macros all run concurrently. See [Print queue → Dispatch behaviour](print-queue.md#dispatch-behaviour) for the full breakdown.
 
-- **Without stagger**, the second printer waits a few seconds (until the first job's FTP upload + start command finish) before its own FTP upload starts. Not a bug -- a deliberate trade-off for archive integrity.
-- **Stagger is still useful** for spreading the *running-print* heat load -- bed currents drawn while the prints are physically running, not the FTP/MQTT-startup moment that serialization already handles. A 6-printer batch with stagger off still has all 6 beds heating within a few seconds of each other once each FTP completes.
+What this means for stagger:
 
-Use stagger when peak power draw during heating is the constraint; ignore stagger if your circuit can handle simultaneous bed heating and you only care about avoiding the SQLite race (already handled).
+- **Stagger is what spreads the bed-heating load** across time. Without stagger, three queued items on three idle printers will all start essentially simultaneously and you'll get three beds heating at once.
+- **You don't need stagger to avoid SQLite write races** — the startup-lock already handles that, regardless of stagger setting.
+- **`stagger_wait_for_bed=true`** (the default) holds the next slot open until the previous print's bed reaches target temp ±1 °C, which is what most operators actually want. With it off, a slot frees the moment the print starts (so the *next* heat-up begins while the previous bed is still climbing).
+
+Use stagger when peak power draw during heating is the constraint. Skip it when your circuit can handle simultaneous bed heating.
 
 ---
 

@@ -60,13 +60,14 @@ The Telegram bot provides:
 
 ## :material-message-text: Commands
 
+The bot only registers a small set of slash commands; everything else is driven by the **reply keyboard** that `/start` sets up. Treat the keyboard buttons (📋 Printers / 🖨️ Queue / 📊 Stats / 📷 Camera / etc.) as the primary navigation — typing `/printers` or `/queue` won't match a handler and the bot will fall through to the unknown-command path.
+
 | Command | Description |
 |---------|-------------|
-| `/start` | Register chat and show main menu |
-| `/printers` | List all printers with status |
-| `/queue` | View print queue (paginated) |
-| `/stats` | View print statistics |
+| `/start` | Register chat and show the main reply keyboard |
 | `/help` | Show available commands |
+| `/status` | Quick status of all printers |
+| `/camera` | Camera snapshot picker |
 
 ---
 
@@ -164,8 +165,7 @@ preferences leak between chats — set them once per chat.
 
 ### Event filter
 
-Pick which of the 25+ event types this chat should receive. The defaults
-mirror what most operators care about:
+Pick which of the 23 event types (`backend/app/models/telegram_chat.py::ALL_NOTIFY_EVENTS`) this chat should receive. The defaults mirror what most operators care about:
 
 | Default events ON |
 |---|

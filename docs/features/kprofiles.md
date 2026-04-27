@@ -29,7 +29,7 @@ Cloning a system default produces a user-owned copy with the same parameters; th
 
 ## :material-printer-3d: Dual-nozzle gating
 
-H2D / H2D Pro / H2C / H2S have two nozzles; their profiles need to expose two parallel sets of flow / temperature parameters. BamDude detects dual-nozzle from the printer's serial prefix and:
+H2D / H2D Pro carry a second nozzle; their profiles need to expose two parallel sets of flow / temperature parameters. BamDude detects dual-nozzle at runtime from MQTT telemetry — specifically, when the printer publishes a `nozzle_2` key in its temperature stream BamDude flips the printer's dual-nozzle flag. There is no serial-prefix lookup table for this; the detection is purely capability-based, so any future Bambu model that publishes a second nozzle key will be picked up automatically. Once detected, BamDude:
 
 - Filters the profile picker to dual-nozzle profiles when the target is a dual-nozzle printer.
 - Hides the secondary-nozzle UI block on single-nozzle profiles to reduce noise.

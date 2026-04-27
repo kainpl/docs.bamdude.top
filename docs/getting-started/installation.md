@@ -138,7 +138,7 @@ Open BamDude in a browser. The frontend reads `/api/v1/auth/status`, sees `requi
 | Field | Required | Notes |
 |-------|----------|-------|
 | Username | yes | Becomes the first admin. Max 150 chars. |
-| Password | yes | Min 8 chars, must include upper + lower + digit + special character (e.g. `!@#$%^&*`). Max 256 chars. Stored as a bcrypt hash. |
+| Password | yes | Min 8 chars, must include at least one uppercase + one lowercase + one digit. No special-character rule — BamDude follows NIST SP 800-63B which explicitly advises against composition rules beyond length + a basic mix. Max 256 chars. Stored as a bcrypt hash. |
 | Email | optional | Max 254 chars. Used for password-reset flows + email-OTP MFA later. |
 
 Submit creates the admin, drops the setup gate, and signs you in. The form never shows again — once any admin exists, navigating to `/setup` redirects to `/login`.

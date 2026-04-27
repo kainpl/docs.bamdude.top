@@ -59,17 +59,16 @@ The bot middleware checks permissions before executing commands:
 
 ---
 
-## :material-account-plus: Registration Modes
+## :material-account-plus: Registration: open vs. closed
 
-Control how new Telegram chats are authorized:
+A single boolean — `telegram_registration_open` (Settings → Notifications → Telegram) — controls how new chats appear:
 
-| Mode | Behavior |
-|------|----------|
-| **Open** | Any chat that sends `/start` is automatically registered with a default group |
-| **Approval** | New chats are registered but inactive until approved in the web UI |
-| **Closed** | Only chats added manually in the web UI can interact with the bot |
+| Setting | Behaviour |
+|---|---|
+| `telegram_registration_open=true` | Unknown chats that message the bot are auto-registered with `is_active=False, group_id=NULL`. They cannot do anything yet — an admin still has to assign a group and flip them active in **Settings → Notifications → Telegram Chats**. Effectively a "let me see who wants in" mode. |
+| `telegram_registration_open=false` (default) | Unknown chats are silently rejected. To let a new chat in, an admin adds it manually in the web UI. |
 
-Configure the registration mode in **Settings > Notifications > Telegram**.
+There is no third "open with auto-active default group" mode — neither option auto-grants permissions. Activation is always a manual step in the web UI.
 
 ---
 
@@ -77,11 +76,12 @@ Configure the registration mode in **Settings > Notifications > Telegram**.
 
 The auth middleware (`telegram_handlers/auth_middleware.py`) runs on every message and callback:
 
-1. Checks if the chat exists in the `TelegramChat` model
-2. If new: auto-registers based on registration mode
-3. Loads the chat's group and permissions
-4. Injects permissions into the handler context
-5. Handler checks required permissions before acting
+1. Checks if the chat exists in the `telegram_chats` table.
+2. If new and `telegram_registration_open=true`: inserts a row with `is_active=False, group_id=NULL` and silently drops the message — the chat will only become functional after an admin activates + assigns a group in the web UI.
+3. If new and `telegram_registration_open=false`: rejects the message outright.
+4. Loads the chat's group and permissions.
+5. Injects permissions into the handler context.
+6. Handler checks required permissions before acting.
 
 ---
 

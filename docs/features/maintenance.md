@@ -28,7 +28,7 @@ BamDude includes nine bundled maintenance task types with **model-aware filterin
 
 | Mechanical class | Models | Tasks that appear |
 |---|---|---|
-| **Carbon rods** | X1, X1 Carbon, X1E, P1P, P1S | Clean / Lubricate Carbon Rods |
+| **Carbon rods** | X1, X1 Carbon, X1E, P1P, P1S | Clean Carbon Rods *(no lubricate task — carbon rods are intentionally run dry)* |
 | **Steel rods** | P2S, X2D | Clean / Lubricate Steel Rods |
 | **Linear rails** | A1, A1 Mini, H2D, H2D Pro, H2C, H2S | Clean / Lubricate Linear Rails |
 | **Universal** | every model | Clean Build Plate / Clean Nozzle / Check Belt Tension / Check PTFE Tube |
@@ -39,7 +39,6 @@ BamDude includes nine bundled maintenance task types with **model-aware filterin
 | **Clean Nozzle / Hotend** | Every 100 hours | All printers |
 | **Check Belt Tension** | Every 200 hours | All printers |
 | **Check PTFE Tube** | Every 500 hours | All printers |
-| **Lubricate Carbon Rods** | Every 50 hours | X1 series, P1 series |
 | **Clean Carbon Rods** | Every 100 hours | X1 series, P1 series |
 | **Lubricate Steel Rods** | Every 50 hours | P2S, X2D |
 | **Clean Steel Rods** | Every 100 hours | P2S, X2D |
@@ -82,7 +81,7 @@ Remove irrelevant default types by clicking the delete icon. Restore all default
 | Status | Meaning |
 |:------:|---------|
 | :material-check-circle:{ style="color: #4caf50" } OK | Not due yet |
-| :material-alert:{ style="color: #ff9800" } Due Soon | Approaching due (80% of interval) |
+| :material-alert:{ style="color: #ff9800" } Due Soon | Within the last 10 % of the interval (90 % consumed) |
 | :material-alert-circle:{ style="color: #f44336" } Overdue | Past due |
 
 ---

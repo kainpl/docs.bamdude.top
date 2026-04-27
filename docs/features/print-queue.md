@@ -53,16 +53,6 @@ Adding to queue records *who* added the item. The Telegram bot, library bulk-add
 
 ---
 
-## :material-sort-ascending: Shortest Job First (SJF)
-
-Prioritize shorter print jobs for faster throughput.
-
-1. Click the **SJF** badge in the queue header
-2. Shortest pending prints are dispatched first
-3. Starvation guard ensures long jobs still get printed
-
----
-
 ## :material-drag: Drag and Drop Ordering
 
 1. Hover over a queued print

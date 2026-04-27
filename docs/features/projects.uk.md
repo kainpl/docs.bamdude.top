@@ -70,9 +70,9 @@ Plan items не передиспатчуються автоматично при
 
 Схема (m016) розділяє стан на дві таблиці:
 
-- `projects` — name, description, owner.
-- `project_print_plan` — впорядкований план, з per-row `(library_file_id, copies, sequence, notes)`.
+- `projects` — name, description, status, color, target counts, notes, attachments, tags, due date, priority, budget, плюс self-FK `parent_id` для sub-проєктів і прапор `is_template`. Проєкти **не** мають `owner_id` — це install-wide об'єкти, гейтовані набором прав `projects:*`, а не власністю.
+- `project_print_plan_items` — впорядкований план, один рядок на `(project_id, library_file_id)`. Колонки: `copies` і `order_index`. Per-row "notes" / "sequence" як колонок немає — sequence це `order_index`, а notes належать самому проєкту.
 
-Plan-рядки FK'нуті на `library_files` з `ON DELETE SET NULL` (m018) — видалення файла, на який дивиться plan, забланкує рядок замість каскадного видалення проєкту. Архіви, що з цього файла прийшли, тримають свій `library_file_id` лінк (set NULL при видаленні файла), тож per-copy completed-лічильники продовжують трекати навіть після зникнення source-файла.
+Обидва FK (`project_id` → `projects.id` і `library_file_id` → `library_files.id`) — `ON DELETE CASCADE`. Видалення проєкту або зв'язаного library-файла видаляє відповідні plan-рядки. Архіви, що з файла прийшли, незалежні — `print_archives.library_file_id` має `ON DELETE SET NULL` (m018, окремо), тож per-copy completed-лічильники продовжують трекати навіть після зникнення source-файла.
 
 Per-row completed-counts обчислюються при читанні з `print_archives`, а не зберігаються на plan-рядку. Reprints, plate-by-plate dispatches і dedup-by-hash всі інкрементять рядок консистентно — жодного дрейфу між живим планом і історичними архівами.

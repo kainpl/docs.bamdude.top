@@ -37,7 +37,7 @@ The cycle continues until the queue is empty.
     | `a1mini_stl` | Community-printable A1 Mini swappers (printable kit / STL designs) |
     | `jobox-a1` | JoBox plate-swap automation |
 
-    The profile binds to the right set of `swap_mode_start` / `swap_mode_change_table` macros (every BamDude install ships built-ins for each profile; you can override them under **Settings → Macros**).
+    The profile binds to the right set of `swap_mode_start` / `swap_mode_change_table` macros. **`a1mini_stl` and `jobox-a1` ship pre-seeded built-in macros**; **`a1mini_kit` does not** (Bambu's official kit currently relies on operator-supplied G-code — write your own pair under **Settings → Macros** and tag them with `swap_profile=a1mini_kit`). Any profile's built-ins can be overridden by editing the macro in the UI.
 
 ### Swap G-code Macros
 

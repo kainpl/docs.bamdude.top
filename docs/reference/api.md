@@ -202,7 +202,7 @@ Endpoints behind the stream-token gate:
 | `GET /printers/{id}/camera/stream?token=...` | MJPEG stream |
 | `GET /printers/{id}/camera/snapshot?token=...` | JPEG snapshot |
 | `GET /printers/{id}/cover?token=...` | Current print cover thumbnail (served from local archive — never triggers an FTP fetch) |
-| `GET /printers/{id}/plate-detection-reference?token=...` | Reference image used by plate-clear detection |
+| `GET /printers/{id}/camera/plate-detection/references/{index}/thumbnail?token=...` | Calibration-reference thumbnail used by plate-clear detection (`{index}` selects which stored reference). |
 | `GET /obico/cached-frame/{nonce}` | Frame URL handed to the Obico ML API. Whitelisted in the auth middleware because Obico's GET can't carry a bearer header — the nonce itself is the capability. |
 
 The web UI keeps the stream token cached per session and refreshes it before expiry.
@@ -220,7 +220,8 @@ The realtime channel is the WebSocket at `wss://<host>/api/v1/ws`. It carries:
 - Archive create / update events
 - Smart-plug state and energy ticks
 
-Authenticate the WebSocket the same way as REST — the access token is accepted via the `Authorization` header during the upgrade handshake.
+!!! warning "WebSocket is currently unauthenticated"
+    `/api/v1/ws` is in the auth middleware's public-route allowlist (`backend/app/main.py::PUBLIC_API_ROUTES`) and the handler performs no token check. Anyone able to reach the host on the WebSocket port can subscribe to realtime events. Treat the realtime channel as **read-only and intra-network** — front BamDude with a reverse proxy (see [Reverse Proxy & HTTPS](../getting-started/reverse-proxy.md)) and don't expose `/ws` directly to the public internet. Tightening this is tracked work; do not assume `Authorization: Bearer` will block subscribers today.
 
 ---
 

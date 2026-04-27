@@ -14,9 +14,9 @@ The header bar shows four lifetime counters:
 | Metric | Source |
 |---|---|
 | **Prints completed** | `print_archives` rows with `status='completed'`. |
-| **Filament consumed** | Sum of `filament_grams` across completed archives, grouped by material/colour. |
-| **Print time** | Sum of `duration_seconds`. |
-| **Energy used** | Sum of `(energy_end_kwh − energy_start_kwh)` over completed archives that had a smart-plug bound at print start. Falls back to a ranged sum from `smart_plug_energy_snapshots` when individual-print captures are missing. |
+| **Filament consumed** | Sum of `filament_used_grams` across completed archives, grouped by material/colour. |
+| **Print time** | Sum of `print_time_seconds`. |
+| **Energy used** | Sum of `energy_kwh` (the per-print delta the dispatcher computed at completion) over completed archives that had a smart-plug bound at print start. Falls back to a ranged sum from `smart_plug_energy_snapshots` when individual-print captures are missing. |
 
 Each KPI also shows the matching cost when `default_filament_cost` and `energy_cost_per_kwh` are configured under Settings → System.
 
@@ -48,10 +48,10 @@ Energy tracking is opt-in. To capture it on each print:
 On each print:
 
 - At `print_start`, BamDude reads the plug's current kWh into `print_archives.energy_start_kwh`.
-- At `print_complete` it reads it again (`energy_end_kwh`) and the delta becomes that print's consumption.
+- At `print_complete` it reads the plug again, computes `current - energy_start_kwh`, and stores **the delta directly** in `print_archives.energy_kwh`. There is no separate `energy_end_kwh` column — the end reading is consumed during the subtraction and discarded.
 - The reads are restart-resilient — values come from a fresh DB session each time, never an in-memory dict, so a backend restart between start and complete doesn't break the capture.
 
-If a plug isn't bound, or the plug is offline at one of the two boundaries, the archive's energy fields stay null and that print is excluded from the energy KPI.
+If a plug isn't bound, or the plug is offline at one of the two boundaries, `energy_kwh` stays null and that print is excluded from the energy KPI.
 
 ### Hourly snapshot fallback
 
@@ -63,8 +63,8 @@ The snapshot table is bounded — old rows are pruned after a configurable reten
 
 | Cost | Formula |
 |---|---|
-| **Per-print filament cost** | Filament grams × spool's `cost / weight`. Falls back to `default_filament_cost / 1000` per gram if no spool was assigned. |
-| **Per-print energy cost** | `(energy_end - energy_start) × energy_cost_per_kwh`. Zero when no plug capture. |
+| **Per-print filament cost** | `filament_used_grams × (spool.cost / spool.weight)`. Falls back to `default_filament_cost / 1000` per gram if no spool was assigned. |
+| **Per-print energy cost** | `energy_kwh × energy_cost_per_kwh`. Zero when no plug capture (`energy_kwh IS NULL`). |
 | **Total** | Filament + energy. |
 
 These feed the per-archive cost line in the archive detail card and the project / print-plan totals.

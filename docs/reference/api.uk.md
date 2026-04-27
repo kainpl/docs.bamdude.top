@@ -202,7 +202,7 @@ Endpoint-и за stream-токен-шлюзом:
 | `GET /printers/{id}/camera/stream?token=...` | потік MJPEG |
 | `GET /printers/{id}/camera/snapshot?token=...` | JPEG-знімок |
 | `GET /printers/{id}/cover?token=...` | мініатюра обкладинки поточного друку (видається з локального архіву — ніколи не ініціює FTP-вибірку) |
-| `GET /printers/{id}/plate-detection-reference?token=...` | референсне зображення для детекції очищеного столу |
+| `GET /printers/{id}/camera/plate-detection/references/{index}/thumbnail?token=...` | мініатюра калібраційного reference-фрейма для детекції очищеного столу (`{index}` вибирає, який зі збережених референсів). |
 | `GET /obico/cached-frame/{nonce}` | URL кадру, який передається в ML-API Obico. Стоїть у білому списку auth-middleware, бо GET від Obico не може нести bearer-заголовок — самим капабіліті є nonce. |
 
 Веб-інтерфейс кешує stream-токен у межах сесії та оновлює його перед закінченням терміну.
@@ -220,7 +220,8 @@ BamDude **не** надає вихідних webhook-ів для подій за
 - події створення / оновлення архівів
 - стан розумних розеток та тики споживання енергії
 
-Автентифікуйте WebSocket так само, як REST — access-токен приймається через заголовок `Authorization` під час handshake-у апгрейду.
+!!! warning "WebSocket наразі неавтентифікований"
+    `/api/v1/ws` стоїть у public-route allowlist auth-middleware (`backend/app/main.py::PUBLIC_API_ROUTES`), і обробник не перевіряє токен. Будь-хто з мережевим доступом до WebSocket-порту може підписатися на realtime-події. Тримайте realtime-канал як **read-only intra-network** — поставте reverse proxy (див. [Reverse Proxy & HTTPS](../getting-started/reverse-proxy.uk.md)) і не виставляйте `/ws` напряму в публічний інтернет. Тайтенінг цього в roadmap; не сподівайтесь, що `Authorization: Bearer` сьогодні блокує subscribers.
 
 ---
 
