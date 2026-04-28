@@ -171,32 +171,148 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 ## :material-arrow-decision: 5. Notable upgrade paths
 
-### From Bambuddy 3.0.x → BamDude 0.4.x
+### From Bambuddy HE 3.0.x → BamDude 0.4.x
 
 `m000` imports your data, `m002` adapts the schema, `m005`+ are BamDude-native.
 
 !!! warning "Always upgrade to **0.4.0.1** or later"
     Going from a legacy 3.0.1 install straight to **0.4.0** crashed at `m005_swap_profiles.seed()` with `no such column: printers.awaiting_plate_clear` — the seed used ORM `select(Printer)` which loaded every column from the *current* model, including columns that don't exist yet at m005's point in the chain. Fixed in 0.4.0.1 by rewriting the seed to use raw SQL with explicit column lists.
 
-### From BamDude 0.3.x → 0.4.x
+---
 
-- `m012` adds the MFA cluster (6 new tables + `password_changed_at` on users).
-- Existing users keep their existing JWT tokens until they next log in. From the next login onward, sliding-session refresh tokens take over (access JWT TTL drops from 24 h to 1 h, but a rotating refresh cookie keeps you signed in transparently). Pre-existing browser sessions don't have a refresh cookie yet, so they'll start failing 401s once their stored access token's 24 h TTL expires — at that point the user is bounced to `/login` and the new flow kicks in.
-- `m014` backfills `library_file_id` on existing archives by hash matching, and **overwrites** `library_files.print_count` / `last_printed_at` with values derived from completed-archive history. Manual fixups to those fields from before the migration are discarded — archive history wins.
-- `m019` is the queue↔archive refactor; cached terminal counters move off `printer_queues` and now compute on read from `print_archives`. Completed queue items auto-delete in `on_print_complete`.
-- `m021` drops `printers.auto_light_off`. If you relied on that flag, recreate the behaviour by configuring a `chamber_light_off` mqtt-action macro on the `print_started` event after the upgrade.
+## :material-swap-horizontal: Scenario 1 — Migrating from Bambuddy 2.2.2
 
-### From BamDude 0.4.0 → 0.4.1
+Place a Bambuddy DB file next to where BamDude expects to find it. On first boot the `m000_bambuddy_import` migration detects it, imports every table BamDude still uses, and renames the file to `bamdude.db`.
 
-- `m022` opens every 3MF on disk to extract two new metadata fields (`gcode_label_objects`, `exclude_object`). Expect a long startup on installs with thousands of archives — roughly **50–200 ms per file**, several minutes for a multi-thousand-archive farm before the API comes up.
-- The seed commits in batches of **100** and logs progress every batch. Watch for these log lines:
+The original Bambuddy file is **left in place** (not deleted) so you can roll back.
 
-    ```text
-    INFO  [backend.app.migrations] m022 library_files: progress 100/847
-    INFO  [backend.app.migrations] m022 print_archives: progress 1500/3261
-    ```
+### via Docker Compose (source checkout)
 
-- 3MFs that were deleted from disk (history rows whose file is gone) are skipped silently — those rows just stay without the new fields. The migration is fully one-shot; the `_migrations` table prevents re-runs even if you restart mid-run.
+```bash
+# 1. Stop Bambuddy
+cd /path/to/bambuddy && docker compose down
+
+# 2. Clone BamDude
+git clone https://github.com/kainpl/bamdude.git
+cd bamdude
+
+# 3. Copy your Bambuddy DB + archives into the bamdude_data volume
+docker volume create bamdude_data
+docker run --rm \
+  -v /path/to/bambuddy/data:/from \
+  -v bamdude_data:/to \
+  alpine cp -a /from/. /to/
+
+# 4. Start — migrations run automatically on first boot
+docker compose up -d
+
+# 5. Follow startup logs, look for "Bambuddy → BamDude import complete"
+docker compose logs -f bamdude
+```
+
+### via `docker run` (GHCR image)
+
+```bash
+# 1. Stop Bambuddy (however you run it)
+
+# 2. Create the new volume and seed it with your Bambuddy data
+docker volume create bamdude_data
+docker run --rm \
+  -v /path/to/bambuddy/data:/from \
+  -v bamdude_data:/to \
+  alpine cp -a /from/. /to/
+
+# 3. Start BamDude from GHCR
+docker run -d \
+  --name bamdude \
+  --network host \
+  -e TZ=Europe/Kyiv \
+  -v bamdude_data:/app/data \
+  -v bamdude_logs:/app/logs \
+  --restart unless-stopped \
+  ghcr.io/kainpl/bamdude:latest
+```
+
+### via native / self-install
+
+```bash
+# 1. Stop the Bambuddy service
+
+# 2. Install BamDude
+curl -fsSL https://raw.githubusercontent.com/kainpl/bamdude/main/install/install.sh \
+  -o install.sh && chmod +x install.sh
+sudo ./install.sh --yes       # defaults to /opt/bamdude
+
+# 3. Drop your Bambuddy DB into BamDude's data dir BEFORE first start
+sudo cp /path/to/bambuddy/data/bambuddy.db /opt/bamdude/data/
+sudo cp -r /path/to/bambuddy/data/archives /opt/bamdude/data/   # if you have one
+
+# 4. Fix ownership (installer runs as the bamdude service user)
+sudo chown -R bamdude:bamdude /opt/bamdude/data/
+
+# 5. Start the service — import migration fires automatically
+sudo systemctl start bamdude
+sudo journalctl -u bamdude -f
+```
+
+!!! tip "The import is one-shot"
+    `m000_bambuddy_import` checks for `bambuddy.db` / `bambutrack.db` and only runs if BamDude's own `bamdude.db` does not yet exist. After a successful import the file is renamed to `bamdude.db` and the migration is marked applied in the `_migrations` table, so a subsequent restart won't re-import.
+
+---
+
+## :material-compare-horizontal: Switching install method
+
+You can change install method at any time without touching data — just point the new instance at the existing `data/` directory or copy the volume contents.
+
+### Native → Docker
+
+```bash
+sudo systemctl stop bamdude
+
+# Copy native data into a Docker volume
+docker volume create bamdude_data
+docker run --rm \
+  -v /opt/bamdude/data:/from \
+  -v bamdude_data:/to \
+  alpine cp -a /from/. /to/
+
+# Start the GHCR image against the new volume
+docker run -d --name bamdude --network host \
+  -v bamdude_data:/app/data -v bamdude_logs:/app/logs \
+  --restart unless-stopped ghcr.io/kainpl/bamdude:latest
+
+# Only after you've verified the Docker instance works, disable/remove the native service:
+sudo systemctl disable bamdude
+```
+
+### Docker → Native
+
+```bash
+docker compose down
+
+# Copy the volume out to disk
+docker run --rm \
+  -v bamdude_data:/from \
+  -v "$(pwd)/extracted":/to \
+  alpine cp -a /from/. /to/
+
+# Install native pointing at the extracted data
+sudo ./install/install.sh --data-dir "$(pwd)/extracted" --yes
+```
+
+### Docker Hub → GHCR (or vice versa)
+
+Registry swap only, no data touch:
+
+```bash
+# docker-compose.yml
+# image: kainpl/bamdude:latest      ← Docker Hub
+# image: ghcr.io/kainpl/bamdude:latest  ← GitHub Container Registry
+docker compose pull
+docker compose up -d
+```
+
+Both registries publish the same tags. GHCR is the preferred source (built in CI on every release); Docker Hub is a mirror.
 
 ---
 
