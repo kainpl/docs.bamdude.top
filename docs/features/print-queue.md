@@ -19,7 +19,7 @@ The print queue lets you:
 - **Drag-and-drop** ordering
 - **Scheduled** start times
 - **Timeline view** -- production schedule with estimated completion times
-- **Model-based assignment** -- queue to "any printer of matching model"
+- **Model-based assignment** -- queue to "any printer of matching model" (legacy single-tier router; for filament/color-aware routing see [Auto-Queue Routing](auto-queue.md))
 - **Smart plug automation** -- auto power-on/off
 
 ---

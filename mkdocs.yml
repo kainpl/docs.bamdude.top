@@ -77,6 +77,7 @@ plugins:
             "AMS & Humidity": "AMS та вологість"
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
+            Auto-Queue Routing: Авто-черга
             Staggered Start: Поетапний запуск
             Swap Mode: Режим заміни пластин
             Print Archive: Архів друку
@@ -188,6 +189,7 @@ nav:
       - AMS & Humidity: features/ams.md
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
+      - Auto-Queue Routing: features/auto-queue.md
       - Staggered Start: features/staggered-start.md
       - Swap Mode: features/swap-mode.md
     - Print Archive:
