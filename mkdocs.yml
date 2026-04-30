@@ -90,7 +90,9 @@ plugins:
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
             Virtual Printer: Віртуальний принтер
+            "Tailscale integration": "Інтеграція з Tailscale"
             Macros: Макроси
+            "G-code Injection": "Інжекція G-code"
             Notifications: Сповіщення
             "Obico AI Failure Detection": "AI-детекція фейлів Obico"
             "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
@@ -206,7 +208,9 @@ nav:
     - Automation:
       - Smart Plugs: features/smart-plugs.md
       - Virtual Printer: features/virtual-printer.md
+      - Tailscale integration: features/tailscale.md
       - Macros: features/macros.md
+      - G-code Injection: features/gcode-injection.md
       - Notifications: features/notifications.md
       - Obico AI Failure Detection: features/obico.md
     - Library, Inventory & Projects:

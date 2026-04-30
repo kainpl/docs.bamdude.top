@@ -116,6 +116,19 @@ The Archives page renders a small status pill on each card. The common case (a f
 
 ---
 
+## :material-filter-variant: Printed / Not Printed filters
+
+The Archives page header carries two single-click chips — **Printed** and **Not Printed** — that quickly slice the list by whether a file has any successful print history yet:
+
+| Chip | Shows | Useful for |
+|---|---|---|
+| **Printed** | Archives whose `library_file_id` is referenced by at least one `completed` archive (i.e. you've actually run this file successfully at least once). | Reprint candidates — you've already validated the slice. |
+| **Not Printed** | The opposite — files with no `completed` archive yet. | The "what's still pending" pile from a multi-day batch, or library imports you haven't gotten around to printing. |
+
+The chips are mutually exclusive (toggle one off to enable the other) and stack with the freeform search box + status filters above them. Not Printed pairs naturally with the [Library Trash auto-purge](library-trash.md) **Include never-printed** toggle — flip Not Printed on first to see what you're about to purge.
+
+---
+
 ## :material-content-copy: Deduplication & Chain-of-Custody
 
 BamDude deduplicates archives by their **source** content hash, not just the bytes on disk.

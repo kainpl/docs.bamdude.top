@@ -151,6 +151,21 @@ There's no Target Printer to set on an `auto_queue` VP — that's the whole poin
 
 ---
 
+## :material-file-edit-outline: Archive name source
+
+By default a VP-archived 3MF takes its display name from the slicer-set `print_name` baked into the project metadata — that's usually the human-readable "Calibration Cube v3" the operator typed in Bambu Studio. Some workflows prefer the **upload filename** instead — for example a batch system that names each upload `2026-04-30_jobid-1234.gcode.3mf` and wants those identifiers preserved as-is.
+
+**Settings → Virtual Printer → Archive name source**:
+
+| Value | Effect |
+|---|---|
+| `metadata` (default) | Use 3MF metadata `print_name`. Falls back to filename if metadata is missing. |
+| `filename` | Use the upload filename's stem. Falls back to metadata if the filename is empty / generic. |
+
+The toggle is install-wide and applies to every VP except `proxy`-mode (proxy uploads aren't archived by BamDude — the real printer's archive flow takes over).
+
+---
+
 ## :material-network-outline: PASV Address (NAT / Docker bridge)
 
 FTPS uses the PASV command, where the server tells the client which IP to dial back on for the data channel. When BamDude runs in a Docker bridge network (or behind any NAT), the PASV response would otherwise advertise the **container's internal IP** — slicers on the LAN can't reach it and the data channel fails mid-handshake.

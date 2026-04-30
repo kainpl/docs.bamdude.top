@@ -91,6 +91,24 @@ Camera-ендпоінти (live-стрім, snapshot, cover-мініатюра, 
 
 Токени зберігаються в `auth_ephemeral_tokens`, тож переживають перезапуски бекенда і працюють під багатоворкерними деплоями. Операторам нічого робити не треба -- це невидима сантехніка -- але наслідок такий: copy-paste camera-URL з браузера працює лише на час життя вшитого токена.
 
+### Довготривалі токени для Home Assistant / Frigate / kiosk
+
+Токен на 60 хв з UI-сторони не годиться для kiosk-дашборду на стіні, camera-entity в Home Assistant чи Frigate-фронту, що ре-фетчить той самий URL місяцями. BamDude вміє mint'ити **довготривалі stream-токени** під ці кейси:
+
+1. **Settings → Camera → Long-lived tokens → + New token**.
+2. Обери принтер(и) (один токен може авторизувати кілька камер), expiry (місяці / роки / never), і опційний label (наприклад, `frigate-living-room`).
+3. Сторінка покаже токен **один раз** — копіюй у конфіг HA / Frigate / kiosk. Більше не покаже.
+4. Токен дає лише camera-ендпоінти (`/stream`, `/snapshot`, `/cover`) на обрані принтери — жодного іншого API.
+
+| Властивість | Деталь |
+|---|---|
+| Storage | Та сама `auth_ephemeral_tokens` таблиця, з `token_type='camera_longlived'`, тож звичайний 60-хв sweeper їх не чіпає. |
+| Revocation | Видалити рядок з таблиці long-lived tokens — діє з наступного запиту. Кеш-шару немає. |
+| Audit | Кожен токен записує last-used-at + last-used-IP, тож видно чи kiosk його реально споживає. Stale-токени (no use 30+ днів) отримують жовтий warning-чіп. |
+| Liimit | Soft cap 50 active-токенів на інсталяцію — підняти лише через DB-доступ (`auth_ephemeral_tokens` спеціально low-friction by design). |
+
+Форма URL: `/api/v1/printers/{id}/stream?token={long_lived_token}` — той самий query-param контракт що й короткоживучий, тож HA-camera platform / Frigate `mjpeg_streams` / `<img src>` у kiosk-дашборді працюють без додаткової сантехніки.
+
 ---
 
 ## :material-image-frame: Cover-мініатюри

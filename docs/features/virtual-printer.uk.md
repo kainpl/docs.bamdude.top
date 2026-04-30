@@ -151,6 +151,21 @@ VP у будь-якому режимі черги (`print_queue` чи `auto_queu
 
 ---
 
+## :material-file-edit-outline: Джерело імені архіву
+
+За замовчуванням 3MF, заархівований через VP, бере display-name з `print_name` з project-метадаt — це зазвичай людськочитабельне "Calibration Cube v3", набране оператором у Bambu Studio. Деякі workflow'и віддадуть перевагу **upload-filename** замість того — наприклад, batch-система, що називає кожен upload `2026-04-30_jobid-1234.gcode.3mf` і хоче зберегти ці ідентифікатори як є.
+
+**Settings → Virtual Printer → Archive name source**:
+
+| Значення | Ефект |
+|---|---|
+| `metadata` (default) | Брати 3MF-метадані `print_name`. Падає на filename, якщо метадані відсутні. |
+| `filename` | Брати stem upload-filename'а. Падає на метадані, якщо filename порожній / generic. |
+
+Тоглер install-wide, застосовується до кожного VP крім `proxy`-mode (proxy-uploads BamDude'ом не архівуються — flow архіву реального принтера бере на себе).
+
+---
+
 ## :material-network-outline: PASV Address (NAT / Docker bridge)
 
 FTPS використовує команду PASV — сервер каже клієнту, на який IP передзвонити для data-каналу. Коли BamDude працює в Docker bridge мережі (або за будь-яким NAT), PASV-відповідь інакше анонсувала б **внутрішній IP контейнера** — слайсери в LAN не зможуть до нього достукатися, і data-канал зафейлиться посеред handshake-у.

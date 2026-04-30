@@ -116,6 +116,19 @@ graph LR
 
 ---
 
+## :material-filter-variant: Фільтри Друкувалось / Не друкувалось
+
+Заголовок Archives-сторінки несе два single-click чіпи — **Printed** і **Not Printed** — що швидко ріжуть список за наявністю успішної історії друку:
+
+| Чіп | Показує | Корисно для |
+|---|---|---|
+| **Printed** | Архіви, чий `library_file_id` має хоча б один `completed`-архів (тобто файл хоч раз успішно надрукований). | Кандидати на reprint — ти вже валідував слайс. |
+| **Not Printed** | Протилежне — файли без жодного `completed`-архіву. | "Що ще лишилося" з multi-day батча, або library-імпорти, до яких руки не дійшли. |
+
+Чіпи взаємовиключні (off один — увімкнеться інший) і стекуються з freeform-search box і status-фільтрами зверху. Not Printed природньо паруються з тоглером **Include never-printed** в [Library Trash auto-purge](library-trash.uk.md) — спочатку Not Printed on, щоб бачити, що auto-purge ось-ось забере.
+
+---
+
 ## :material-content-copy: Дедуплікація та ланцюжок походження
 
 BamDude дедуплікує архіви за **source** content-хешем, а не просто за байтами на диску.

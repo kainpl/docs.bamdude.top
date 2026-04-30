@@ -91,6 +91,24 @@ Camera endpoints (live stream, snapshot, cover thumbnail, plate-detection refere
 
 Tokens are stored in `auth_ephemeral_tokens` so they survive backend restarts and work behind multi-worker deploys. Operators don't need to do anything -- this is invisible plumbing -- but the implication is that copying a camera URL out of the browser only works for the lifetime of the embedded token.
 
+### Long-lived tokens for Home Assistant / Frigate / kiosks
+
+The 60-min UI-side token is wrong shape for a wall-mounted kiosk dashboard, a Home Assistant camera entity, or a Frigate front-end that re-fetches the same URL for months. BamDude can mint **long-lived stream tokens** for those use cases:
+
+1. **Settings → Camera → Long-lived tokens → + New token**.
+2. Pick the printer(s) it covers (one token can authorise multiple cameras), an expiry (months / years / never), and an optional label (e.g. `frigate-living-room`).
+3. The page shows the token **once** — copy it into your HA / Frigate / kiosk config. It won't be shown again.
+4. The token grants only the camera endpoints (`/stream`, `/snapshot`, `/cover`) for the chosen printers — no other API surface.
+
+| Property | Detail |
+|---|---|
+| Storage | Same `auth_ephemeral_tokens` table, with `token_type='camera_longlived'` so the regular 60-min sweeper leaves them alone. |
+| Revocation | Delete the row from the long-lived tokens table — effective on the next request. There's no caching layer to wait out. |
+| Audit | Each token records last-used-at + last-used-IP so you can see whether a kiosk is actually consuming it. Stale tokens (no use in 30 days) get a yellow warning chip. |
+| Limit | Soft cap of 50 active tokens per install — bumping past this is admin-only via direct DB access (`auth_ephemeral_tokens` is intentionally low-friction by design). |
+
+URL shape: `/api/v1/printers/{id}/stream?token={long_lived_token}` — same query-param contract as the short-lived flow, so HA's generic camera platform / Frigate's `mjpeg_streams` / a `<img src>` in a kiosk dashboard all work without further plumbing.
+
 ---
 
 ## :material-image-frame: Cover Thumbnails

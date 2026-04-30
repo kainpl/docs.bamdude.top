@@ -187,6 +187,27 @@ docker compose up -d
 
 ---
 
+## :material-tag-text-outline: Trace IDs in logs
+
+Every HTTP request through BamDude gets a unique trace ID. The same ID is:
+
+- **Echoed in the response** as the `X-Trace-Id` header (so a curl / browser DevTools / log dump can grab it).
+- **Attached to every log line** that ran during that request — `bamdude.log`, plus child loggers (`bambu_mqtt`, `print_scheduler`, `background_dispatch`, `archive_download_retry`, …).
+- **Survived across async hops** — if a request kicks off a fire-and-forget task (e.g. archive 3MF retry-download), that task's logs still carry the originating request's trace ID.
+
+When reporting an issue, the easiest way to give us the right slice of the log:
+
+1. Reproduce the problem in your browser. **DevTools → Network → click the failing request → Response Headers → copy `X-Trace-Id`**.
+2. Find that ID in `bamdude.log`:
+   ```bash
+   grep <trace-id> logs/bamdude.log
+   ```
+3. Paste the matched lines into the GitHub issue. That cluster correlates HTTP entry → service work → MQTT / scheduler side effects all in one go, instead of "guess what was happening at 14:32:17 across N components".
+
+The format is short (8 hex chars, `[trace=abc12345]` in log lines) so log lines stay readable. Trace IDs aren't stable across restarts — they're per-request, not session.
+
+---
+
 ## :material-bug: Getting Help
 
 When reporting issues, include:

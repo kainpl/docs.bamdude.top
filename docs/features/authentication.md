@@ -210,6 +210,22 @@ These are the same knobs every Python HTTPS client respects — `httpx` (used fo
 !!! warning "Don't auto-link by email lightly"
     Auto-create + auto-link to existing local accounts means a compromised IdP can hijack any local user with a matching email. Leave both off unless you trust the provider as much as your local password hashes.
 
+### Microsoft Azure / Entra ID — custom email claim
+
+Microsoft Entra ID (formerly Azure AD) doesn't ship the standard `email` claim or the `email_verified` flag — it puts the user identifier into `preferred_username` or `upn` and assumes verification on the IdP side. BamDude has two extra fields per provider for that case:
+
+| Field | Effect |
+|---|---|
+| **Email claim** | Which OIDC claim BamDude reads as the user's email. Default `email`. For Entra ID set to `preferred_username` or `upn`. Whitelist regex `[a-zA-Z][a-zA-Z0-9_\-]{0,63}` blocks log-injection / dynamic-claims-lookup attack vectors. |
+| **Require email_verified** | Default ON (refuses to log a user in unless the IdP marks their email verified). Entra ID never sends this flag, so for Entra ID flip it OFF. |
+
+There's a hard guard against the unsafe combo: `auto_link_existing_accounts=true` AND `email_claim='email'` AND `require_email_verified=false` is rejected at save time (and as a DB-level CHECK constraint on Postgres) — without that gate, any IdP that lets users self-register with an arbitrary email could silently hijack existing local accounts. Custom email claims (`preferred_username`, `upn`, etc.) bypass the verified-check requirement automatically because the claim semantics are different.
+
+The form's "Require email verified" toggle is auto-disabled (greyed out) when `email_claim != "email"` — there's no `email_verified` to consult on a custom claim. The bonus shape control is two `<datalist>` autocomplete suggestions: `email` / `preferred_username` / `upn` so you don't have to type it.
+
+!!! tip "Tested IdPs"
+    BamDude's OIDC flow has been validated against PocketID, Authentik, Keycloak, Authelia, Google, and Microsoft Entra ID (Azure AD). Other standards-compliant providers should work — let us know if you hit edge cases.
+
 ---
 
 ## :material-speedometer: Rate Limiting
