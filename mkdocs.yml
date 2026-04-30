@@ -83,6 +83,10 @@ plugins:
             Print Archive: Архів друку
             Print Archiving: Архівування друку
             File Manager: Файловий менеджер
+            "Library & Archive Trash": "Корзини бібліотеки і архіву"
+            "Library & Slicing": "Бібліотека і слайсинг"
+            "MakerWorld import": "Імпорт з MakerWorld"
+            "Slicer API": "Slicer API"
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
             Virtual Printer: Віртуальний принтер
@@ -195,6 +199,10 @@ nav:
     - Print Archive:
       - Print Archiving: features/archiving.md
       - File Manager: features/file-manager.md
+      - Library & Archive Trash: features/library-trash.md
+    - Library & Slicing:
+      - MakerWorld import: features/makerworld.md
+      - Slicer API: features/slicer-api.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md
       - Virtual Printer: features/virtual-printer.md
