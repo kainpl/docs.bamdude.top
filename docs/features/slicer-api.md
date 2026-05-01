@@ -107,7 +107,7 @@ You can also override the env-var defaults that BamDude reads at startup: `SLICE
 | Setting | What it does |
 |---------|--------------|
 | **Preferred slicer** | `OrcaSlicer` or `Bambu Studio`. Default sidecar for server-side slicing and the desktop "Open in Slicer" URI on archives that aren't sliced server-side. When both sidecars are configured *and* reachable, the Slice modal also shows a per-job "Slice with" radio so you can override this default per source file (the choice is remembered per file in the browser's localStorage). |
-| **Enable server-side slicing** (`use_slicer_api`) | Master toggle. When off, the Slice button disappears from File Manager and Archives — slicing falls back to opening the source in the user's local desktop slicer via URI scheme. |
+| **Enable server-side slicing** (`use_slicer_api`) | Master toggle. When off, the Slice button disappears from the File Manager — slicing falls back to opening the source in the user's local desktop slicer via URI scheme. |
 | **OrcaSlicer API URL** (`orcaslicer_api_url`) | URL of the OrcaSlicer sidecar — e.g. `http://localhost:3003` for the default compose recipe. Empty = use `SLICER_API_URL` env default. |
 | **BambuStudio API URL** (`bambu_studio_api_url`) | URL of the BambuStudio sidecar — e.g. `http://localhost:3001`. Empty = use `BAMBU_STUDIO_API_URL` env default. |
 
@@ -131,15 +131,13 @@ For multi-plate 3MFs the modal asks which plate(s) before opening (single-plate 
 
 A persistent toast in the bottom-right tracks the job: live progress percent + elapsed time, replaced by a transient success / error toast on completion. The sliced output lands in the same library folder with `.gcode.3mf` extension and `source_type='sliced'` provenance — the original file is untouched.
 
-From **Archives**: action menu on an archive whose source is an STL / unsliced 3MF → **Slice**. Same modal; sliced output is saved as a fresh archive (with " (re-sliced)" appended to the print name) inheriting printer / project / makerworld metadata from the source.
-
 ---
 
 ## :material-shield-key: Permissions
 
 | Permission | Grants |
 |------------|--------|
-| `library:upload` | Trigger a slice from File Manager **and** from Archives (the sliced output is a fresh library upload or archive row, so the same permission gates both). |
+| `library:upload` | Trigger a slice from the File Manager (the sliced output is a fresh library upload). |
 | `library:read` | Poll the job-tracker toast (`/api/v1/slice-jobs/{id}`) and the filament-discovery preview slice progress (`/api/v1/slicer/preview-progress/{id}`). |
 | `cloud:auth` | Required to fetch the `cloud` preset tier — without it, the modal shows only `local` + `standard` tiers. |
 

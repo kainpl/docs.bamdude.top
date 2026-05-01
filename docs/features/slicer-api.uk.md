@@ -107,7 +107,7 @@ docker compose --profile all    up -d   # обидва
 | Опція | Що робить |
 |-------|-----------|
 | **Preferred slicer** | `OrcaSlicer` чи `Bambu Studio`. Sidecar за замовчуванням для server-side слайсингу і desktop "Open in Slicer" URI на архівах, що не слайсилися server-side. Коли обидва sidecar'и налаштовані *і* доступні, Slice-modal показує per-job радіо "Slice with" для перевизначення цього default'а per source file (вибір запам'ятовується для кожного файлу в browser localStorage). |
-| **Enable server-side slicing** (`use_slicer_api`) | Master-тоглер. Коли off — кнопка Slice пропадає з File Manager і Archives, слайсинг падає на open-in-desktop-slicer через URI scheme. |
+| **Enable server-side slicing** (`use_slicer_api`) | Master-тоглер. Коли off — кнопка Slice пропадає з File Manager, слайсинг падає на open-in-desktop-slicer через URI scheme. |
 | **OrcaSlicer API URL** (`orcaslicer_api_url`) | URL OrcaSlicer-sidecar'а — наприклад `http://localhost:3003` для дефолтного compose-рецепту. Порожнє = використати `SLICER_API_URL` env-дефолт. |
 | **BambuStudio API URL** (`bambu_studio_api_url`) | URL BambuStudio-sidecar'а — наприклад `http://localhost:3001`. Порожнє = `BAMBU_STUDIO_API_URL` env-дефолт. |
 
@@ -131,15 +131,13 @@ Preset-tiers (cloud / local / standard) backend об'єднує автомати
 
 Persistent-toast у нижньому правому кутку трекає job: live progress percent + elapsed time, заміняється transient success/error toast при завершенні. Sliced-output лягає в ту ж папку бібліотеки як `.gcode.3mf` з `source_type='sliced'` provenance — оригінал не чіпається.
 
-З **Archives**: меню дій на архіві з джерелом STL чи unsliced-3MF → **Slice**. Та сама modal; output зберігається як свіжий архів (з суфіксом " (re-sliced)" у print name), успадковуючи printer / project / makerworld metadata з джерела.
-
 ---
 
 ## :material-shield-key: Дозволи
 
 | Permission | Що дозволяє |
 |------------|--------------|
-| `library:upload` | Тригерити слайсинг із File Manager **і** з Archives (sliced-output — це свіжий library-upload або archive-row, тож одна permission гейтить обидва шляхи). |
+| `library:upload` | Тригерити слайсинг із File Manager (sliced-output — це свіжий library-upload). |
 | `library:read` | Поллити job-tracker toast (`/api/v1/slice-jobs/{id}`) і filament-discovery preview-slice progress (`/api/v1/slicer/preview-progress/{id}`). |
 | `cloud:auth` | Потрібно щоб тягнути `cloud` preset-tier — без неї modal показує тільки `local` + `standard` tier'и. |
 
