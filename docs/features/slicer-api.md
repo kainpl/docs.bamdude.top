@@ -64,6 +64,36 @@ docker compose --profile all    up -d   # both
 
 A bare `docker compose up -d` (no profile) starts nothing — you must include `--profile orca`, `--profile bambu`, or `--profile all`. Then in BamDude → **Settings → Profiles → Slicer API**, fill the URL field for the slicer(s) you started (`http://localhost:3003` for Orca, `http://localhost:3001` for BambuStudio).
 
+!!! warning "Docker Desktop 4.71 first-build workaround"
+    Docker Desktop 4.71 (engine 29.4.1 / compose v5.1.x / buildx 0.33.x-desktop) ships a broken `buildx bake` compose-bridge: `docker compose build` dies immediately with `failed to execute bake: exit status 1` and no further detail, regardless of profile shape. `COMPOSE_BAKE=false` does NOT disable it on this version.
+
+    **Workaround for the first build** — force the legacy classic builder; the image is then cached and `compose up -d` reuses it:
+
+    ```bash
+    # bash / zsh
+    DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 \
+      docker compose --profile all build
+    docker compose --profile all up -d
+    ```
+
+    ```powershell
+    # PowerShell
+    $env:DOCKER_BUILDKIT = "0"; $env:COMPOSE_DOCKER_CLI_BUILD = "0"
+    docker compose --profile all build
+    $env:DOCKER_BUILDKIT = $null; $env:COMPOSE_DOCKER_CLI_BUILD = $null
+    docker compose --profile all up -d
+    ```
+
+    Or use buildx directly (modern BuildKit, parallel-friendly, faster):
+
+    ```bash
+    docker buildx bake -f docker-compose.yml orca-slicer-api
+    docker buildx bake -f docker-compose.yml bambu-studio-api
+    docker compose --profile all up -d
+    ```
+
+    Older Docker Desktop releases (4.70 and below) and Docker CE on Linux are unaffected — no env vars needed.
+
 ### Running the sidecar(s) on a different host
 
 If your BamDude server can't run the sidecar containers itself (resource limits, no Docker available, etc.), put the sidecar(s) on another host and point BamDude at them via URL. Use the same `slicer-api/docker-compose.yml` from the BamDude repo on the sidecar host, then in BamDude's `Settings → Profiles → Slicer API` set the URL to `http://<sidecar-host>:3003` / `:3001` instead of `localhost`. The sidecar exposes no auth — keep it on a trusted network (LAN, Tailscale, WireGuard).

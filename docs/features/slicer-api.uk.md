@@ -64,6 +64,36 @@ docker compose --profile all    up -d   # обидва
 
 Голий `docker compose up -d` (без profile) не запустить нічого — треба явно вказати `--profile orca`, `--profile bambu` чи `--profile all`. Потім у BamDude → **Settings → Profiles → Slicer API** заповни URL для слайсерів, які запустив (`http://localhost:3003` для Orca, `http://localhost:3001` для BambuStudio).
 
+!!! warning "Docker Desktop 4.71 — обхід для першого білда"
+    Docker Desktop 4.71 (engine 29.4.1 / compose v5.1.x / buildx 0.33.x-desktop) має зламаний `buildx bake` compose-bridge: `docker compose build` миттєво падає з `failed to execute bake: exit status 1` без жодних деталей, незалежно від форми profiles. `COMPOSE_BAKE=false` НЕ вимикає bake на цій версії.
+
+    **Обхід для першого білда** — форснути legacy classic builder; image тоді кешується і `compose up -d` перевикористовує його:
+
+    ```bash
+    # bash / zsh
+    DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 \
+      docker compose --profile all build
+    docker compose --profile all up -d
+    ```
+
+    ```powershell
+    # PowerShell
+    $env:DOCKER_BUILDKIT = "0"; $env:COMPOSE_DOCKER_CLI_BUILD = "0"
+    docker compose --profile all build
+    $env:DOCKER_BUILDKIT = $null; $env:COMPOSE_DOCKER_CLI_BUILD = $null
+    docker compose --profile all up -d
+    ```
+
+    Або викликай buildx напряму (modern BuildKit, паралельно, швидше):
+
+    ```bash
+    docker buildx bake -f docker-compose.yml orca-slicer-api
+    docker buildx bake -f docker-compose.yml bambu-studio-api
+    docker compose --profile all up -d
+    ```
+
+    Старіші релізи Docker Desktop (4.70 і нижче) та Docker CE на Linux баг не зачепив — env vars не потрібні.
+
 ### Запустити sidecar(и) на іншій машині
 
 Якщо BamDude-сервер сам не може крутити sidecar-контейнери (resource-ліміти, немає Docker, тощо) — постав sidecar(и) на окремій машині й вкажи їхні URL у BamDude. Той самий `slicer-api/docker-compose.yml` з репо BamDude використовуй на хості sidecar'ів, потім у `Settings → Profiles → Slicer API` встанови URL'и `http://<sidecar-host>:3003` / `:3001` замість `localhost`. Sidecar не має auth — тримай у trusted network (LAN, Tailscale, WireGuard).
