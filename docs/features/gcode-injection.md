@@ -88,12 +88,10 @@ There's no separate `printers:edit_gcode_snippets` permission — admin gate via
 - **Marker missing** — if a 3MF doesn't carry `; MACHINE_START_GCODE_END` (rare; some old slicers, custom files), the start snippet falls through to the file head as a best-effort. End snippet always lands cleanly.
 - **Multi-plate** — every plate gets the same snippets applied independently. Per-plate snippets aren't supported (would need a UI per plate × model and clutters the editor for negligible gain).
 - **Reprint of an injected archive** — the archive stores the injected output, so reprinting from `Archives → Reprint` reuses the injected file as-is (no re-injection). To re-inject with a fresh snippet, dispatch from the source library file instead.
-- **Slice-time injection** — the [Slicer API](slicer-api.md) sidecar can apply the same snippets at slice time when the source is STL. Toggle is the same.
 
 ---
 
 ## :material-link-variant: Related
 
 - [Macros](macros.md) — server-side MQTT counterpart with a comparison table.
-- [Slicer API](slicer-api.md) — slice-time injection for STL → 3MF.
 - [Settings reference](../reference/settings.md) — `gcode_snippets` setting JSON shape.
