@@ -85,6 +85,16 @@ G-code макроси, що активуються подіями друку (с
 Багатопровайдерні сповіщення через Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant та власні webhook. Тихі години й щоденний digest на кожен провайдер окремо.
 </div>
 
+<div class="feature-card" markdown>
+### :material-cog-transfer: Server-side нарізання
+OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсера на кожен запит із live-індикаторами доступності, override типу столу, inline-вибір плити для мульти-плейт-файлів, owner-фільтр на пресетах.
+</div>
+
+<div class="feature-card" markdown>
+### :material-folder-multiple: File Manager + бібліотека
+Бібліотека 3MF / G-code / STL / STEP із композитними тегами-чіпами (format / readiness / modifiers / provenance), чіп-фільтром, per-plate-галереєю, 3D-/G-code-в'ювером з вайрфреймом друкарського об'єму.
+</div>
+
 </div>
 
 [Усі можливості :material-arrow-right:](features/index.uk.md){ .md-button }

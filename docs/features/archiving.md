@@ -244,7 +244,9 @@ View models directly in the browser via Three.js:
 - **Rotate** — click and drag.
 - **Zoom** — scroll wheel.
 - **Pan** — right-click and drag.
-- **Plate selector** — for multi-plate 3MF files.
+- **Build-volume wireframe** — translucent box matching the printer's bed; pulled from the 3MF's `printer_settings` so an A1-mini archive renders against a 180×180 box, not a hardcoded 256³.
+
+For multi-plate prints the archive remembers which plate of the source 3MF was actually printed — the 3D preview, G-code preview, thumbnail, and per-plate slicer metadata (print time, filament weight, layers, printable objects) all reflect that plate. **There is no plate picker on archives** — the archive is a record of one specific print, not a browser. Migration **m038** populates `plate_index` on historical rows and re-parses 3MFs where `plate_index > 1` so older multi-plate archives gain the same correctness.
 
 The preview reads from the local archive copy — if the 3MF isn't on disk (fallback or cleaned), the preview is unavailable until the file is recovered.
 

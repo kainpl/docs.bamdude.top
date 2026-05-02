@@ -125,9 +125,21 @@ The Slice modal opens with three preset dropdowns:
 - **Process profile** — same three tiers.
 - **Filament profile(s)** — one dropdown per AMS slot the picked plate uses. The modal pre-picks the best match per slot using the source 3MF's filament metadata (type + colour score) so a single click on **Slice** usually does the right thing for multi-color jobs.
 
-A **"Slice with" radio** sits above the dropdowns when both OrcaSlicer and BambuStudio sidecars are reachable — pick which slicer should run *this* job. First-time default is the global *Preferred slicer* setting; subsequent opens of the same source file default to your last pick. When only one sidecar is reachable the radio stays hidden (there's nothing to pick) and the reachable one is used regardless of the global default.
+A **slicer picker** sits at the top of the Slice modal — two card-buttons (mirroring the "Filament Tracking" pattern in Settings) with their own live health badges. Auto-locks to the only-healthy sidecar when one is down; you pick freely when both are reachable; offline cards are disabled. First-time default is the global *Preferred slicer* setting; subsequent opens of the same source file default to your last pick (per-file localStorage).
 
-For multi-plate 3MFs the modal asks which plate(s) before opening (single-plate / non-3MF skips the picker). A **printer-mismatch warning** appears when the source 3MF was sliced for a different printer model than the picked profile — the Slice button stays disabled until you switch profiles, since the slicer CLI silently falls back to the source's embedded settings instead of raising an error.
+A **bed-plate override** picker (5 options: Cool / Engineering / High Temp / Textured PEI / SuperTack) wires through to `--curr-bed-type` on the CLI. Default `Textured PEI Plate` matches the factory plate on the modern Bambu lineup; A1 / A1-mini owners flip to SuperTack once and the choice persists in localStorage. Sliced 3MFs from Bambu Studio still honour their embedded per-plate `bed_type` (BamDude forwards the original bytes) — the override only kicks in for sources without one.
+
+An **owner filter** above the preset dropdowns (3-state segmented control: All / My presets / Built-in) classifies cloud presets as custom-vs-builtin via the same `setting_id` regex Profiles uses (`^(P[FPM]US|PF\d|PP\d)`); local imports are always custom, standard bundles are always built-in. Persisted in localStorage. Switching the filter clears any current dropdown selection that no longer matches so a hidden (filtered-out) preset can't silently submit at slice time.
+
+For multi-plate 3MFs the modal embeds an **inline plate selector** at the top of its body, mirroring the Print modal's plate picker — a vertical paginator + details card. Plate 1 auto-selects on load so the filament-requirements + presets queries flow without blocking on user interaction; clicking a different plate re-keys those queries. A **printer-mismatch warning** appears when the source 3MF was sliced for a different printer model than the picked profile — the Slice button stays disabled until you switch profiles, since the slicer CLI silently falls back to the source's embedded settings instead of raising an error.
+
+### Reachability indicators
+
+Sidecar health surfaces in three places, sharing one React Query cache + the `GET /api/v1/slicer/health/{slicer}` endpoint (30 s in-process cache):
+
+- **Settings → Profiles → Slicer API** — small inline status next to each URL field (green check + version, or red X with error).
+- **Slice modal** — the picker cards each carry a live health badge (see above).
+- **System page → Slicer Sidecars** section — version + reachability + URL for each sidecar (auto-refresh 30 s alongside the rest of system info).
 
 A persistent toast in the bottom-right tracks the job: live progress percent + elapsed time, replaced by a transient success / error toast on completion. The sliced output lands in the same library folder with `.gcode.3mf` extension and `source_type='sliced'` provenance — the original file is untouched.
 

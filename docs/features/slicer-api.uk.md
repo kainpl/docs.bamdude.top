@@ -125,9 +125,21 @@ Preset-tiers (cloud / local / standard) backend об'єднує автомати
 - **Process profile** — ті самі три tier'и.
 - **Filament profile(s)** — один dropdown на AMS-слот, який використовує обрана плита. Modal pre-pick'ає найкращий match per-slot використовуючи filament-metadata з вихідного 3MF (type + colour score), щоб один клік **Slice** робив правильне для multi-color jobs.
 
-Над dropdown'ами з'являється радіо **"Slice with"**, коли обидва sidecar'и (OrcaSlicer і BambuStudio) доступні — обери, який слайсер запустити саме для *цього* job'а. Перший раз default — глобальний *Preferred slicer*; наступні відкриття того самого source file'а пам'ятають твій останній вибір. Коли доступний лише один sidecar — радіо ховається (вибирати нема з чого), і використовується саме той, що працює, незалежно від глобального default.
+**Slicer-picker** сидить угорі Slice-діалогу — дві картки-кнопки (дзеркалять "Filament Tracking"-патерн з Settings) з власними live-індикаторами здоров'я. Авто-локається на єдиний здоровий sidecar, коли інший лежить; ти вибираєш вільно, коли обидва доступні; offline-картки disabled. Перший раз default — глобальний *Preferred slicer*; наступні відкриття того самого source file пам'ятають твій останній вибір (per-file localStorage).
 
-Для multi-plate 3MF modal спершу питає, яку плиту/плити (single-plate / non-3MF — пропускає picker). **Printer-mismatch warning** з'являється коли вихідний 3MF слайсився під іншу модель принтера ніж обраний профіль — кнопка Slice залишається disabled поки не зміниш профіль, бо CLI слайсера тихо falls-back на embedded-settings джерела замість видавати помилку.
+**Override типу столу** (5 варіантів: Cool / Engineering / High Temp / Textured PEI / SuperTack) пробрасується в `--curr-bed-type` на CLI. Default `Textured PEI Plate` відповідає заводській плиті на сучасній лінійці Bambu; власники A1 / A1-mini переключаються на SuperTack один раз і вибір зберігається в localStorage. Сліцені 3MF із Bambu Studio все ще шанують свій вбудований per-plate `bed_type` (BamDude форвардить оригінальні байти) — override спрацьовує тільки для джерел без нього.
+
+**Owner-фільтр** над пресет-dropdown'ами (3-станковий segmented control: All / My presets / Built-in) класифікує cloud-пресети як custom-vs-builtin за тим самим `setting_id`-regex'ом, що й сторінка Profiles (`^(P[FPM]US|PF\d|PP\d)`); local-імпорти завжди custom, standard-бандли завжди built-in. Зберігається в localStorage. Перемикання фільтра скидає поточний вибір у dropdown'ах, що тепер не матчиться, щоб прихований (відфільтрований) пресет не міг тихо засабмітити при slice.
+
+Для multi-plate 3MF modal вбудовує **inline plate-selector** угорі body, дзеркаля picker плит з Print modal — вертикальний paginator + details-картка. Плита 1 авто-вибирається на load, щоб filament-requirements + presets-запити йшли без блокування на user-interaction; клік по іншій плиті пере-ключає ці запити. **Printer-mismatch warning** з'являється коли вихідний 3MF слайсився під іншу модель принтера ніж обраний профіль — кнопка Slice залишається disabled поки не зміниш профіль, бо CLI слайсера тихо falls-back на embedded-settings джерела замість видавати помилку.
+
+### Індикатори доступності
+
+Здоров'я sidecar'ів виходить на трьох поверхнях, всі шерять один React-Query-кеш + ендпоінт `GET /api/v1/slicer/health/{slicer}` (30 с in-process cache):
+
+- **Settings → Profiles → Slicer API** — невеликий inline-статус біля кожного URL-поля (зелений чек + версія, або червоний хрестик з помилкою).
+- **Slice modal** — кожна картка picker'а несе live-індикатор здоров'я (див. вище).
+- **System page → Slicer Sidecars** секція — версія + доступність + URL кожного sidecar (auto-refresh 30 с разом із рештою system info).
 
 Persistent-toast у нижньому правому кутку трекає job: live progress percent + elapsed time, заміняється transient success/error toast при завершенні. Sliced-output лягає в ту ж папку бібліотеки як `.gcode.3mf` з `source_type='sliced'` provenance — оригінал не чіпається.
 
