@@ -82,8 +82,8 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     | Field | Description |
     |-------|-------------|
     | `content_hash` | SHA256 of the bytes actually stored in the archive directory. |
-    | `source_content_hash` | SHA256 of the **unpatched** source. NULL when this archive *is* the source (no patches applied). |
-    | `applied_patches` | JSON list of patch identifiers the dispatch pipeline applied before upload, e.g. `["mesh_mode_fast_check_off"]`. Informational; reprint-reapply semantics aren't wired yet. |
+    | `source_content_hash` | SHA256 of the chain-root (unpatched) source. **Always populated** since 0.4.2: when no chain ancestor exists, this archive becomes the chain root and the column is seeded with its own `content_hash`. Patched variants of a library file inherit this from the library row's hash. Migration **m039** backfills legacy NULLs to the same invariant. |
+    | `applied_patches` | JSON list of patch identifiers the dispatch pipeline applied before upload, e.g. `["mesh_mode_fast_check_off"]`. Informational only — never used to infer disk-file state. |
 
 === "Skip-objects metadata"
 
@@ -138,14 +138,23 @@ The reason: the dispatch pipeline can patch a 3MF before upload — for example,
 `source_content_hash` solves this:
 
 - When BamDude dispatches a patched print, it stores the SHA256 of the **unpatched** source in `source_content_hash` and the SHA256 of the bytes that landed on the SD in `content_hash`.
-- Dedup queries use `COALESCE(source_content_hash, content_hash)` — patched variants collapse against their original; external prints with no source still dedup by raw content hash (their behaviour is unchanged).
+- Dedup queries use `effective_hash = COALESCE(source_content_hash, content_hash)`. Since 0.4.2 every new archive populates `source_content_hash` (chain root or self-seed), so `effective_hash` reads `source_content_hash` directly for new rows; `COALESCE` stays as defence-in-depth.
 - Reprinting from an existing archive copies the file again into a fresh archive directory — new `content_hash`, but the same `source_content_hash`, so reprint history stays linked to the original design.
-- External prints (started on the printer screen / cloud / manual SD start) get a one-SELECT lookup at archive creation: if any prior archive on this printer matches by `content_hash` or `source_content_hash`, the chain is inherited.
+- External prints (started on the printer screen / cloud / manual SD start) get a one-SELECT lookup at archive creation: if any prior archive on **any** printer matches by `content_hash` or `source_content_hash`, the chain is inherited (cross-printer in 0.4.2 — was per-printer before).
 
-The Archives page exposes a "duplicates" filter that groups rows by this effective hash. Stat queries and library-file print counts use the same `COALESCE` rule.
+The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "оригінальний друк" / "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Two consequences worth knowing:
 
-!!! info "Migration m009"
-    `source_content_hash` and `applied_patches` were added in m009. Old rows stay NULL — `COALESCE` falls back to `content_hash` so behaviour for pre-migration archives is unchanged.
+- A printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are now grouped together in the badge.
+- Two archives that share the same on-disk 3MF bytes (cross-printer file dedup, see below) are still separate rows with separate `printer_id`s — the dedup is purely on storage layout.
+
+### Cross-printer file-on-disk dedup *(0.4.2)*
+
+When BamDude archives a print whose `content_hash` matches an existing archive on **any** printer (was: same printer only), the new archive row reuses the existing on-disk path instead of writing another copy. Net effect: printing the same file on N printers stores one copy on disk + N archive rows. `delete_archive` ref-counts shared `file_path`s and only removes bytes when the last referencing row is hard-deleted.
+
+Dedup is on **strict `content_hash` match**, not the chain-coalesce `effective_hash` — different patched variants of the same source share `effective_hash` for grouping but live as separate files on disk; aliasing between them would point one row's `content_hash` at the wrong bytes and break later `ZipFile` reads. Same dedup also runs in `attach_3mf_to_archive` (background download-retry path), so a fallback archive whose 3MF lands later picks up the existing copy if another printer already has it.
+
+!!! info "Migrations m009 + m039"
+    `source_content_hash` and `applied_patches` were added in m009. Migration **m039** (0.4.2) backfills `source_content_hash = content_hash` for legacy NULL rows so the always-populated invariant holds across upgrade.
 
 ---
 
@@ -188,29 +197,41 @@ When recovery succeeds, `ArchiveService.attach_3mf_to_archive()` fills the exist
 
 ---
 
-## :material-broom: 3MF Auto-Cleanup *(0.4.1)*
+## :material-broom: 3MF Auto-Cleanup *(0.4.1, drift-mode in 0.4.2)*
 
 The archive directory is the largest single chunk of disk BamDude owns — every print copies its 3MF in. The auto-cleanup feature lets you set a retention window: 3MF files belonging to designs that haven't been printed for N days are deleted, but the archive rows themselves stay so the history (thumbnails, costs, notes, energy data, project links) is preserved.
 
 ### Configuring it
 
-**Settings → Print → Archive Settings → "Auto-cleanup of stored 3MF files"**
+**Settings → Printing → File Manager → "Auto-cleanup of stored 3MF files"**
 
-- **Toggle** — disabled by default.
+- **Toggle** — disabled by default. Gates the auto-tick only; manual runs (see below) work whether the toggle is on or off.
 - **Retention input** — days, minimum 1, default 30.
 - **Live preview** — shows what would be cleaned right now: `X archives in Y groups, Z MB`.
-- **Last / next run status** — when the daily sweep last ran and when it'll run next.
-- **Run cleanup now** — button with confirmation, honours the same skip rules as the daily sweep.
+- **Last / Next run cards** — extracted into a shared `<LastNextRunCards>` component reused by the library auto-purge. Shows "cleared 5 archive(s), 240 MB freed, 4 hours ago" + "in ~20 hours" so admins can see the schedule without grepping logs. After a server restart the in-memory `archives_cleared` count is lost; the card shows "count was lost on restart — see logs" instead of a misleading zero (the persistent `archive_3mf_cleanup_last_run` timestamp survives, only the count goes).
+
+### Manual run — Archives page header *(0.4.2)*
+
+The Archives page header has a **Cleanup 3MFs** button that opens the same cleanup with a per-run override:
+
+- **Days input** — pre-seeded from the saved retention threshold, with a one-click "reset to {{days}}" link when you've dragged it. Range 1–3650.
+- **Live preview** — recomputes whenever the days input changes (debounced).
+- **Works with auto-mode disabled** — the toggle in Settings only gates the auto-tick. The manual dialog and the API endpoints behind it honour the configured retention threshold regardless. When auto is off the modal shows a small amber hint "Auto-mode is off — only manual runs will fire" but the Run button stays active.
+- **Manual runs reset the auto-cycle** — a successful manual run stamps `archive_3mf_cleanup_last_run` so the next auto-tick won't re-scan minutes later.
 
 ### How it decides what to delete
 
-Eligibility is evaluated **per design**, not per archive row. A "design" is a group of archives sharing the same `COALESCE(source_content_hash, content_hash)`.
+Eligibility is evaluated **per design**, not per archive row. A "design" is a group of archives sharing the same `effective_hash = COALESCE(source_content_hash, content_hash)`.
 
-- **The cutoff is the newest print across the whole group.** If you reprinted an old design 3 days ago, every archive copy of that design — even rows from months back — is kept. The intent is "old designs you've moved on from", not "old physical files".
+- **The cutoff is the newest activity across the whole group.** If you reprinted an old design 3 days ago, every archive copy of that design — even rows from months back — is kept. The intent is "old designs you've moved on from", not "old physical files".
 - **Skip rules — if any of these fire, the *whole group* is skipped:**
     - Any archive in the group is currently `status='printing'`.
     - An active queue item (pending / printing / paused) references any archive in the group.
-    - The originating `library_files` row still exists with a matching hash. The library is your deliberate source of truth — no need to wipe an archive copy when it's still on the source path.
+    - The originating `library_files` row still exists with a matching hash. The library is your deliberate source of truth — no need to wipe an archive copy when it's still on the source path. The skip-set is built from the always-populated `source_content_hash` (the canonical chain root), so a patched archive variant correctly maps back to the library row that produced it.
+
+### Plan-phase optimisation *(0.4.2)*
+
+The plan phase first does a SQL-side `GROUP BY effective_hash HAVING MAX(activity_ts) < cutoff` and only loads full rows for buckets that actually fell out of retention. Healthy installs (most groups still hot) skip the heavy row load entirely — significant win on installs with 10k+ archives where the previous "load every row, group in Python" path was a noticeable hot spot during the daily sweep.
 
 ### What happens during cleanup
 
@@ -224,16 +245,29 @@ For each eligible design group:
 
 Re-printing a cleaned archive shows "3MF unavailable" in the same way as a fallback archive that never had a file. Re-upload from your library or slicer to print it again.
 
-### Runs
+### Schedule *(drift-mode since 0.4.2)*
 
-- Daily sweep at server-local midnight.
-- The toggle is consulted on every tick so flipping it on/off takes effect without a restart.
+| Aspect | Behaviour |
+|--------|-----------|
+| Tick frequency | Every 15 min. Cheap — just consults settings + the persisted last-run timestamp. |
+| Auto-run window | Runs when `now - archive_3mf_cleanup_last_run >= 24 h`. The 24h check is a `last is not None` guard — first run after enabling the toggle fires immediately because no last-run exists yet. |
+| First-fire delay | The loop sleeps `TICK_INTERVAL_SECONDS` (15 min) **before** evaluating, so the first auto-run lands ~15 min after enabling the toggle (or ~15 min after server boot if the toggle was already on). Click "Run now" in Settings or in the Archives page modal to fire instantly — the manual run stamps the same timestamp and starts the 24h drift cycle. |
+| Manual-run effect | A successful manual run stamps the same timestamp, so it postpones the next auto-tick by 24 h instead of stacking. |
+| Toggle effect | Consulted every tick — flipping it on/off takes effect without a restart. Toggle gates the auto-tick only; manual runs always work. |
+| Timezone | Independent of server-local time (the previous "midnight cron" anchored to the OS clock). |
+
+The library auto-purge follows the same pattern (15 min tick, 24 h drift, manual runs reset). See [Library Trash](library-trash.md) for its analog of the Last/Next run cards.
 
 | Endpoint | Permission |
 |----------|------------|
 | `GET /archives/cleanup/status` | `archives:read` |
-| `GET /archives/cleanup/preview` | `archives:read` |
-| `POST /archives/cleanup/run` | `archives:delete_all` |
+| `GET /archives/cleanup/preview?days=N` | `archives:read` |
+| `POST /archives/cleanup/run?days=N` | `archives:delete_all` |
+
+The optional `?days=N` query param (1–3650, clamped) lets the manual dialog override the saved retention threshold without persisting it.
+
+!!! note "What changed in 0.4.2"
+    The upstream-ported per-row archive auto-purge (which moved old archive rows to trash on a separate 365-day timer) was **removed** in 0.4.2 — see [the trash docs](library-trash.md) for the rationale. The 3MF cleanup described above is the only auto-mechanism that touches archive storage now; manual delete → trash → restore → empty-trash is unchanged for "I want this row gone" workflows.
 
 ---
 

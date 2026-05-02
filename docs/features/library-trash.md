@@ -7,10 +7,13 @@ description: Soft-delete with restore, scheduled retention, and reference-aware 
 
 BamDude keeps two independent **trash bins** so deletions never silently destroy data:
 
-- **Library trash** — for files you uploaded or sliced into the library.
-- **Archive trash** — for print archive rows the auto-purge sweep moves out of active history.
+- **Library trash** — for files you uploaded or sliced into the library. Has an opt-in **auto-purge** that moves idle files into the bin on a 24h drift schedule.
+- **Archive trash** — for archive rows you (or "Empty trash" sweeps) explicitly delete. Manual-only since 0.4.2 — there is no longer a daily auto-purge that moves old archive rows here.
 
-Both bins have the same shape: soft-delete on user-initiated delete, configurable restore window, scheduled retention sweeper, and a chain-of-custody guard that refuses to hard-delete library bytes still referenced by an active archive.
+Both bins have the same shape: soft-delete on user-initiated delete, configurable restore window, scheduled retention sweeper that hard-deletes anything past the window, and a chain-of-custody guard that refuses to hard-delete library bytes still referenced by an active archive.
+
+!!! note "Why archive auto-purge was removed in 0.4.2"
+    The upstream-ported archive auto-purge ran daily and moved any archive row older than the configured threshold into the trash. In a BamDude post-b1 world this was both **redundant** (the per-design [3MF Auto-Cleanup](archiving.md#material-broom-3mf-auto-cleanup-041-drift-mode-in-042) already reclaims the disk for cold designs while preserving history) and **harmful** (per-row aging meant a model printed weekly for two years would lose its earliest ~70 archive rows individually, even though the design was still hot — silently destroying the print history BamDude exists to preserve). The manual delete → trash → restore → empty-trash flow stays intact for explicit row deletes; only the daily auto-purge sweep is gone.
 
 ---
 
@@ -49,24 +52,42 @@ The library trash sweeper applies the same gate at retention time: a row past it
 
 ## :material-cog-outline: Settings
 
-**Settings → Printing** has two clearly separated sub-sections:
+**Settings → Printing → File Manager** has two stacked sub-blocks (auto-purge first, trash retention at the bottom — same order as Archive Settings):
 
-### File Manager (library trash)
+### Library auto-purge
+
+The expanded controls collapse out of view when the toggle is off; flip it on to reveal them.
 
 | Setting | Default | What it controls |
 |---------|---------|------------------|
-| **Trash retention** | 30 days | How long a soft-deleted file sits in the bin before the sweeper hard-deletes it. Range 1–365 days. |
-| **Auto-purge enabled** | off | Master toggle for the scheduled purge that moves old library files into the trash. |
+| **Auto-purge enabled** | off | Master toggle for the drift-mode purge that moves idle library files into the trash. Gates the 15-min auto-tick only — manual `/library/purge` always works. |
 | **Auto-purge age** | 90 days | Files idle (no recent print, no recent edit) longer than this become eligible for auto-purge. |
 | **Include never-printed** | off | When on, never-printed files also count toward the auto-purge threshold. When off, only printed files get auto-purged — protects files you uploaded but haven't printed yet. |
+| **Last / Next run cards** *(0.4.2)* | — | Same shared `<LastNextRunCards>` component used by [archive 3MF cleanup](archiving.md#material-broom-3mf-auto-cleanup-041-drift-mode-in-042). Shows "moved 5 file(s) to trash, 4 hours ago" + "in ~20 hours". After a server restart the in-memory `moved` count is lost; the card reads "count was lost on restart — see logs" instead of `0` (the persistent `library_auto_purge_last_run` timestamp survives, only the count goes). |
 
-### Archive Settings (archive trash)
+### Library trash retention
 
 | Setting | Default | What it controls |
 |---------|---------|------------------|
-| **Trash retention** | 30 days | Same as above, for archives. |
-| **Auto-purge enabled** | off | Master toggle for archive auto-purge. |
-| **Auto-purge age** | 365 days | Archives older than this become eligible. Reprinting an archive refreshes its age clock — frequently-reprinted archives never auto-purge. |
+| **Trash retention** | 30 days | How long a soft-deleted file sits in the bin before the sweeper hard-deletes it. Range 1–365 days. The retention sweeper runs every 15 min — same cadence as before. |
+
+### Archive trash retention
+
+Auto-purge for archives was removed in 0.4.2 (see the note at the top of this page). Only the trash retention sweeper remains:
+
+| Setting | Default | What it controls |
+|---------|---------|------------------|
+| **Trash retention** | 30 days | How long a soft-deleted archive sits in the bin before the sweeper hard-deletes it. Range 1–365 days. The sweeper still runs every 15 min. |
+
+### Schedule shape (both bins)
+
+| Mechanism | Cadence | Resets |
+|-----------|---------|--------|
+| Library auto-purge | 15 min tick → run when `now - last_run >= 24 h` | Auto-tick + manual `/library/purge` both stamp `library_auto_purge_last_run` |
+| Archive 3MF cleanup | 15 min tick → run when `now - last_run >= 24 h` | Auto-tick + manual `/archives/cleanup/run` both stamp `archive_3mf_cleanup_last_run` |
+| Trash retention sweeper (both) | 15 min tick → hard-delete anything past the configured window | n/a |
+
+**First-fire delay (auto-purge / cleanup):** the loop sleeps 15 min **before** the first evaluation, so enabling the toggle now means the first auto-run lands ~15 min later (no last-run exists yet, so the 24h gate doesn't apply on the first tick). Click "Run now" to fire instantly — the manual run stamps the same `last_run` timestamp and starts the 24h drift cycle.
 
 ---
 
