@@ -46,6 +46,14 @@ Upload ZIP archives to extract contents into your library:
 
 ---
 
+## :material-cursor-default-click: Drag-and-drop upload
+
+Drop one or more files anywhere over the **files area** (the right-hand pane that holds the toolbar + the file grid/list) — the file upload modal opens with the dropped files preloaded. Same pipeline as the picker / in-modal drop zone, so the ZIP options stay visible and you can still cancel before the upload actually fires. The currently selected folder is preserved as the destination.
+
+The page-level drop is gated on the `library:upload` permission — viewers without that right see no overlay and a drop is a no-op.
+
+---
+
 ## :material-database: How files are stored
 
 Every file in the library is a row in the `library_files` table. The row carries:

@@ -92,7 +92,7 @@ OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсер
 
 <div class="feature-card" markdown>
 ### :material-folder-multiple: File Manager + бібліотека
-Бібліотека 3MF / G-code / STL / STEP із композитними тегами-чіпами (format / readiness / modifiers / provenance), чіп-фільтром, per-plate-галереєю, 3D-/G-code-в'ювером з вайрфреймом друкарського об'єму.
+Бібліотека 3MF / G-code / STL / STEP із композитними тегами-чіпами (format / readiness / modifiers / provenance), чіп-фільтром, per-plate-галереєю, 3D-/G-code-в'ювером з вайрфреймом друкарського об'єму. Page-level drag-and-drop у File Manager + на картках черг принтерів + у панелі Auto-Queue.
 </div>
 
 </div>

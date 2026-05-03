@@ -40,6 +40,14 @@ The print queue lets you:
 2. Click **Add to Queue** in toolbar
 3. Choose target printer
 
+### Drag-and-drop on a Queue Card
+
+On the **Queue** page each printer's queue card is a drop target. Drag a sliced file (`.gcode` or `.gcode.3mf`) onto the card → the file is uploaded into the library root, then the Add-to-Queue modal opens locked to that printer (no specific/auto toggle, no printer picker — the drop target *is* the choice). Configure plate / AMS / schedule and submit. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
+
+A `sliced_for_model` mismatch with the card's printer model aborts the upload before the modal opens — the transient library row is rolled back and a toast surfaces the conflict so you can re-slice for the right printer.
+
+Permission-gated on `queue:create` — viewers without that right see no overlay and a drop is a no-op.
+
 ### AMS Filament Mapping
 
 When adding multi-color prints, configure which AMS slot to use for each filament. Auto-matching by type and color is available, with manual override.

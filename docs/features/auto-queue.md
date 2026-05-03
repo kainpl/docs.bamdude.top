@@ -70,7 +70,7 @@ The router itself is **always on** — there's no master switch. If no auto-queu
 
 ## :material-plus-circle: Adding to the auto-queue
 
-There are three ways to drop something into the auto-queue:
+There are four ways to drop something into the auto-queue:
 
 ### 1. Print Modal — "Auto" toggle
 
@@ -90,7 +90,15 @@ Slicer "Send to Printer" → VP receives upload → archived → dropped into th
 
 This is the hands-off "slice and forget" path: the slicer doesn't know which printer will run the job, and neither does the operator until the router decides.
 
-### 3. REST API
+### 3. Drag-and-drop on the Auto-Queue panel
+
+Drop a sliced file (`.gcode` / `.gcode.3mf`) anywhere over the **Auto-Queue panel** at the top of the Queue page. The file is uploaded into the library root, then the same Print Modal opens locked to **Auto** mode (no specific/auto toggle, no printer picker — only the auto-mode constraints: target model / location / force-color). Submit and an `AutoQueueItem` is created.
+
+No model-compatibility check on drop (unlike the per-printer queue card drop) — the auto-router already filters candidates by `sliced_for_model` at dispatch time, so an incompatible file just sits in the panel with a `waiting_reason` until a matching printer appears or the operator cancels it.
+
+Permission-gated on `queue:create`. The panel renders even when empty so the drop target is permanently available; an empty-state hint nudges first-time operators.
+
+### 4. REST API
 
 ```http
 POST /api/v1/auto-queue/
@@ -107,7 +115,7 @@ Full schema in [API reference](../reference/api.md). Quantity > 1 creates N rows
 
 ## :material-monitor-dashboard: AutoQueuePanel on the Queue dashboard
 
-The Queue page now has an **Auto-Queue panel** above the per-printer queue cards. It lists pending auto-queue items with:
+The Queue page has an **Auto-Queue panel** above the per-printer queue cards. **Always rendered** so the drop-zone is permanently available; when there are no pending auto items the panel collapses to a one-line hint inviting a drag-drop. Otherwise it lists pending auto-queue items with:
 
 - thumbnail, name, plate, target model
 - estimated print time

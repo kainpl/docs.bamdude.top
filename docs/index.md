@@ -92,7 +92,7 @@ OrcaSlicer + BambuStudio sidecar containers, per-job slicer picker with reachabi
 
 <div class="feature-card" markdown>
 ### :material-folder-multiple: File Manager + Library
-3MF / G-code / STL / STEP library with composite tag chips (format / readiness / modifiers / provenance), chip-row filter, per-plate gallery, 3D + G-code viewer with build-volume wireframe.
+3MF / G-code / STL / STEP library with composite tag chips (format / readiness / modifiers / provenance), chip-row filter, per-plate gallery, 3D + G-code viewer with build-volume wireframe. Page-level drag-and-drop on File Manager + per-printer queue cards + the Auto-Queue panel.
 </div>
 
 </div>
