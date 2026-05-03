@@ -42,6 +42,17 @@ The plan is a flat, ordered list of items. Each row carries:
 
 The grand-totals strip at the bottom sums every row — useful for "do I have enough green PLA on hand for this project?" sanity checks before you click dispatch.
 
+## :material-link-variant: External URL & cover image
+
+Each project can carry an external URL plus a hero cover image — both surface on the project card and on the detail page so a glance tells you "this is the rocket-shelf project" instead of staring at a generic folder icon.
+
+| Field | Notes |
+|---|---|
+| **URL** | Free-form `http://` or `https://` link, capped at 2 048 chars. Validated on save (anything that doesn't start with `http(s)://` is rejected inline). Edit-with-cleared-value sends `null` so the column actually clears. Surfaces as a clickable `↗` icon next to the project name on cards and the detail page. |
+| **Cover image** | 80 × 80 preview in the project modal, full-size on the detail page hero strip + as a thumbnail strip on the cards grid. Accepts `.jpg / .jpeg / .png / .gif / .webp`. **Edit-mode only**: a brand-new project has no `project_id` yet, so the upload widget appears after the first save (matches upstream's shape). The preview URL is cache-busted on every upload/remove so you don't have to hard-refresh to see the new image. |
+
+Typical use: paste the MakerWorld / Printables / Thingiverse link the model came from into URL, drop a photo of the assembled product into Cover. Future-you will thank present-you when revisiting a project a year later.
+
 ## :material-cart-check: Bill of Materials (BOM)
 
 Each project also accepts a freeform BOM — entries for filament types, colours, and gram budgets you intend to consume. The BOM doesn't auto-deduct from spools (that's what the per-print spool consumption tracking is for); it's a planning aid for "I need 480 g of black PLA + 120 g of grey TPU" so you can compare against current spool stock before you commit.

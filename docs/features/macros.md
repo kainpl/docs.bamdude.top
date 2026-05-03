@@ -166,6 +166,21 @@ Swap-mode prints rely on G-code macros bound to `swap_mode_start` and `swap_mode
 
 ---
 
+## :material-needle: Macros vs G-code Injection
+
+Macros and the [G-code Injection](gcode-injection.md) feature look similar but solve different problems:
+
+| Aspect | Macro | G-code injection |
+|---|---|---|
+| Where it runs | **Server-side**: BamDude sends `gcode_line` over MQTT at lifecycle events. | **Embedded in the file gcode**: spliced into `plate_*.gcode` before upload, runs at the exact point in the print sequence the slicer would normally insert end-gcode. |
+| Trigger | Lifecycle event (`print_started`, `print_finished`, swap mode, manual). | Per-job toggle on the print itself. |
+| Survives server outage | No — server has to be online to send. | Yes — once the file is on the printer, BamDude can disappear. |
+| Best for | Lights, plugs, chamber heaters, status pings, swap-mode plate changes. | Park-to-back-left, purge-tower clean cuts, mid-print pauses, post-cool-down park positions that must run *before* the printer's own end-gcode resets state. |
+
+Use macros first — they're simpler. Drop down to G-code injection when you need a snippet that has to fire **inside** the printer's own end-of-print sequence and survive even if BamDude crashed mid-print.
+
+---
+
 ## :material-lightbulb: Tips
 
 !!! tip "Pair `print_started` with `print_finished`"

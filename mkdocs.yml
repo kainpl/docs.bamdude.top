@@ -77,15 +77,22 @@ plugins:
             "AMS & Humidity": "AMS та вологість"
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
+            Auto-Queue Routing: Авто-черга
             Staggered Start: Поетапний запуск
             Swap Mode: Режим заміни пластин
             Print Archive: Архів друку
             Print Archiving: Архівування друку
             File Manager: Файловий менеджер
+            "Library & Archive Trash": "Корзини бібліотеки і архіву"
+            "Library & Slicing": "Бібліотека і слайсинг"
+            "MakerWorld import": "Імпорт з MakerWorld"
+            "Slicer API": "Slicer API"
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
             Virtual Printer: Віртуальний принтер
+            "Tailscale integration": "Інтеграція з Tailscale"
             Macros: Макроси
+            "G-code Injection": "Інжекція G-code"
             Notifications: Сповіщення
             "Obico AI Failure Detection": "AI-детекція фейлів Obico"
             "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
@@ -188,15 +195,22 @@ nav:
       - AMS & Humidity: features/ams.md
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
+      - Auto-Queue Routing: features/auto-queue.md
       - Staggered Start: features/staggered-start.md
       - Swap Mode: features/swap-mode.md
     - Print Archive:
       - Print Archiving: features/archiving.md
       - File Manager: features/file-manager.md
+      - Library & Archive Trash: features/library-trash.md
+    - Library & Slicing:
+      - MakerWorld import: features/makerworld.md
+      - Slicer API: features/slicer-api.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md
       - Virtual Printer: features/virtual-printer.md
+      - Tailscale integration: features/tailscale.md
       - Macros: features/macros.md
+      - G-code Injection: features/gcode-injection.md
       - Notifications: features/notifications.md
       - Obico AI Failure Detection: features/obico.md
     - Library, Inventory & Projects:

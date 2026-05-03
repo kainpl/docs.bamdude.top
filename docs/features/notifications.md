@@ -104,6 +104,23 @@ See [Telegram Bot Setup](telegram-bot.md) for full configuration.
 
 ---
 
+## :material-priority-high: Per-event priority (ntfy & Pushover)
+
+Both ntfy and Pushover support priority levels — `default` / `high` / `urgent` for ntfy, `-2…+2` for Pushover. BamDude lets you pick the priority **per event type** on each provider, so a finished print doesn't push to the lock-screen but a print failure does:
+
+| Event type | Suggested ntfy priority | Why |
+|---|---|---|
+| `print_complete`, `bed_cooled` | `default` | Informational — read when convenient. |
+| `print_failed`, `printer_error`, `plate_not_empty` | `high` or `urgent` | Action-required. |
+| `filament_low`, `maintenance_due` | `default` | Plan-ahead, not interrupt-now. |
+| `ams_humidity_high` | `high` | Affects filament you're about to use. |
+
+Configure under each provider's edit form: there's a per-event priority dropdown next to the event-subscribe toggle. Defaults map every event to `default` priority — opt-in to escalation only where it matters. Pushover's same control accepts the numeric levels.
+
+This is independent of the daily digest / quiet hours pipeline below — a quiet-hour-suppressed event isn't sent at any priority; an active event still respects the per-event priority you picked.
+
+---
+
 ## :material-clock: Quiet hours & daily digest
 
 Both are configured **per provider**, not globally — a Discord channel can stay loud while your phone gets only a 9 a.m. summary.

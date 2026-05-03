@@ -85,6 +85,16 @@ G-code macros triggered by print events (start, end, pause). Built-in editor wit
 Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
 </div>
 
+<div class="feature-card" markdown>
+### :material-cog-transfer: Server-Side Slicing
+OrcaSlicer + BambuStudio sidecar containers, per-job slicer picker with reachability badges, bed-type override, inline multi-plate selection, owner-filter on preset dropdowns.
+</div>
+
+<div class="feature-card" markdown>
+### :material-folder-multiple: File Manager + Library
+3MF / G-code / STL / STEP library with composite tag chips (format / readiness / modifiers / provenance), chip-row filter, per-plate gallery, 3D + G-code viewer with build-volume wireframe. Page-level drag-and-drop on File Manager + per-printer queue cards + the Auto-Queue panel.
+</div>
+
 </div>
 
 [Explore All Features :material-arrow-right:](features/index.md){ .md-button }
