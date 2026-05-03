@@ -28,7 +28,17 @@ Tailscale shines specifically when **the slicer-running machine is already on Ta
 
 ## :material-package-variant: Prerequisites
 
-1. **Tailscale daemon on the BamDude host.** Native installs: install [tailscaled](https://tailscale.com/kb/1031/install-linux) and `tailscale up`. Docker installs: mount the host's tailscaled socket / state into the container (`/var/run/tailscale/tailscaled.sock`) so BamDude can shell out to `tailscale cert`. There's no in-image tailscaled — ship the daemon on the host, BamDude just consumes it.
+1. **Tailscale daemon on the BamDude host.** Native installs: install [tailscaled](https://tailscale.com/kb/1031/install-linux) and `tailscale up`. Docker installs need **two** bind-mounts (the BamDude image bundles neither — see Caveats below):
+
+    ```yaml
+    services:
+      bamdude:
+        volumes:
+          - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+          - /usr/bin/tailscale:/usr/bin/tailscale:ro
+    ```
+
+    The socket lets BamDude talk to the host daemon; the binary is the CLI client BamDude shells out to (`shutil.which("tailscale")` returns `None` without it, and the integration self-disables). Daemon stays on the host, BamDude just consumes it.
 2. **MagicDNS + HTTPS certificates enabled** on your tailnet — both are toggles on the [Tailscale admin DNS page](https://login.tailscale.com/admin/dns). Without them you don't get the `*.ts.net` FQDN BamDude needs to mint a cert against.
 3. **A virtual printer.** Tailscale flips a flag *per VP*; you need at least one VP to flip it on.
 
@@ -80,6 +90,23 @@ LAN advertising still happens too — local slicers pick up the LAN IP, remote s
 - **`tailscaled` must be on the host (or mounted from a sidecar) — BamDude can't bring it up.** This is a deliberate split: Tailscale's auth + state model is a host concern.
 - **Private tailnets only** — there's no path to advertise a VP to the public internet through this. That's by design (and what `proxy` mode is for).
 - **Cert renewal needs daemon access at runtime** — if the host's tailscaled goes offline, the daily renewal will start failing 30+ days before the cert expires; check the alerts.
+
+---
+
+## :material-bug-outline: Troubleshooting
+
+When VP startup falls back to the self-signed cert, the reason is in the BamDude logs at WARNING level. Match the message to the fix:
+
+| Log message | Cause | Fix |
+|---|---|---|
+| `tailscale binary not found` | CLI not on `PATH`. Bare-metal: not installed. Docker: binary not bind-mounted. | Bare-metal: install [tailscaled](https://tailscale.com/kb/1031/install-linux). Docker: add `- /usr/bin/tailscale:/usr/bin/tailscale:ro` (in addition to the socket mount). |
+| `Running in Docker but /var/run/tailscale/tailscaled.sock is not mounted` | One-time hint at startup when the binary's there but the socket isn't. | Add `- /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock` to `volumes:`. |
+| `Tailscale not connected (no DNSName)` | Daemon up but the host hasn't joined a tailnet. | `tailscale up` on the host and authenticate. |
+| `https cert ... disabled` / `not enabled tailnet` / `cert ... not enabled` | HTTPS Certificates toggle off in the admin console. | Enable MagicDNS + HTTPS Certificates at [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns). On a corporate / school tailnet you may need an admin to flip it. |
+| `Tailscale cert files at ... are not readable by this process` | Bare-metal install where `tailscale cert` ran as root and left files root-owned. | `sudo chown $(whoami):$(whoami) <data>/certs/<vp_id>/*` — message includes the exact path and command. |
+| `tailscale cert failed (exit N): ...` | Anything else from the CLI (rate limit, FQDN typo, daemon mid-restart). | Read the stderr in the log line; rate-limits self-resolve in an hour, FQDN issues mean the VP name has characters Tailscale won't accept. |
+
+In every case the VP keeps running on the self-signed cert — fix the upstream and either restart the VP or wait for the next 24h renewal pass to retry.
 
 ---
 

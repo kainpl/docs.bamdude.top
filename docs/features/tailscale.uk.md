@@ -28,7 +28,17 @@ Tailscale світиться особливо коли **машина, де кр
 
 ## :material-package-variant: Передумови
 
-1. **Демон Tailscale на хості BamDude.** Native-інстал: встанови [tailscaled](https://tailscale.com/kb/1031/install-linux) і `tailscale up`. Docker-інстал: примонтуй сокет / state daemon'а хоста в контейнер (`/var/run/tailscale/tailscaled.sock`), щоб BamDude міг shell-out на `tailscale cert`. Жодного in-image tailscaled — daemon живе на хості, BamDude лише читає його.
+1. **Демон Tailscale на хості BamDude.** Native-інстал: встанови [tailscaled](https://tailscale.com/kb/1031/install-linux) і `tailscale up`. Docker-інстал потребує **двох** bind-mount'ів (BamDude image не містить ні того, ні іншого — див. Caveats нижче):
+
+    ```yaml
+    services:
+      bamdude:
+        volumes:
+          - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+          - /usr/bin/tailscale:/usr/bin/tailscale:ro
+    ```
+
+    Сокет дозволяє BamDude говорити з демоном хоста; бінарник — це CLI-клієнт, на який BamDude shell-out'ить (`shutil.which("tailscale")` повертає `None` без нього, і інтеграція сама вимикається). Daemon живе на хості, BamDude лише читає його.
 2. **MagicDNS + HTTPS-сертифікати ввімкнені** на твоєму tailnet'і — обидві опції на [Tailscale admin DNS page](https://login.tailscale.com/admin/dns). Без них немає `*.ts.net` FQDN, проти якого BamDude буде випустити серт.
 3. **Віртуальний принтер.** Tailscale тогглиться *per VP*; потрібен принаймні один VP, щоб увімкнути.
 
@@ -80,6 +90,23 @@ LAN-анонс теж відбувається — локальні слайсе
 - **`tailscaled` має бути на хості (або примонтований із sidecar) — BamDude не може його підняти.** Це навмисний поділ: auth + state model Tailscale — host-concern.
 - **Лише приватні tailnet'и** — публічного інтернет-анонсу VP через це немає. Це by design (для цього є `proxy` mode).
 - **Cert renewal потребує доступ до daemon у час виконання** — якщо tailscaled на хості ляже, daily-renewal почне фейлити за 30+ днів до експірації серта; стеж за алертами.
+
+---
+
+## :material-bug-outline: Усунення проблем
+
+Якщо при старті VP відбувається фолбек на самопідписаний серт — причина в логах BamDude на рівні WARNING. Зіставляй повідомлення з фіксом:
+
+| Повідомлення в логу | Причина | Фікс |
+|---|---|---|
+| `tailscale binary not found` | CLI не у `PATH`. Bare-metal: не встановлено. Docker: бінарник не примонтований. | Bare-metal: встанови [tailscaled](https://tailscale.com/kb/1031/install-linux). Docker: додай `- /usr/bin/tailscale:/usr/bin/tailscale:ro` (на додачу до сокет-маунту). |
+| `Running in Docker but /var/run/tailscale/tailscaled.sock is not mounted` | Одноразова підказка на старті, коли бінарник є, але сокета — нема. | Додай `- /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock` у `volumes:`. |
+| `Tailscale not connected (no DNSName)` | Daemon піднятий, але хост не залогінений у tailnet. | `tailscale up` на хості, авторизація. |
+| `https cert ... disabled` / `not enabled tailnet` / `cert ... not enabled` | Toggle HTTPS Certificates вимкнений в admin-консолі. | Увімкни MagicDNS + HTTPS Certificates на [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns). У корпоративному / шкільному tailnet'і може знадобитися admin, щоб це перемкнути. |
+| `Tailscale cert files at ... are not readable by this process` | Bare-metal-інстал, де `tailscale cert` запустився під root, і файли лишилися root-owned. | `sudo chown $(whoami):$(whoami) <data>/certs/<vp_id>/*` — у логу буде точний шлях і команда. |
+| `tailscale cert failed (exit N): ...` | Будь-що інше від CLI (rate-limit, неправильний FQDN, daemon у мить рестарту). | Читай stderr у тому ж рядку логу; rate-limit'и самі вирішуються за годину, проблеми з FQDN означають що ім'я VP має символи, які Tailscale не приймає. |
+
+У будь-якому випадку VP продовжує працювати на самопідписаному серті — виправ root cause, після чого або рестарни VP, або дочекайся наступного 24h renewal-проходу.
 
 ---
 
