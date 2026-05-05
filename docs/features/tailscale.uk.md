@@ -13,7 +13,7 @@ BamDude може анонсувати [віртуальні принтери](vi
 
 ## :material-lan-disconnect: Коли це треба
 
-Альтернатива з коробки — [VP `proxy` mode](virtual-printer.uk.md#режими) — теж працює для віддаленого друку, але ганяє кожен байт через власний BamDude TCP-релей. Wire-level mesh Tailscale швидший (peer-to-peer коли можна, DERP-relayed коли ні), zero-config зі сторони слайсера, і слайсер думає, що говорить зі звичайним Bambu-принтером.
+Альтернатива з коробки — [VP `proxy` mode](virtual-printer.uk.md#modes) — теж працює для віддаленого друку, але ганяє кожен байт через власний BamDude TCP-релей. Wire-level mesh Tailscale швидший (peer-to-peer коли можна, DERP-relayed коли ні), zero-config зі сторони слайсера, і слайсер думає, що говорить зі звичайним Bambu-принтером.
 
 | Сценарій | Рекомендований шлях |
 |---|---|
