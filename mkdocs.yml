@@ -70,9 +70,12 @@ plugins:
             Docker: Docker
             Upgrading: Оновлення
             First Printer Setup: Перший принтер
+            "Mobile & PWA": "Мобільний і PWA"
             Features: Функції
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
+            "Printer Control": "Керування принтером"
+            "Firmware Updates": "Оновлення прошивки"
             Camera Streaming: Трансляція камери
             "AMS & Humidity": "AMS та вологість"
             Print Queue: Черга друку
@@ -82,11 +85,15 @@ plugins:
             Swap Mode: Режим заміни пластин
             Print Archive: Архів друку
             Print Archiving: Архівування друку
+            "Archive Comparison": "Порівняння архівів"
+            "Search & FTS": "Пошук і FTS"
             File Manager: Файловий менеджер
             "Library & Archive Trash": "Корзини бібліотеки і архіву"
             "Library & Slicing": "Бібліотека і слайсинг"
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
+            "Cloud Profiles": "Cloud-профілі"
+            "Local Profiles": "Локальні профілі"
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
             Virtual Printer: Віртуальний принтер
@@ -100,6 +107,9 @@ plugins:
             "Projects & Print Plan": "Проєкти та print plan"
             "K-Profiles": "K-профілі"
             "Stats & Energy": "Статистика і енергія"
+            "Energy Tracking": "Відстеження енергії"
+            "Failure Analysis": "Аналіз фейлів"
+            "Export (CSV / Excel)": "Експорт (CSV / Excel)"
             Telegram Bot: Telegram-бот
             Bot Setup: Налаштування бота
             "Multi-Chat Auth": Мультичат-авторизація
@@ -111,12 +121,16 @@ plugins:
             Prometheus: Prometheus
             Settings: Налаштування
             Authentication: Автентифікація
+            "API Keys": "API-ключі"
+            "External Links": "Зовнішні посилання"
+            "System Info": "Системна інформація"
             PostgreSQL: PostgreSQL
             "Backup & Restore": "Резервне копіювання"
             Reference: Довідка
             Supported Printers: Підтримувані принтери
             "Settings reference": "Reference налаштувань"
             API Reference: Довідка API
+            "Keyboard Shortcuts": "Гарячі клавіші"
             Troubleshooting: Усунення неполадок
 
 markdown_extensions:
@@ -186,11 +200,14 @@ nav:
     - Upgrading: getting-started/upgrading.md
     - First Printer Setup: getting-started/first-printer.md
     - Reverse Proxy & HTTPS: getting-started/reverse-proxy.md
+    - Mobile & PWA: getting-started/mobile.md
 
   - Features:
     - features/index.md
     - Printers & Monitoring:
       - Real-time Monitoring: features/monitoring.md
+      - Printer Control: features/printer-control.md
+      - Firmware Updates: features/firmware-updates.md
       - Camera Streaming: features/camera.md
       - AMS & Humidity: features/ams.md
     - Print Queue:
@@ -200,11 +217,15 @@ nav:
       - Swap Mode: features/swap-mode.md
     - Print Archive:
       - Print Archiving: features/archiving.md
+      - Archive Comparison: features/comparison.md
+      - Search & FTS: features/search.md
       - File Manager: features/file-manager.md
       - Library & Archive Trash: features/library-trash.md
     - Library & Slicing:
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
+      - Cloud Profiles: features/cloud-profiles.md
+      - Local Profiles: features/local-profiles.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md
       - Virtual Printer: features/virtual-printer.md
@@ -218,6 +239,9 @@ nav:
       - Projects & Print Plan: features/projects.md
       - K-Profiles: features/kprofiles.md
       - Stats & Energy: features/stats.md
+      - Energy Tracking: features/energy.md
+      - Failure Analysis: features/failure-analysis.md
+      - Export (CSV / Excel): features/export.md
     - Telegram Bot:
       - Bot Setup: features/telegram-bot.md
       - Multi-Chat Auth: features/telegram-auth.md
@@ -229,6 +253,9 @@ nav:
       - Prometheus: features/prometheus.md
     - Settings:
       - Authentication: features/authentication.md
+      - API Keys: features/api-keys.md
+      - External Links: features/external-links.md
+      - System Info: features/system-info.md
       - PostgreSQL: features/postgresql.md
       - Backup & Restore: features/backup.md
 
@@ -237,6 +264,7 @@ nav:
     - Supported Printers: reference/printers.md
     - Settings reference: reference/settings.md
     - API Reference: reference/api.md
+    - Keyboard Shortcuts: reference/shortcuts.md
     - Troubleshooting: reference/troubleshooting.md
 
 copyright: Copyright &copy; 2025-2026 BamDude Contributors

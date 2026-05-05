@@ -67,24 +67,127 @@ Legacy `bambuddy-backup-*.zip` файли (від upstream-інсталяцій)
 
 | Налаштування | Примітки |
 |--------------|----------|
-| Provider | `github` або `gitlab`. |
+| Provider | `github`, `gitlab`, `gitea` або `forgejo`. |
 | Repository URL | Повний clone URL (HTTPS-форма). |
 | Access Token | Personal Access Token. Зберігається зашифрованим at rest. |
 | Гілка | Цільова гілка (за замовчуванням `main`). |
 | API base URL | Тільки для self-hosted GitLab. |
+| Allow insecure HTTP | Для self-hosted Gitea/Forgejo/GitLab без HTTPS. |
 | Schedule | `hourly` / `daily` / `weekly` або off. |
+
+### :material-account-key: Покрокові гайди по провайдерах
+
+=== ":material-github: GitHub"
+
+    1. **Створи GitHub-репозиторій** (private підходить).
+    2. **Згенеруй Personal Access Token (PAT)**:
+        - Зайди в [GitHub Personal Access Tokens](https://github.com/settings/tokens){ target="_blank" rel="noopener" }.
+        - Натисни **Generate new token** → **Generate new token (classic)**.
+        - Обери expiration (`No expiration` рекомендується для unattended scheduled-бекапів).
+        - У **Select scopes** відмітьте `repo` (потрібно для репо-доступу і коммітів).
+    3. **Налаштуй у BamDude**:
+        - **Settings** → **Backup & Restore** → Git Backup.
+        - Provider: `github`.
+        - Repository URL: наприклад `https://github.com/username/bamdude-backup`.
+        - Введи PAT.
+        - Натисни **Test Connection**.
+
+    !!! note "Fine-grained tokens"
+        Замість classic токенів можна fine-grained. Дай `Read access to Metadata` — `Read and Write access to code` додасться автоматично при створенні.
+
+=== ":material-gitlab: GitLab"
+
+    1. **Створи GitLab-репозиторій** (private OK).
+    2. **Згенеруй PAT**:
+        - Зайди в [GitLab Personal Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens){ target="_blank" rel="noopener" }.
+        - Натисни **Add new token** (Legacy / classic).
+        - У scopes відмітьте `api` (потрібно для репо-доступу і коммітів).
+    3. **Налаштуй у BamDude**:
+        - Provider: `gitlab`.
+        - Для self-hosted GitLab заповни **API base URL**.
+        - Якщо хостиш локально без HTTPS, постав **Allow insecure HTTP**.
+        - Repository URL: наприклад `https://gitlab.com/username/bamdude-backup`.
+        - Введи PAT.
+        - Натисни **Test Connection**.
+
+    !!! note "Project Access Tokens"
+        Project Access Tokens теж працюють — дай scope `api` і `write_repository`, інакше комміти впадуть з access errors.
+
+=== ":material-git: Gitea"
+
+    1. **Створи репо** (private OK).
+    2. **Згенеруй PAT**:
+        - **Settings** → **Applications** у профілі Gitea.
+        - Під **Access Tokens** дай ім'я.
+        - Scope `All (public, private, and limited)`.
+        - У **repository** permissions постав `Read and write`.
+        - Натисни **Generate token**.
+    3. **Налаштуй у BamDude**:
+        - Provider: `gitea`.
+        - Repository URL: наприклад `https://gitea.example.com/username/bamdude-backup`.
+        - Якщо локально без HTTPS, постав **Allow insecure HTTP**.
+        - Вкажи правильну **Branch** (`main`, `master`, тощо).
+        - Введи PAT.
+        - Натисни **Test Connection**.
+
+=== ":material-git: Forgejo"
+
+    1. **Створи репо** (private OK).
+    2. **Згенеруй PAT**:
+        - **Settings** → **Applications** у профілі Forgejo.
+        - Під **Manage Access Tokens** дай ім'я токена.
+        - Натисни **Generate Token**.
+    3. **Налаштуй у BamDude**:
+        - Provider: `forgejo`.
+        - Repository URL: наприклад `https://forgejo.example.com/username/bamdude-backup`.
+        - Якщо локально без HTTPS, постав **Allow insecure HTTP**.
+        - Введи PAT.
+        - Натисни **Test Connection**.
+
+!!! warning "Bambu Cloud login обов'язковий для K-profiles + Cloud profiles"
+    Для бекапу *Cloud profiles* і *K-profiles* потрібен активний Bambu Cloud login. Авторизуйся через **Profiles → Cloud Profiles** перед тим, як планувати Git-бекап з цими категоріями — інакше відповідні директорії будуть пусті в репо.
 
 ### :material-checkbox-marked: Що пушиться
 
-Перемикається незалежно:
+Перемикається незалежно. Дефолти налаштовані так, щоб "бекапити те, що більшості потрібно, шумне/велике лишити вимкненим":
 
-- **K-profiles** — per-printer K-profile JSON.
-- **Cloud profiles** — Bambu Cloud filament profiles per user.
-- **Settings** — таблиця application settings (sensitive поля виключено).
-- **Spools** — повний дамп інвентаря.
-- **Archives** — записи історії друку.
+| Категорія | Опис | Дефолт |
+|-----------|------|:------:|
+| **K-profiles** | Per-printer pressure-advance профілі (за серійниками). | :material-check: On |
+| **Cloud profiles** | Filament, printer, process профілі з Bambu Cloud. | :material-check: On |
+| **Spools** | Повний дамп інвентаря (ряди + usage history). | :material-check: On |
+| **Archives (метадані)** | Метадані історії друку — філамент, температури, час, вартість, енергія (без 3MF / без мініатюр). | :material-check: On |
+| **App settings** | Таблиця application settings (sensitive поля виключені). | :material-close: Off |
+| **Archives (3MF + мініатюри)** | Bulk 3MF + thumbnail-вміст — додає ~50–500 МБ репо на 100 друків. | :material-close: Off |
 
 Тільки змінені файли генерують комміти — no-op запуск пишеться як `skipped`.
+
+### :material-folder-tree: Структура репозиторію
+
+Після успішного запуску репо має такий вигляд:
+
+```
+repo/
+├── backup_metadata.json
+├── kprofiles/
+│   └── {serial_number}/
+│       ├── 0.2.json
+│       ├── 0.4.json
+│       └── ...
+├── cloud_profiles/
+│   ├── filament.json
+│   ├── printer.json
+│   └── process.json
+├── settings/
+│   └── app_settings.json
+├── spools/
+│   ├── inventory.json
+│   └── usage_history.json
+└── archives/
+    └── print_history.json
+```
+
+Плоска структура робить partial restore однозначним — можна витягнути лише `kprofiles/{serial}/` для одного принтера або лише `spools/inventory.json` для відновлення інвентаря, не чіпаючи решти.
 
 ### :material-monitor-dashboard: Панель статусу
 
@@ -125,6 +228,170 @@ Portable SQLite-дамп означає, що ви можете:
 - Зробити бекап з PG → відновити на свіжий PG (loader реімпортує SQLite у PG).
 
 Конфліктні primary keys мерджаться або скіпаються per-row залежно від таблиці — referential integrity зберігається через міграцію.
+
+---
+
+## :material-folder-download: Bulk archive export
+
+3MF-файли і мініатюри не входять у дефолтний layout Backup ZIP (вони в `archive/` лише при explicit opt-in). Для цільового експорту архівів:
+
+1. Зайди в **Archives**.
+2. Натисни **Export**.
+3. У модалі експорту відмітьте **Include 3MF files**.
+4. Опційно звузьте по даті, принтеру або статусу.
+5. Завантаж результуючий ZIP.
+
+Корисно для hand-off на іншу ферму, archival у cold storage або одноразової міграції без перетягування повної бази.
+
+---
+
+## :material-database-export: Ручний бекап SQLite / PostgreSQL
+
+Якщо хочеш CLI / scripted-бекап поза UI BamDude — наприклад, для включення в системний бекап ширше або PostgreSQL-specific point-in-time recovery — йди прямо в DB-движок:
+
+=== ":material-database: SQLite (default)"
+
+    Спершу зупини BamDude для consistent-снімку, далі:
+
+    ```bash
+    # Plain copy (найшвидше)
+    cp /path/to/bamdude.db bamdude_$(date +%Y%m%d).db
+
+    # SQL-дамп (portable між версіями)
+    sqlite3 /path/to/bamdude.db ".dump" > bamdude.sql
+
+    # Restore з SQL-дампа
+    sqlite3 new_bamdude.db < bamdude.sql
+    ```
+
+=== ":material-elephant: PostgreSQL"
+
+    Підключайся через свій `DATABASE_URL`:
+
+    ```bash
+    # Custom-format dump (рекомендую — підтримує parallel restore + selective restore)
+    pg_dump -Fc bamdude > bamdude.backup
+    # або з explicit DSN:
+    pg_dump -Fc "postgresql://user:pass@host:5432/bamdude" > bamdude.backup
+
+    # Restore (drop + recreate об'єктів при імпорті)
+    pg_restore -d bamdude bamdude.backup
+    # або з explicit DSN:
+    pg_restore --clean --if-exists \
+        -d "postgresql://user:pass@host:5432/bamdude" bamdude.backup
+    ```
+
+    !!! tip "Built-in бекап BamDude простіше"
+        Сторінка Settings → Backup продукує portable-бекапи, що працюють і на SQLite, і на PostgreSQL. Ручний `pg_dump` потрібен лише коли хочеш PG-specific фічі типу point-in-time recovery, logical-replication snapshotting або інтеграцію з існуючим PG backup pipeline.
+
+!!! warning "Зупини BamDude перед raw file copy"
+    Прямий `cp` `bamdude.db` під час роботи BamDude може схопити inconsistent WAL-стан. Portable Settings → Backup безпечно це обробляє — ручний копіпейст потребує зупиненого процесу.
+
+---
+
+## :material-restore: Сценарії відновлення
+
+Три типові форми, що приймає recovery-flow:
+
+### Втрачена база
+
+DB пошкоджена, видалена, не recoverable:
+
+1. Зупини BamDude.
+2. Видали пошкоджений `bamdude.db` (або drop PostgreSQL базу).
+3. Стартуй BamDude — він створить свіжу пусту DB при першому boot.
+4. **Settings → System → Restore** → завантаж останній backup ZIP.
+5. BamDude замінить пусту DB відновленою і запустить pending міграції.
+
+### Нова інсталяція
+
+Переїзд на новий сервер / новий Docker-хост:
+
+1. Інсталюй BamDude на новому хості (Docker compose, bare metal, як заведено).
+2. Бутни раз, щоб data-директорія створилася і setup-gate висів на `setup_required`.
+3. Скопіюй backup ZIP на новий хост.
+4. **Settings → System → Restore** → завантаж ZIP — зауваж, що setup-gate whitelist'ить `/restore`-style flow коли ще нема адміна, але на практиці найпростіший шлях — завершити setup placeholder-адміном, потім restore (який замінить placeholder-а реальними юзерами).
+
+### Міграція даних
+
+Міграція між DB-backend-ами, OS-хостами або переїзд Docker-volume-ів:
+
+1. Зніми бекап на старій інсталяції (Settings → Backup → Create Backup).
+2. Підніми BamDude на новому хості.
+3. Restore з backup ZIP — portable SQLite-шар BamDude автоматично транслює SQLite ↔ PostgreSQL (див. "Cross-backend restore" вище).
+4. Перевір: принтери реконнектяться, профілі на місці, архіви відкриваються. Тоді demolition старого хоста.
+
+---
+
+## :material-file-chart: Орієнтири розміру бекапу
+
+Грубе sizing, щоб планувати сховище:
+
+| Профіль | Приблизний розмір | Вміст |
+|---------|------------------:|-------|
+| **Малий** | < 50 МБ | DB only — без архівів, без 3MF, без library-файлів. |
+| **Середній** | 100–500 МБ | DB + метадані архівів + мініатюри (без 3MF). |
+| **Великий** | 1–50 ГБ | DB + повний 3MF + мініатюри + library-файли + timelapse. |
+
+Якщо у тебе багато timelapse-відео — це "великий" профіль; періодичне чищення старих timelapse (або виключення `archive/` з окремого full-data бекапу) — найпростіший шлях тримати ZIP керованим.
+
+---
+
+## :material-shield-check: Best practices
+
+- **Daily для prod** — комбінуй **Заплановані локальні бекапи** з `daily` (наприклад, 03:00) і `retention=7` для роллінг-тижня.
+- **Off-site хоча б один** — тримай один знімок не на BamDude-хості: NAS-share, хмарне сховище (Dropbox / Google Drive / S3 через rclone) або зовнішній USB, який ротуєш щотижня. Hardware loss б'є тебе тільки коли обидві копії на одному залізі.
+- **Періодичний restore-drill** — раз на кілька місяців бери backup ZIP і пробуй відновити на throwaway-інсталяції BamDude. Бекап, який ти ніколи не відновлював — бекап, що може не працювати.
+- **Backup перед апгрейдом** — протокол [`UPDATING.md`](https://github.com/kainpl/bamdude/blob/main/UPDATING.md) рекомендує свіжий ручний бекап перед кожним minor-апгрейдом. Міграції ідемпотентні і one-shot, але автоматичного шляху downgrade немає.
+- **Date-suffix у назвах ручних бекапів** — коли робиш ручний бекап перед ризиковою зміною, назви по тригеру (`bamdude-pre-0.5.0-upgrade.zip`), щоб знайти потім.
+
+---
+
+## :material-docker: Docker volume bind-mount приклад
+
+Для Docker-користувачів — змонтуй output-директорію бекапу як volume, щоб бекапи переживали контейнер, а ідеально — на NAS-share для off-site:
+
+```yaml
+services:
+  bamdude:
+    image: ghcr.io/kainpl/bamdude:latest
+    container_name: bamdude
+    network_mode: host
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+      - ./backups:/app/data/backups          # local relative path
+      # або
+      - /mnt/nas/bamdude-backups:/app/data/backups   # NAS / network share
+    environment:
+      - TZ=Europe/Kyiv
+      - BACKUP_DIR=/app/data/backups
+    restart: unless-stopped
+
+volumes:
+  bamdude_data:
+  bamdude_logs:
+```
+
+Або через `docker run`:
+
+```bash
+docker run -d \
+  --network host \
+  -v bamdude_data:/app/data \
+  -v bamdude_logs:/app/logs \
+  -v /mnt/nas/bamdude-backups:/app/data/backups \
+  -e TZ=Europe/Kyiv \
+  -e BACKUP_DIR=/app/data/backups \
+  --name bamdude \
+  --restart unless-stopped \
+  ghcr.io/kainpl/bamdude:latest
+```
+
+`BACKUP_DIR` перевизначає дефолтний `data/backups/` всередині контейнера — використовуй коли bind-mount лягає не на `/app/data/backups`.
+
+!!! tip "NAS / Samba / NFS"
+    Направ bind-mount на NAS-share, Samba-mount чи NFS-шлях для автоматичних off-site бекапів без додаткових скриптів. У парі з retention-rotation — hands-off off-site backup pipeline.
 
 ---
 

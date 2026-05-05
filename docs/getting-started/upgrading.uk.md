@@ -418,6 +418,238 @@ sqlite3.OperationalError: no such column: ...
 
 ---
 
+## :material-database-search: 9. Персистентність даних -- "новий контейнер запустився порожнім" {#9-data-persistence-new-container-started-empty}
+
+Найпоширеніша катастрофа під час оновлення -- запустити свіжий BamDude-контейнер і виявити, що **немає принтерів, немає архіву, немає налаштувань -- наче чиста інсталяція**. Дані майже ніколи не пропадають насправді; вони все ще в Docker volume або container layer'і, з якого новий екземпляр просто не читає. Цей розділ покриває кожну причину, яку ми бачили, і фікс для кожної.
+
+### Швидка діагностика
+
+Запустіть це на хості і прочитайте, що виведе. Скрипт перебирає BamDude-пов'язані контейнери, кожен volume, який потенційно тримає дані, розмір кожного volume і mount-розкладку будь-якого "старого" контейнера, який ви залишили як бекап.
+
+```bash
+echo "=== Контейнери ==="
+docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}" \
+  | grep -iE "bamdude|bambuddy"
+echo
+
+echo "=== Volume'и ==="
+for v in $(docker volume ls -q | grep -iE "bamdude|bambuddy"); do
+  size=$(docker run --rm -v "$v":/d alpine du -sh /d 2>/dev/null | awk '{print $1}')
+  printf "%-50s  %s\n" "$v" "$size"
+done
+echo
+
+echo "=== Mount'и старого контейнера (заміни 'bamdude-old' на реальне ім'я) ==="
+docker inspect bamdude-old --format '{{range .Mounts}}{{.Type}}: {{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+echo
+
+echo "=== Вміст DATA_DIR старого контейнера ==="
+docker exec bamdude-old sh -c 'echo "DATA_DIR=$DATA_DIR"; ls -la "$DATA_DIR" 2>/dev/null | head'
+```
+
+Здоровий data-volume має **щонайменше десятки MB** (SQLite + thumbnails) і зазвичай **GB** з історією архівів. Свіжий / порожній volume -- максимум кілька сотень KB. Цей контраст зазвичай за дві секунди показує, де реально лежать дані.
+
+---
+
+### Сценарій A -- змінилася назва Compose-проєкту (найпоширеніший)
+
+Docker Compose v2 неймспейсує кожен named-volume за **назвою проєкту**, а та за замовчуванням -- **basename директорії, де лежить compose-файл**. Volume `bamdude_data` у вашому `docker-compose.yml` стає `<project>_bamdude_data` на диску:
+
+| Розкладка | Реальна назва volume |
+|---|---|
+| `~/bambuddy/docker-compose.yml` (upstream Bambuddy) | `bambuddy_bambuddy_data` |
+| `~/bamdude/docker-compose.yml` | `bamdude_bamdude_data` |
+| `~/bamdude-new/docker-compose.yml` | `bamdude-new_bamdude_data` |
+| `~/3d/bamdude/docker-compose.yml` (з `COMPOSE_PROJECT_NAME=3d`) | `3d_bamdude_data` |
+
+Перейменування compose-папки (`mv ~/bamdude ~/bamdude-old`) і розпакування свіжого checkout'у на оригінальному шляху створює **зовсім новий неймспейс**, і `docker compose up -d` створює порожній `bamdude_bamdude_data`, поки ваші реальні дані сидять у `bamdude-old_bamdude_data`. Обидва volume'и видно через `docker volume ls`; дані тільки в одному.
+
+**Фікс -- спрямувати новий проєкт на існуючий volume:**
+
+Найчистіший шлях -- оголосити існуючий volume як `external` у новому compose-файлі, щоб Docker Compose не намагався ним керувати:
+
+```yaml
+services:
+  bamdude:
+    # ... без змін ...
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+
+volumes:
+  bamdude_data:
+    external: true
+    name: bamdude-old_bamdude_data    # volume з вашими даними
+  bamdude_logs:
+    external: true
+    name: bamdude-old_bamdude_logs    # аналогічно для логів
+```
+
+Після `docker compose up -d` новий контейнер читає/пише той самий фізичний volume, що й старий. Коли переконаєтесь, що все працює, можна зупинити старий контейнер і звільнити його ім'я.
+
+**Або -- скопіювати дані в новий volume:**
+
+Якщо хочете тримати неймспейсинг нового проєкту чистим і завершити з єдиним `<new>_bamdude_data` volume:
+
+```bash
+# Зупинити новий контейнер, щоб не гонявся з копіюванням.
+docker compose down
+
+# Перестворити (порожній) цільовий volume для безпеки.
+docker volume rm <new>_bamdude_data
+docker volume create <new>_bamdude_data
+
+# Одноразова копія через одноразовий alpine-контейнер, який монтує обидва volume'и.
+docker run --rm \
+  -v bamdude-old_bamdude_data:/from:ro \
+  -v <new>_bamdude_data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# Підняти новий compose-проєкт.
+docker compose up -d
+```
+
+---
+
+### Сценарій B -- container layer (volume взагалі немає)
+
+Якщо оригінальна інсталяція була через голий `docker run ghcr.io/kainpl/bamdude:latest` **без `-v bamdude_data:/app/data`**, всі записи приземлились у writable layer контейнера. Перейменування цього контейнера через `docker rename` зберігає layer (і відповідно дані), але запуск свіжого контейнера з того самого образу створює **новий** layer. Новий layer = немає `bamdude.db`, немає архіву.
+
+Виявити це можна через `docker inspect <old_container>` і перевірити `.Mounts`. Якщо немає запису з mount'ом `/app/data`, дані в layer.
+
+**Фікс -- витягти дані, потім переїхати на нормальну volume-конфігурацію:**
+
+```bash
+# Скопіювати дані з layer старого контейнера на хост.
+docker cp bamdude-old:/app/data ./bamdude-data-recovered
+
+# Створити нормальний named-volume і засіяти його.
+docker volume create bamdude_bamdude_data    # відповідно до неймспейсу нового проєкту
+docker run --rm \
+  -v "$(pwd)/bamdude-data-recovered":/from:ro \
+  -v bamdude_bamdude_data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# Використати офіційний compose-файл -- він завжди декларує volume.
+cd ~/bamdude
+docker compose up -d
+```
+
+Надалі **завжди** декларуйте volume (named або bind-mount) для `/app/data` і `/app/logs`. Виданий `docker-compose.yml` це робить; голі `docker run` команди потребують явного `-v`.
+
+---
+
+### Сценарій C -- змінився шлях bind-mount
+
+Якщо ваш compose використовував bind-mount (`./data:/app/data` або `/srv/bamdude:/app/data`) замість named-volume, переміщення compose-папки також переміщує таргет bind-mount'а. Нова інсталяція приземлюється на свіжому порожньому шляху.
+
+```yaml
+volumes:
+  - ./data:/app/data    # шлях ВІДНОСНИЙ ДО COMPOSE-ФАЙЛА
+```
+
+Виявити через `docker inspect <container> --format '{{range .Mounts}}{{.Source}}{{"\n"}}{{end}}'`. Якщо з'являється шлях `/srv/...` чи `/home/...`, це там реально лежать дані.
+
+**Фікс -- скопіюйте host-директорію в нове місце або наведіть новий compose на старий шлях:**
+
+```bash
+# Варіант 1: перемістити bind-директорію.
+mv ~/bamdude-old/data ~/bamdude/data
+docker compose up -d
+
+# Варіант 2: залишити дані де є, навести новий compose на той шлях.
+# Відредагувати volumes: у docker-compose.yml на абсолютний старий шлях:
+#   - /home/user/bamdude-old/data:/app/data
+docker compose up -d
+```
+
+---
+
+### Сценарій D -- розбіжність PUID / PGID (дані є, але app не може читати)
+
+Виданий compose запускає контейнер як `${PUID:-1000}:${PGID:-1000}`. Якщо ваш старий контейнер працював як `1000:1000`, а новий запуск використовує інші ID (наприклад, ви виставили `PUID=$(id -u)` у shell, де `id -u != 1000`), файли volume належать UID, який новий процес не може читати чи писати. Симптоми різноманітні:
+
+- Стартові логи показують `PermissionError: [Errno 13] Permission denied: '/app/data/bamdude.db'`
+- Або app тихо відкочується на свіжу БД поряд із недоступною старою
+- Або `init_db` падає на першому записі міграції
+
+Перевірте власника:
+
+```bash
+docker run --rm -v bamdude_bamdude_data:/d alpine ls -ln /d
+```
+
+Числові UID / GID у третій і четвертій колонках мають збігатись із тим, що повертають `id -u` / `id -g` для юзера, як яким працює новий контейнер.
+
+**Фікс -- chown вмісту volume на нові ID:**
+
+```bash
+docker compose down
+docker run --rm -v bamdude_bamdude_data:/d alpine chown -R 1000:1000 /d
+# Або який PUID:PGID у вашому compose зараз.
+docker compose up -d
+```
+
+Dockerfile вже робить `chmod 777` на `/app/data` під час білда, тож Docker bind-mounted директорії наслідують той ліберальний режим. Named-volume забирає ownership **першого** writer'а, тому одноразового chown достатньо.
+
+---
+
+### Сценарій E -- `docker compose down -v` (volume'и видалено)
+
+Прапорець `-v` на `docker compose down` назавжди видаляє named-volume'и проєкту. Якщо ви запустили це перед оновленням ("про всяк випадок"), дані **зникли з точки зору Docker** -- немає Recycle Bin. Перейменований старий контейнер допомагає тільки якщо він був запущений з **bind-mount** (host-директорія вижила) або тримав дані в **container layer** (Сценарій B).
+
+Sanity-check: `docker volume ls | grep bamdude` має показати і старі volume'и, якщо вони існують. Якщо з'являються тільки щойно створені і жоден не має GB-розміру, дані видалено.
+
+**Відновлення -- з application-level бекапа:**
+
+Єдине надійне відновлення в цьому випадку -- BamDude UI backup zip, який ви мали зробити перед оновленням за [§1](#1-чек-ліст-перед-оновленням). Флоу:
+
+1. Підняти новий BamDude (він приземлиться у setup-required стан).
+2. Пройти first-run setup з тимчасовими credentials -- наступний крок все одно замінить БД.
+3. Відкрити **Settings → Backup → Local Backup → Upload Backup** і вибрати pre-upgrade zip.
+4. Перезапустити контейнер, щоб система міграцій підлаштувалася під відновлену БД.
+
+Це відновлює `bamdude.db`, архіви, library-файли, thumbnails, uploads і кожен Settings-рядок. Зашифровані секрети (TOTP, OIDC `client_secret`) відновлюються коректно, бо backup несе метадані того `MFA_ENCRYPTION_KEY`, яким вони були зашифровані -- **той самий ключ** має бути у environment нового контейнера, інакше ці рядки не розшифруються.
+
+Якщо у вас **немає бекапа** і жоден з попередніх сценаріїв не підходить, дані не можна відновити.
+
+---
+
+### Сценарій F -- GUI Docker-менеджер (Portainer / Dockge / Komodo) створює власний неймспейс
+
+GUI Docker-менеджери часто створюють власний Compose-проєкт при імпорті -- "stacks" Portainer'а стають проєктами з іменем стека, Dockge монтує кожен compose під `/opt/stacks/<name>` і використовує те ім'я як назву проєкту. Імпорт того ж compose-файла під іншою назвою стека дає свіжий volume-неймспейс точно як у Сценарії A.
+
+Фікс ідентичний Сценарію A: оголосити існуючий volume як `external` і навести на нього за реальним іменем. Запустіть `docker volume ls`, щоб побачити, яку назву створив GUI і яку використовувала ваша стара інсталяція.
+
+---
+
+### Сценарій G -- Образ змінив `DATA_DIR` між версіями (рідко є причиною)
+
+BamDude поставляється з `ENV DATA_DIR=/app/data` з першого Docker-релізу і ми ніколи його не міняли -- цей сценарій задокументований для повноти на випадок, якщо ви оновлюєтесь з приватного форка чи кастомного образу. Якщо ви колись перенесли дані в `/data` замість `/app/data` у власному образі, volume, змонтований на старому шляху, не підхопиться новим образом. Перенести дані:
+
+```bash
+docker run --rm \
+  -v <volume>:/v \
+  alpine sh -c 'mkdir -p /v/app/data && mv /v/data/* /v/app/data/ 2>/dev/null'
+```
+
+Або просто перемонтувати volume на новий шлях, який очікує образ:
+
+```yaml
+volumes:
+  - bamdude_data:/app/data    # не /data
+```
+
+---
+
+### Чому наш legacy-DB rename не завжди спрацьовує
+
+Стартап BamDude (`migrations/__init__.py`) перейменовує `bambuddy.db` / `bambutrack.db` на `bamdude.db`, якщо знаходить їх у data-директорії. Це **спрацьовує тільки тоді, коли legacy-файл всередині `/app/data` нового контейнера** -- тобто коли volume mount правильний. Якщо новий контейнер читає зі свіжого порожнього volume (Сценарії A, C, D, E), немає legacy-файла, який можна перейменувати в принципі; логіка перейменування взагалі не релевантна.
+
+Фікс завжди має одну форму: змусити новий контейнер читати з volume, який тримає ваші дані -- або вказавши на існуючий volume (`external: true`), або скопіювавши дані в новий.
+
+---
+
 ## :material-bug: Траблшутінг
 
 **Стартовий лог показує `setup_required` 503 на кожному ендпоінті**

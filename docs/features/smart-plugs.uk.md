@@ -27,7 +27,250 @@ description: Управління живленням Tasmota, Home Assistant, MQ
 | **Tasmota** | :material-check: | :material-check: | Пряме управління розетками з прошивкою Tasmota |
 | **Home Assistant** | :material-check: | :material-check: | Будь-яка сутність switch/light через HA |
 | **REST / Webhook** | :material-check: | :material-check: | Довільні HTTP API ендпоінти |
-| **MQTT** | :material-close: | :material-check: | Тільки моніторинг енергоспоживання |
+| **MQTT** | :material-check: | :material-check: | Zigbee2MQTT, Shelly Gen2 native MQTT, ESPHome, кастомні MQTT-розетки |
+
+!!! info "Які розетки беруть"
+    A1 / A1 mini тягнуть до ~140 W; X1 / P1 — до ~350 W; H2 — до ~500 W. Будь-яка 10A / 16A розетка підходить, але **для енергозвітності** найпопулярніше:
+
+    - **Athom Plug Pro** (US/EU/UK, передпрошита Tasmota) — найкраще ціна/функції
+    - **Tapo P110M / P115** (HA через `tapo-control`) — дешево + надійно, тільки HA
+    - **Shelly Plus Plug** (HA + native MQTT + REST) — найгнучкіше, три шляхи інтеграції
+    - **IKEA Tradfri** outlet (HA через Zigbee2MQTT) — енергорепортинг із Z2M v1.30+
+
+---
+
+## :material-flash: Як обрати шлях інтеграції
+
+| Уже маєш | Кращий шлях | Чому |
+|----------|-------------|------|
+| Home Assistant | **Home Assistant** | Один dropdown сутностей, HA робить auth |
+| Голу Tasmota-розетку | **Tasmota** | Native Tasmota команди, без брокера |
+| Zigbee2MQTT / ESPHome | **MQTT** | Підпис прямо, без зайвого хопу |
+| openHAB / FHEM / ioBroker | **REST / Webhook** | REST API чисто маплять у ON/OFF + status |
+| Stock-розетку | **Tasmota** (після перепрошивки) | Best long-term + open source |
+
+---
+
+## :material-tasmota: Tasmota setup
+
+**Settings → Smart Plugs → Add → Tasmota**:
+
+=== "Auto-discovery"
+    BamDude сканує LAN на mDNS-бродкаст Tasmota. Розетки з відповіддю — у списку **Discovered** — обери, дай імʼя, привʼяжи до принтера.
+
+=== "Manual entry"
+    | Поле | Значення |
+    |------|----------|
+    | Імʼя | "X1C plug" |
+    | IP-адреса | LAN IP розетки |
+    | Логін / пароль | Якщо на розетці виставлений web auth |
+
+!!! tip "Static IP"
+    Резервуй IP розетки у роутері — DHCP-renewal може флипнути IP і зламати лінк до BamDude.
+
+### Power control + real-time data
+
+Після привʼязки на картці принтера зʼявляється **plug icon**. Клік → toggle. Tooltip — поточне споживання + cumulative kWh.
+
+| Іконка | Значення |
+|:------:|----------|
+| :material-power: зелена | On |
+| :material-power-off: сіра | Off |
+| :material-alert: червона | Недосяжна |
+
+Поля з real-time-даних:
+
+| Поле | Джерело Tasmota |
+|------|------------------|
+| Power (W) | `Status10.StatusSNS.ENERGY.Power` |
+| Voltage (V) | `Status10.StatusSNS.ENERGY.Voltage` |
+| Current (A) | `Status10.StatusSNS.ENERGY.Current` |
+| Energy (kWh) | `Status10.StatusSNS.ENERGY.Total` |
+
+Полінг 5 с поки on; кеш коли off.
+
+### Команди для дебагу
+
+```bash
+curl "http://PLUG_IP/cm?cmnd=Power"
+curl "http://PLUG_IP/cm?cmnd=Power%20ON"
+curl "http://PLUG_IP/cm?cmnd=Power%20OFF"
+curl "http://PLUG_IP/cm?cmnd=Status%2010"
+```
+
+---
+
+## :material-home-assistant: Home Assistant setup
+
+1. **Settings → Smart Plugs → Add → Home Assistant** (один раз).
+2. Заповни:
+    - **HA URL** — `http://homeassistant.local:8123` або `https://ha.example.com`
+    - **HA Long-Lived Access Token** — HA → профіль → внизу → Long-lived access tokens → Create
+3. **Test** — BamDude пінгує `/api/states`. Форма блокується до проходження.
+
+!!! tip "HA add-on"
+    Якщо BamDude крутиться як HA add-on, поля з env BAR_URL / HA_TOKEN передзаповнюються з supervisor (lock-іконки :material-lock:).
+
+Після конфігу — dropdown **Add Plug → Home Assistant** містить кожен `switch.*` / `light.*` / `input_boolean.*`. Окремі сенсорні сутності (Tapo P110M, IKEA Tradfri, Shelly Plus Plug) маємо dropdown-и **Power sensor** + **Energy sensor**.
+
+### HA scripts (multi-device)
+
+Скрипт у HA вмикає розетку + chamber light + fan разом:
+
+```yaml
+script:
+  x1c_full_power_on:
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.x1c_smart_plug
+      - service: light.turn_on
+        target:
+          entity_id: light.x1c_chamber
+      - delay: '00:00:15'
+      - service: switch.turn_on
+        target:
+          entity_id: switch.x1c_chamber_fan
+```
+
+У формі плагіна вказуєш `script.x1c_full_power_on`. На картці:
+
+- :material-checkbox-marked: **Run when on** — запускає скрипт на power-on
+- :material-checkbox-marked: **Show on Printer Card** — toggle на картку
+
+---
+
+## :material-api: REST / Webhook setup
+
+### Control URLs
+
+| Поле | Required | Приклад |
+|------|:--------:|---------|
+| **ON URL** | ✓ | `http://openhab:8080/rest/items/X1C_Plug` |
+| **ON body** |  | `ON` або `{"command":"on"}` |
+| **OFF URL** | ✓ | `http://openhab:8080/rest/items/X1C_Plug` |
+| **OFF body** |  | `OFF` |
+| **Method** |  | POST / PUT / GET |
+| **Headers** |  | `{"Authorization": "Bearer ..."}` |
+
+### Status
+
+| Поле | Призначення |
+|------|-------------|
+| **Status URL** | GET-ендпоінт current state |
+| **Status path** | JSON-path або порожньо для plain-text |
+| **ON value** | Що означає "on" (`ON`, `true`, `1`) |
+
+### Energy (опціонально)
+
+| Поле | Призначення |
+|------|-------------|
+| **Power URL** + **path** + **multiplier** | Поточні watts |
+| **Energy URL** + **path** + **multiplier** | Lifetime kWh |
+
+### Приклади
+
+=== "openHAB"
+    ```
+    ON URL:  http://openhab:8080/rest/items/X1C_Plug   body: ON
+    OFF URL: http://openhab:8080/rest/items/X1C_Plug   body: OFF
+    Status URL: http://openhab:8080/rest/items/X1C_Plug/state
+    ON value:   ON
+    ```
+
+=== "ioBroker"
+    ```
+    ON URL:  http://iobroker:8087/set/sonoff.0.X1C.SWITCH?value=true
+    OFF URL: http://iobroker:8087/set/sonoff.0.X1C.SWITCH?value=false
+    Status URL: http://iobroker:8087/get/sonoff.0.X1C.SWITCH
+    Status path: val   ON value: true
+    ```
+
+=== "FHEM"
+    ```
+    ON URL:  http://fhem:8083/fhem?cmd=set X1C_Plug on&XHR=1
+    OFF URL: http://fhem:8083/fhem?cmd=set X1C_Plug off&XHR=1
+    ```
+
+=== "Node-RED"
+    ```
+    ON URL:  http://node-red:1880/plug/on
+    OFF URL: http://node-red:1880/plug/off
+    Method:  POST
+    ```
+
+---
+
+## :material-message-arrow-right-outline: MQTT plug setup
+
+Юзає broker із **Settings → MQTT** — окремої налаштовки не треба.
+
+| Поле | Призначення | Z2M-приклад |
+|------|-------------|--------------|
+| **Power topic** + **path** + **multiplier** | Watts | `zigbee2mqtt/x1c_plug` / `power` / `1.0` |
+| **Energy topic** + **path** + **multiplier** | kWh | `zigbee2mqtt/x1c_plug` / `energy` / `1.0` |
+| **State topic** + **path** + **ON value** | ON/OFF | `zigbee2mqtt/x1c_plug` / `state` / `ON` |
+
+### Приклади
+
+=== "Zigbee2MQTT"
+    ```
+    Power:  zigbee2mqtt/x1c_plug    path: power
+    Energy: zigbee2mqtt/x1c_plug    path: energy
+    State:  zigbee2mqtt/x1c_plug    path: state    ON: ON
+    ```
+
+=== "Shelly Gen2 native MQTT"
+    ```
+    Power:  shellies/x1c_plug/status/switch:0    path: apower
+    Energy: shellies/x1c_plug/status/switch:0    path: aenergy.total
+    State:  shellies/x1c_plug/status/switch:0    path: output    ON: true
+    ```
+
+=== "ESPHome"
+    ```
+    Power:  esphome/x1c_plug/sensor/power/state               (path порожньо)
+    Energy: esphome/x1c_plug/sensor/total_energy/state        (path порожньо)
+    State:  esphome/x1c_plug/switch/relay/state               (path порожньо, ON: ON)
+    ```
+
+---
+
+## :material-power-plug-outline: Switchbar quick access
+
+Іконка розетки в **підвалі сайдбара** відкриває глобальний switchbar — кожна розетка з one-click toggle, незалежно від привʼязки. Зручно для "вирубити все на ферму перед виходом".
+
+---
+
+## :material-shield: Безпека Auto Off
+
+- Не спрацьовує, поки `bed_temp` > порога cooldown (default 50 °C).
+- Не спрацьовує у `paused` (paused-by-user, paused-by-AMS, paused-by-runout).
+- Не спрацьовує, поки черга має non-completed джоб для цього принтера.
+- Спрацьовує з `failed` і `cancelled` коли стіл охолов.
+
+Якщо розетка веде більше ніж принтер — **Keep enabled** флаг на цій розетці зупиняє auto-off.
+
+---
+
+## :material-help-circle: Troubleshooting per type
+
+=== "Tasmota"
+    - Red dot → DHCP-renewal: оновити IP у BamDude
+    - `curl http://PLUG_IP/cm?cmnd=Power` 401 → виставити web auth
+    - Energy флатує на нулі → relay-only-модель (`Status 10` без блока `ENERGY`)
+
+=== "Home Assistant"
+    - Test fails → `curl -H "Authorization: Bearer ..." $HA_URL/api/states` має дати JSON. 401 → перегенеруй token. Timeout → reverse-proxy strip-ає `Authorization`.
+    - Dropdown порожній → плагін exposeить як `binary_sensor.*` (read-only). Завернути у `input_boolean.*` template.
+    - Energy нулі → вибрати окремий `sensor.*_total_consumption` у dropdown Energy sensor.
+
+=== "REST"
+    - ON works, status fails → **Status path** drill-у JSON, або **ON value** не точний (глянь curl-ом, що API повертає).
+
+=== "MQTT"
+    - Не оновлюється → **Settings → MQTT → Connection status** має бути зелений. Перевір `mosquitto_sub -t 'zigbee2mqtt/x1c_plug' -v` — повідомлення мають іти.
+    - Power у 1000× off → не той **multiplier**.
 
 ---
 

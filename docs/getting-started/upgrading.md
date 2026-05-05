@@ -418,6 +418,238 @@ Existing PG installs run the same migration chain on every boot — same `_migra
 
 ---
 
+## :material-database-search: 9. Data persistence — "new container started empty" {#9-data-persistence-new-container-started-empty}
+
+The most common upgrade-time disaster is starting a fresh BamDude container and finding **no printers, no archives, no settings — like a clean install**. The data is almost never actually gone; it's still in a Docker volume or container layer that the new instance isn't reading from. This section walks every cause we've seen and the fix for each.
+
+### Quick diagnostic
+
+Run this on the host and read back what it prints. It enumerates BamDude-related containers, every volume that could plausibly hold data, the size of each volume, and the mount layout of any "old" container you kept around as a backup.
+
+```bash
+echo "=== Containers ==="
+docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}" \
+  | grep -iE "bamdude|bambuddy"
+echo
+
+echo "=== Volumes ==="
+for v in $(docker volume ls -q | grep -iE "bamdude|bambuddy"); do
+  size=$(docker run --rm -v "$v":/d alpine du -sh /d 2>/dev/null | awk '{print $1}')
+  printf "%-50s  %s\n" "$v" "$size"
+done
+echo
+
+echo "=== Old container mounts (replace 'bamdude-old' with the actual name) ==="
+docker inspect bamdude-old --format '{{range .Mounts}}{{.Type}}: {{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+echo
+
+echo "=== Old container DATA_DIR contents ==="
+docker exec bamdude-old sh -c 'echo "DATA_DIR=$DATA_DIR"; ls -la "$DATA_DIR" 2>/dev/null | head'
+```
+
+A healthy data volume is **tens of MB minimum** (SQLite + thumbnails) and typically **GBs** with archive history. A fresh / empty volume is a few hundred KB at most. That contrast usually pinpoints where the data lives in two seconds.
+
+---
+
+### Scenario A — Compose project name changed (most common)
+
+Docker Compose v2 namespaces every named volume by the **project name**, which by default is the **basename of the directory the compose file lives in**. The volume entry that reads `bamdude_data` in your `docker-compose.yml` becomes `<project>_bamdude_data` on disk:
+
+| Setup | Real volume name |
+|---|---|
+| `~/bambuddy/docker-compose.yml` (upstream Bambuddy) | `bambuddy_bambuddy_data` |
+| `~/bamdude/docker-compose.yml` | `bamdude_bamdude_data` |
+| `~/bamdude-new/docker-compose.yml` | `bamdude-new_bamdude_data` |
+| `~/3d/bamdude/docker-compose.yml` (with `COMPOSE_PROJECT_NAME=3d`) | `3d_bamdude_data` |
+
+Renaming the compose folder (`mv ~/bamdude ~/bamdude-old`) and unpacking a fresh checkout at the original path therefore creates a **brand-new namespace**, and `docker compose up -d` provisions an empty `bamdude_bamdude_data` while your real data sits in `bamdude-old_bamdude_data`. Both volumes show up in `docker volume ls`; only one has the data.
+
+**Fix — point the new project at the existing volume:**
+
+The cleanest path is to declare the existing volume as `external` in the new compose file so Docker Compose doesn't try to manage it:
+
+```yaml
+services:
+  bamdude:
+    # ... unchanged ...
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+
+volumes:
+  bamdude_data:
+    external: true
+    name: bamdude-old_bamdude_data    # the volume that has your data
+  bamdude_logs:
+    external: true
+    name: bamdude-old_bamdude_logs    # likewise for logs
+```
+
+After `docker compose up -d`, the new container reads/writes the same physical volume the old one used. Once you've verified everything works, you can stop the old container and free its name.
+
+**Or — copy the data into the new volume:**
+
+If you'd rather keep the new project's namespacing clean and end up with a single `<new>_bamdude_data` volume:
+
+```bash
+# Stop the new container so it doesn't race the copy.
+docker compose down
+
+# Recreate the (empty) target volume just to be safe.
+docker volume rm <new>_bamdude_data
+docker volume create <new>_bamdude_data
+
+# One-shot copy with a throw-away alpine container that mounts both volumes.
+docker run --rm \
+  -v bamdude-old_bamdude_data:/from:ro \
+  -v <new>_bamdude_data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# Start the new compose project.
+docker compose up -d
+```
+
+---
+
+### Scenario B — Container layer (no volume at all)
+
+If the original install was a bare `docker run ghcr.io/kainpl/bamdude:latest` **without a `-v bamdude_data:/app/data`** flag, all writes landed in the container's writable layer. Renaming that container with `docker rename` preserves the layer (and therefore the data), but starting a fresh container from the same image creates a **new** layer. New layer = no `bamdude.db`, no archives.
+
+You can detect this by running `docker inspect <old_container>` and checking `.Mounts`. If there's no entry mounting `/app/data`, the data is in the layer.
+
+**Fix — extract the data, then move to a proper volume-backed setup:**
+
+```bash
+# Copy the data out of the old container's layer onto the host.
+docker cp bamdude-old:/app/data ./bamdude-data-recovered
+
+# Create a proper named volume and seed it.
+docker volume create bamdude_bamdude_data    # match your new project's namespace
+docker run --rm \
+  -v "$(pwd)/bamdude-data-recovered":/from:ro \
+  -v bamdude_bamdude_data:/to \
+  alpine sh -c 'cp -a /from/. /to/'
+
+# Use the official compose file — it always declares a volume.
+cd ~/bamdude
+docker compose up -d
+```
+
+Going forward, **always** declare a volume (named or bind-mount) for `/app/data` and `/app/logs`. The shipped `docker-compose.yml` does this; raw `docker run` commands need an explicit `-v`.
+
+---
+
+### Scenario C — Bind-mount path changed
+
+If your compose used a bind-mount (`./data:/app/data` or `/srv/bamdude:/app/data`) instead of a named volume, moving the compose folder also moves the bind-mount target. The new install lands at a fresh empty path.
+
+```yaml
+volumes:
+  - ./data:/app/data    # path is RELATIVE TO THE COMPOSE FILE
+```
+
+Detect with `docker inspect <container> --format '{{range .Mounts}}{{.Source}}{{"\n"}}{{end}}'`. If a `/srv/...` or `/home/...` host path appears, that's where the data really is.
+
+**Fix — copy the host directory into the new location, or point the new compose at the old path:**
+
+```bash
+# Option 1: relocate the bind directory.
+mv ~/bamdude-old/data ~/bamdude/data
+docker compose up -d
+
+# Option 2: keep the data where it is, point the new compose at it.
+# Edit volumes: in docker-compose.yml to use the absolute old path:
+#   - /home/user/bamdude-old/data:/app/data
+docker compose up -d
+```
+
+---
+
+### Scenario D — PUID / PGID mismatch (data is there but the app can't read it)
+
+The shipped compose runs the container as `${PUID:-1000}:${PGID:-1000}`. If your old container ran as `1000:1000` and the new run uses different IDs (e.g. you set `PUID=$(id -u)` in a shell where `id -u != 1000`), the volume's files belong to a UID the new process cannot read or write. Symptoms vary:
+
+- Startup logs show `PermissionError: [Errno 13] Permission denied: '/app/data/bamdude.db'`
+- Or the app silently falls back to a fresh DB next to the unreadable old one
+- Or `init_db` fails on the first migration write
+
+Check ownership with:
+
+```bash
+docker run --rm -v bamdude_bamdude_data:/d alpine ls -ln /d
+```
+
+The numeric UID / GID in the third and fourth columns must match what `id -u` / `id -g` returns for the user the new container runs as.
+
+**Fix — chown the volume contents to the new IDs:**
+
+```bash
+docker compose down
+docker run --rm -v bamdude_bamdude_data:/d alpine chown -R 1000:1000 /d
+# Or whatever PUID:PGID your compose uses now.
+docker compose up -d
+```
+
+The Dockerfile already `chmod 777`s `/app/data` at build time, so Docker bind-mounted directories inherit that loose mode. Named volumes pick up the ownership of the **first** writer to them, which is why a one-time chown is enough.
+
+---
+
+### Scenario E — `docker compose down -v` (volumes deleted)
+
+The `-v` flag on `docker compose down` permanently removes the project's named volumes. If you ran this before the upgrade ("just to be safe"), the data is **gone from Docker's perspective** — there is no Recycle Bin. The renamed-old container only helps if it was started with a **bind-mount** (host directory survives) or kept its data in the **container layer** (Scenario B).
+
+Sanity check: `docker volume ls | grep bamdude` should show the old volumes too if they exist. If only the freshly created ones appear and none has the GB-scale size, the data was deleted.
+
+**Recovery — restore from the application-level backup:**
+
+The only reliable recovery in this case is the BamDude UI backup zip, which you should have pre-upgrade per [§1](#1-pre-upgrade-checklist). The flow:
+
+1. Bring the new BamDude up (it lands in the setup-required state).
+2. Complete first-run setup with throwaway credentials — the next step replaces the DB anyway.
+3. Open **Settings → Backup → Local Backup → Upload Backup** and pick the pre-upgrade zip.
+4. Restart the container so the migration system reconciles against the restored DB.
+
+This restores `bamdude.db`, archives, library files, thumbnails, uploads, and every Settings row. Encrypted secrets (TOTP, OIDC `client_secret`) restore correctly because the backup carries the metadata `MFA_ENCRYPTION_KEY` was used to encrypt them — the **same key** must be set in the new container's environment, otherwise those rows will fail to decrypt.
+
+If you have **no backup** and none of the prior scenarios apply, the data is unrecoverable.
+
+---
+
+### Scenario F — Container manager UI (Portainer / Dockge / Komodo) creates its own namespace
+
+GUI Docker managers often create their own Compose project on import — Portainer's "stacks" become projects named after the stack, Dockge mounts each compose under `/opt/stacks/<name>` and uses that name as the project. Importing the same compose file under a different stack name produces a fresh volume namespace just like Scenario A.
+
+The fix is identical to Scenario A: declare the existing volume as `external` and point at it by its real name. Run `docker volume ls` to see what name the GUI created and which one your old install used.
+
+---
+
+### Scenario G — Image moved `DATA_DIR` between versions (rarely the cause)
+
+BamDude has shipped `ENV DATA_DIR=/app/data` since the first Docker release and we've never moved it — this scenario is documented for completeness in case you're upgrading from a private fork or a custom image. If you ever moved data into `/data` instead of `/app/data` in your own image, the volume mounted at the old path won't be picked up by the new image. Move the data:
+
+```bash
+docker run --rm \
+  -v <volume>:/v \
+  alpine sh -c 'mkdir -p /v/app/data && mv /v/data/* /v/app/data/ 2>/dev/null'
+```
+
+Or simply re-mount the volume at the new path the image expects:
+
+```yaml
+volumes:
+  - bamdude_data:/app/data    # not /data
+```
+
+---
+
+### Why our legacy-DB rename doesn't always fire
+
+BamDude's startup (`migrations/__init__.py`) renames `bambuddy.db` / `bambutrack.db` to `bamdude.db` if found in the data directory. This **only fires when the legacy file is inside the new container's `/app/data`** — i.e. when the volume mount is correct. If the new container is reading from a fresh empty volume (Scenarios A, C, D, E), there is no legacy file to rename in the first place; the rename logic is irrelevant.
+
+The fix is always the same shape: get the new container reading from the volume that holds your data, by either pointing at the existing volume (`external: true`) or copying the data into the new one.
+
+---
+
 ## :material-bug: Troubleshooting
 
 **Startup log shows `setup_required` 503s on every endpoint**

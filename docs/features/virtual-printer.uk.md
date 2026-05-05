@@ -54,6 +54,487 @@ VP працює в **рівно одному режимі**. Режим зада
 
 ---
 
+## :material-ethernet: Потрібні порти
+
+!!! tip "Зазвичай ручного налаштування не треба"
+    Контейнер / нативна інсталяція відкриває потрібні порти автоматично — таблиця нижче для довідки: фаєрвол, Docker NAT, мульти-NIC, proxy mode.
+
+Кожен VP використовує ці порти на своєму bind IP:
+
+| Сервіс | Порт | Протокол | Призначення |
+|--------|------|----------|-------------|
+| Bind / detect | 3000, 3002 | TCP | Хендшейк "Add Printer" слайсера — потрібен у всіх режимах |
+| SSDP | 2021 | UDP | Авто-discovery в LAN (не працює через VPN / Docker bridge / remote) |
+| MQTT | 8883 | TCP/TLS | Контроль + статус принтера |
+| File transfer tunnel | 6000 | TCP/TLS | Verify-job + завантаження файлу (proxy mode + камера A1/P1) |
+| RTSP camera | 322 | TCP/TLS | Стрім камери X1 / H2 / P2 — proxy mode **і** не-proxy режими, коли заданий target printer (через цей порт йде live-камера слайсера) |
+| FTPS | 990 | TCP/TLS | Контроль FTP |
+| FTP PASV data | 50000–50100 | TCP | Пасивний канал даних FTP |
+| Slicer proprietary | 2024–2026 | TCP/TLS | Протокол слайсер ↔ принтер для A1 / P1S (proxy mode) |
+
+!!! note "Чому два bind-порти"
+    Різні версії Bambu Studio і OrcaSlicer використовують різні порти для bind-хендшейку. BamDude слухає **обидва — 3000 і 3002** — щоб будь-який слайсер сконектився.
+
+!!! note "Привілейований порт 990"
+    990 — привілейований (<1024). Процесу потрібен `CAP_NET_BIND_SERVICE` або root, щоб його забіндити. Готовий Docker-образ і systemd unit вже мають цю capability — нічого додаткового робити не треба.
+
+---
+
+## :material-printer-3d-nozzle: Додаємо VP у слайсер
+
+### Авто-discovery (та сама LAN)
+
+1. VP **увімкнений** (Settings → Virtual Printer → toggle on, статус `Running`).
+2. У Bambu Studio / OrcaSlicer відкрий **Device** → **Refresh** (або зачекай — він поллить).
+3. VP зʼявляється у списку пристроїв як модель, яку ти обрав. Вибери, встав access code — все.
+
+### Ручне додавання (VPN / Docker bridge / remote / інша підмережа)
+
+SSDP — link-local: бродкасти не виходять за роутер, через VPN tun, ні через Docker bridge. Тоді:
+
+1. **Device → Add Printer → Add printer manually** (або "Bind with access code" — залежить від білда слайсера).
+2. **IP**: досяжний IP хоста BamDude (або per-VP bind IP, якщо ти його задав).
+3. **Access code**: 8-символьний код з картки VP.
+
+!!! warning "Bind-порти повинні бути досяжні"
+    Хендшейк іде на 3000 або 3002 — машина зі слайсером має могти TCP-конектитись на цей порт хоста BamDude. Фаєрвол, port forwarding, Docker `ports:` — будь-що з цього може ламати.
+
+---
+
+## :material-send: Відправка прінтів — Send vs Print
+
+!!! warning "Тиснемо **Send**, а не **Print**"
+    - **Send** → шле 3MF в BamDude, далі по режиму VP (review / queue / auto-queue / archive). **Правильно.**
+    - **Print** → каже слайсеру стартанути друк негайно на справжньому принтері. VP — не принтер, тому або таймаут, або помилка.
+
+У Bambu Studio / OrcaSlicer кнопка **Send** стоїть біля **Print** (або під випадайкою на кнопці Print — залежить від версії слайсера). Що буде далі — залежить від [режиму VP](#режими).
+
+Для VP у режимі `proxy` тиснемо **Print** як завжди — proxy режим прозорий, він форвардить на справжній принтер.
+
+---
+
+## :material-certificate: Встановлення сертифікату
+
+VP піднімає MQTT + FTPS + RTSP за самопідписаним CA, який BamDude генерує під час першого вмикання VP. **Bambu Studio і OrcaSlicer його з коробки не довіряють** — у них захардкожений список CA Bambu, і (на macOS / Windows) системний trust store ігнорується. Треба додати CA BamDude у файл `printer.cer`, який лежить у слайсера (на Linux — варіант ще через системний CA store, якщо твій білд його поважає).
+
+!!! info "Коли треба повторити"
+    - Перший раз (на кожній новій інсталяції)
+    - Перенесли BamDude на новий хост (кожна інсталяція генерить свій унікальний CA — крім випадку, коли ти переніс директорію `certs/`)
+    - Слайсер оновився і затер `printer.cer` (часто на Windows / macOS)
+
+### Крок 1 — Знаходимо CA BamDude
+
+CA лежить у `<DATA_DIR>/virtual_printer/certs/bbl_ca.crt`.
+
+=== "Native"
+    ```bash
+    # за замовчуванням DATA_DIR — це ./data поряд з інсталяцією
+    cat data/virtual_printer/certs/bbl_ca.crt
+    ```
+
+=== "Docker"
+    ```bash
+    docker cp bamdude:/app/data/virtual_printer/certs/bbl_ca.crt ./bamdude-ca.crt
+    ```
+
+!!! note "CA генерується ліниво"
+    `bbl_ca.crt` зʼявляється тільки після того, як ти **увімкнув** VP перший раз. Якщо файлу нема — створи + увімкни VP в UI, потім ще раз cp.
+
+### Крок 2 — Дописуємо CA у `printer.cer` слайсера
+
+`printer.cer` — PEM-бандл CA, яким слайсер довіряє для підключень до принтерів. Відкрий, **допиши** CA BamDude в самому кінці (після останнього `-----END CERTIFICATE-----`), збережи, потім **повністю перезапусти** слайсер (Cmd+Q на macOS — закрити вікно недостатньо; Task Manager → End Task на Windows).
+
+!!! tip "Дописуємо, не замінюємо"
+    Дописуючи, ти зберігаєш довіру до справжніх принтерів Bambu Lab. Заміна файлу ламає Bambu Cloud / прямий MQTT до фізичного заліза.
+
+**Де живе `printer.cer`:**
+
+=== "macOS"
+    - Bambu Studio: `/Applications/BambuStudio.app/Contents/Resources/cert/printer.cer`
+    - OrcaSlicer: `/Applications/OrcaSlicer.app/Contents/Resources/cert/printer.cer`
+
+=== "Windows"
+    - Bambu Studio: `C:\Program Files\Bambu Studio\resources\cert\printer.cer`
+    - OrcaSlicer: `C:\Program Files\OrcaSlicer\resources\cert\printer.cer`
+
+=== "Linux — `.deb` / `.rpm`"
+    Нативні пакети лінкуються з системним OpenSSL і підхоплюють системний CA bundle, коли в `~/.config/BambuStudio/BambuStudio.conf` стоїть `tls_cert_store_accepted: yes` (default після першого запуску). Тоді ставимо CA системно:
+
+    Debian / Ubuntu / Mint / Raspberry Pi OS:
+
+    ```bash
+    sudo cp bbl_ca.crt /usr/local/share/ca-certificates/bamdude-ca.crt   # розширення ОБОВʼЯЗКОВО .crt
+    sudo update-ca-certificates
+    ```
+
+    Fedora / RHEL / openSUSE:
+
+    ```bash
+    sudo cp bbl_ca.crt /etc/pki/ca-trust/source/anchors/bamdude-ca.crt
+    sudo update-ca-trust
+    ```
+
+    Arch:
+
+    ```bash
+    sudo trust anchor --store bbl_ca.crt
+    ```
+
+    Потім **повністю** перезапусти слайсер.
+
+    !!! warning "Поширена помилка"
+        Кинути файл у `/etc/ssl/certs/` і запустити `update-ca-certificates` — no-op. Інструмент бере тільки файли з `/usr/local/share/ca-certificates/` із розширенням `.crt`.
+
+    Якщо системний store не береться — фолбек у пряме редагування (вони root-owned, тож `sudo`):
+
+    - Bambu Studio: `/usr/share/Bambu Studio/resources/cert/printer.cer`
+    - OrcaSlicer: `/usr/share/OrcaSlicer/resources/cert/printer.cer`
+
+    Прямі правки скидаються при кожному оновленні пакета.
+
+=== "Linux — AppImage"
+    Системний CA store ненадійний для AppImage-білдів (вони мають свій мережевий стек). Розпаковуй, редагуй вшитий `printer.cer`, запускай з розпакованого дерева:
+
+    ```bash
+    ./Bambu_Studio_linux_*.AppImage --appimage-extract
+    # редагуй squashfs-root/usr/share/Bambu Studio/resources/cert/printer.cer
+    ./squashfs-root/AppRun
+    ```
+
+    Повторювати щоразу при оновленні AppImage.
+
+### Персистентність CA
+
+CA генерується один раз і живе через рестарти BamDude. **Тримай `<DATA_DIR>/virtual_printer/certs/` у бекапі** — без нього після наступного рестарту кожен слайсер доведеться переімпортувати на новий CA.
+
+Якщо перемикаєшся між Docker і native і хочеш один CA на обидва — share-уй директорію через bind-mount:
+
+```yaml
+volumes:
+  - ./virtual_printer:/app/data/virtual_printer
+```
+
+### Кілька хостів BamDude
+
+Кожна інсталяція генерує свій CA. Два чисті варіанти:
+
+**Поділити CA (рекомендовано для ферм)**
+
+```bash
+scp -r host1:/path/to/data/virtual_printer/certs/ host2:/path/to/data/virtual_printer/
+# рестарт bamdude на host2
+```
+
+Усі хости тепер з одним CA — один сертифікат у слайсері покриває всіх.
+
+**Або: переімпорт на хост**
+
+При перемиканні слайсера на інший хост BamDude — видали старий блок CA з `printer.cer`, додай новий, повністю перезапусти слайсер.
+
+!!! warning "Один CA BamDude за раз"
+    Запхати кілька CA BamDude у `printer.cer` криптографічно ОК, але це робить дуже легко вказати слайсер на "не той" хост випадково. Чисти старі.
+
+---
+
+## :material-ip-network: Виділені bind IP (кілька VP)
+
+Кожен VP, що сидить на стандартних портах, потребує власного IP — слухачі FTPS / MQTT / SSDP не можуть ділити порт між VP на одній адресі. Один VP на `0.0.0.0` — основного IP хоста достатньо; для двох і більше VP даємо кожному свій bind IP через interface-аліаси (додаткові IP на тому ж NIC).
+
+Приклад розкладу:
+
+| | IP |
+|---|---|
+| BamDude UI | `192.168.1.100` (основний хоста) |
+| VP 1 | `192.168.1.101` |
+| VP 2 | `192.168.1.102` |
+| VP 3 | `192.168.1.103` |
+
+!!! warning "Бери вільні IP"
+    Адреси **поза DHCP-діапазоном**, або зарезервовані на роутері. Перевіряй `ping 192.168.1.101` перед додаванням — якщо хтось відповідає, бери інший.
+
+### Додаємо аліаси інтерфейсу
+
+=== "Linux (native або Docker host mode)"
+
+    Знайди імʼя інтерфейсу:
+
+    ```bash
+    ip -br addr show
+    # eth0  UP  192.168.1.100/24
+    ```
+
+    Додай аліаси (тимчасові — після ребута зникнуть):
+
+    ```bash
+    sudo ip addr add 192.168.1.101/24 dev eth0
+    sudo ip addr add 192.168.1.102/24 dev eth0
+    sudo ip addr add 192.168.1.103/24 dev eth0
+    ```
+
+    **Робимо постійно:**
+
+    === "Netplan (Ubuntu 18.04+, Debian 12+)"
+
+        У `/etc/netplan/*.yaml`:
+
+        ```yaml
+        network:
+          version: 2
+          ethernets:
+            eth0:
+              dhcp4: true
+              addresses:
+                - 192.168.1.101/24
+                - 192.168.1.102/24
+                - 192.168.1.103/24
+        ```
+
+        `sudo netplan apply`.
+
+    === "/etc/network/interfaces (Debian, Raspberry Pi OS)"
+
+        ```
+        auto eth0:1
+        iface eth0:1 inet static
+            address 192.168.1.101
+            netmask 255.255.255.0
+
+        auto eth0:2
+        iface eth0:2 inet static
+            address 192.168.1.102
+            netmask 255.255.255.0
+        ```
+
+        `sudo ifup eth0:1 eth0:2`.
+
+    === "NetworkManager (Fedora, RHEL, Arch)"
+
+        ```bash
+        sudo nmcli con mod "Wired connection 1" +ipv4.addresses "192.168.1.101/24"
+        sudo nmcli con mod "Wired connection 1" +ipv4.addresses "192.168.1.102/24"
+        sudo nmcli con up "Wired connection 1"
+        ```
+
+        Імʼя зʼєднання — `nmcli con show`.
+
+=== "Unraid"
+
+    SSH або веб-термінал:
+
+    ```bash
+    ip addr add 192.168.1.101/24 dev eth0
+    ip addr add 192.168.1.102/24 dev eth0
+    ```
+
+    Постійно — у `/boot/config/go`:
+
+    ```bash
+    echo "ip addr add 192.168.1.101/24 dev eth0" >> /boot/config/go
+    echo "ip addr add 192.168.1.102/24 dev eth0" >> /boot/config/go
+    ```
+
+=== "Synology NAS"
+
+    SSH:
+
+    ```bash
+    sudo ip addr add 192.168.1.101/24 dev eth0
+    sudo ip addr add 192.168.1.102/24 dev eth0
+    ```
+
+    Постійно — Control Panel → **Task Scheduler** → Triggered Task → User-defined script, тригер **Boot-up**, користувач **root**, ті ж рядки `ip addr add …`.
+
+=== "TrueNAS SCALE"
+
+    Network → Interfaces → Edit → додай **Aliases** (`192.168.1.101/24`, …) → Save → Apply. Постійно автоматично.
+
+=== "Proxmox LXC"
+
+    **Усередині контейнера** — постав `iproute2`, далі Linux-інструкції вище (netplan або `/etc/network/interfaces`).
+
+    **З Proxmox-хоста** — `/etc/pve/lxc/<CTID>.conf`:
+
+    ```
+    net0: name=eth0,bridge=vmbr0,ip=192.168.1.100/24,gw=192.168.1.1
+    net1: name=eth1,bridge=vmbr0,ip=192.168.1.101/24
+    net2: name=eth2,bridge=vmbr0,ip=192.168.1.102/24
+    ```
+
+    Або `pct set <CTID> -net1 name=eth1,bridge=vmbr0,ip=192.168.1.101/24`. Перезапустити контейнер після.
+
+=== "Docker Desktop (macOS / Windows)"
+
+    !!! warning "Тільки один VP"
+        Docker Desktop крутить все у Linux VM і не дає додавати в неї interface-аліаси, які потім досяжні з контейнера. У bridge-режимі лімит — **один VP** на хост. Для багатьох VP — Linux (native або VM з host networking).
+
+!!! tip "Docker host mode"
+    З `network_mode: host` додавай аліаси на **Docker-хості**, не в контейнері — host mode зашейрить всі IP хоста в контейнер автоматично.
+
+---
+
+## :material-list-box: SSDP-коди моделей
+
+VP видає себе за реальну модель Bambu, щоб слайсерська перевірка сумісності пройшла. Бери модель, що збігається з пресетом слайсера.
+
+| SSDP-код | Назва | Префікс серійника |
+|---|---|---|
+| `BL-P001` | X1C *(default)* | 00M |
+| `BL-P002` | X1 | 00M |
+| `C13` | X1E | 03W |
+| `N6` | X2D | 20P9 |
+| `C11` | P1P | 01S |
+| `C12` | P1S | 01P |
+| `N7` | P2S | 22E |
+| `N2S` | A1 | 039 |
+| `N1` | A1 Mini | 030 |
+| `O1D` | H2D | 094 |
+| `O1C` / `O1C2` | H2C *(O1C2 = dual-nozzle)* | 094 |
+| `O1S` | H2S | 094 |
+
+!!! note "Зміна моделі рестартить VP"
+    Зміна моделі регенерить серійник і рестартить слухачі. Слайсер побачить новий принтер — швидше за все доведеться додавати наново (кеш паринга у слайсера зашитий по серійнику).
+
+---
+
+## :material-network-strength-4: Network Interface Override
+
+Коли в хоста кілька NIC (Tailscale, кілька LAN-бриджів, Docker overlay, dual-homed routing), авто-detect IP BamDude може потрапити не на ту інтерфейсу — слайсери з потрібного сегмента не дотягуються, та й IP, який лягає в SAN сертифікату, не пройде перевірку.
+
+**Settings → Virtual Printer → Network Interface Override** — обираємо, який інтерфейс BamDude:
+
+- анонсує в **SSDP**-discovery
+- зашиває в SAN **TLS-сертифікату**
+
+Працює у **всіх режимах** (server modes + proxy SSDP relay). Бери інтерфейс, з якого слайсер реально дотягується до BamDude.
+
+---
+
+## :material-shield-check: Tailscale
+
+Tailscale — рекомендований шлях для **віддаленого доступу слайсера**: слайсер досягає VP через приватну WireGuard-мережу звідки завгодно, без port forwarding і без публічного експорту.
+
+Тогл Tailscale на картці VP показує IP / MagicDNS-host у tailnet — це і вставляєш у слайсер. CA однаково треба імпортувати в слайсер (Tailscale не змінює довіру до сертифікатів).
+
+Повний setup (native + Docker + LXC), prerequisites і troubleshooting — у виділеному гайді:
+
+[:material-arrow-right: **Tailscale-інтеграція**](tailscale.uk.md){ .md-button }
+
+---
+
+## :material-server-network: Платформенне налаштування
+
+Відкрий [порти зі списку вище](#потрібні-порти) у фаєрволі.
+
+=== "Linux native"
+
+    Порту 990 потрібен `CAP_NET_BIND_SERVICE`. Готовий systemd unit вже містить:
+
+    ```ini
+    AmbientCapabilities=CAP_NET_BIND_SERVICE
+    ```
+
+    Для ручного запуску — capability на бінарь Python:
+
+    ```bash
+    sudo setcap cap_net_bind_service=+ep $(readlink -f $(which python3))
+    ```
+
+    UFW:
+
+    ```bash
+    sudo ufw allow 3000/tcp
+    sudo ufw allow 3002/tcp
+    sudo ufw allow 2021/udp
+    sudo ufw allow 8883/tcp
+    sudo ufw allow 990/tcp
+    sudo ufw allow 6000/tcp
+    sudo ufw allow 322/tcp
+    sudo ufw allow 2024:2026/tcp
+    sudo ufw allow 50000:50100/tcp
+    ```
+
+    firewalld:
+
+    ```bash
+    sudo firewall-cmd --permanent --add-port=3000/tcp
+    sudo firewall-cmd --permanent --add-port=3002/tcp
+    sudo firewall-cmd --permanent --add-port=2021/udp
+    sudo firewall-cmd --permanent --add-port=8883/tcp
+    sudo firewall-cmd --permanent --add-port=990/tcp
+    sudo firewall-cmd --permanent --add-port=6000/tcp
+    sudo firewall-cmd --permanent --add-port=322/tcp
+    sudo firewall-cmd --permanent --add-port=2024-2026/tcp
+    sudo firewall-cmd --permanent --add-port=50000-50100/tcp
+    sudo firewall-cmd --reload
+    ```
+
+=== "Docker (Linux, host mode)"
+
+    Host networking обовʼязкове для SSDP-discovery. Стандартний compose:
+
+    ```yaml
+    services:
+      bamdude:
+        image: ghcr.io/kainpl/bamdude:latest
+        container_name: bamdude
+        network_mode: host          # потрібно для SSDP
+        cap_add:
+          - NET_BIND_SERVICE        # потрібно для порту 990
+        volumes:
+          - bamdude_data:/app/data
+          - bamdude_logs:/app/logs
+        environment:
+          - TZ=Europe/Kyiv
+        restart: unless-stopped
+    ```
+
+    Маппінг портів не треба — host mode біндить прямо в інтерфейси хоста. UFW / firewalld-правила застосовуй на хості (як у вкладці Linux native).
+
+=== "Docker Desktop (macOS / Windows)"
+
+    !!! warning "Обмежена підтримка"
+        `network_mode: host` на Docker Desktop недоступний — SSDP **не працюватиме**, додавай VP вручну за IP. Bridge-режим обмежує **одним VP** (interface-аліаси у VM не зробити).
+
+    Bridge-mode compose:
+
+    ```yaml
+    services:
+      bamdude:
+        image: ghcr.io/kainpl/bamdude:latest
+        container_name: bamdude
+        cap_add:
+          - NET_BIND_SERVICE
+        ports:
+          - "${PORT:-8000}:8000"
+          - "3000:3000"
+          - "3002:3002"
+          - "990:990"
+          - "6000:6000"
+          - "8883:8883"
+          - "322:322"
+          - "2024-2026:2024-2026"
+          - "50000-50100:50000-50100"
+        volumes:
+          - bamdude_data:/app/data
+          - bamdude_logs:/app/logs
+        environment:
+          - TZ=Europe/Kyiv
+          - VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100  # LAN IP Docker-хоста
+        restart: unless-stopped
+    ```
+
+    `VIRTUAL_PRINTER_PASV_ADDRESS` у bridge-режимі **обовʼязковий** — без нього FTP PASV анонсує внутрішній IP контейнера і канал даних ламається у середині хендшейку.
+
+=== "Unraid / Synology / TrueNAS SCALE"
+
+    У налаштуваннях контейнера ставимо **Host Network**. FTP-сервер біндиться напряму на 990 — додаткової конфігурації не треба, окрім увімкнення VP в UI.
+
+=== "Proxmox LXC"
+
+    Спецконфігурації не треба — FTP-сервер біндиться напряму на 990. BamDude крутиться як root **або** з `CAP_NET_BIND_SERVICE` на бінарі Python (див. вкладку Linux native).
+
+---
+
 ## :material-form-select: UI вибору режиму
 
 Діалог Add / Edit показує чотири режими як **три великі кнопки** + sub-toggle — бо `print_queue` і `auto_queue` це по суті два варіанти одного й того самого (диспатч у чергу, з фіксованим таргетом vs без):
@@ -177,6 +658,121 @@ VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100
 ```
 
 FTPS-сервер стартує, логує `FTP PASV address override: 192.168.1.100`, і відтепер кожна PASV-відповідь використовує цю адресу. Не має ефекту, коли BamDude крутиться на host-мережі — там не задавайте.
+
+---
+
+## :material-help-circle: Troubleshooting
+
+### Слайсер не знаходить VP (auto-discovery)
+
+1. **VP увімкнено і запущено?** Бейдж на картці VP має бути `Running` — якщо `Error`, відкривай картку і читай причину.
+2. **Той самий LAN-сегмент?** SSDP — link-local: не пройде через VPN tun, Docker bridge, маршрутизовані підмережі. Додавай вручну за IP.
+3. **Bind-порти досяжні?** З машини зі слайсером:
+   ```bash
+   nc -zv BAMDUDE_IP 3000
+   nc -zv BAMDUDE_IP 3002
+   ```
+4. **Фаєрвол**: 3000/tcp, 3002/tcp, 2021/udp мають бути відкриті між слайсером і BamDude.
+5. **Кілька NIC?** [Network Interface Override](#material-network-strength-4-network-interface-override) — пін SSDP на потрібний інтерфейс.
+
+### "Failed to connect" / TLS error -1 / cert untrusted
+
+Слайсер не довіряє CA BamDude. По черзі:
+
+1. **CA дописаний у `printer.cer`?**
+   ```bash
+   grep -c "BEGIN CERTIFICATE" "/path/to/slicer/resources/cert/printer.cer"
+   ```
+   Stock = 1. Після append = 2 (або більше при мульти-host).
+2. **Той CA?** Якщо переніс BamDude на новий хост — CA інший. Звіряй fingerprint:
+   ```bash
+   # Native
+   openssl x509 -in data/virtual_printer/certs/bbl_ca.crt -noout -fingerprint -sha1
+
+   # Docker
+   docker exec bamdude openssl x509 -in /app/data/virtual_printer/certs/bbl_ca.crt -noout -fingerprint -sha1
+   ```
+   Рядок `SHA1 Fingerprint=…` має бути серед сертифікатів у `printer.cer`.
+3. **Слайсер повністю перезапущений?** Cmd+Q на macOS, End Task на Windows. Закрити вікно недостатньо — `printer.cer` не перечитується.
+4. **Linux AppImage / Flatpak**: `printer.cer` всередині бандла read-only. Або розпаковуй AppImage і редагуй вшитий cert, або ставимо CA в системний trust store + перевіряємо `tls_cert_store_accepted: yes` у `~/.config/BambuStudio/BambuStudio.conf`.
+5. **Останній варіант — регенерація**:
+   ```bash
+   rm -rf /path/to/data/virtual_printer/certs/
+   # disable + re-enable VP в UI для регенерації
+   ```
+   Потім переімпортуй новий CA у кожен слайсер.
+
+### "Wrong printer model"
+
+Модель пресета слайсера і [SSDP-код VP](#material-list-box-ssdp-коди-моделей) не збігаються. Постав однакову модель з обох боків — перевірка сумісності читає саме SSDP-код VP.
+
+### Authentication failed
+
+- Access code — рівно **8 символів**, ні більше, ні менше.
+- Слайсер кешує access code per discovered printer; якщо ти змінив його у BamDude — видали і додай принтер у слайсері знову.
+
+### Не той IP в SSDP / TLS SAN не співпадає
+
+Хост з кількома NIC (Tailscale, Docker bridges, dual LAN) — авто-detect взяв не той інтерфейс:
+
+1. **Settings → Virtual Printer**
+2. **Network Interface Override** → інтерфейс, з якого слайсер реально дотягується до BamDude
+3. VP перезапуститься; SSDP і SAN сертифіката оновляться
+
+### FTP error / connection reset
+
+1. **Права** на `<DATA_DIR>/virtual_printer/` — має бути writeable юзером, від якого крутиться BamDude.
+2. **Порт 990 вже занятий?** `sudo ss -tlnp | grep :990` — вимкни конфліктуючий FTP.
+3. **`CAP_NET_BIND_SERVICE` нема** — див. [Linux native вище](#tab-linux-native).
+4. **Bridge-режим Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` обовʼязковий; без нього PASV анонсує внутрішній IP контейнера, і канал даних рветься.
+
+### Proxy mode: принтер offline у слайсері
+
+- Target принтер у BamDude онлайн? На сторінці Printers картка має показувати `Online`.
+- Принтер у **LAN Mode** (Developer Mode у Bambu Handy)? Proxy режим вимагає LAN mode — у Cloud Mode проксована MQTT-сесія відхиляється.
+- Перемкни proxy off + on, щоб форснути reconnect.
+
+### Proxy mode: попап "Connect using IP and access code" при Print
+
+1. **Порт 6000 досяжний?** Bambu Studio через нього шле тунель файлу.
+   ```bash
+   nc -zv BAMDUDE_IP 6000
+   ```
+2. **Фаєрвол**: 6000/tcp між слайсером і BamDude.
+3. **Різні VLAN / підмережі** — глянь у логах BamDude `IP rewrite active`. Крок MQTT IP-rewrite перепаковує LAN-IP принтера у MQTT-payload на IP BamDude, щоб слайсер ішов у proxy, а не напряму.
+
+### Proxy mode: камера не вантажиться
+
+- **X1 / H2 / P2**: RTSP на 322 — відкрити між слайсером і BamDude.
+- **A1 / P1**: камера їде через 6000 (спільно з file transfer).
+
+### Proxy mode: розривається посеред передачі
+
+Великі 3MF на повільному uplink. Або підняти VPN (Tailscale / WireGuard), щоб канал даних ішов одним стабільним тунелем, або заливати 3MF локально, а далі диспатчити Print Queue.
+
+---
+
+## :material-shield-account: Технічні деталі
+
+### Безпека по протоколу
+
+- **Bind** (3000, 3002): нешифрований TCP — передає тільки ідентифікацію принтера, без чутливих даних. У proxy режимі BamDude відповідає від імені VP і не форвардить bind на принтер.
+- **MQTT control** (8883): TLS 1.2, термінується в BamDude. Proxy режим переписує IP принтера всередині MQTT-payloads, щоб слайсер не міг обійти проксі.
+- **File transfer tunnel** (6000): end-to-end TLS, прозоре проксі.
+- **RTSP camera** (322): end-to-end TLS, прозоре проксі.
+- **A1 / P1S proprietary** (2024–2026): end-to-end TLS, прозоре проксі.
+- **FTPS control** (990): end-to-end TLS, прозоре проксі.
+- **FTP data** (50000–50100): у proxy режимі — прозоре проксі; реальне шифрування залежить від домовленості слайсера/принтера. Bambu Studio шле дані каналом **у відкритому вигляді** навіть коли узгоджує `PROT P`. VPN — якщо тобі треба конфіденційність каналу даних.
+- Усі зʼєднання вимагають 8-символьний access code — слайсер автентифікується на кожному TLS-handshake.
+- CA живе у `<DATA_DIR>/virtual_printer/certs/`; per-VP device certs у `<DATA_DIR>/virtual_printer/certs/{id}/` регенеруються при зміні серійника.
+
+### Обмеження
+
+- Кільком VP потрібен **окремий bind IP кожному** — interface-аліаси за таблицею вище.
+- **SSDP працює тільки на одній LAN / маршрутизованих підмережах**. VPN tun mode і Docker bridge — додавати вручну за IP.
+- Слайсер повинен довіряти самопідписаному CA BamDude — див. [Встановлення сертифікату](#material-certificate-встановлення-сертифікату).
+- **FTP data channel нешифрований** з боку слайсера — VPN, якщо хочеш повне шифрування.
+- **Docker Desktop на macOS / Windows = тільки один VP** (interface-аліаси у VM не зробити).
 
 ---
 

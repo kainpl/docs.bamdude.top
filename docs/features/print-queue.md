@@ -24,6 +24,33 @@ The print queue lets you:
 
 ---
 
+!!! warning "SD card required"
+    Bambu printers fetch the active job from internal SD storage. **An SD card is mandatory** — without one, every dispatch fails at the FTP-upload step. A1-mini owners often run without one; that printer model can't drive the queue.
+
+---
+
+## :material-list-status: Queue states
+
+Every queue item carries one of these statuses (visible on the queue card chip):
+
+| State | Meaning |
+|-------|---------|
+| `pending` | In line, will start when the printer is free + scheduled time hits |
+| `printing` | Currently dispatched + running |
+| `paused` | Print is paused on the printer (operator paused, filament runout, AMS issue) |
+| `waiting_for_filament` | Held back because the required filament/colour isn't loaded |
+| `waiting_for_plate_clear` | Print finished, waiting on plate-clear confirmation before next dispatch |
+| `waiting_for_stagger` | Multi-printer batch — waiting for the staggered-start tick |
+| `waiting_for_dispatch` | Dispatcher is in flight (FTP upload + MQTT start_print) |
+| `failed` | Dispatch or print failed; verbose `error_message` on hover |
+| `cancelled` | Cancelled by user before completion |
+| `skipped` | Auto-skipped after a previous failure on the same job |
+| `completed` | Print finished — auto-deletes once the matching archive lands (m019) |
+
+The queue card header shows live counters (Total / Pending / Printing / Completed / Failed / Cancelled) recomputed from `print_archives` on every read.
+
+---
+
 ## :material-plus: Adding to Queue
 
 ### From Archive
@@ -55,6 +82,45 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 !!! tip "Stored Mappings"
     AMS mappings are saved with the queued print. When it starts, BamDude uses your configured mapping.
 
+**Dual-nozzle printers (H2D / H2D Pro)** show **[L] / [R]** badges next to each AMS slot so you can see which extruder a slot feeds. The auto-matcher uses the slicer's `sliced_for_model` + per-slot filament metadata; falling back to manual when the printer doesn't have an exact filament match for what the gcode wants.
+
+**Prefer lowest remaining filament** (Settings → Workflow): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1.
+
+### Plate selection (multi-plate 3MF)
+
+Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:
+
+- Click a single plate to dispatch just that plate (queue row gets `plate_index = N`).
+- Multi-select plates → one queue row per plate, queued in order.
+- The thumbnail + per-plate filament list comes from the m023 plate cache (no re-parse on each render).
+
+Plate index is preserved across restart-recovery + reprint flows. See [archiving](archiving.md) for chain-of-custody on multi-plate dispatches.
+
+### Print options
+
+When adding to queue, expand **Print options**:
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| **Use AMS** | `on` | Route filament from AMS instead of external spool. Off = printer expects manually-fed filament. |
+| **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. |
+| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. |
+| **Vibration calibration** | off | Run vibration-resonance cal. Disabled for fast iteration on identical jobs. |
+| **Mesh-mode fast check** | off | Skip the M970 vibration-probe G-code via the [3MF gcode patcher](archiving.md). Disk file stays unpatched; only the bytes shipped to the printer are modified. |
+| **Layer inspection** | `on` | Per-layer first-layer inspection AI (X1 + H2 series). |
+| **Timelapse** | off | Record a built-in timelapse on the printer. |
+
+Defaults are install-wide and configurable in **Settings → Workflow → Default print options**. Per-printer overrides live on each printer's settings card. Per-job overrides on the Add-to-Queue modal trump everything.
+
+### Auto-print G-code injection
+
+Sometimes you need to mutate the gcode at dispatch — chamber heat-soak, custom purge, swap-mode setup — without re-slicing. Toggle **G-code injection** on the queue item; configure snippets + placeholders (`{max_layer_z}`, `{first_layer_temp}`, etc.) in **Settings → Workflow → G-code injection**.
+
+Full reference: [G-code injection](gcode-injection.md). Reads + applies at dispatch time so different jobs can carry different injections.
+
+!!! warning "Z-safety"
+    Injecting absolute Z-moves before the auto-Z-home that Bambu firmware does at print start can crash the head into the print. Use the placeholders (they expand against the slicer's first-layer plan) instead of hard-coded numbers.
+
 ### `created_by_id` audit
 
 Adding to queue records *who* added the item. The Telegram bot, library bulk-add, per-printer "Print" button, and File Manager prints all propagate the acting user. Visible per row on the archive that the queue item produces. The VP auto-queue and webhook trigger paths legitimately leave it `NULL` (no authenticated user to attribute).
@@ -72,9 +138,34 @@ Adding to queue records *who* added the item. The Telegram bot, library bulk-add
 
 ## :material-clock-outline: Scheduling
 
-- **Immediate** -- starts when printer is idle
-- **Scheduled** -- starts at a specific date/time
-- **Queue Only** (staged) -- won't start automatically until manually released
+### Immediate
+
+Default. Job starts as soon as the printer is idle and the dispatcher reaches it. The queue is processed strictly in `position` order — **except for** Shortest-Job-First mode (below).
+
+### Scheduled
+
+Pick a future date + time. The job stays in `pending` until the scheduled clock hits, then enters dispatch. Works in combination with smart-plug power-on schedules — the plug fires N minutes before the scheduled start so the printer's warm by the time dispatch hits.
+
+### Schedule priority
+
+When two scheduled jobs hit overlapping times, BamDude orders them by:
+
+1. Manually-pinned `position` (drag-and-drop)
+2. Earliest `scheduled_at`
+3. Insertion order (FIFO)
+
+### Queue only (staged)
+
+Sets `manual_start = true` on the row — the dispatcher ignores it until you click Start. Useful for staging an entire batch upfront and then releasing it in one go (or for slicer-uploads-to-VP that you want to hold until you've reviewed them).
+
+### Shortest job first (SJF)
+
+**Settings → Workflow → Job ordering = Shortest first** flips the dispatcher to pick the shortest pending job (by predicted print time) instead of the highest-priority one. Comes with a **starvation guard**:
+
+- Each pending job gains an `aging_score` over time
+- Once a job has been waiting > **N hours** (default 6, configurable), it's promoted to top of the dispatch queue regardless of duration
+
+This keeps a long farm-printable from sitting forever behind a stream of short jobs while still letting fast jobs slip in between long ones during the day.
 
 ---
 
@@ -88,7 +179,101 @@ Disable this in **Settings > Queue > Require plate-clear confirmation** for auto
 
 ### Bulk Editing
 
-Select multiple queue items to reassign printers, toggle options, or cancel in bulk.
+Select multiple queue items via the toolbar checkboxes to apply a bulk edit:
+
+| Field | Tri-state on bulk | Notes |
+|-------|-------------------|-------|
+| Target printer | ✓ | Reassigns rows. Filament/colour validation runs against the new target. |
+| Use AMS | ✓ | Tri-state — leave indeterminate to preserve per-row settings. |
+| Bed levelling / Flow / Vibration / Layer inspect / Timelapse | ✓ | Same tri-state semantics. |
+| Scheduled-at | ✓ | Bulk-shift schedules forward by an offset, or pin a fixed clock. |
+| Cancel | — | Bulk-cancel marks all selected as `cancelled` (no force on currently `printing` rows — those need an explicit per-row Cancel). |
+
+---
+
+## :material-printer-3d-nozzle-alert: Multi-printer queue + staggered start
+
+When you submit one job to **N printers** at once (multi-select in Add-to-Queue), each gets its own queue row. By default they all dispatch immediately — N concurrent FTP uploads, N near-simultaneous start commands. For overhead-constrained farms (single network uplink, single power circuit, shared MQTT broker), enable **Staggered batch start**:
+
+| Setting | Effect |
+|---------|--------|
+| **Group size** | How many printers fire per wave (e.g. 3 = three at a time, then a pause) |
+| **Interval** | Seconds between waves |
+
+Cross-link: full deep-dive in [Staggered start](staggered-start.md).
+
+Per-printer **AMS mappings** are configured per row — the multi-printer modal lets you reuse the same mapping, or pick a different slot per printer when AMS contents differ across the fleet.
+
+---
+
+## :material-router-network: Model-based queue assignment ("Any X1C")
+
+Instead of pinning a job to a specific printer, queue it under **Any [model]**:
+
+- Filament-aware: the scheduler refuses to dispatch onto a printer whose AMS doesn't have the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#print-queue-mode-force-color-match) is on)
+- Location-aware: optional location filter ("any printer in Workshop A")
+- **Manual filament override**: if no eligible printer matches automatically, set a manual mapping that the queue uses regardless
+
+When no eligible printer is free, the row sits as `waiting_for_filament` until either:
+
+- An eligible printer goes idle
+- You manually reassign the row to a specific printer
+- You acknowledge the warning and force-dispatch onto a non-matching printer
+
+For multi-tier filament + colour routing across the whole farm, prefer the **auto-queue router** — see [Auto-Queue Routing](auto-queue.md) for the full priority chain.
+
+---
+
+## :material-timeline-text: Timeline view
+
+Click **List / Timeline** at the top of the queue page to flip into a Gantt-style production schedule:
+
+- One row per printer, time on X-axis
+- Each block is a queue item sized by predicted print time + ETA chaining (block N starts when block N-1 ends)
+- Day navigation buttons (prev / today / next), filters mirror the list view
+- Hover a block for full job details
+
+ETA chaining is a planning tool — it doesn't account for clear-plate confirmation gaps, manual pauses, or filament loads, so real wall-clock will drift longer. Useful for "which printer is the bottleneck this week" answers.
+
+---
+
+## :material-power-plug: Smart plug automation
+
+When a printer has an associated smart plug, the queue can drive power state:
+
+- **Auto power-on** — plug turns on N minutes before the next scheduled job (configurable in **Settings → Smart Plugs → Pre-warm offset**)
+- **Auto power-off** — plug turns off N minutes after a printer goes idle with an empty queue + cooldown (default 30 min, configurable)
+- **Cooldown awareness** — the plug stays on while the printer reports `bed_temp` or `nozzle_temp` above threshold even after the last job ends
+
+Full setup + per-printer linking → [Smart plugs](smart-plugs.md).
+
+---
+
+## :material-bell-outline: Queue history
+
+Once a job's archive lands, the queue row auto-deletes (m019). To find old queue items:
+
+- **Archives** page filtered by printer — every archive carries `queue_id` + optional `batch_id`
+- Failed dispatches surface their verbose `error_message` on hover
+- Bulk-print plans launched from a project also stay attributable via `queue_id` linkage
+
+---
+
+## :material-api: API access
+
+Programmatic queue control via REST:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/print-queue/` | List all queue items (filterable by printer, status) |
+| `POST /api/v1/print-queue/` | Add a new queue item from an archive or library file |
+| `PATCH /api/v1/print-queue/{id}` | Edit position, schedule, AMS, options |
+| `DELETE /api/v1/print-queue/{id}` | Cancel + remove |
+| `POST /api/v1/print-queue/{id}/start` | Force-start a `manual_start` or `pending` item |
+| `POST /api/v1/print-queue/bulk` | Bulk submit / edit / cancel |
+| `POST /api/v1/print-queue/reorder` | Drag-and-drop reorder via API |
+
+Full schema + auth details: [API reference](../reference/api.md).
 
 ---
 

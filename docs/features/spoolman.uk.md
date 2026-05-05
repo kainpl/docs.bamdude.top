@@ -96,12 +96,19 @@ BamDude постачається з **повноцінним інвентаре�
 
 Опціонально. Підключіть BamDude до інстансу [Spoolman](https://github.com/Donkie/Spoolman) — і дві системи дзеркалитимуть одна одну.
 
+### :material-spool: Що таке Spoolman?
+
+[Spoolman](https://github.com/Donkie/Spoolman) — це open-source self-hosted менеджер інвентарю філаменту для 3D-друку. Він живе як окремий сервіс (Docker, bare metal або Spoolman-сумісний хмарний інстанс) і експонує REST API для трекінгу котушок, історії використання, vendor/material таксономії, low-stock-alert-ів і — найважливіше для multi-tool сетапів — є єдиним джерелом правди, проти якого можуть синкатися інші інструменти (OctoPrint, Mainsail, Klipper, кілька slicer-хостів).
+
+Якщо у тебе тільки BamDude, вбудований інвентар вище вже робить усе, що робить Spoolman. Інтеграція — для тих, хто **вже** має Spoolman через якийсь інший хост у своєму сетапі.
+
 ### :material-link: Підключення
 
 1. **Налаштування** → **Інтеграції** → **Spoolman**
 2. Задайте **URL** (наприклад, `http://192.168.1.50:7912` або docker-compose service alias типу `http://spoolman:7912`)
-3. **Test Connection**
-4. **Save**
+3. (Опційно) **API Key** — потрібен лише якщо твій Spoolman за авторизацією; для дефолтного відкритого сетапу залиш пустим.
+4. **Test Connection**
+5. **Save**
 
 !!! tip "Доступність по мережі"
     BamDude має змогу досягти Spoolman URL зсередини власного процесу. На docker-compose тримайте обидва сервіси в одній мережі і використовуйте service alias; на bare metal достатньо LAN-хостнейму або статичного IP.
@@ -125,6 +132,119 @@ BamDude постачається з **повноцінним інвентаре�
 ### :material-link-off: Відв'язка
 
 У режимі `manual` кожна картка Bambu spool показує кнопку **Unlink** — корисно, коли треба перевести котушку зі Spoolman назад у BamDude-only інвентар, не ламаючи призначення в AMS.
+
+### :material-poll: Результати синхронізації
+
+Після кожного синку (auto чи manual) BamDude показує панель результатів:
+
+- **Synced count** — скільки котушок успішно синхронізовано.
+- **Skipped spools** — список котушок, які не змогли синкатися, з причиною per-row (наприклад, "Non-Bambu Lab spool", "No matching material in Spoolman", "Manual unlink in effect"). Кожен скіпнутий ряд показує локацію, кольоровий swatch і текст причини.
+- **Errors** — будь-які HTTP / network / data помилки під час запуску.
+
+!!! note "Детекція Bambu Lab RFID"
+    Auto-sync фаєриться лише для **офіційних Bambu Lab котушок з RFID** — third-party, refilled, SpoolEase скіпаються спеціально, щоб не плодити фейкові ряди в Spoolman. Bambu Lab котушки ідентифікуються за hardware-ідентифікаторами (`tray_uuid` і `tag_uid`), не за іменем filament-preset. Не-Bambu котушки можна **manually link** (див. нижче).
+
+### :material-chart-line: Трекінг використання
+
+Кожен завершений друк звітує per-filament споживання у Spoolman як usage event:
+
+1. BamDude дістає per-filament дані використання з архівованого 3MF-файлу (slicer estimates).
+2. Для часткових друків (фейли, скасування) per-layer G-code-аналіз дає точне споживання до точно того шару, де друк впав.
+3. На завершенні кожна котушка звітується індивідуально — multi-material-друк оновлює кожну прив'язану котушку окремо.
+4. Якщо 3MF-даних нема (рідко — fallback recovery ще не догнав архів), використовується delta AMS remain% як fallback.
+
+Це збігається з BamDude-моделлю per-spool — ті самі цифри, що годують сторінку Stats, годують і Spoolman, просто маршрутно через usage-history таблицю Spoolman поверх локального архіву BamDude.
+
+### :material-tray-full: AMS-слот мапінг (hover-картка)
+
+Наведи на будь-який AMS-слот на сторінці Printers і побачиш:
+
+| Поле | Джерело |
+|------|---------|
+| **Vendor** | Bambu Lab або Generic — читається з RFID-тега. |
+| **Profile** | Тип і subtype філаменту (`PLA Basic`, `PETG Translucent`, …). |
+| **Color** | Назва кольору + swatch — резолвиться через color-каталог BamDude (єдине джерело правди). |
+| **K Factor** | Pressure-advance значення активне для цього слота. |
+| **Fill Level** | Залишок у відсотках, з візуальним bar'ом. |
+| **Spool ID** | Прив'язаний Spoolman spool ID (тільки коли Spoolman увімкнено і слот прив'язаний). |
+
+#### Fill Level для AMS Lite / зовнішніх котушок
+
+AMS Lite (наприклад, A1 серія) **не має сенсора ваги** і завжди звітує 0% fill level. Коли котушка прив'язана до Spoolman і там є weight-дані, BamDude використовує remaining-вагу зі Spoolman:
+
+- **AMS з ваговим сенсором** — використовує AMS-відсоток напряму (без змін).
+- **AMS Lite (звітує 0%)** — fallback на Spoolman: `(remaining_weight / filament_weight) × 100`.
+- **External spool** — показує fill з Spoolman, якщо прив'язано (інакше `—`).
+
+Коли джерело — Spoolman, hover-картка показує "(Spoolman)" поряд з відсотком, щоб видно було, звідки число.
+
+### :material-link: Кнопки Open / Link / Manual link
+
+Кожна hover-картка слота має основну кнопку, label якої залежить від стану прив'язки:
+
+| Стан | Кнопка | Що робить |
+|------|--------|-----------|
+| **Linked** | **Open in Spoolman** | Відкриває сторінку котушки в Spoolman у новій вкладці — редагуй vendor, cost, нотатки, вагу прямо там. |
+| **Unlinked, Bambu Lab spool, є кандидати** | **Link to Spoolman** | Відкриває picker з усіма unlinked Spoolman-котушками — обери, натисни **Link** для підтвердження. |
+| **Unlinked, Bambu Lab spool, нема кандидатів** | **Link to Spoolman** (disabled) | Зараз нема unlinked-котушок у Spoolman — додай у Spoolman спочатку. |
+| **Не-Bambu Lab котушка** | **Manual Link** | Вручну прив'язати слот до Spoolman-котушки — обходить RFID-матчинг для refilled-core-ів і third-party. |
+
+Для **unlink**: відкрий котушку в Spoolman, очисти поле `extra.tag`.
+
+### :material-database: Додавання котушок — AMS vs Inventory view
+
+| Поверхня | Дія | Коли використовувати |
+|----------|-----|----------------------|
+| **З hover AMS** | **Add to Spoolman** коли невідомий філамент з'являється у слоті | First-time onboarding, додати свіжо завантажену Bambu-котушку до Spoolman. |
+| **У Spoolman напряму** | Add Spool на web UI Spoolman | Bulk-import історичних котушок, додавання котушок, які ще не завантажував, vendor/cost data entry. |
+| **Inventory view** (BamDude) | Додавання через Settings → Filaments | Коли хочеш, щоб котушка жила в інвентарі BamDude незалежно від стану Spoolman — корисно для full-detail рядів, які Spoolman не трекає (lot number, custom notes). |
+
+Обидва backend-и співіснують; прив'язка це те, що дозволяє AMS-hover-картці резолвити слот до Spoolman-ряду.
+
+### :material-robot: Автофічі
+
+Три незалежні automation-тумблери (Settings → Spoolman):
+
+- **Auto-sync on print complete** — кожен завершений друк звітує per-filament usage індивідуально у Spoolman, тож spool-quantities оновлюються автоматично.
+- **Auto-detect on AMS change** — коли AMS-філамент змінюється, BamDude детектує нову конфігурацію, матчить проти Spoolman і оновлює slot mapping без втручання.
+- **Auto-clear location on removal** — коли котушку прибирають з AMS, BamDude детектує порожній слот, знаходить Spoolman-котушки з відповідним рядком локації і чистить поле `location`. Котушка тепер доступна іншим принтерам.
+
+!!! info "Формат локації"
+    Spoolman-локації слідують формату `Printer Name - AMS X Slot Y`, наприклад `H2D-Workshop - AMS A Slot 3`.
+
+### :material-server-network: Multi-printer синк
+
+Один інстанс Spoolman обслуговує кілька BamDude-принтерів (та інші тулзи) одночасно:
+
+- Кожен AMS принтера синкається незалежно.
+- Різні котушки на принтер, окремий usage-tracking.
+- Уніфікований інвентар у Spoolman — одне джерело правди по всій фермі.
+
+Це головна причина, чому більшість farm-операторів обирають крутити Spoolman поряд з BamDude навіть коли built-in інвентар працює standalone — Spoolman це cross-tool хаб.
+
+---
+
+## :material-help-circle: Траблшутинг
+
+**Connection failed**
+
+- Перевір Spoolman URL — відкрий у браузері, щоб переконатися, що сам Spoolman живий.
+- Глянь network reachability зсередини контейнера/процесу BamDude до Spoolman (наприклад, `curl http://spoolman:7912/api/v1/info` зсередини контейнера BamDude).
+- Якщо у Spoolman увімкнена авторизація — перевір API Key.
+- Файервол / Docker network isolation — обидва сервіси мають бути в одній мережі або мати explicit routing.
+
+**Sync not working**
+
+- Підтверди, що `spoolman_enabled` on і **Test Connection** і досі проходить.
+- Подивись логи самого Spoolman — нові / старіші версії інколи затягують або змінюють REST-контракт.
+- Перевір, що котушка розпізнана як Bambu Lab (auto-sync лише для Bambu RFID — див. вище). Для не-Bambu використовуй **Manual Link**.
+- Для multi-printer сетапів — підтверди, що ім'я принтера в BamDude збігається з рядком локації, який Spoolman очікує.
+
+**Wrong spool linked**
+
+- Відкрий котушку в Spoolman, очисти поле `extra.tag` для unlink.
+- З hover-картки AMS у BamDude, **Manual Link** → обери правильну Spoolman-котушку.
+- Перевір, що RFID-tag UUID збігається з тим, що зберігає Spoolman — mismatched UUID найчастіша причина "linked, але вказує на неправильний ряд".
 
 ---
 

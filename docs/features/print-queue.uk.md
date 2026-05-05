@@ -24,6 +24,33 @@ description: Незалежні черги друку для кожного пр
 
 ---
 
+!!! warning "SD-карта обовʼязкова"
+    Принтери Bambu тягнуть активне завдання з внутрішнього SD. **SD-карта обовʼязкова** — без неї кожен диспатч падає на FTP-аплоуді. Власники A1 mini часто крутять без SD; ця модель чергу не тягне.
+
+---
+
+## :material-list-status: Стани черги
+
+Кожен елемент черги має один зі станів (видно у chip-ах на картці):
+
+| Стан | Значення |
+|------|----------|
+| `pending` | У черзі, стартує коли принтер вільний + час scheduled настане |
+| `printing` | Зараз диспатчений + друкується |
+| `paused` | Прінт на паузі (оператор, runout, AMS issue) |
+| `waiting_for_filament` | Тримається — потрібний філамент/колір не завантажений |
+| `waiting_for_plate_clear` | Прінт скінчений, чекає підтвердження clear-plate перед наступним диспатчем |
+| `waiting_for_stagger` | Multi-printer batch — чекає тіку staggered-start |
+| `waiting_for_dispatch` | Диспатчер працює (FTP upload + MQTT start_print) |
+| `failed` | Диспатч або друк зафейлився; докладний `error_message` на ховері |
+| `cancelled` | Скасовано користувачем до завершення |
+| `skipped` | Авто-skip після попереднього failure на цьому ж завданні |
+| `completed` | Прінт завершений — авто-видалення коли архів приземляється (m019) |
+
+Хедер картки черги показує live-лічильники (Total / Pending / Printing / Completed / Failed / Cancelled), які перераховуються з `print_archives` на кожне читання.
+
+---
+
 ## :material-plus: Додавання до черги
 
 ### З архіву
@@ -55,6 +82,45 @@ description: Незалежні черги друку для кожного пр
 !!! tip "Збережені маппінги"
     Маппінги AMS зберігаються разом із завданням у черзі. Коли воно стартує, BamDude використовує ваш налаштований маппінг.
 
+**Dual-nozzle принтери (H2D / H2D Pro)** показують **[L] / [R]** бейджі біля кожного слота AMS — видно, який екструдер живиться зі слота. Авто-matcher тягне `sliced_for_model` слайсера + per-slot filament metadata; падає в manual, коли принтер не має точного матчу під те, що жкод просить.
+
+**Prefer lowest remaining filament** (Settings → Workflow): коли auto-matcher має кілька кандидатів-слотів під один філамент, BamDude бере слот з **найменшим залишком (g)** — догризати майже-порожні бабіни, замість завжди слот 1.
+
+### Вибір плити (мульти-плейт 3MF)
+
+Мульти-плейт 3MF несе всі плити в одному файлі. Модалка Add-to-Queue рендерить плейт-grid:
+
+- Клік на одну плиту — диспатч тільки її (рядок черги отримує `plate_index = N`).
+- Multi-select плит → один рядок на плиту, у порядку.
+- Thumbnail + per-plate filament приходить з кешу плейтів m023 (без re-parse на кожен render).
+
+`plate_index` зберігається через restart-recovery + reprint. Деталі chain-of-custody мульти-плейтних диспатчів — [archiving](archiving.uk.md).
+
+### Опції друку
+
+Розкривай **Print options** при додаванні в чергу:
+
+| Опція | Default | Що робить |
+|-------|---------|-----------|
+| **Use AMS** | `on` | Філамент з AMS, не зовнішня бабіна. Off = принтер чекає вручну поданий філамент. |
+| **Bed levelling** | `on` | Auto-bed-level перед друком. Off — швидші рестарти на стабільному столі. |
+| **Flow calibration** | off | Cal екструзійного потоку на старті. Якість vs throughput. |
+| **Vibration calibration** | off | Cal вібро-резонансу. Off для швидкої ітерації по однакових завданнях. |
+| **Mesh-mode fast check** | off | Скіп M970 vibration-probe gcode через [3MF gcode-патчер](archiving.uk.md). На диску файл лишається unpatched; патчаться тільки байти, які летять у принтер. |
+| **Layer inspection** | `on` | Per-layer inspection AI (X1 + H2). |
+| **Timelapse** | off | Записати вбудований таймлапс на принтері. |
+
+Defaults — install-wide, налаштовуються у **Settings → Workflow → Default print options**. Per-printer overrides — на картці налаштувань кожного принтера. Per-job overrides у Add-to-Queue перебивають все.
+
+### Auto-print G-code injection
+
+Іноді треба змінити gcode на диспатчі — chamber heat-soak, кастом purge, swap-mode setup — без re-slice. Тогл **G-code injection** на елементі черги; snippets + плейсхолдери (`{max_layer_z}`, `{first_layer_temp}`, …) — у **Settings → Workflow → G-code injection**.
+
+Повна довідка: [G-code injection](gcode-injection.uk.md). Читається + застосовується на dispatch — різні завдання можуть нести різні injections.
+
+!!! warning "Z-safety"
+    Інʼєкція абсолютних Z-moves до auto-Z-home, який Bambu firmware робить на старті друку, може врізати голову у деталь. Використовуй плейсхолдери (вони експандяться під first-layer plan слайсера), а не хардкоднуті числа.
+
 ### Аудит `created_by_id`
 
 Додавання до черги фіксує, *хто* додав елемент. Telegram-бот, масове додавання з бібліотеки, кнопка "Друкувати" на картці принтера та друки з файлового менеджера -- усі вони пробрасують користувача, який ініціював дію. Видно по рядку на архіві, який згенерує елемент черги. Шляхи через VP auto-queue та webhook-тригер легітимно лишають його `NULL` (немає автентифікованого користувача, якого можна було б приписати).
@@ -72,9 +138,34 @@ description: Незалежні черги друку для кожного пр
 
 ## :material-clock-outline: Планування
 
-- **Якнайшвидше** -- починається, коли принтер вільний
-- **За розкладом** -- починається у вказаний час і дату
-- **Тільки черга** (поетапний) -- не починається автоматично, поки не буде запущений вручну
+### Immediate (якнайшвидше)
+
+Default. Завдання стартує, як тільки принтер вільний і диспатчер до нього дійшов. Черга обробляється строго за `position` — **окрім** Shortest-Job-First (нижче).
+
+### Scheduled (за розкладом)
+
+Вибираєш майбутню дату + час. Завдання сидить у `pending`, поки не настане час, потім іде в диспатч. Працює у парі з smart-plug power-on розкладом — розетка вмикається за N хвилин до scheduled-старту, щоб принтер прогрівся.
+
+### Schedule priority
+
+Коли два scheduled-завдання потрапляють у пересічний час, BamDude сортує:
+
+1. Manually-pinned `position` (drag-and-drop)
+2. Earliest `scheduled_at`
+3. Insertion order (FIFO)
+
+### Queue only (staged)
+
+Виставляє `manual_start = true` на рядку — диспатчер ігнорує його, поки не клікнеш Start. Зручно для staging цілої партії наперед і потім release одним рухом (або для аплоудів VP, які треба тримати, поки не переглянеш).
+
+### Shortest job first (SJF)
+
+**Settings → Workflow → Job ordering = Shortest first** перемикає диспатчер на вибір **найкоротшого pending-завдання** (за прогнозованим часом друку), замість найвищого priority. З **starvation guard**:
+
+- Кожне pending-завдання набирає `aging_score` з часом
+- Завдання, що чекало > **N годин** (default 6, конфіг), піднімається на топ диспатчу незалежно від тривалості
+
+Так довгий farm-printable не сидить вічно за потоком коротких, але швидкі вкорочуються між довгими протягом дня.
 
 ---
 
@@ -88,7 +179,101 @@ description: Незалежні черги друку для кожного пр
 
 ### Масове редагування
 
-Оберіть кілька елементів черги для масового перепризначення принтерів, перемикання опцій або скасування.
+Виділяй кілька елементів черги через тулбар-checkboxes — далі bulk-edit:
+
+| Поле | Tri-state на bulk | Нотатка |
+|------|-------------------|---------|
+| Target printer | ✓ | Перепризначає рядки. Filament/colour validation під новий target. |
+| Use AMS | ✓ | Tri-state — лиши indeterminate, щоб зберегти per-row значення. |
+| Bed levelling / Flow / Vibration / Layer inspect / Timelapse | ✓ | Та сама tri-state семантика. |
+| Scheduled-at | ✓ | Bulk-shift розкладу на оффсет, або pin фіксованого часу. |
+| Cancel | — | Bulk-cancel ставить усі вибрані у `cancelled` (без force на рядки `printing` — їх через per-row Cancel). |
+
+---
+
+## :material-printer-3d-nozzle-alert: Multi-printer queue + staggered start
+
+Коли подаєш одне завдання на **N принтерів** одразу (multi-select у Add-to-Queue), кожен отримує свій рядок черги. По дефолту — диспатч одночасно: N паралельних FTP-аплоудів, N майже-одночасних start-команд. Для overhead-обмежених ферм (один uplink, один силовий контур, спільний MQTT broker) — **Staggered batch start**:
+
+| Налаштування | Ефект |
+|--------------|-------|
+| **Group size** | Скільки принтерів стартують у хвилі (3 = три за раз, потім пауза) |
+| **Interval** | Секунд між хвилями |
+
+Cross-link: повний deep-dive — [Staggered start](staggered-start.uk.md).
+
+Per-printer **AMS-маппінги** конфігуряться per-row — multi-printer modal дає reuse одного маппінга, або різний слот per-printer, коли AMS відрізняється у фермі.
+
+---
+
+## :material-router-network: Призначення за моделлю ("Any X1C")
+
+Замість пін на конкретний принтер, став у чергу під **Any [model]**:
+
+- Filament-aware: scheduler не диспатчить на принтер, у якого AMS не несе потрібний тип філаменту (а з [Force colour match](virtual-printer.uk.md#print-queue-mode-force-color-match) — і колір)
+- Location-aware: опційний фільтр локації ("any printer in Workshop A")
+- **Manual filament override**: якщо ні один принтер автоматом не підходить, ставимо ручний маппінг, який черга юзає незалежно
+
+Коли немає eligible-принтера у idle, рядок сидить у `waiting_for_filament` поки:
+
+- Eligible-принтер не звільниться
+- Не передоручиш рядок ручним призначенням
+- Не підтвердиш warning і не force-disp на не-matching принтер
+
+Для багаторівневої filament + colour маршрутизації по всій фермі — **auto-queue router**: див. [Auto-Queue Routing](auto-queue.uk.md) для повного priority chain.
+
+---
+
+## :material-timeline-text: Timeline view
+
+Клік **List / Timeline** угорі сторінки черги — переходимо у Gantt-розклад:
+
+- Один рядок на принтер, час на X-осі
+- Кожен блок — елемент черги розміром у прогнозований час + ETA chaining (блок N стартує коли блок N-1 закінчився)
+- Day navigation (prev / today / next), фільтри ті самі що у list view
+- Hover на блок — повна деталізація завдання
+
+ETA chaining — це планувальний інструмент, не враховує clear-plate gaps, ручні паузи, filament-loads, тож реальний wall-clock дрейфує довшим. Корисно для відповіді "який принтер цього тижня bottleneck".
+
+---
+
+## :material-power-plug: Smart plug-автоматизація
+
+Коли принтер привʼязаний до smart-plug, черга може кермувати живленням:
+
+- **Auto power-on** — розетка вмикається за N хвилин до наступного scheduled-завдання (конфіг у **Settings → Smart Plugs → Pre-warm offset**)
+- **Auto power-off** — розетка вимикається за N хвилин після того, як принтер пішов у idle з порожньою чергою + cooldown (default 30 хв, конфіг)
+- **Cooldown awareness** — розетка тримається on, поки принтер репортить `bed_temp` або `nozzle_temp` вище порогу, навіть після останнього завдання
+
+Повний setup + per-printer linking → [Smart plugs](smart-plugs.uk.md).
+
+---
+
+## :material-bell-outline: Історія черги
+
+Коли архів завдання приземлився, рядок черги авто-видаляється (m019). Старі елементи черги шукати:
+
+- Сторінка **Архіви** з фільтром по принтеру — кожен архів несе `queue_id` + опційний `batch_id`
+- Failed-диспатчі показують докладний `error_message` на ховері
+- Bulk-print plans з проєкту лишаються прив'язаними через `queue_id` linkage
+
+---
+
+## :material-api: API access
+
+Програмний контроль черги через REST:
+
+| Endpoint | Призначення |
+|----------|-------------|
+| `GET /api/v1/print-queue/` | Список елементів черги (фільтр по printer, status) |
+| `POST /api/v1/print-queue/` | Додати з архіва або library file |
+| `PATCH /api/v1/print-queue/{id}` | Редагувати position, schedule, AMS, options |
+| `DELETE /api/v1/print-queue/{id}` | Cancel + remove |
+| `POST /api/v1/print-queue/{id}/start` | Force-start `manual_start` або `pending` |
+| `POST /api/v1/print-queue/bulk` | Bulk submit / edit / cancel |
+| `POST /api/v1/print-queue/reorder` | Drag-and-drop reorder через API |
+
+Повна schema + auth: [API reference](../reference/api.uk.md).
 
 ---
 

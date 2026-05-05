@@ -32,16 +32,73 @@ BamDude provides MJPEG video streaming from your printer's built-in camera, or f
 
 ## :material-webcam: External Cameras
 
-Connect external network cameras to replace the built-in printer camera.
+Connect external network cameras to replace the built-in printer camera. Useful for better angles, higher resolution, or printers in enclosures where the built-in camera is partially blocked.
 
-| Type | Example |
-|------|---------|
+### Supported types
+
+| Type | Example URL/path |
+|------|------------------|
 | **MJPEG** | `http://192.168.1.50/mjpeg` |
 | **RTSP** | `rtsp://192.168.1.50:554/stream` |
 | **Snapshot** | `http://192.168.1.50/snapshot.jpg` |
 | **USB (V4L2)** | `/dev/video0` |
 
-Configure in **Settings** > **General** > **Camera**.
+### Configuration
+
+1. **Settings** → **General** → **Camera**.
+2. Find your printer in the **External Cameras** section.
+3. Toggle the switch to enable.
+4. Enter the camera **URL**.
+5. Select the camera **Type**.
+6. Click **Test** — BamDude opens the stream once, confirms a frame, then disconnects.
+
+!!! tip "RTSP authentication"
+    Embed credentials in the URL: `rtsp://user:password@192.168.1.50:554/stream`.
+
+!!! tip "Snapshot URL override (go2rtc, IP cams with `/frame.jpeg`-style endpoints)"
+    For **MJPEG**, **RTSP**, and **USB** types, you can optionally provide a separate **Snapshot URL** below the live-stream URL. When set, BamDude fetches single-frame captures (notification thumbnails, finish photos, layer-timelapse, plate detection) from this URL via plain HTTP GET instead of opening the live stream. Useful for go2rtc setups (`/api/frame.jpeg?src=<name>` is faster than reading from the MJPEG stream) or IP cams with a dedicated snapshot endpoint. Click **Test** next to the Snapshot URL to verify it returns a valid frame. Leave blank to use the default behaviour: capture from the live stream with automatic warm-up-frame skip.
+
+### USB / V4L2 setup
+
+USB webcams work via the V4L2 path on Linux hosts:
+
+```bash
+# Install device-listing tools
+sudo apt install v4l-utils
+
+# Enumerate available video devices
+v4l2-ctl --list-devices
+```
+
+BamDude reads `/dev/video0` by default. If your camera is at a different node (e.g. `/dev/video2`), enter the path directly into the External Camera URL field.
+
+For Docker, pass the device through:
+
+```yaml
+services:
+  bamdude:
+    devices:
+      - /dev/video0:/dev/video0
+```
+
+---
+
+## :material-movie-roll: Layer-Based Timelapse (external cameras only)
+
+When an external camera is enabled and the printer publishes per-layer-change MQTT events, BamDude automatically:
+
+1. **Captures a frame** each time the print's layer counter advances.
+2. **Stores frames** in a temporary directory during printing.
+3. **Stitches a video** with **ffmpeg** when the print completes.
+4. **Attaches** the resulting timelapse to the print archive.
+
+!!! note "External cameras only"
+    Layer-based timelapse only works with external cameras (MJPEG, RTSP, Snapshot, or USB). Built-in printer cameras use the printer's own timelapse feature instead — the printer does the stitching itself and BamDude attaches the resulting MP4/AVI.
+
+!!! note "ffmpeg required"
+    Layer timelapse requires `ffmpeg` to be installed (included in the BamDude Docker image, install via `apt install ffmpeg` on bare metal).
+
+This produces dramatically higher-quality timelapses than fixed-interval capture because each frame corresponds to a clean state of the print (head parked off the part, between layers).
 
 ---
 
@@ -109,6 +166,47 @@ The 60-min UI-side token is wrong shape for a wall-mounted kiosk dashboard, a Ho
 
 URL shape: `/api/v1/printers/{id}/stream?token={long_lived_token}` — same query-param contract as the short-lived flow, so HA's generic camera platform / Frigate's `mjpeg_streams` / a `<img src>` in a kiosk dashboard all work without further plumbing.
 
+### Creation flow detail
+
+1. **Settings → Long-lived Tokens** (under Security / API Keys).
+2. Enter a descriptive name (e.g. `Home Assistant`, `Kitchen Kiosk`, `Frigate`).
+3. Pick a lifetime (1–365 days, default 90 days).
+4. Click **Create**.
+5. The plaintext token is displayed **exactly once** in a copy-to-clipboard modal.
+
+!!! danger "Token shown once only"
+    Save the token now. BamDude stores only a hash (SHA-256) — once the modal closes, the plaintext can never be retrieved again. If you lose it, revoke the row and create a new token.
+
+### `lookup_prefix` and audit fields
+
+Each long-lived token row carries:
+
+- **lookup_prefix** — first 4 characters of the token's hash, used to identify a specific row when you've forgotten which device has which token. Safe to display alongside the row label.
+- **last_used_at** — timestamp of the most recent successful authenticated request with this token. Stale tokens (no activity in 30+ days) get a yellow warning chip so you can clean up dead config.
+- **last_used_ip** — most recent client IP, useful for spotting unexpected use.
+
+### Admin "All users" view
+
+Administrators see an additional section titled **All users (admin view)** below their own tokens — it lists every active long-lived token across all users in the install. Useful for triage if a token is suspected of being leaked, or to enforce farm-wide hygiene (revoke ancient tokens that haven't been used in months).
+
+### Maximum lifetime: 365 days (m028)
+
+BamDude rejects "never expires" by design — a leaked permanent token would be irrevocable footgun. Maximum TTL is **365 days**, enforced server-side via the `m028` migration that adds the `long_lived_tokens` table. If you want longer-lived access, rotate tokens annually as part of your normal credential-hygiene cycle.
+
+### Permission requirements
+
+Creating and managing long-lived camera tokens requires the `camera:view` permission — same permission already needed for the regular 60-minute browser-side stream tokens. Default Viewers and Operators groups have it.
+
+To delegate token management to a non-admin user, ensure they're in a group with both `camera:view` and `settings:read` (so they can reach the Settings page where tokens are managed).
+
+### Revoking a token
+
+1. **Settings → Long-lived Tokens**.
+2. Find the row by name or by `lookup_prefix`.
+3. Click **Revoke**, confirm in the modal.
+
+Any device using that token loses access on the next request — no grace period, no caching layer to wait out. The row's hash is removed from the DB so even DB-dump replay won't work.
+
 ---
 
 ## :material-image-frame: Cover Thumbnails
@@ -126,6 +224,315 @@ The camera viewer has two modes, configurable per-user in **Settings > Camera**:
 
 Embedded is the right default for live monitoring; window mode is for setups where the camera lives on a different screen from the printer dashboard.
 
+### Embedded viewer features
+
+When using embedded mode, the camera appears as a floating window with the following affordances:
+
+- **Draggable** — click and drag the header to reposition.
+- **Resizable** — drag the bottom-right corner to resize.
+- **Persistent position** — position and size are remembered per printer across sessions.
+- **Navigation persistence** — open cameras stay open when you navigate away from the Printers page and back.
+- **Minimize** — click the minimize button to collapse to the title bar.
+- **Close** — click X to close the viewer.
+- **Multi-viewer** — open cameras for multiple printers simultaneously, each with its own remembered position and size.
+
+!!! tip "Embedded mode for the whole farm"
+    Embedded mode keeps you on the main screen while monitoring prints — no need to switch between browser windows. Open multiple viewers to monitor your entire print farm at once.
+
+---
+
+## :material-tune: Snapshot mode & FPS settings
+
+For lower bandwidth, switch the per-camera mode to **Snapshot** instead of **Live**:
+
+- Captures a single frame on demand, click refresh to fetch a new one.
+- Ideal for cellular connections, slow networks, or cheap kiosks that don't need motion.
+
+The default frame rate for live mode is 15 FPS. Tune via the URL `?fps=N` parameter or the per-camera setting:
+
+| FPS | Use case |
+|-----|----------|
+| **5** | Low bandwidth / A1/P1 cameras (hardware limit) |
+| **10–15** | Balanced (15 is default) |
+| **20–25** | Smoother video |
+| **30** | Maximum quality (X1 / H2 / P2 only — also works for USB) |
+
+!!! note "FPS limits by camera type"
+    - **External cameras** — capped at 15 FPS.
+    - **A1 / P1 printers** — capped at 5 FPS (hardware limitation).
+    - **X1 / H2 / P2 printers** — up to 30 FPS.
+
+!!! note "Higher FPS = more bandwidth"
+    Higher frame rates consume more network bandwidth and server resources — for a multi-printer farm running 30 FPS on every viewer at once, plan accordingly.
+
+---
+
+## :material-connection: Stream cleanup & auto-reconnect
+
+BamDude properly cleans up camera streams to prevent orphaned `ffmpeg` processes:
+
+- **Window close** — stream stops automatically.
+- **Tab hidden** — stream pauses to save resources.
+- **Page unload** — `ffmpeg` process terminated.
+- **Refresh** — old stream stopped, new one started.
+
+### Stall detection
+
+The browser periodically checks if the stream is still receiving frames:
+
+- **Check interval** — every 5 seconds.
+- **Detection** — compares last frame timestamp.
+- **Threshold** — stalled if no new frames received for **>5 seconds**.
+
+### Automatic recovery
+
+When a stall is detected:
+
+1. Detects no frames received within threshold.
+2. Closes the stalled connection.
+3. Reconnects automatically.
+4. Resumes streaming.
+
+!!! tip "Network blips"
+    If your network briefly drops, the stream will automatically recover once the connection is restored — no manual intervention needed.
+
+---
+
+## :material-image-area: Camera Snapshot on Print Complete
+
+BamDude can automatically capture a camera snapshot when prints complete:
+
+1. **Settings → General**.
+2. Enable **Capture snapshot on print complete**.
+3. Snapshots are saved to the print's archive folder and surface in the archive's photo gallery.
+
+This creates a visual record of every completed print — paired with the timelapse and finish photo, you've got a full visual log of farm output.
+
+---
+
+## :material-scan-helper: Build Plate Empty Detection
+
+Automatically detect if objects are left on the build plate before a print starts. If detected, the print is paused and a notification fires.
+
+### How it works
+
+1. **Calibrate** — capture reference images of your empty build plate.
+2. **Enable** — toggle plate detection on for the printer.
+3. **Auto-check** — when any print starts, BamDude compares the current camera view to your references.
+4. **Auto-pause** — if objects are detected, the print is immediately paused.
+
+### Calibration
+
+Store up to **5 reference images** per printer for different plate types (textured, smooth, high-temp, etc.):
+
+1. Click the **scan icon** on the printer card to open the modal.
+2. Ensure the build plate is **completely empty** and **chamber light is ON**.
+3. Click **Calibrate Empty Plate**.
+4. Optionally add a label (e.g. `Textured PEI`, `Cool Plate`).
+5. Repeat for each plate type you swap between.
+
+!!! tip "Multiple references"
+    The system automatically selects the best-matching reference when checking. Calibrate every plate type you actually use for accurate detection.
+
+### Enabling detection
+
+The printer card has a **split button**:
+
+| Button part | Action |
+|-------------|--------|
+| **Main (scan icon)** | Toggles detection on/off. |
+| **Chevron (▼)** | Opens the calibration / management modal. |
+
+When enabled, the button shows a green border.
+
+### ROI (Region of Interest) editor
+
+Adjust which part of the camera view is analysed:
+
+1. Open the plate-detection modal.
+2. Scroll to **Detection Area (ROI)**.
+3. Click **Edit**.
+4. Use the X / Y / Width / Height sliders to size and position the green ROI box.
+5. Save.
+
+The green box in the preview shows the detection area. Focus it on the build plate to avoid false positives from the printer frame, AMS unit, or background.
+
+### Detection mechanics
+
+1. Captures the current camera frame (or uses the buffered frame if a stream is active).
+2. Applies heavy Gaussian blur to both current and reference images.
+3. Normalises both for consistent comparison.
+4. Extracts the ROI region.
+5. Calculates pixel-difference percentage.
+6. If difference > 1%, plate is considered "not empty".
+
+### Notifications when objects detected
+
+- Print pauses immediately.
+- Toast notification appears in BamDude.
+- Push notification sent (Telegram / Discord / Email / Pushover / ntfy / HA — whatever you have wired up).
+- WebSocket event broadcast for integrations.
+
+### Requirements
+
+| Requirement | Details |
+|-------------|---------|
+| **OpenCV** | `opencv-python-headless` (already installed in the Docker image). |
+| **Chamber light** | Should be ON for reliable detection. |
+| **Calibration** | At least one reference image required. |
+
+### Troubleshooting
+
+**False positives (detects objects when plate is empty)**
+
+- Calibrate with chamber light ON (same as during prints).
+- Adjust the ROI to exclude printer frame edges and AMS units.
+- Add multiple calibrations for different lighting conditions.
+
+**False negatives (doesn't detect objects)**
+
+- Ensure chamber light is ON.
+- Recalibrate — plate surface may have changed (resin residue, sticker peel, scratches).
+- Confirm objects are within the ROI area — anything outside the green box is ignored by design.
+
+---
+
+## :material-help-circle: Troubleshooting
+
+**Stream won't start**
+
+1. Is the printer on? Camera requires power.
+2. Is the camera enabled in printer settings?
+3. Is `ffmpeg` installed? (Included in the Docker image.)
+4. Is Developer Mode enabled? (Required for camera access on Bambu printers.)
+5. For external cameras, verify the URL with `curl` from inside the BamDude host: `curl -I http://192.168.1.50/mjpeg`.
+6. Running in Docker? If default bridge networking doesn't reach the printer, switch to `network_mode: host`.
+
+**Stream freezes**
+
+- Network congestion or WiFi drops — try lowering FPS to 5 or 10.
+- Check the printer's WiFi signal strength (poor signal causes erratic frame delivery).
+- Try snapshot mode instead — it doesn't depend on a continuous stream.
+
+**High latency (1–3 second lag)**
+
+This is normal for MJPEG over HTTP and stems from RTSP buffering, ffmpeg processing pipeline, and HTTP-stream chunk boundaries. Cannot be eliminated entirely. Reduce by:
+
+- Lowering FPS to reduce per-frame buffering.
+- Using snapshot mode for monitoring vs streaming.
+- Switching to an external camera with hardware MJPEG output (skips the RTSP→MJPEG transcoding).
+
+**Black screen**
+
+- Camera may be initialising — wait 5–10 seconds and refresh.
+- Confirm camera works in Bambu Studio first; if it fails there, it's a printer-side issue, not BamDude.
+- Check user-permission grants — `camera:view` is required.
+
+**Docker: camera not working**
+
+If camera streaming doesn't work in Docker, try host networking:
+
+```yaml
+services:
+  bamdude:
+    network_mode: host
+    # remove the ports: section when using host mode
+```
+
+Default bridge networking with NAT works in most setups. Host mode is only needed when your network configuration prevents NAT'd traffic from reaching the printer's RTSP port.
+
+---
+
+## :material-api: API endpoints
+
+For developers and integrations:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/printers/{id}/camera/stream` | GET | MJPEG live stream. |
+| `/api/v1/printers/{id}/camera/snapshot` | GET | Single JPEG frame. |
+| `/api/v1/printers/{id}/camera/stop` | POST | Stop active streams for the printer. |
+| `/api/v1/printers/{id}/camera/test` | GET | Test camera connection (returns success/failure without streaming). |
+| `/api/v1/printers/camera/stream-token` | POST | Mint a 60-min query-param stream token (see Stream Token Gate above). |
+
+### OBS Browser Source recipe
+
+Embed the live stream in OBS as a Browser Source:
+
+1. In OBS, click **+** under Sources.
+2. Select **Browser**.
+3. URL: `http://your-bamdude:8000/api/v1/printers/{id}/stream?token=<long-lived-token>` (use a **long-lived camera token** — short-lived ones expire mid-stream).
+4. Width / height to match your scene (e.g. 1920×1080).
+5. **OK**.
+
+For a richer overlay with status text, see the next section.
+
+---
+
+## :material-video-box: OBS Streaming Overlay
+
+The dedicated overlay page combines the camera feed with real-time print status — one Browser Source instead of separate camera + text sources. URL shape:
+
+```
+http://your-bamdude:8000/overlay/{printer_id}
+```
+
+!!! note "No login required"
+    The overlay is designed for embedding and does not require authentication. Don't expose this URL publicly without thinking it through.
+
+### What's included
+
+| Element | Description |
+|---------|-------------|
+| **Camera feed** | Full-screen live camera view. |
+| **BamDude logo** | Branding in the top-right corner. |
+| **Filename** | Current print file name. |
+| **Status** | Printing, Paused, Idle, etc. |
+| **Progress bar** | Visual progress with percentage. |
+| **Layer count** | Current layer / total layers. |
+| **Time remaining** | Estimated time left. |
+| **ETA** | Estimated completion time. |
+
+### Customising via query parameters
+
+| Param | Values | Effect |
+|-------|--------|--------|
+| `size` | `small` / `medium` / `large` | Text and logo scale. `medium` is default. |
+| `fps` | `1`–`30` | Live-stream FPS. Clamped server-side per camera type. |
+| `camera` | `true` (default), `false`/`0` | `false` hides the camera feed and shows status on a black background. |
+| `show` | comma-separated: `progress`, `layers`, `eta`, `filename`, `status`, `printer` | Which status elements appear. |
+
+Examples:
+
+```
+# Compact corner overlay with full status
+/overlay/1?size=small&show=progress,layers,eta,filename,status
+
+# Status-only display, no camera (low-bandwidth scenario)
+/overlay/1?camera=false&show=progress,eta,status
+
+# Maximum quality, full screen
+/overlay/1?size=large&fps=30&show=progress,layers,eta,filename,status,printer
+```
+
+### Idle state
+
+When no print is running, the overlay still works — it shows the camera feed plus an "idle" / "offline" message and the BamDude logo. Useful for streaming farm cleanup, plate swaps, or off-hours.
+
+### Troubleshooting overlay
+
+**Overlay not loading in OBS**
+
+- Verify the URL works in a regular browser first.
+- Check that OBS can reach your BamDude server (same network, no VPN restrictions).
+- Right-click the source in OBS → **Refresh cache of current page**.
+
+**Camera not showing in overlay**
+
+- Confirm the printer is connected.
+- Confirm camera streaming works in BamDude directly first — the overlay uses the same stream.
+- Status updates over WebSocket; if the WS handshake fails, status falls back to polling every 2 seconds.
+
 ---
 
 ## :material-lightbulb: Tips
@@ -135,5 +542,8 @@ Embedded is the right default for live monitoring; window mode is for setups whe
 
 !!! tip "Bandwidth Conservation"
     Close camera windows when not actively watching to save server resources.
+
+!!! tip "Mobile viewing"
+    Camera streaming works on mobile with full touch support — pinch to zoom, drag to pan when zoomed. Access via the camera icon on each printer card.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.

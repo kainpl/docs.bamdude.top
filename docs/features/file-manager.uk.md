@@ -22,6 +22,44 @@ description: Перегляд та управління локальною бі�
 
 ---
 
+## :material-folder-multiple-outline: Sidebar навігація
+
+Дерево папок ліворуч — основна навігація. Клік на будь-яку папку — заходиш всередину; клік на breadcrumb-и зверху — крок назад. Два маленькі toggle-и в хедері sidebar-у тонко налаштовують рендеринг — обидві preferences зберігаються у браузері і застосовуються на кожен наступний load.
+
+| Toggle | Що робить |
+|---|---|
+| **Wrap** | Коли off (default), довгі імена папок обрізаються трикрапкою. Коли on, довгі імена переносяться на кілька рядків — повне ім'я лишається видимим. |
+| **Collapse** | Коли off (default), дерево папок відкривається з усіма рівнями розкритими. Коли on, на load показані лише top-level папки — клік по chevron-у розкриває гілку. Перемикання preference одразу пере-collapse-ить чи пере-розкриває поточне дерево. |
+
+!!! tip "Коли вмикати Collapse"
+    Якщо в бібліотеці багато вкладених папок, вмикання **Collapse** тримає sidebar компактним — бачиш лише top-level папки і drill-иш у гілку, коли треба. Маленькі плоскі бібліотеки різниці не помітять — toggle впливає лише на вкладені папки.
+
+---
+
+## :material-sort-variant: Сортування і фільтрація
+
+### Сортування
+
+Sort-dropdown над сіткою файлів:
+
+- **Name** — A→Z / Z→A
+- **Date** — newest / oldest first
+- **Size** — largest / smallest first
+- **Last printed** — нещодавно вживані файли спливають вгору
+
+### Чіпи типів файлів
+
+Над сіткою — ряд чіпів, що фільтрують за розширенням:
+
+- `.3mf` — sliced або project bundle-и
+- `.gcode.3mf` — лише sliced (підмножина `.3mf`)
+- `.stl`, `.obj`, `.step` — голі mesh / CAD
+- `.gcode` — bare gcode (без вшитого metadata)
+
+Чіпи AND-комбінуються з [tag chip filter](#material-tag-multiple-чіп-фільтр-тегів) нижче — вибір `multiplate` + `.gcode.3mf` повертає лише мульти-плейт-сліцені файли. Ряд чіпів рендериться лише для типів, реально присутніх у завантаженому списку, тож плоскі бібліотеки бачать тісніший ряд.
+
+---
+
 ## :material-printer: Прямий друк
 
 1. Знайдіть нарізаний файл (`.gcode` або `.gcode.3mf`)
@@ -30,9 +68,42 @@ description: Перегляд та управління локальною бі�
 4. Оберіть принтер(и), налаштуйте відповідність філаментів, задайте параметри друку
 5. Натисніть **Print** для запуску
 
+### Multi-printer + plate dispatch
+
+Print-модалка підтримує **multi-printer dispatch** — обери кілька принтерів як target-и, і той самий файл відправиться кожному паралельно; корисно для print-farm, що ганяє ідентичні джоби на кількох машинах.
+
+Для multi-plate `.gcode.3mf` файлів (один bundle, що експортує кілька плит) модалка рендерить grid вибору плит з мініатюрами:
+
+| Крок | Що налаштовуєш |
+|---|---|
+| **Printer** | Один або кілька target-принтерів (чіпи) |
+| **Plate** | Single-plate select для **Print Now**; multi-plate чекбокси для **Add to Queue** |
+| **Filament mapping** | Який завантажений AMS-слот задовольняє кожен потрібний філамент |
+| **Schedule** | ASAP, scheduled time або manual start (тільки queue) |
+| **Options** | Mesh fast-check, swap macros, gcode injection, plate-clear gating |
+
+Кожна вибрана плита стає окремим queue-елементом / архівом з індексом плити в рядку — див. [Auto-Queue](auto-queue.uk.md).
+
+!!! warning "SD-картка обов'язкова"
+    Файл FTP-завантажується на SD-картку принтера до старту друку. Без SD — upload падає з чіткою помилкою. Перевір SD-слот, якщо принтер репортить "card error" одразу на dispatch.
+
 ### Додавання до черги
 
-Додавайте нарізані файли до черги для подальшого друку без попереднього створення архівів. Архіви створюються автоматично при запуску друку.
+Додавайте нарізані файли до черги для подальшого друку без попереднього створення архівів. Архіви створюються автоматично, коли друк реально стартує (див. [Архіви](archiving.uk.md) — deferred archive creation тримає список архівів чистим від "queued but never printed" записів).
+
+---
+
+## :material-download: Завантаження файлів
+
+### Один файл
+
+Клік на **Download** у контекстному меню файла — файл віддається напряму з оригінальним ім'ям.
+
+### Кілька файлів
+
+Вибери кілька файлів через чекбокси, потім натисни **Download Selected** на тулбарі. BamDude on-the-fly пакує їх у ZIP, і браузер отримує один архів.
+
+ZIP зберігає структуру папок, якщо ти вибрав файли з різних папок. Імена санітизуються, щоб уникнути дублікатів.
 
 ---
 
@@ -41,8 +112,69 @@ description: Перегляд та управління локальною бі�
 Завантажуйте ZIP-архіви для розпакування вмісту у бібліотеку:
 
 1. Натисніть **Upload** та виберіть `.zip` файл
-2. Оберіть, чи зберігати структуру папок
-3. Натисніть **Extract**
+2. Модалка завантаження детектить ZIP і показує опції розпакування
+3. Оберіть поведінку розпакування (опції нижче)
+4. Натисніть **Extract**
+
+### Опції розпакування
+
+| Опція | Що робить |
+|---|---|
+| **Preserve folder structure from ZIP** | Зберігає структуру папок зсередини ZIP. Папки створюються за потреби. |
+| **Create folder from ZIP filename** | Створює нову папку, названу за ZIP (`MyProject.zip` → `MyProject/`), і розпаковує всі файли в неї. |
+| **Flatten** | Default, коли жодна з опцій вище не стоїть — кожен файл потрапляє в поточну папку, ігноруючи внутрішню структуру. |
+
+Обидва чекбокси можна комбінувати — обидва увімкнені створюють папку за ім'ям ZIP і зберігають внутрішню структуру всередині неї.
+
+### Що саме видобувається
+
+- `.3mf` — на кожному запускається екстракція мініатюри і metadata
+- `.gcode` і `.gcode.3mf` — детект часу друку / ваги філаменту
+- `.stl`, `.obj`, `.step` — додаються з опційним рендером мініатюри (див. нижче)
+- Будь-який інший підтримуваний тип
+
+Прогрес показує per-file count під час видобування; помилки репортяться поодинці, тож partial extract-и видно. Nested ZIP-и додаються як звичайні файли, **не** auto-extract-яться.
+
+---
+
+## :material-cube-outline: Генерація мініатюр STL
+
+STL / OBJ / STEP не несуть власного preview, тож BamDude рендерить його для картки файла. Рендерер використовує **Trimesh + matplotlib** на низькому пріоритеті у фоні — важкі mesh-і не блокують upload-pipeline.
+
+### Auto на upload
+
+Upload-модалка має чекбокс **Generate thumbnails for STL files**. Коли увімкнено, кожен STL/OBJ/STEP в upload-і (або всередині розпакованого ZIP) отримує мініатюру в рамках upload flow.
+
+Опція за замовчуванням **off install-wide** — увімкни в **Settings → File Manager**, якщо хочеш auto-on на кожен upload без галки щоразу.
+
+### Single-file context menu
+
+Для файлів, що вже в бібліотеці:
+
+1. Right-click на файл або відкрий three-dot меню
+2. Вибери **Generate Thumbnail**
+3. Мініатюра оновлюється in-place, коли рендеринг завершиться
+
+### Batch-генерація
+
+Кнопка **Generate Thumbnails** на тулбарі відкриває picker scope:
+
+| Scope | Ефект |
+|---|---|
+| **All missing** | Лише файли без мініатюри |
+| **Selected files** | Лише чекбоксом вибрані файли |
+| **Entire folder** | Кожен STL-сумісний файл у поточній папці |
+
+### Технічні деталі
+
+| Властивість | Значення |
+|---|---|
+| **Renderer** | Trimesh isometric view + matplotlib raster |
+| **Колір** | Bambu green (`#00AE42`) на темному фоні |
+| **Формат** | PNG, оптимізований під розмір картки |
+| **Priority** | Background-task, низький пріоритет — не блокує upload-и чи перегляд |
+
+Підтримуються і ASCII, і binary STL формати. Дуже складні mesh-і (100k+ вершин) рендеряться без падінь, просто довше.
 
 ---
 
@@ -101,14 +233,225 @@ Single-plate файли gallery не рендерять — наявна гол�
 
 ---
 
+## :material-delete: Trash workflow
+
+Видалені файли не зникають одразу — вони переходять у **Trash** і лежать там сконфігуровне retention-вікно (default **30 днів**), доки background sweeper не hard-delete-не їх з диска. Це дає undo-вікно на випадкові видалення і bulk-операції.
+
+### Відновлення або остаточне видалення
+
+Відкрий **Trash** (кнопка в хедері File Manager) — побачиш, що видалив. Звичайні юзери бачать свої trashed-файли; адміни — усіх.
+
+| Дія | Ефект |
+|---|---|
+| **Restore** | Повертає файл у вихідну папку |
+| **Delete now** | Назавжди видаляє файл з диска одразу, в обхід retention |
+| **Empty trash** | Hard-delete-ить кожен файл у scope твого trash |
+
+Адміни можуть змінити саме retention-вікно на сторінці Trash — від **1 до 365 днів**, default **30**.
+
+!!! note "Зовнішні файли обходять Trash"
+    Файли в external / linked папках обходять trash повністю, бо їхні байти живуть поза контролем BamDude і не можуть бути відновлені. Видалення external-файлу просто прибирає DB-запис BamDude — файл на диску не чіпається.
+
+---
+
+## :material-broom: Purge old files (admin)
+
+Для бібліотек, що розрослися в гігабайти, у адмінів є bulk-action **Purge old** в хедері File Manager. Вибери age-threshold (напр. "файли, не друковані 90 днів"), побач live-прев'ю, скільки файлів переїде і скільки диска звільниться, потім підтверди.
+
+### Що відбувається на Purge
+
+- Підходящі файли переїжджають у Trash — **на диску ще не видалені**
+- З Trash їх можна Restore до закінчення retention
+- Після retention sweeper hard-delete-ить
+- Файли в external (linked) папках пропускаються — BamDude ніколи не видаляє байти, які йому не належать
+
+Бо файли лише переїжджають у Trash, диск не звільняється одразу. Щоб повернути місце прямо зараз, empty Trash вручну після purge.
+
+### Як міряється "старе"
+
+- Файли **з** історією друку → старіють за **last-printed date**
+- Файли **без** друку → старіють за **upload date**, лише коли увімкнено чекбокс "Include files that have never been printed" (default). Зніми галку, щоб обмежити purge тільки реально друкованими файлами
+
+Кнопка **Purge old** з'являється лише в юзерів з правом `library:purge`, яке за замовчуванням увімкнене на вбудованій ролі **Administrators**. Щоб дати Operator-у, додай `library:purge` у **Settings → Users → Groups** — див. [Authentication](authentication.uk.md).
+
+### Auto-purge (опційно)
+
+Не хочеш пам'ятати про purge щомісяця? **Settings → File Manager → Auto-purge old files** запускає ту саму операцію автоматично раз на 24 години:
+
+- Age-threshold (мін 7 днів, макс 10 років) — те ж правило, що manual button
+- Чекбокс include-never-printed
+- Default off; opt-in only, тож існуючим інсталам не буде сюрпризів
+
+Auto-purge все одно поважає retention-вікно — файли йдуть в Trash, не одразу видаляються. Sweeper потім hard-delete-ить після retention-періоду.
+
+---
+
+## :material-pencil: Перейменування файлів і папок
+
+Файли і папки можна перейменовувати прямо у File Manager без зовнішнього клієнта.
+
+### Перейменування файла
+
+**Grid view:**
+
+1. Hover на картку файла
+2. Клік на three-dot меню (`:material-dots-vertical:`)
+3. Вибери **Rename**
+4. Введи нове ім'я
+5. Клік **Rename** для збереження
+
+**List view:**
+
+1. Знайди файл у списку
+2. Клік на іконку олівця (`:material-pencil:`) у колонці actions, або **double-click** на ім'я для in-place редагування
+3. Введи нове ім'я
+4. Press Enter або клік **Rename** для збереження
+
+### Перейменування папки
+
+1. Hover на папку у sidebar-і
+2. Клік на three-dot меню
+3. Вибери **Rename**
+4. Введи нове ім'я
+5. Клік **Rename** для збереження
+
+!!! note "Обмеження імен файлів"
+    Імена файлів не можуть містити path-сепаратори (`/` або `\`). Rename API відхиляє ці символи, і модалка показує помилку inline.
+
+---
+
 ## :material-folder-network: Монтування зовнішніх папок
 
-Монтуйте директорії хоста (NAS, USB-накопичувачі) у файловий менеджер без копіювання файлів:
+Монтуйте директорії хоста (NAS-шари, USB-накопичувачі, мережеве сховище) у файловий менеджер без копіювання файлів. BamDude індексує папку у свою БД і читає файли напряму з оригінального шляху; диск не зайнятий копіями.
 
-1. Підключіть директорію через bind-mount у Docker
-2. Натисніть **Link External** на панелі інструментів
-3. Введіть відображувану назву та шлях у контейнері
-4. Файли індексуються та з'являються негайно
+### Налаштування зовнішньої папки
+
+**Крок 1: Bind-mount директорії в Docker.** Додай host-директорію як volume у `docker-compose.yml`:
+
+```yaml
+services:
+  bamdude:
+    image: ghcr.io/kainpl/bamdude:latest
+    volumes:
+      - /mnt/nas/3d-prints:/external/prints:ro
+```
+
+Перезапусти контейнер після зміни volumes.
+
+**Крок 2: Лінкуй папку в BamDude.**
+
+1. Відкрий **File Manager**
+2. Натисни **Link External** на тулбарі
+3. Заповни форму:
+
+| Поле | Значення |
+|---|---|
+| **Display name** | Що з'являється у sidebar (напр. `NAS Prints`) |
+| **Container path** | Шлях всередині контейнера (напр. `/external/prints`) |
+| **Read-only** | Default **on** — блокує upload-и, видалення, ZIP-extract у папку. Рекомендовано, якщо ти спеціально не хочеш керувати файлами через BamDude. |
+| **Show hidden files** | Off за замовчуванням; вмикає dotfile-індексацію |
+
+4. Натисни **Link Folder**
+
+Папка автоматично сканується, файли з'являються одразу.
+
+### Сканування і refresh
+
+Зовнішні папки індексуються на створенні. Щоб підхопити нові або видалені файли:
+
+1. Клік на external folder у sidebar
+2. Натисни **Scan / Refresh** в info-bar
+3. Нові файли додаються в індекс, видалені на диску — викидаються
+
+### Read-only protection
+
+Коли **Read-only** on (default):
+
+- Upload-и в папку блокуються (`403`)
+- Move файлів у папку блокується
+- ZIP-extract з target-ом цієї папки блокується
+- Файли все ще можна download-ити, друкувати, додавати в чергу і генерувати їм мініатюри
+
+!!! tip "Захист у глибину"
+    Юзай `:ro` у Docker volume mount для додаткового рівня read-only protection на рівні файлової системи — навіть якщо випадково знімеш галку BamDude, kernel однаково відхилить write.
+
+### Видалення зовнішніх папок
+
+Коли видаляєш external folder з BamDude:
+
+- DB-індекс прибирається
+- Згенеровані мініатюри чистяться
+- **Файли на диску ніколи не видаляються** — BamDude видаляє лише link, не source-файли
+
+### Підтримувані типи файлів
+
+External folder scanning знаходить: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `.stp`, і image-файли (`.png`, `.jpg`, `.gif`, `.webp`, `.svg`).
+
+---
+
+## :material-link: Лінкування папок до проєктів / архівів
+
+Right-click на папку (або через three-dot menu) → **Link to project** / **Link to archive** прив'язує папку до [Project](projects.uk.md) або існуючого [Archive](archiving.uk.md).
+
+| Дія | Де |
+|---|---|
+| **Link folder** | Right-click на папку → "Link to project / archive" |
+| **Change link** | Клік на кольоровий бейдж linked-папки |
+| **Remove link** | Той самий бейдж → "Remove link" |
+
+Linked-папки показують кольоровий бейдж у sidebar і grid. Per-folder лінк проставляє `project_id` кожному файлу всередині, плюс будь-який файл, переміщений у папку пізніше, успадковує лінк.
+
+---
+
+## :material-api: API-ендпоінти
+
+Бібліотека повністю доступна через REST API — корисно для скриптованої ingest-логіки, CI/CD-пайплайнів чи external slicer-плагінів.
+
+| Endpoint | Method | Призначення |
+|---|---|---|
+| `/api/v1/library/files` | `GET` | Список файлів (paginated; query-params на folder, sort, filter) |
+| `/api/v1/library/files/{id}` | `GET` | Детальна інформація файла (metadata, plates, file_tags) |
+| `/api/v1/library/files/{id}/capabilities` | `GET` | Які viewer-вкладки показувати (3D / G-code / per-plate) |
+| `/api/v1/library/upload` | `POST` | Multipart upload (один або кілька файлів) |
+| `/api/v1/library/files/extract-zip` | `POST` | Upload + extract ZIP з опціями |
+| `/api/v1/library/files/{id}` | `DELETE` | Soft-delete (move to trash) |
+| `/api/v1/library/bulk-delete` | `POST` | Soft-delete багато файлів одночасно |
+| `/api/v1/library/files/add-to-queue` | `POST` | Додати один або кілька файлів у чергу друку |
+| `/api/v1/library/folders` | `POST` | Створити папку |
+| `/api/v1/library/folders/external` | `POST` | Лінкувати external folder |
+| `/api/v1/library/folders/{id}/scan` | `POST` | Re-scan external folder |
+
+Усі ендпоінти потребують аутентифікованої сесії (JWT bearer або хедер `X-API-Key`). Потрібне право залежить від дії — `library:read` на читання, `library:upload` на upload-и, `library:delete` на видалення, `library:purge` на bulk-purge. Див. [Authentication](authentication.uk.md) і повний [API reference](../reference/api.uk.md).
+
+---
+
+## :material-cellphone: Mobile і PWA
+
+File Manager оптимізований під touch-пристрої і працює як встановлений Progressive Web App.
+
+### Touch-friendly UI
+
+- **Action-кнопки** завжди видимі на mobile — hover не потрібен
+- **Selection-чекбокси** з'являються на кожній картці файла для multi-select
+- **Контекстні меню** доступні через three-dot кнопку на кожній картці
+- **Responsive grid** змінює кількість колонок за шириною екрана
+
+### Mobile-аплоди через Share menu
+
+PWA BamDude реєструється як **share target** на iOS Safari і Android Chrome — share файла з будь-якого іншого додатку відкриває BamDude у picker-і:
+
+1. **Встанови** BamDude як PWA на телефон (Safari → Share → Add to Home Screen; Chrome → меню → Install app)
+2. У будь-якому додатку, що працює з 3MF / STL / gcode (Drive, Mail, AirDrop receiver, slicer), відкрий **Share** меню
+3. Вибери **BamDude** як target
+4. Library відкривається з файлом, попередньо staging-нутим у upload-модалці — підтверди destination folder і tap Upload
+
+Поточна вибрана папка, коли заходиш у Library, — це default-destination. Відкрий потрібну папку перед share, якщо хочеш, щоб upload приземлився саме там.
+
+### PWA-поради
+
+- Додай BamDude на home screen для native-app-experience (без browser-chrome)
+- Browse-инг файлів працює offline проти кешованих даних
+- Swipe-жести працюють природно на touch-пристроях
 
 ---
 

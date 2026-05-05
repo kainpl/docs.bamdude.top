@@ -128,14 +128,21 @@ volumes:
 
 ## :material-database: Збереження даних
 
-| Том | Призначення |
-|-----|-------------|
-| `bamdude.db` | База даних SQLite з усіма даними друку |
-| `archive/` | Архівовані файли 3MF та мініатюри |
-| `logs/` | Логи застосунку |
+Стандартний compose-файл монтує два named-volumes плюс один host-bound subdir:
+
+| Mount | Тип | Що зберігає |
+|---|---|---|
+| `bamdude_data:/app/data` | named volume | `bamdude.db` (SQLite), `archive/` (3MF + мініатюри), `library/` (file manager), `certs/` (TLS-матеріал per-VP), uploads, бекапи |
+| `bamdude_logs:/app/logs` | named volume | `bamdude.log` -- ротовані логи застосунку |
+| `./virtual_printer:/app/data/virtual_printer` | bind-mount | Сертифікати слайсера per-VP (поділ з паралельною native-інсталяцією, якщо є) |
+
+Docker Compose v2 додає до named-volumes префікс **імені проєкту** (basename директорії, де лежить compose-файл), тому реальний том на диску -- наприклад `bamdude_bamdude_data`, а не `bamdude_data`. Перерахуй усі через `docker volume ls`.
 
 !!! tip "Резервне копіювання"
-    Для резервного копіювання даних просто скопіюйте ці файли/директорії. Дивіться [Резервне копіювання та відновлення](../features/backup.md) для вбудованої функції.
+    Щоб зробити бекап, скопіюй вміст volumes (або скористайся вбудованою функцією [Резервне копіювання та відновлення](../features/backup.md) у **Settings → Backup**, яка пакує все в один zip). Application-level бекап -- кращий варіант: він зберігає метадані ключа шифрування і стан scheduled-бекапів, які сирий `tar` тома не захоплює.
+
+!!! warning "Перейменування compose-папки = нові порожні volumes"
+    Якщо оновлюєшся, перейменувавши `~/bamdude` у `~/bamdude-old` і розпакувавши свіжий checkout на старе місце, Docker Compose створить **свіжий, порожній** `bamdude_bamdude_data`, а реальні дані залишаться в старому `bamdude-old_bamdude_data`. Це найпоширеніша причина "новий контейнер запустився порожнім після оновлення". Див. [Оновлення та міграція → Персистентність даних](upgrading.uk.md#9-data-persistence-new-container-started-empty) -- там розписані всі сценарії і їх фікси (namespacing named-volumes, дрейф bind-mount шляхів, дані лише в container-layer, невідповідність PUID/PGID, випадковий `down -v`, namespacing у GUI-менеджерах).
 
 ---
 
