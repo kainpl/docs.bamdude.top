@@ -169,7 +169,7 @@ BamDude трекає застосовані міграції в таблиці `
 
 ---
 
-## :material-arrow-decision: 5. Помітні шляхи оновлення
+## :material-arrow-decision: 5. Помітні шляхи оновлення {#5-pomitni-shlyakhy-onovlennya}
 
 ### З Bambuddy HE 3.0.x → BamDude 0.4.x
 
