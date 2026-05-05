@@ -33,10 +33,12 @@ Projects are the way to group a set of related prints — a model with multiple 
 
 A new project starts empty. Add files by either:
 
-- **Linking a folder** — set the project on a File Manager folder; every file inside gets `project_id` set, plus any file moved into the folder later inherits the link.
-- **Linking individual files** — each file row in File Manager has its own "Link to project" button.
+- **Linking a folder** — pick one or more projects on a File Manager folder via the chip multi-select; every file inside gets attached to the same project list, plus any file moved into the folder later inherits the link.
+- **Linking individual files** — each file row in File Manager has its own "Link to project" button that opens the same chip multi-select.
 
-Linked files appear automatically as plan items at copies = 1 each.
+A library file (or folder) can belong to **multiple projects at once** — the link is many-to-many (m044). The same file in N projects shows up as N independent plan rows, each with its own `copies` and `order_index`. Linked files appear automatically as plan items at copies = 1 each per project.
+
+To remove a single association without affecting the rest, click the small `×` on the relevant project chip in the file/folder edit dialog (or use the per-row "remove from project" button on the project detail page) — both go through the dedicated `DELETE /library/{files|folders}/{id}/projects/{project_id}` endpoint, so a file in 3 projects can be detached from 1 without read-modify-write on the whole list.
 
 ## :material-playlist-edit: The print plan
 
@@ -50,9 +52,11 @@ The plan is a flat, ordered list of items. Each row carries:
 | **Time** | Total time this row (slicer estimate × copies). |
 | **Filament** | Total grams across copies, broken down by colour/material if multi-spool. |
 | **Cost** | Filament cost × copies, plus energy cost if a smart plug is bound. |
-| **Status** | Per-row progress: how many copies have been completed (driven by the archives that link back to the file). |
+| **Printed / Remaining** | Per-row progress: `✓N` shows how many copies of this file have completed inside this project (only `status='completed'` archives count — failures/aborts/external prints don't decrement); `📋M` shows `max(0, copies − printed)` remaining work. The progress is keyed by `(project_id, library_file_id)`, so a file in two projects has independent progress in each. |
 
 The grand-totals strip at the bottom sums every row — useful for "do I have enough green PLA on hand for this project?" sanity checks before you click dispatch.
+
+The three headline stat cards at the top of the project detail page (Print Jobs / Print Time / Filament Used) carry a second-line "remaining" subtitle driven from the same plan rows: jobs sums `remaining_count`, time sums `print_time_seconds × remaining_count`, filament sums `filament_grams × remaining_count`. The subtitle is **green** when the plan is fully delivered (`всі надруковано` / `all printed`) and **amber** otherwise — a glance tells you whether the project still has work to do.
 
 ## :material-link-variant: External URL & cover image
 
@@ -221,11 +225,12 @@ Import is symmetric: open Projects → Import, drop the file, pick whether to ke
 
 ## :material-database: Behind the scenes
 
-The schema (m016) splits state across two tables:
+The schema splits state across three tables:
 
 - `projects` — name, description, status, color, target counts, notes, attachments, tags, due date, priority, budget, plus self-FK `parent_id` for sub-projects and a `is_template` flag. Projects do **not** carry an `owner_id` — they're install-wide objects, gated by the `projects:*` permission set rather than ownership.
-- `project_print_plan_items` — the ordered plan, one row per `(project_id, library_file_id)`. Columns: `copies` and `order_index`. Per-row "notes" / "sequence" don't exist as columns — sequence is `order_index`, and notes belong on the project itself.
+- `library_file_projects` + `library_folder_projects` (m044) — pivot tables linking library files / folders to projects, both with composite primary key `(file_id, project_id)` / `(folder_id, project_id)` and `ON DELETE CASCADE` on every FK. The legacy single-FK `library_files.project_id` and `library_folders.project_id` columns were dropped in m044; library code reads / writes the M2M relationship instead.
+- `project_print_plan_items` (m016, reshaped by m044) — the ordered plan, one row per `(project_id, library_file_id)` thanks to the m044 unique constraint reshape from `(library_file_id)` → `(project_id, library_file_id)`. Columns: `copies` and `order_index`. Per-row "notes" / "sequence" don't exist as columns — sequence is `order_index`, and notes belong on the project itself.
 
-Both FKs (`project_id` → `projects.id` and `library_file_id` → `library_files.id`) are `ON DELETE CASCADE`. Deleting a project or a referenced library file removes the matching plan rows. Archives that came from the file are independent — `print_archives.library_file_id` is `ON DELETE SET NULL` (m018, separately) so completed-copy counters keep tracking even after the source file is gone.
+All FKs are `ON DELETE CASCADE`. Deleting a project removes its pivot rows + plan rows; deleting a library file removes its pivot rows + plan rows. Archives that came from the file are independent — `print_archives.library_file_id` is `ON DELETE SET NULL` (m018, separately) so completed-copy counters keep tracking even after the source file is gone.
 
-Per-row completed counts are computed on read from `print_archives` rather than stored on the plan row. Reprints, plate-by-plate dispatches, and dedup-by-hash all increment the row consistently — no drift between the live plan and historical archives.
+Per-row completed counts (`printed_count` / `remaining_count`) are computed on read with one bulk `SELECT library_file_id, count(id) FROM print_archives WHERE project_id = ? AND status = 'completed' GROUP BY library_file_id` per request — no N+1 traffic, and reprints / plate-by-plate dispatches / dedup-by-hash all increment the right row consistently. The `project_id` column on `print_archives` keeps the count scoped to the project, so a file shared across two projects gets two independent printed counters.

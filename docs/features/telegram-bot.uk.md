@@ -43,6 +43,9 @@ Telegram-бот забезпечує:
 4. Увімкніть провайдер
 5. Бот почне автоматичний полінг
 
+!!! note "Конфіг на рівні бота навмисно мінімальний (m045)"
+    Telegram-провайдер тримає лише `name`, токен бота, `enabled` і опційний **розклад щоденного дайджесту** (`daily_digest_enabled` + `daily_digest_time`). Per-event opt-in, тихий час і per-chat digest opt-in живуть у кожному `TelegramChat` — див. **Per-Chat Notification Preferences** нижче. 24 поля `on_*` і `quiet_hours_*`, які shared з email / ntfy / pushover / discord / webhook / homeassistant / callmebot, для telegram нормалізовані до dispatch-transparent значень (`on_*=True`, `quiet_hours_enabled=False`) — на поведінку бота вони більше не впливають.
+
 ### Крок 3: Авторизація чату
 
 1. Відкрийте бота в Telegram і надішліть `/start`
@@ -166,7 +169,7 @@ pending setup) нічого не читає і нічого не робить, �
 
 ### Фільтр подій
 
-Виберіть, які з 23 типів подій (`backend/app/models/telegram_chat.py::ALL_NOTIFY_EVENTS`) цей чат має отримувати. Дефолти відображають те, що цікавить більшість операторів:
+Виберіть, які з 23 типів подій (`backend/app/models/telegram_chat.py::ALL_NOTIFY_EVENTS`) цей чат має отримувати. Після m045 це **єдина** authority для per-event фільтра в telegram — provider-row на рівні бота більше не гейтує події. Дефолти відображають те, що цікавить більшість операторів:
 
 | Дефолтно увімкнено |
 |---|
@@ -199,9 +202,26 @@ pending setup) нічого не читає і нічого не робить, �
 
 ### Щоденний digest
 
-Перемикач `daily_digest` на чаті дає додаткове щоденне summary-повідомлення
-(друки за вчора, фейли, глибина черги). Digest також поважає quiet hours,
-як будь-яке інше сповіщення.
+Перемикач `daily_digest` на чаті opt-in-ить його у щоденне summary-повідомлення.
+**Час дайджесту задається на боті, а не на чаті** — кожен opt-in-нутий чат
+отримує digest у момент, заданий у `daily_digest_time` provider-row-а.
+Картка чату показує бейдж `📅 HH:MM` з часом бота, коли обидва кінці
+opt-in, або амбер `digest off` — коли чат opt-in, а на боті digest
+вимкнений (тоді toggle на чаті no-op, доки на боті не ввімкнуть).
+
+Дві захисні рейки в dispatch-шляху:
+
+- **Skip-on-empty queue**: коли non-digest подія fire-ить з provider
+  `daily_digest_enabled=True`, але жоден чат не має `daily_digest=True`,
+  BamDude взагалі не пише подію в `notification_digest_queue` —
+  таблиця не накопичує рядки, які ніхто не прочитає.
+- **Окремий digest-send шлях**: telegram digest send іде через
+  `_send_telegram_digest_to_chats(provider, title, body)`, що фан-аутить
+  тільки чатам з `daily_digest=True` і обходить per-event-фільтр
+  `should_notify(...)`. Цей шлях також виправляє pre-refactor silent
+  bug, де legacy-код проганяв digest body через `should_notify("unknown")`
+  і відкидав кожен чат — черга накопичувалась, але до жодного чату
+  digest не доходив.
 
 ---
 

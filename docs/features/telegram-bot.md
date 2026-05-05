@@ -43,6 +43,9 @@ The Telegram bot provides:
 4. Enable the provider
 5. The bot starts polling automatically
 
+!!! note "Bot-level config is intentionally minimal (m045)"
+    The Telegram provider row only stores `name`, bot token, `enabled`, and the optional **daily-digest schedule** (`daily_digest_enabled` + `daily_digest_time`). Per-event opt-ins, quiet hours, and the per-chat digest opt-in all live on each `TelegramChat` — see **Per-Chat Notification Preferences** below. The 24 `on_*` event toggles and `quiet_hours_*` columns that the provider row shares with email / ntfy / pushover / discord / webhook / homeassistant / callmebot are normalised to dispatch-transparent values for telegram (`on_*=True`, `quiet_hours_enabled=False`) — they no longer drive any behaviour for the bot.
+
 ### Step 3: Authorize Your Chat
 
 1. Open your bot in Telegram and send `/start`
@@ -165,7 +168,7 @@ preferences leak between chats — set them once per chat.
 
 ### Event filter
 
-Pick which of the 23 event types (`backend/app/models/telegram_chat.py::ALL_NOTIFY_EVENTS`) this chat should receive. The defaults mirror what most operators care about:
+Pick which of the 23 event types (`backend/app/models/telegram_chat.py::ALL_NOTIFY_EVENTS`) this chat should receive. After m045 this is the **sole** authority for telegram per-event filtering — the bot-level provider row no longer gates events. The defaults mirror what most operators care about:
 
 | Default events ON |
 |---|
@@ -198,9 +201,29 @@ silencing low-priority ones.
 
 ### Daily digest
 
-Toggle `daily_digest` on a chat to additionally receive a once-per-day
-summary message (yesterday's prints, failures, queue depth). The digest
-respects quiet hours just like any other notification.
+Toggle `daily_digest` on a chat to opt that chat into the once-per-day
+summary message. **The digest time is configured on the bot, not on the
+chat** — every opted-in chat receives the same digest at the time set
+on the provider row's `daily_digest_time`. The chat-card surfaces a
+`📅 HH:MM` badge sourced from the bot's configured time when both ends
+opt in, or an amber `digest off` badge when the chat opted in but the
+bot has digest disabled (the chat-side toggle is then a no-op until
+the bot is on).
+
+Two safety rails on the dispatch path:
+
+- **Skip-on-empty queue**: when a non-digest event fires with provider
+  `daily_digest_enabled=True` but no chat has `daily_digest=True`,
+  BamDude doesn't bother queueing the event into
+  `notification_digest_queue` — saves the table from accumulating
+  rows nobody will ever read.
+- **Dedicated digest send path**: telegram digest send goes through
+  `_send_telegram_digest_to_chats(provider, title, body)`, which fans
+  out only to chats with `daily_digest=True` and bypasses the
+  per-event `should_notify(...)` filter. This path also fixes a
+  pre-refactor silent bug where the legacy code ran the digest body
+  through `should_notify("unknown")` and rejected every chat — the
+  queue filled up but no one received the digest.
 
 ---
 

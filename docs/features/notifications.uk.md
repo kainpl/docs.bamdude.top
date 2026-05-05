@@ -296,20 +296,42 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 
 ## :material-clock: Тихі години і щоденний digest
 
-Обидва налаштовуються **на провайдер**, не глобально — Discord-канал може лишатися гучним, а телефон отримати тільки 9:00 summary.
+Форма конфіга залежить від типу провайдера — Telegram-бот окремий випадок.
+
+**Не-telegram провайдери (email / ntfy / pushover / discord / webhook / homeassistant / callmebot)** тримають обидва налаштування на самому provider-row:
 
 | Налаштування | Де | Ефект |
 |---|---|---|
 | `quiet_hours_enabled` + `quiet_hours_start` / `quiet_hours_end` | Конфіг провайдера | Події всередині вікна викидаються (не чекають — quiet hours це "мовчати", не "відкласти"). |
 | `daily_digest_enabled` + `daily_digest_time` | Конфіг провайдера | Події протягом дня зберігаються в `notification_digest_queue`; коли годинник переходить `daily_digest_time`, BamDude вислає чергу одним digest-повідомленням. |
 
-Список Telegram-чатів (Settings → Notifications → Telegram Chats) має ті самі два toggle-и на чат, плюс `notification_events` фільтр — кожен чат підписується тільки на події, які йому потрібні.
+**Telegram (m045)** структурований інакше: бот/provider-row тримає тільки **розклад** (`daily_digest_enabled` + `daily_digest_time`), а per-event opt-in, тихий час і per-chat digest opt-in живуть на кожному рядку `TelegramChat`. Один чат може бути в quiet-годинах, а інший залишатися гучним — обидва живляться одним ботом. Деталі per-chat-полів див. [Налаштування Telegram-бота](telegram-bot.uk.md).
 
 ---
 
 ## :material-file-document-edit: Редактор шаблонів
 
 Кожна подія має дефолтний шаблон у `data/notification_templates_{en,uk}.json`. Вкладка Templates під Settings → Notifications дозволяє перевизначити будь-який — тітул + тіло — з MarkdownV2 toolbar і live-прев'ю.
+
+Вкладка Templates групує 28 дефолтних шаблонів за призначенням, щоб одним поглядом було видно, який dispatch-шлях кожен з них живить:
+
+| Група | К-ть | Для чого |
+|---|---|---|
+| **Print events** | 9 | `print_start/complete/failed/stopped/progress`, `plate_not_empty`, `bed_cooled`, `first_layer_complete`, `print_missing_spool_assignment` |
+| **Printer status** | 4 | `printer_offline`, `printer_error`, `filament_low`, `maintenance_due` |
+| **AMS environmental** | 2 | `ams_humidity_high`, `ams_temperature_high` (також reuse-яться у runtime для AMS-HT-подій) |
+| **Print queue** | 6 | `queue_job_added/started/waiting/skipped/failed`, `queue_completed` |
+| **Job owner emails** | 4 | `user_print_start/complete/failed/stopped` — SMTP-only, шлеться власнику задачі друку |
+| **System emails** | 2 | `user_created` (welcome), `password_reset` |
+| **Test** | 1 | `test` — для кнопок "Send test" |
+
+Кожна картка несе маленький UPPERCASE-бейдж каналу:
+
+- **Зелений `ALL`** — фан-аут до всіх типів провайдерів (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). 21 запис у перших 4 групах.
+- **Синій `EMAIL`** — SMTP-only флоу. 4× `user_print_*` job-owner emails плюс `user_created` / `password_reset`.
+- **Амбер `TEST`** — внутрішній test-button helper.
+
+Маппінг — це метадані про те, який dispatch-шлях кожен шаблон живить; не зберігаються на рядку, рендеряться зі статичної таблиці у frontend-і.
 
 Підстановка змінних — простий `{plate_holder}` синтаксис (`{printer_name}`, `{filament_grams}`, `{eta}` і т.д.); схема залочена на подію, тож редактор сам попереджає, коли placeholder не резолвиться.
 
