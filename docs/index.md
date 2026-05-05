@@ -35,7 +35,7 @@ Hard fork of [Bambuddy](https://github.com/maziggy/bambuddy) with per-printer qu
 
 ---
 
-## :material-help-circle-outline: Why this exists
+## :material-help-circle-outline: Why BamDude
 
 BamDude is a **fleet manager**, not a passive backend that just listens to your slicer. The classic "slice → print → BamDude logs whatever it can" flow is fine for one or two printers, but it falls apart the moment accurate history and real spool control start mattering.
 

@@ -3,7 +3,7 @@ title: Why BamDude
 description: BamDude is a fleet manager — not a passive backend listening to your slicer. Why that distinction matters and how to think about plugging it into your workflow.
 ---
 
-# Why this exists
+# Why BamDude
 
 ## Two ways to drive a 3D printer
 
