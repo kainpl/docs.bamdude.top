@@ -32,11 +32,20 @@ BamDude може публікувати події до зовнішнього M
 | **Префікс топіків** | Префікс для всіх топіків | `bambuddy` (legacy за замовчуванням — змініть на `bamdude` для нових інсталяцій) |
 | **Використовувати TLS** | Увімкнення шифрування TLS/SSL | Вимкнено |
 
+!!! tip "Auto-заповнення порту"
+    Коли вмикаєш **Use TLS**, поле порту авто-заповнюється `8883` (стандартний порт MQTT-over-TLS). Вимикаєш — повертається `1883`. Можеш override-нути будь-яке з default-значень — auto-fill спрацьовує тільки коли поле тримає default попереднього режиму.
+
 ---
 
 ## :material-broadcast: Топіки, що публікуються
 
 Усі топіки мають налаштований вами префікс. **Префікс за замовчуванням — `bambuddy`** (успадковано з апстрім Bambuddy і не змінюється авто, щоб не ламати наявні HA-інтеграції на оновленнях). Змініть під Settings → Network, якщо хочете підписатися на `bamdude/...`. Приклади нижче використовують `bambuddy/`, щоб відповідати out-of-the-box-інсталяції — підставте свій реальний префікс.
+
+### Статус сервісу
+
+| Топік | Опис | Retained |
+|-------|------|----------|
+| `bambuddy/status` | LWT-based статус сервісу. Payload `online` коли BamDude крутиться, `offline` публікується як Last-Will коли брокер втратив зв'язок. | Так |
 
 ### Події принтера
 
@@ -68,16 +77,177 @@ BamDude може публікувати події до зовнішнього M
 | `bambuddy/maintenance/acknowledged` | Maintenance-alert підтверджено в UI |
 | `bambuddy/maintenance/reset` | Maintenance-counter скинуто (завдання позначено виконаним) |
 
+### Події розумних розеток
+
+| Топік | Опис |
+|-------|------|
+| `bambuddy/smart_plugs/on` | Розетка щойно увімкнулась (post-confirmation, не просто запит). Payload містить `plug_id`, `plug_name`, `bound_printer_id`. |
+| `bambuddy/smart_plugs/off` | Розетка щойно вимкнулась. |
+| `bambuddy/smart_plugs/energy` | Періодичний знімок енергії. Payload містить `kwh_total`, `current_watts`, `voltage`, `printer_id` якщо прив'язана. |
+
+### Події архіву
+
+| Топік | Опис |
+|-------|------|
+| `bambuddy/archive/created` | Створено новий рядок архіву (post-3MF parse). Payload: `archive_id`, `printer_id`, `task_name`, `effective_hash`, `created_at`. |
+| `bambuddy/archive/updated` | Архів-рядок змінено (статус flip-нувся, plate-metadata refilled, retry-download succeed-нуло, etc.). Payload містить змінені поля. |
+
+---
+
+## :material-code-json: Формат payload
+
+Усі payload-и — JSON-об'єкти. Приклад printer status payload:
+
+```json
+{
+  "printer_id": 1,
+  "printer_name": "X1C-1",
+  "printer_serial": "00M09C411500579",
+  "timestamp": "2026-05-04T12:00:00.000000",
+  "connected": true,
+  "state": "PRINTING",
+  "progress": 45.5,
+  "remaining_time": 3600,
+  "layer_num": 150,
+  "total_layers": 300,
+  "current_print": "benchy.3mf",
+  "subtask_name": "Benchy",
+  "temperatures": {
+    "bed": 60.0,
+    "bed_target": 60.0,
+    "nozzle": 220.0,
+    "nozzle_target": 220.0,
+    "chamber": 35.0
+  },
+  "wifi_signal": -55,
+  "chamber_light": true,
+  "speed_level": 2,
+  "cooling_fan_speed": 100,
+  "big_fan1_speed": 50,
+  "big_fan2_speed": 50
+}
+```
+
+Status payload throttle-нутий приблизно до 1/секунди — printer-side MQTT може фірити кілька разів на секунду на важких друках, тож BamDude коалесить.
+
 ---
 
 ## :material-home-assistant: Приклад для Home Assistant
 
+BamDude поки що не публікує Home Assistant MQTT-discovery — сенсори вписуєш руками в `configuration.yaml`. Структура топіків / JSON-payload-ів стабільна, тож manual-конфіг прямолінійний.
+
 ```yaml
 mqtt:
   sensor:
-    - name: "Printer Status"
+    - name: "X1C Print Progress"
+      state_topic: "bambuddy/printers/YOUR_SERIAL/status"
+      value_template: "{{ value_json.progress }}"
+      unit_of_measurement: "%"
+
+    - name: "X1C State"
       state_topic: "bambuddy/printers/YOUR_SERIAL/status"
       value_template: "{{ value_json.state }}"
+
+    - name: "X1C Bed Temperature"
+      state_topic: "bambuddy/printers/YOUR_SERIAL/status"
+      value_template: "{{ value_json.temperatures.bed }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+
+    - name: "X1C Nozzle Temperature"
+      state_topic: "bambuddy/printers/YOUR_SERIAL/status"
+      value_template: "{{ value_json.temperatures.nozzle }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+
+  binary_sensor:
+    - name: "BamDude Online"
+      state_topic: "bambuddy/status"
+      payload_on: "online"
+      payload_off: "offline"
+      device_class: connectivity
+```
+
+---
+
+## :material-flow-tree: Node-RED switch-by-topic
+
+Підпишись на `bambuddy/#` через **MQTT in** ноду і роутай за топіком:
+
+```
+[MQTT in: bambuddy/#] → [Switch (msg.topic)] → [Function / Pushover / Slack]
+```
+
+Приклад switch-правил — фірити Pushover-сповіщення, коли архів створено на принтері X1C-1:
+
+```json
+{
+  "type": "switch",
+  "rules": [
+    {
+      "t": "regex",
+      "v": "^bambuddy/archive/created$",
+      "case": false
+    },
+    {
+      "t": "else"
+    }
+  ],
+  "checkall": "true",
+  "outputs": 2
+}
+```
+
+Перший вихід — на Function, що фільтрує `msg.payload.printer_name === "X1C-1"`, далі на Pushover / Telegram out node. Другий вихід — catch-all, можна дропнути або логувати.
+
+---
+
+## :material-lock: TLS / SSL
+
+Коли **Use TLS** увімкнено:
+
+- BamDude відкриває з'єднання з брокером по TLS, використовуючи системний trust store.
+- **Self-signed broker-серти не верифікуються за замовчуванням** — з'єднання все одно зашифроване, але cert chain не валідується. Це робить home-lab сетапи з локальним Mosquitto + self-signed серт працюючими out of the box. Для production — підпиши broker-серт під CA, якій довіряє система (Let's Encrypt, internal PKI), і з'єднання стане повністю верифікованим.
+- Username + password йдуть **всередині** TLS-тунелю — шифровані на дроті навіть з self-signed.
+
+Якщо потрібен strict cert verification, постав CA в host trust store (`/etc/ssl/certs/` + `update-ca-certificates`); MQTT-клієнт BamDude підбере його через системний bundle.
+
+---
+
+## :material-help-circle: Усунення несправностей
+
+Сторінка Settings показує крапку статусу:
+
+| Індикатор | Значення |
+|---|---|
+| Зелена | Конект; останній `bambuddy/status` payload — `online`. |
+| Червона | Disconnected. Ховер для останньої помилки (auth fail / connection refused / TLS handshake / DNS). |
+| Сіра | MQTT publishing вимкнено. |
+
+### Типові проблеми
+
+| Проблема | Розв'язок |
+|---|---|
+| `Not authorized` / червона після save | Username / password mismatch у брокері. Тестуй `mosquitto_sub` спершу. |
+| `Connection refused` | Невірний hostname / port, або брокер не запущений. Перевір з BamDude-хоста: `nc -vz <broker> 1883`. |
+| TLS handshake error | Брокер не говорить TLS на цьому порту — `1883` plain, `8883` TLS за конвенцією. Тогглі Use TLS відповідно. |
+| Топік не публікується | Подія ще не фірить — перевір, що принтер / черга реально робить те, що топік трекає. `bambuddy/printers/.../print/started` фірить лише на старт друку, не на кожен reconnect. |
+| Subscriber нічого не бачить | Topic-фільтр subscriber-а не збігається. Юзай `bambuddy/#` щоб побачити все, потім звужуй коли підтвердив префікс. |
+
+### Тестування з mosquitto_sub
+
+```bash
+# Підписка на всі BamDude-топіки
+mosquitto_sub -h your-broker -t "bambuddy/#" -v
+
+# З автентифікацією
+mosquitto_sub -h your-broker -u username -P password -t "bambuddy/#" -v
+
+# З TLS
+mosquitto_sub -h your-broker -p 8883 --cafile ca.crt -t "bambuddy/#" -v
+
+# Тільки LWT-статус
+mosquitto_sub -h your-broker -t "bambuddy/status" -v
 ```
 
 ---

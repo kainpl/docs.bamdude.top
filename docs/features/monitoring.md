@@ -58,23 +58,83 @@ When a print is active:
 - **Time remaining** -- Estimated time to completion
 - **Filament used** -- Grams consumed so far
 
+### Connection Status
+
+| Indicator | Status |
+|:---------:|--------|
+| :material-circle:{ style="color: #4caf50" } | Connected and communicating |
+| :material-circle:{ style="color: #ff9800" } | Connecting / reconnecting |
+| :material-circle:{ style="color: #f44336" } | Disconnected or error |
+
+### Nozzle details (H2 series)
+
+H2 printers expose extended nozzle metadata on hover:
+
+| Printer | Card | What you see |
+|---------|------|--------------|
+| **H2D / H2D Pro** | L/R nozzle hover card | Side-by-side detail for both nozzles — diameter, type, flow, wear, max temp, serial. The active nozzle is highlighted **Active** vs **Idle**. |
+| **H2S** | Single-nozzle hover card | Wear, serial, max temp on hover over the nozzle temp tile. |
+| **H2C** | Nozzle rack card | 6-position tool-changer dock — every slot with diameter + filament colour. Empty slots are placeholder tiles; hover for full detail. |
+
+!!! info "L/R semantics — Active vs mounted"
+    The L/R card flags the nozzle the printer is **currently using**, not just which one is mounted. On dual-extruder jobs that swap mid-print the highlighting follows the live state.
+
 ### Fan Status
 
-Real-time fan speed monitoring:
+Real-time fan speeds in the Controls section:
 
-| Fan | Description |
-|-----|-------------|
-| :material-fan: **Part Cooling** | Cools the printed layers |
-| :material-weather-windy: **Auxiliary** | Controls airflow in chamber |
-| :material-air-filter: **Chamber** | Exhausts hot air from enclosure |
+| Fan | Icon | Colour | Description |
+|-----|:----:|:------:|-------------|
+| **Part Cooling** | :material-fan: | Cyan | Cools the printed layers |
+| **Auxiliary** | :material-weather-windy: | Blue | Chamber airflow |
+| **Chamber** | :material-air-filter: | Green | Exhausts hot air from the enclosure |
+
+Active fans show their current speed %; inactive ones grey out at 0 %. A **print speed badge** (:material-gauge:) sits in the same row showing the live speed-preset percentage.
 
 ### Door / lid sensor (X1 Series only)
 
 X1 / X1 Carbon / X1E expose a door-open MQTT signal (printer status bit 23). When the printer reports the door open mid-print the card flags it; on other models BamDude doesn't fake the indicator — A1, P1, P2 and H2 series don't ship the sensor.
 
+### Compact-mode status pip
+
+In **Small** card size each card shows a single coloured pip instead of the full status bar:
+
+| Colour | Meaning |
+|:------:|---------|
+| :material-circle:{ style="color: #4caf50" } Green | Connected, no issues |
+| :material-circle:{ style="color: #f44336" } Red | Offline, or HMS fatal / serious (severity ≤ 2) |
+| :material-circle:{ style="color: #ff9800" } Amber | HMS warning (info / common severity) |
+
+Hover the pip for the count of active HMS errors.
+
+### Status sorting + collapsible groups
+
+When you sort by **Status**, **Model**, or **Location**, cards render inside collapsible section headers — click a header to fold / unfold the group. **Name** sort stays as a flat grid.
+
+- Group collapsed-state persists per browser in `localStorage`.
+- In selection mode each header gets a **Select All** button — selects every card in that group.
+- Status groups order by priority: **Error → Printing → Paused → Finished → Idle → Offline**. The sort-direction toggle inverts the order.
+
+Sorting **by status** in flat mode follows the same priority — printers needing attention float to the top:
+
+1. HMS errors
+2. Printing
+3. Idle
+4. Offline
+
 ### Group printers by location
 
 Above the grid, group printers by **location** (the free-form string set on each printer card). Useful when the farm spans rooms / floors — collapse the room you're not watching.
+
+### Search + filters
+
+The toolbar on the Printers page has:
+
+- **Search** — substring match on name, model, location, and serial number. Live (no Enter required).
+- **Status filter** — `All`, `Online`, `Printing`, `Idle`, `Offline`, `Error`.
+- **Location filter** — dropdown of all distinct location strings currently in use.
+
+Filters AND together; an empty result-set shows a "No printers match" placeholder instead of an empty grid.
 
 ### Per-permission live state
 
@@ -118,6 +178,96 @@ graph LR
 ## :material-key-variant: Camera-stream tokens
 
 Live MJPEG, snapshots, archive thumbnails, and the cover image all come back as `<img>`/`<video>` GETs that can't carry an `Authorization` header. BamDude issues a short-lived (60 minute) query-param token from `POST /printers/camera/stream-token`; the frontend threads it through every camera URL automatically. Tokens are scoped to the logged-in user — login / logout invalidates the cache, and the `useStreamTokenSync` hook walks the DOM to retrofit any `<img>` source rendered before a token landed. See [Camera Streaming](camera.md) for the gory details.
+
+---
+
+## :material-access-point: WiFi signal strength
+
+Each card surfaces a WiFi-strength glyph from the printer's MQTT report:
+
+| Glyph | Signal |
+|:-----:|--------|
+| :material-wifi-strength-4: | Excellent |
+| :material-wifi-strength-3: | Good |
+| :material-wifi-strength-2: | Fair |
+| :material-wifi-strength-1: | Weak |
+
+Weak signal is the most common cause of "printer drops mid-print" + intermittent FTP errors — fix the WiFi before chasing dispatch bugs.
+
+---
+
+## :material-timer-sand: Total print hours
+
+The card carries a cumulative print-time counter (sourced from `print_archives` rows for that printer). Useful for:
+
+- maintenance scheduling — pair with the [Maintenance](maintenance.md) feature to flag rod / nozzle / belt jobs at the right hour mark
+- spotting heavily-used machines when you're load-balancing the farm
+- post-mortem on early-failure printers — high accumulated hours often correlates with bed wear / belt slack
+
+---
+
+## :material-folder: Printer file browser
+
+Browse and manage files on the printer's internal SD card right from the printer card.
+
+### Opening it
+
+Click the **folder icon** (:material-folder:) on any printer card → modal opens against the live FTPS session.
+
+### Navigation
+
+- **Quick-access buttons** for `Root`, `Cache`, `Models`, `Timelapse` — jumps to the typical Bambu paths.
+- **Breadcrumb path** with back-step navigation.
+- Click folders to descend.
+
+### Selection + bulk operations
+
+| Action | Single | Multiple |
+|--------|--------|----------|
+| **Download** | Direct download | ZIP archive of selection |
+| **Save to Library** | Lands the 3MF as a Library file (BamDude-only) — folder picker prompts for destination | Same, batched |
+| **Delete** | Confirm + delete | Bulk-delete with confirm |
+
+The **Save to Library** path also auto-promotes bare `.3mf` filenames to `.gcode.3mf` when the bytes are sliced (probes the zip for `Metadata/plate_*.gcode`), so the Library's tag/parser pipeline classifies it correctly.
+
+### Sort + filter
+
+| Control | Options |
+|---------|---------|
+| **Sort** | Name (A–Z / Z–A), Size, Date |
+| **Filter** | Live substring match against the filename |
+
+### Storage info
+
+When the printer reports it, used / free space appears in the modal header.
+
+---
+
+## :material-image-multiple: Printer images
+
+Customise the card by uploading a printer image:
+
+1. Click the settings cog on a card.
+2. Upload an image (~300×200 works best).
+3. The image replaces the default card hero.
+
+Per-printer; backed up with the rest of the install.
+
+---
+
+## :material-bell-ring: Status-change notifications
+
+Wire any of these state changes to your notification channels:
+
+| Event | Fires when |
+|-------|------------|
+| **Printer offline** | MQTT connection drops past the offline threshold |
+| **Printer error** | New HMS entry, severity ≥ Error |
+| **Print complete** | Job finishes (printed-percentage = 100) |
+| **Print failed** | Job ends with a non-success status |
+| **First layer complete** | First layer finishes (early-fail catch) |
+
+Configure under **Settings → Notifications** — see [Notifications](notifications.md).
 
 ---
 

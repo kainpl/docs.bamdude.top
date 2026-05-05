@@ -22,7 +22,7 @@ graph LR
     E --> F[Status -> completed/failed/cancelled<br/>fill duration + energy]
 ```
 
-If the FTP fetch fails the row is still created — see [3MF download recovery](#material-cloud-download-3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
+If the FTP fetch fails the row is still created — see [3MF download recovery](#3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
 
 !!! warning "SD card required"
     The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
@@ -59,7 +59,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
 
     | Field | Description |
     |-------|-------------|
-    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped`, or `archived`. See [status badges](#material-tag-text-archive-status-badges). |
+    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped`, or `archived`. See [status badges](#archive-status-badges). |
     | `started_at`, `completed_at` | Wall-clock bounds of the run (NULL until they happen). |
     | `failure_reason` | Short cause code (e.g. `firmware_error`). |
     | `error_message` | Verbose diagnostic from the dispatcher / scheduler — shown on hover over the badge. |
@@ -138,20 +138,18 @@ The reason: the dispatch pipeline can patch a 3MF before upload — for example,
 `source_content_hash` solves this:
 
 - When BamDude dispatches a patched print, it stores the SHA256 of the **unpatched** source in `source_content_hash` and the SHA256 of the bytes that landed on the SD in `content_hash`.
+- The on-disk file at `file_path` is **always** the unpatched original. Patched bytes live only in `/tmp/bamdude_patch_*` for the FTP-upload window and are cleaned up by the dispatcher; `archive/` never holds a patched variant. This is what lets reprint re-run the patcher per-job and toggle `mesh_mode_fast_check` / gcode injection in either direction — the patcher's `M970` regex only matches uncommented lines and couldn't undo a previously-baked patch if the on-disk source were post-patch.
 - Dedup queries use `effective_hash = COALESCE(source_content_hash, content_hash)`. Since 0.4.2 every new archive populates `source_content_hash` (chain root or self-seed), so `effective_hash` reads `source_content_hash` directly for new rows; `COALESCE` stays as defence-in-depth.
-- Reprinting from an existing archive copies the file again into a fresh archive directory — new `content_hash`, but the same `source_content_hash`, so reprint history stays linked to the original design.
+- Reprinting from an existing archive copies the unpatched file into a fresh archive directory — new `content_hash` if the new run patches differently, but the same `source_content_hash`, so reprint history stays linked to the original design.
 - External prints (started on the printer screen / cloud / manual SD start) get a one-SELECT lookup at archive creation: if any prior archive on **any** printer matches by `content_hash` or `source_content_hash`, the chain is inherited (cross-printer in 0.4.2 — was per-printer before).
 
-The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "оригінальний друк" / "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Two consequences worth knowing:
-
-- A printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are now grouped together in the badge.
-- Two archives that share the same on-disk 3MF bytes (cross-printer file dedup, see below) are still separate rows with separate `printer_id`s — the dedup is purely on storage layout.
+The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "оригінальний друк" / "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Consequence: a printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are grouped together in the badge **and** share one on-disk file (see below).
 
 ### Cross-printer file-on-disk dedup *(0.4.2)*
 
-When BamDude archives a print whose `content_hash` matches an existing archive on **any** printer (was: same printer only), the new archive row reuses the existing on-disk path instead of writing another copy. Net effect: printing the same file on N printers stores one copy on disk + N archive rows. `delete_archive` ref-counts shared `file_path`s and only removes bytes when the last referencing row is hard-deleted.
+When BamDude archives a print whose `effective_hash` matches an existing archive on **any** printer, the new archive row reuses the existing on-disk path instead of writing another copy. Match is on the chain-root hash (`COALESCE(source_content_hash, content_hash)`) — every row sharing an unpatched origin shares one on-disk file regardless of which patches each individual dispatch applied. Net effect: printing the same library file on N printers with M different patch combinations still stores **one** copy on disk + N×M archive rows. `delete_archive` ref-counts shared `file_path`s and only removes bytes when the last referencing row is hard-deleted. The same dedup runs in `attach_3mf_to_archive` (background download-retry path), so a fallback archive whose 3MF lands later joins the existing chain instead of writing the printer-fetched (patched) bytes when an unpatched copy already exists.
 
-Dedup is on **strict `content_hash` match**, not the chain-coalesce `effective_hash` — different patched variants of the same source share `effective_hash` for grouping but live as separate files on disk; aliasing between them would point one row's `content_hash` at the wrong bytes and break later `ZipFile` reads. Same dedup also runs in `attach_3mf_to_archive` (background download-retry path), so a fallback archive whose 3MF lands later picks up the existing copy if another printer already has it.
+If you upgrade from a pre-0.4.2 install where `archive/` may still contain leftover patched copies from the prior semantics, run `python scripts/prune_orphan_archive_files.py` (default dry-run, `--apply` to delete) to reconcile the directory against the current DB references.
 
 !!! info "Migrations m009 + m039"
     `source_content_hash` and `applied_patches` were added in m009. Migration **m039** (0.4.2) backfills `source_content_hash = content_hash` for legacy NULL rows so the always-populated invariant holds across upgrade.
@@ -286,6 +284,184 @@ The preview reads from the local archive copy — if the 3MF isn't on disk (fall
 
 ---
 
+## :material-cube-scan: 3D G-code Preview
+
+Separate from the bare model preview above, the **G-code preview** renders the actual sliced toolpath layer-by-layer — what the printer will physically extrude — directly in the BamDude shell.
+
+- **Open it from the card** — click the layers badge in the bottom-right corner of any archive card, or right-click → **3D Preview**. List view exposes the same action via the row menu.
+- **Plate picker for multi-plate archives** — when the source 3MF carries more than one plate, a picker modal appears first with thumbnails, the first few object names per plate, and the plate's print time. Single-plate archives skip the picker.
+- **Layer slider** on the right scrubs through the build top-to-bottom; the **play** button animates extrusion along the toolpath at **1× / 3× / 10× / 25×** selectable speeds.
+- **Mouse** — left-drag rotates, scroll wheel zooms, right-drag pans.
+- **Bed wireframe is auto-detected** from the printer model the archive was sliced for (H2D → 350×320×325 mm, X1C/P1S → 256³, A1 → 256³, A1-mini → 180³, etc.). No configuration.
+- **Source-only fallback toast** — pure project 3MFs (exported from BambuStudio without slicing) carry no G-code. Clicking 3D Preview on those shows a short toast asking you to slice the file first; the viewer doesn't open. The flat **3D Model Preview** above still works on these because it renders the geometry, not the toolpath.
+
+The viewer URL carries the archive reference, so refreshing the page keeps you in the shell with the viewer re-rendering correctly.
+
+---
+
+## :material-printer-3d: Re-print with AMS Mapping
+
+The **Reprint** button on an archive card opens a filament comparison modal that maps the slicer's required filaments to the AMS slots currently loaded on the target printer.
+
+### What the modal shows
+
+| Required (from 3MF) | → | Loaded (in AMS) | Status |
+|---|---|---|---|
+| PLA Red (25 g) | → | PLA Red (AMS-A slot 1) | :material-check:{ style="color: #4caf50" } |
+| PETG Black (10 g) | → | PETG White (AMS-B slot 2) | :material-alert:{ style="color: #ff9800" } different colour |
+| PLA Blue (5 g) | → | TPU (external) | :material-close:{ style="color: #f44336" } different type |
+
+### Status indicators
+
+| Icon | Meaning |
+|---|---|
+| :material-check:{ style="color: #4caf50" } | Type and colour both match (exact or fuzzy hex tolerance) |
+| :material-alert:{ style="color: #ff9800" } | Same type, different colour |
+| :material-close:{ style="color: #f44336" } | Different filament type or slot empty |
+
+### Auto-matcher + manual override
+
+- **Auto-match** runs first: BamDude pairs each required filament to the best AMS slot by type then colour, with a fuzzy hex tolerance so a slightly off RGB (5 D printed→batch shift) still resolves as a match.
+- **Manual override per slot** — click any row's dropdown to pick a different AMS slot. Manually-overridden slots get a **blue ring** indicator so you can see at a glance which rows you touched.
+- **Slot labels** include AMS unit + slot number (e.g. `AMS-B Slot 3`) and respect any [Custom AMS Labels](ams.md#custom-ams-labels) you've set.
+- **Colour names** come from the [`color_catalog`](inventory.md#colour-catalog) (Bambu Lab manufacturer wins for shared hex; HSL fallback for unknown hex).
+- **Re-read AMS** button at the top of the modal pulls a fresh AMS state from the printer if you've swapped a spool since the modal opened.
+- **Multi-plate archives** show a plate-grid selector first — only the filaments used by the chosen plate are displayed for mapping; this prevents the cross-plate mis-mapping that would otherwise pull every plate's filament into one list.
+
+### Print options
+
+The modal exposes the same options table as the new-print and queue modals — see [Print Queue](print-queue.md). Highlights:
+
+| Option | Default | Description |
+|---|---|---|
+| **Bed Levelling** | Enabled | Auto-level before print |
+| **Flow Calibration** | Disabled | Calibrate extrusion flow |
+| **Mesh-mode fast check** | Inherits from printer setting | When off, BamDude's gcode patcher comments out `M970`/`M970.3` vibration probes — see [archive chain-of-custody](#deduplication-chain-of-custody) |
+| **First Layer Inspection** | Disabled | AI inspection of first layer |
+| **Timelapse** | Disabled | Record timelapse video |
+| **G-code injection** | Per-job | Inject custom G-code (see [G-code Injection](gcode-injection.md)) |
+
+!!! tip "File-type badge"
+    Cards show a **GCODE** (green) or **SOURCE** (orange) badge. Only GCODE files carry AMS mapping data — SOURCE archives are slicer project files without embedded print settings, so the Reprint button asks you to load them in the slicer first.
+
+---
+
+## :material-image-multiple: Photo Attachments
+
+Attach pictures to an archive — useful for documenting failures, showing finished parts, or pairing a print with a project photo.
+
+- **Auto camera snapshot on print complete** — toggle **Settings → General → Capture snapshot on print complete**. When on, BamDude grabs a frame from the printer's camera the moment the print finishes and attaches it to the archive.
+- **Manual upload** — drag-and-drop image files onto the archive detail page, or use the **+ Add Photo** button in the photo strip. Multiple photos per archive are supported.
+- **Failure documentation** — attaching a photo of a failed print pairs nicely with the archive's `failure_reason` + `error_message` fields, so the post-mortem is all in one place.
+
+---
+
+## :material-movie-edit: Timelapse Editor
+
+BamDude attaches printer timelapses to the matching archive automatically and lets you trim, retime, and score them in the browser without leaving the shell.
+
+### Built-in capture
+
+| Format | Printers | Handling |
+|---|---|---|
+| **MP4** | X1, X1C, X1E, A1, A1 mini, H2D | Attached directly |
+| **AVI** | P1S, P1P | Saved immediately + converted to MP4 in the background via ffmpeg (`-threads 1`, `nice -n 19`) — runs at low priority so your Pi doesn't choke on it |
+
+The timelapse is available in the archive viewer the moment the print finishes; AVI re-encoding happens silently in the background.
+
+### Editor controls
+
+Open an archive with a timelapse → click the timelapse thumbnail → **Edit** in the viewer header.
+
+| Control | Description |
+|---|---|
+| **Trim handles** (two) | Drag the two markers on the timeline to set start / end of the kept segment |
+| **Speed selector** | 0.25× → 4× playback speed |
+| **Music dropdown** | Upload an MP3 / WAV / M4A / AAC / OGG and adjust volume; preview is synced with video playback |
+| **Preview Play** | Plays only the trimmed range with the music overlay applied |
+| **Save** | Re-encodes via ffmpeg server-side and replaces the original timelapse with the edited version |
+
+### Manual upload + remove
+
+For LAN-only printers or when the auto-attach picks the wrong timelapse:
+
+| Action | When visible | Description |
+|---|---|---|
+| **Upload Timelapse** | No timelapse attached | Drag-drop or pick `.mp4`, `.avi`, or `.mkv` — AVI/MKV auto-convert to MP4 in the background |
+| **Remove Timelapse** | Timelapse attached | Detach the file and clear the reference (file is deleted from disk) |
+
+---
+
+## :material-cloud-upload: Source 3MF Upload
+
+For prints started outside BamDude — slicer's **Send to Printer** button, Bambu Cloud, or a manual SD card start — the archive is created without an associated source 3MF (only the on-printer copy is fetched). The detail page exposes an **Upload Source** button that lets you attach the original 3MF post-hoc:
+
+1. Open the archive detail page.
+2. Click **Upload Source 3MF** in the action bar.
+3. Pick the original file from your slicer's export directory.
+
+Once uploaded the file is stored in `source_3mf_path` (separate from the dispatched copy), and:
+
+- **3D model + G-code previews become available** for the archive.
+- **Re-print** works through the standard AMS-mapping modal — the source 3MF carries the slicer's filament list.
+- The archive's chain-of-custody is unaffected — `content_hash` still reflects what landed on the SD card.
+
+---
+
+## :material-cube-outline: Fusion 360 Design Files
+
+You can attach the original `.f3d` design source alongside an archive, so the print + design history live together.
+
+| Action | When visible | Description |
+|---|---|---|
+| **Upload F3D** | No F3D attached | Pick a `.f3d` file from your device — stored on disk next to the archive |
+| **Replace F3D** | F3D exists | Swap the existing file for a newer revision |
+| **Download F3D** | F3D exists | Pull the attached file to your device |
+| **Remove F3D** | F3D exists | Delete the attachment (file is removed from disk) |
+
+Archives with an F3D show a small cyan badge on the card (next to the source-3MF badge if one is also attached). Clicking the badge downloads the file. The context menu also exposes an **Open in Fusion 360** entry — currently a placeholder that hands the file to your OS for the default `.f3d` association.
+
+---
+
+## :material-tag: Tag Management UI
+
+Tags live in their own settings page so renames, deletions, and bulk edits don't require digging through individual archives.
+
+**Archives → gear icon next to the tag filter dropdown.**
+
+| Action | Description |
+|---|---|
+| :material-magnify: **Search** | Filter the tag list by name |
+| :material-sort: **Sort** | Order by usage count or alphabetically |
+| :material-pencil: **Rename** | Update the tag name across **every** archive that uses it (single bulk operation) |
+| :material-delete: **Delete** | Remove the tag from all archives |
+| :material-palette: **Colour pick** | Assign a colour to the tag — propagates to the chip rendering on cards and filters |
+
+!!! tip "Bulk rename"
+    Renaming a tag rewrites every archive's tag list in one transaction — great for fixing typos (`abs `→`abs`) or merging similar tags (`gift_box` + `giftbox` → `gift-box`).
+
+---
+
+## :material-account: Designer Attribution & External Links
+
+Archives originating from MakerWorld carry the designer name + link automatically — see [MakerWorld](makerworld.md). For everything else (Printables, Thingiverse, custom designs) you can add the metadata by hand:
+
+1. Open the archive detail page.
+2. Click :material-pencil: **Edit Details**.
+3. Fill **Designer** (display name) and **External Link** (any URL).
+
+The card surfaces the designer + a globe button:
+
+| Source | Globe-button behaviour |
+|---|---|
+| **External Link set** | Opens the custom URL |
+| **MakerWorld auto-detected** | Opens the auto-extracted MakerWorld URL |
+| **Neither** | Globe button disabled |
+
+Designer attribution is searchable via the archive search box, so "all prints by `<designer>`" is a single query.
+
+---
+
 ## :material-card-text: Archive Cards & Actions
 
 Each card shows the thumbnail, filename, printer, duration, status badge, filament, tags, and project badge. The project badge is clickable — it jumps to the project's detail page (the click doesn't bubble up to open the archive modal).
@@ -304,14 +480,31 @@ Each card shows the thumbnail, filename, printer, duration, status badge, filame
 ## :material-view-grid: View Modes
 
 - **Grid** — large thumbnails for visual browsing.
-- **List** — compact table for data-focused browsing.
-- **Calendar** — browse archives by date.
+- **List** — compact table for data-focused browsing; one row per archive with sortable columns and inline edit / delete.
+- **Calendar** — month-grid view of archives by date. Each day cell shows a count badge + colour coding (success / failure / mixed). Clicking a day filters the grid view to that day's prints.
+
+### Cross-view highlighting
+
+Hover an archive in the **List** or **Calendar** view and the matching cell / row highlights in the other; clicking jumps directly. Clicking an archive in the calendar also auto-switches to grid view, scrolls to the selected card, and highlights it with a yellow border for 5 seconds — useful for finding a specific print across views.
 
 ---
 
 ## :material-tag: Tags & Filtering
 
 Organize archives with custom tags. Filter by printer, tags, material, color, file type, favorites, and the duplicates view (which uses `COALESCE(source_content_hash, content_hash)`). Sort by date, name, or size. Tag management is under the gear icon next to the tag filter.
+
+### Filter chips
+
+| Chip | Behaviour |
+|---|---|
+| **Printer** | Single-select; defaults to "All printers". |
+| **Colour** | Multi-select. Default semantics is **OR** — pick *Red* + *Blue* to see archives that used Red **or** Blue. The chip strip exposes an **AND/OR toggle** — flip to AND when you need archives that used *Red* **and** *Blue* together (multi-colour prints). |
+| **Material** | Multi-select OR (PLA + PETG → either). |
+| **File type** | Single-select: GCODE / SOURCE / ALL. |
+| **Favourites** | Toggle: show only archives flagged with the heart. |
+| **Date range** | Two-input picker: shows archives whose `started_at` falls inside the range. Pairs with the calendar view. |
+| **Status** | Multi-select status filter — printing / completed / failed / cancelled / archived. |
+| **Duplicates** | Toggle: groups rows by `effective_hash` so multi-printer reprints collapse into one card with a count badge. |
 
 !!! tip "Batch operations"
     Enter selection mode to tag, assign projects, or compare multiple archives at once.

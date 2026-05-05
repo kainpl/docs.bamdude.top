@@ -63,19 +63,222 @@ Custom groups can mix and match permissions. Newly OIDC-linked users land in **V
 
 Permissions follow a `resource:action` pattern -- e.g. `printers:control`, `archives:read`. Endpoints declare the permission they need with `RequirePermission(...)` so the matrix is enforced consistently across REST, WebSocket, and Telegram surfaces.
 
-- **Printers** -- read, create, update, delete, control, files, clear_plate
-- **Archives** -- read, create, update_own / update_all, delete_own / delete_all, reprint_own / reprint_all
-- **Queue** -- read, create, update_own / update_all, delete_own / delete_all, reorder
-- **Library** -- read, upload, update_own / update_all, delete_own / delete_all
-- **Settings** -- read, update, backup, restore
-- **Users / Groups** -- read, create, update, delete
+- **Printers** -- `printers:read`, `printers:create`, `printers:update`, `printers:delete`, `printers:control`, `printers:files`, `printers:ams_rfid`, `printers:clear_plate`
+- **Archives** -- `archives:read`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
+- **Queue** -- `queue:read`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
+- **Library** -- `library:read`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (skip trash, hard-delete immediately)
+- **Inventory** -- `inventory:read`, `inventory:create`, `inventory:update`, `inventory:delete`, `inventory:view_assignments`
+- **Cloud** -- `cloud:auth` (per-user Bambu Cloud sign-in + cloud-profile CRUD; no `settings:read` needed)
+- **Settings** -- `settings:read`, `settings:update`, `settings:backup`, `settings:restore`
+- **Notifications** -- `notifications:read`, `notifications:update`, `notifications:user_email` (gates the per-user email opt-in page)
+- **Stats** -- `stats:read`, `stats:filter_by_user` (filter dashboards by `started_by` / `uploaded_by`)
+- **Users / Groups** -- `users:read`, `users:create`, `users:update`, `users:delete`, `groups:read`, `groups:create`, `groups:update`, `groups:delete`
 
 !!! tip "Ownership permissions"
-    Use `*_own` permissions for users who should only modify their own uploads and queue items. Operators typically get `*_all`; Viewers get neither.
+    Use `*_own` permissions for users who should only modify their own uploads and queue items. Operators typically get `*_all`; Viewers get neither. `*_all` always implies `*_own`.
+
+!!! tip "Cloud profiles are per-user"
+    Each user has their own Bambu Cloud login -- signing in as User A doesn't affect User B's session. The single `cloud:auth` permission covers login, logout, and all cloud-profile CRUD; `settings:read` is **not** required.
+
+!!! tip "Inventory vs AMS-assignment visibility"
+    `inventory:view_assignments` shows what's loaded in each AMS slot on the Printers page **without** exposing the full inventory. Grant it on its own to operators who need to verify spool-to-slot mapping at a glance but shouldn't see purchase history, lot codes, or stock levels.
+
+### Ownership semantics: `*_own` vs `*_all`
+
+| Permission shape | Effect |
+|---|---|
+| `archives:delete_own` | Delete only archives **you uploaded / started**. |
+| `archives:delete_all` | Delete any archive, including ownerless ones. Implies `*_own`. |
+| `queue:update_own` | Edit only queue items you added. |
+| `library:update_all` | Rename / move / delete any library file. |
+
+**Ownerless items.** Some content has no owner -- e.g. archives created before authentication existed, prints triggered by an auto-virtual-printer, or webhook-uploaded library files. These require `*_all` to modify; users with only `*_own` see them as read-only.
+
+Users in multiple groups inherit the **union** of all groups' permissions -- assignments are additive, not least-privilege-min.
 
 ---
 
-## :material-clock-fast: Session Management
+## :material-account-multiple-plus: User Management
+
+**Settings -> Users -> Users tab.** Visible to anyone with `users:read`; mutating actions need `users:create` / `users:update` / `users:delete`.
+
+### Creating users
+
+1. Click **Add User**.
+2. Fill in **Username**, **Password** (subject to the password policy), **Confirm password**, and tick one or more **Groups**.
+3. (Optional) Add an **Email** -- required for email OTP, password-reset by mail, and per-user print notifications.
+4. **Create**. The new user can sign in immediately.
+
+When [Advanced Auth via Email](#advanced-auth-via-email) is enabled, the password field is **replaced** with an email field: BamDude generates a secure random password and mails it directly to the user. No admin ever sees the password, which is strictly stronger than handing one over in chat.
+
+### Editing users
+
+Click the pencil on a user row. Username, email, password, and group memberships are all editable. Saving a password change stamps `password_changed_at`, killing every existing session for that user.
+
+### Deleting users
+
+Click the trash icon. If the user owns content (archives, queue items, library files, started prints), BamDude prompts for the disposition:
+
+| Choice | Effect |
+|---|---|
+| **Delete user AND their items** | Hard-deletes archives, queue items, library files, and any other owned content. Cascades. |
+| **Delete user, keep items** | Removes the user; their content becomes ownerless and only `*_all` holders can modify it afterwards. Activity-tracking history (e.g. "Started by alice") is preserved -- the username is shown as-recorded, even though the user row is gone. |
+| **Re-assign to admin** | Transfers ownership of every owned row to the chosen admin in one transaction. Useful for offboarding employees. |
+
+You cannot delete yourself, and you cannot delete the last administrator -- the UI greys those out with a tooltip explaining why.
+
+---
+
+## :material-account-group-outline: Group Management UI
+
+**Settings -> Users -> Groups tab.** Each group shows its name, description, and a per-category count badge ("Printers 7/8", "Archives 9/9") so you can eyeball coverage at a glance.
+
+Click **Add Group** (or pencil on an existing group) to open the **full-page group editor**:
+
+- **Search bar** filters the permission grid live by permission name or description.
+- **Select all** / **Clear all** bulk-toggle every checkbox at once.
+- **Category checkboxes** at each section header toggle every permission in that category in one click.
+- Per-category **count badges** ("5/7") update as you tick boxes.
+- Description supports plain text -- write what you actually intend the group to do, future-you will be grateful.
+
+System groups (Administrators / Operators / Viewers) cannot be deleted, but their permission sets are editable. Custom groups can be deleted at any time; users in only that group end up group-less and lose all permissions until reassigned.
+
+---
+
+## :material-email-fast: Advanced Auth via Email
+
+Optional SMTP layer that enables passwordless onboarding, self-service password reset, and per-user print notifications. Toggle independently of basic auth.
+
+### Configure SMTP
+
+**Settings -> Email tab.**
+
+| Field | Notes |
+|---|---|
+| **SMTP host** | e.g. `smtp.gmail.com`, `smtp.fastmail.com`, your self-hosted Postfix. |
+| **SMTP port** | `587` for STARTTLS (most common), `465` for implicit TLS. |
+| **Use STARTTLS** | On by default for port 587. Off for 465 (already TLS). |
+| **Username / password** | App-specific password recommended for Gmail / Fastmail / Apple. |
+| **From address** | Sender address shown to recipients. Some providers require it to match the auth user. |
+| **External URL** | The reachable URL of your BamDude instance -- baked into reset / welcome email links. Has to actually resolve from the user's browser. |
+
+Click **Test email** before flipping the toggle on -- it sends a one-shot to your own admin address and surfaces the SMTP error verbatim if anything's wrong.
+
+### Built-in templates
+
+Editable under **Settings -> Email -> Templates**:
+
+- **Welcome** -- new account with auto-generated password
+- **Password reset** -- self-service or admin-triggered, includes one-time token (defaults to 1-hour expiry)
+- **Two-Factor code** -- email OTP delivery
+- **Printer error** -- per-user mail when their print errors out
+- **Print complete / failed / stopped** -- per-user lifecycle mails
+
+Templates are i18n-aware (en + uk); each template carries a subject line and a body with substitution variables like `{username}`, `{printer_name}`, `{archive_url}`.
+
+### Self-service password reset flow
+
+1. User clicks **Forgot your password?** on the login page.
+2. Enters username or email. Endpoint returns success either way (anti-enumeration), but only mails the link if the address exists.
+3. Email contains a one-shot token URL valid for 1 hour. Token is single-use.
+4. User clicks, sets a new password (subject to the password policy), and is signed in.
+
+Admins can also fire the same flow with one click from the Users page -- handy when a team-mate's authenticator just died and they're locked out of TOTP-protected reset.
+
+### Per-user email notifications
+
+When Advanced Auth is on, individual users gate notifications **for their own jobs** under **Notifications** in the sidebar. The toggle list:
+
+- **Print started** -- email when one of your jobs begins
+- **Print completed** -- success
+- **Print failed** -- HMS error / cancelled
+- **Print stopped** -- manual cancel
+
+Requires the user to have an email address on file and the `notifications:user_email` permission (default for Administrators + Operators, off for Viewers). This is **independent** of the global notification system -- it only mails the submitter, not the whole farm.
+
+---
+
+## :material-server-network: LDAP / Active Directory
+
+BamDude supports LDAP authentication for environments running Active Directory, FreeIPA, or OpenLDAP. Local accounts coexist with LDAP -- the local admin always works as a fallback if the directory is unreachable.
+
+### Configure
+
+**Settings -> Authentication -> LDAP tab.**
+
+| Field | Notes |
+|---|---|
+| **Server URL** | `ldaps://ad.example.com:636` (LDAPS) or `ldap://ad.example.com:389` (StartTLS). Plaintext LDAP without StartTLS is rejected -- credentials must be encrypted on the wire. |
+| **Security** | StartTLS (upgrade plain to TLS on port 389) or LDAPS (TLS from byte one on port 636). |
+| **Bind DN** | Service-account DN used to search for users (e.g. `CN=bamdude-svc,OU=Service,DC=example,DC=com`). |
+| **Bind password** | Service-account password. Stored encrypted at rest when `MFA_ENCRYPTION_KEY` is set. |
+| **Search base** | Where to look (e.g. `OU=Users,DC=example,DC=com`). |
+| **User filter** | LDAP filter; `{username}` is substituted at login. AD: `(sAMAccountName={username})`. OpenLDAP / FreeIPA: `(uid={username})`. |
+
+Click **Test connection** before flipping **Enable LDAP** -- it does a dry-run bind + search and shows the raw error if anything's misconfigured.
+
+### Group mapping
+
+Map directory groups to BamDude groups via a JSON object:
+
+```json
+{
+  "BamDudeAdmins": "Administrators",
+  "BamDudeOps": "Operators",
+  "BamDudeViewers": "Viewers"
+}
+```
+
+Keys are LDAP group `cn` values (case-insensitive); values are BamDude group names. Both AD-style `memberOf` and POSIX-style `memberUid` are supported. Group membership is **re-synced on every login** -- demoting a user in AD takes effect at most one BamDude login later.
+
+If no mapping is configured, LDAP users are auto-provisioned with no group memberships and have to be assigned manually.
+
+### Provisioning
+
+| Toggle | Effect |
+|---|---|
+| **Auto-provision** | On = first successful LDAP login auto-creates a local row tagged `auth_source=ldap`. Off = admins must pre-create the user first; unknown LDAP usernames are rejected. |
+| **Sync email on login** | The user's email attribute is overwritten from LDAP on every login (so AD changes propagate). |
+
+LDAP-provisioned users show an **LDAP** badge in the Users list. Their **Change password** button is hidden -- passwords live at the directory, not in BamDude. Admin-triggered password resets and self-service forgot-password are blocked for LDAP accounts with a clear "managed by LDAP" message.
+
+### Local admin fallback
+
+The local admin account always works regardless of LDAP status. If the directory server is down, LDAP logins fail with a clear "directory unreachable, retry or use local account" message; the local admin can still sign in and unblock things. **Do not delete the last local admin** -- that's your get-out-of-jail-free if AD ever goes sideways.
+
+If a local user and an LDAP user share a username, **the local account wins** -- LDAP cannot silently override an existing local row.
+
+---
+
+## :material-account-eye: User Activity Tracking
+
+When you act under an authenticated session, BamDude records who did what and surfaces it on cards across the UI:
+
+| Activity | Where it shows |
+|---|---|
+| Library file uploaded | "Uploaded by *username*" badge on the file card. |
+| Archive created from a print | "Started by *username*" on the archive card + detail page. |
+| Queue item added | Username next to the queue row. |
+| Print started (auto-dispatch / cloud / external) | Tracked when the trigger had an authenticated user; shows on the printer card during the active print. |
+
+Tracking is automatic -- there is no privacy toggle. Historical attribution is **preserved** even when a user is later deleted (the username is rendered as-recorded, but no longer clickable). For team auditing add `stats:filter_by_user` to operator groups so they can pivot dashboards by `started_by` / `uploaded_by`.
+
+---
+
+## :material-package-down: Backup & Restore
+
+Users and groups are included in the standard backup if you tick **Include users** and **Include groups** at backup time:
+
+- **Group definitions + memberships are preserved** in full.
+- **Passwords are NOT included** -- backups only carry username + email + group memberships, never the PBKDF2 hash. This is intentional: a leaked backup file shouldn't equal leaked credentials.
+- On restore, every user has an empty password. Admins must:
+  - Set passwords manually for each restored user (Users page -> Edit), **or**
+  - With Advanced Auth enabled, hit **Reset password** on each user to mail them a fresh password, **or**
+  - Direct users to the **Forgot password?** flow if SMTP is configured.
+- TOTP secrets and OIDC bindings **are** included (encrypted at rest if `MFA_ENCRYPTION_KEY` is set on both source and destination).
+- API keys are NOT included -- regenerate them on the new install.
+
+Plan the rollover during a maintenance window so users can re-set passwords without a queue of confused tickets.
 
 BamDude uses a sliding-session model: short-lived access tokens, long-lived rotating refresh cookie.
 
@@ -298,6 +501,35 @@ docker compose start bamdude
 
 !!! warning "Run with the server stopped"
     Both the CLI and the server hold the SQLite WAL. Running them simultaneously can corrupt the database. Stop the server first.
+
+---
+
+## :material-help-circle: Troubleshooting
+
+### "Cannot access feature" / button is greyed out
+
+A control disabled with a tooltip ("you need *X* permission") means your effective permission set is missing it. Walk the chain:
+
+1. Open **Settings -> Users**, find your row, and verify which **groups** you're in.
+2. Open **Settings -> Users -> Groups**, click each of your groups, confirm the missing permission is ticked.
+3. If you should have access but don't see it, ask an admin to add the permission to one of your groups (or move you to a group that already has it).
+4. For `*_own` vs `*_all` mismatch: check whether the resource is **ownerless** -- if so, only `*_all` works.
+
+### Session expired mid-action
+
+Access tokens are 1 hour. Normally the refresh cookie keeps you signed in transparently; if refresh also fails (cookie expired, server restarted with new secret, password changed elsewhere), you're hard-redirected to `/login`. Sign in and resume -- in-flight forms are not preserved.
+
+### "setup_required" 503 after upgrade
+
+The setup-gate cache thinks no admin exists. Restart the container -- the gate is cleared on next boot if any admin row is present in the DB. If it persists after restart, the admin user was likely deleted; run `python -m backend.app.cli reset_admin` and re-create.
+
+### Forgot password (no SMTP)
+
+Without Advanced Auth, the **Forgot password** link is hidden. Ask an admin to reset your password from **Settings -> Users -> Edit -> set new password**. With Advanced Auth, just use **Forgot password?** on the login page.
+
+### LDAP users can't log in but local admin can
+
+Almost always a directory connectivity issue. Open **Settings -> Authentication -> LDAP -> Test connection** and read the raw error. Common causes: VPN dropped, AD service-account password rotated, LDAPS cert expired, firewall closed 636/389.
 
 ---
 

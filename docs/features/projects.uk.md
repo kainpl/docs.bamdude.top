@@ -13,6 +13,18 @@ description: Групуй друки в проєкти зі впорядкова
 - Опційний **BOM** (тип / колір / грами заплановані)
 - **Cross-install експорт** як ZIP-bundle або JSON-маніфест
 
+## :material-format-list-checks: Кейси використання
+
+| Проєкт | Що в нього іде |
+|---|---|
+| **Voron Build** | Frame plates + electronics enclosure + інструменти + запасні wear-частини. Трекай plate progress vs total parts — знаєш коли kit print-complete. |
+| **Gift Set** | Кілька неспоріднених друків (ваза + кашпо + брелоки), що йдуть разом на день народження. Юзай cover image + URL на email замовлення. |
+| **Customer order** | 10 копій однієї моделі для клієнта. Постав Target Plates × копії на plan-рядку; живий лічильник каже скільки лишилось. |
+| **Calibration suite** | Test prints для нового пластика — flow ratio, temp tower, retraction tower. Згрупуй, щоб calibration-архіви не сміттили основний archive list. |
+| **Single big print** | Одна модель з одним великим 3MF — все одно корисно як проєкт, щоб cover image, URL і BOM жили поряд з друком. |
+
+---
+
 ## :material-folder-multiple: Створення проєкту
 
 1. Відкрий **Projects** в бічному меню.
@@ -53,6 +65,93 @@ Grand-totals strip знизу сумує кожен рядок — корисн�
 
 Типове застосування: вставив посилання на MakerWorld / Printables / Thingiverse, з якого взяв модель, у URL, дропнув фото зібраного виробу в Cover. Майбутній-ти подякує теперішньому-собі, повертаючись до проєкту через рік.
 
+## :material-target: Target Plates vs Target Parts
+
+Проєкт може нести два незалежні progress-лічильники:
+
+| Target | Що рахує |
+|---|---|
+| **Target Plates** | Кількість окремих print jobs (кожен раз що клікаєш Print = +1). |
+| **Target Parts** | Загальна кількість об'єктів по всіх роботах (плата з 4 копіями кронштейна = 4 parts). |
+
+Постав обидва для multi-plate build, що шипає точну кількість об'єктів — наприклад, Voron BOM може бути 25 plates / 150 parts. Картка проєкту світить dual progress bars:
+
+```
+Plates  [████████░░░░░░░░░░] 40%   2 of 5 print jobs
+Parts   [████████░░░░░░░░░░] 40%   10 of 25 parts
+```
+
+### Auto-detection з 3MF
+
+При створенні архіву BamDude читає `slice_info.config` з 3MF, рахує non-skipped objects і штампує цей count у колонку `quantity` архіву автоматично. Плата з 4 інстансами кронштейна → archive quantity 4 → project parts +4.
+
+### Manual quantity override
+
+Відкрий архів у edit-mode і виставь **Items printed** на правильне число — зручно коли slicer-конфіг не зійшовся з реальністю (наприклад skip-нув 2 з 4 об'єктів посеред друку). Project parts counter перерахується миттєво.
+
+---
+
+## :material-palette: Кольорове кодування
+
+Кожен проєкт несе колір-badge для візуальної ідентифікації по UI:
+
+- :material-circle:{ style="color: #f44336" } Червоний
+- :material-circle:{ style="color: #ff9800" } Оранжевий
+- :material-circle:{ style="color: #ffeb3b" } Жовтий
+- :material-circle:{ style="color: #4caf50" } Зелений
+- :material-circle:{ style="color: #2196f3" } Синій
+- :material-circle:{ style="color: #9c27b0" } Фіолетовий
+- :material-circle:{ style="color: #607d8b" } Сірий
+
+Badge показується на картці проєкту, на кожній картці архіву залінкованого з проєктом, і як chip-фільтр на Archives-сторінці.
+
+---
+
+## :material-view-dashboard: Картка проєкту
+
+Кожен проєкт відображається як картка з progress + quick stats:
+
+- **Color badge + ім'я** — основний ідентифікатор
+- **Cover image thumbnail** strip якщо завантажено cover
+- **Plates progress** bar з raw "2 of 5"
+- **Parts progress** bar з raw "10 of 25"
+- **Print-time elapsed** — сума logged print duration усіх залінкованих архівів
+- **Last activity** — timestamp останнього залінкованого архіву
+- **File count** — скільки library-файлів залінковано
+- **External URL** іконка (якщо виставлено) — клікабельна :material-arrow-top-right:
+
+---
+
+## :material-folder-arrow-down: Додавання архівів до проєктів
+
+На додачу до folder-link / per-file-link auto-population, можна прикріпляти архіви руками:
+
+- **Right-click** на будь-якій картці архіву → **Add to project** → вибери проєкт. Той же жест працює і на рядках archive-list.
+- **Bulk assignment** — натисни **Select** на Archives-сторінці (або тримай Shift/Ctrl при кліках), вибери кілька архівів, потім **Project** у нижньому toolbar-і. Та ж модалка має **Remove from project** для bulk-detach.
+
+Project picker на сторінках деталей архівів auto-save-иться при виборі — окремого Save кліка нема.
+
+---
+
+## :material-filter: Фільтр архівів за проєктом
+
+Archives-сторінка має project chip-filter згори. Клік на будь-який чіп звужує grid до архівів того проєкту. Комбінуй з date / printer / status фільтрами для тоншого зрізу.
+
+---
+
+## :material-printer: Друк файлів з проєкту
+
+Якщо проєкт лінкає одну чи більше library-папок, project detail page показує кожен printable-файл inline — без обходу через File Manager.
+
+Кожен plan-рядок отримує дві inline-action кнопки (тільки на `.gcode` і `.gcode.3mf`):
+
+- :material-play: **Print Now** — відкриває print dialog (вибір принтера + AMS mapping + опції) і диспатчить.
+- :material-calendar-plus: **Add to Queue** — відкриває schedule dialog щоб додати в чергу.
+
+**Auto-linking.** Друки тригернуті з project detail page авто-привʼязують результуючий архів назад до цього проєкту. Жодного "Assign to project" кроку. Reprints звідусіль інде (Archives / File Manager / прямий лінк) **не** auto-link-нуться — тільки запуск з project-page створює неявну асоціацію.
+
+---
+
 ## :material-cart-check: Bill of Materials (BOM)
 
 Кожен проєкт також приймає вільний BOM — записи про типи пластика, кольори і грам-бюджети, що плануються спожити. BOM не auto-deduct-ить з котушок (це робить per-print spool consumption tracking); це planning-aid для "мені треба 480 г чорного PLA + 120 г сірого TPU", щоб порівняти з наявним стоком до того, як коммітишся.
@@ -67,6 +166,49 @@ Grand-totals strip знизу сумує кожен рядок — корисн�
 | **Dispatch entire plan** | Додає кожен рядок, у порядку, в чергу обраного принтера. Per-row копії стають окремими queue-items, тож можна скасовувати/перевпорядковувати копії після диспатчу. |
 
 Plan items не передиспатчуються автоматично при завершенні архіву — завершення рядка просто збільшує його completed-лічильник. Щоб перезапустити проєкт — dispatch ще раз.
+
+---
+
+## :material-archive-arrow-up: Project archives view
+
+Відкрий будь-який проєкт — потрапиш на detail page. Sub-tab **Archives** показує лише архіви залінковані з цим проєктом — те ж filtering / sorting що й на головній Archives-сторінці, але pre-filtered. Зручно для "покажи мені всі друки з Voron build" без друкування пошуку.
+
+---
+
+## :material-paperclip: File attachments
+
+Проєкт може також нести reference-файли, які не є самим друком — інструкції зі складання, datasheets, фото, parametric source.
+
+| Категорія | Розширення |
+|---|---|
+| **3D-файли** | `.3mf`, `.stl`, `.step`, `.f3d`, `.scad`, `.obj` |
+| **Документи** | `.pdf`, `.md`, `.txt`, `.doc`, `.docx` |
+| **Зображення** | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg` |
+| **Інше** | `.zip`, `.json`, `.yaml`, `.gcode`, `.cfg` |
+
+Завантажуй drag-drop у секцію Attachments на сторінці деталей проєкту, або клік **Upload** щоб вибрати файл. Attachments зберігаються поряд з проєктом і шипаються в ZIP-експортах.
+
+---
+
+## :material-currency-usd: Cost tracking
+
+Grand-totals strip і per-row Cost колонка обчислюють три категорії:
+
+| Категорія | Джерело |
+|---|---|
+| **Material** | Вага філаменту × ціна котушки (з Inventory) на залінкований архів. |
+| **Energy** | kWh delta з прив'язаної розумної розетки × твій налаштований тариф (Settings → General). |
+| **Labor** | Manual hours, які ти логуєш на проєкт (опційно) × твоя налаштована погодинна ставка. |
+
+Material + energy обчислюються автоматично з underlying-архівів. Labor — freeform: впиши скільки годин потратив на post-processing / packaging / shipping, ставку — з project settings.
+
+---
+
+## :material-delete: Видалення проєктів
+
+Натисни trash на картці проєкту і підтверди. Видалення проєкту **не** видаляє архіви чи library-файли залінковані з ним — вони лишаються в основних Archives / Library, просто без project-association.
+
+Якщо хочеш hard cascade ("видали проєкт І кожен архів І кожен library-файл залінкований з ним") — адмін може використати cascade-опцію в delete-модалці. За замовчуванням preserve-archives.
 
 ## :material-tray-arrow-down: Експорт та імпорт
 

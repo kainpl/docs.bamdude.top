@@ -128,14 +128,21 @@ See [Installation > Environment Variables](installation.md#environment-variables
 
 ## :material-database: Data Persistence
 
-| Volume | Purpose |
-|--------|---------|
-| `bamdude.db` | SQLite database with all your print data |
-| `archive/` | Archived 3MF files and thumbnails |
-| `logs/` | Application logs |
+The shipped compose file mounts two named volumes plus a host-bound subdir:
+
+| Mount | Type | Holds |
+|---|---|---|
+| `bamdude_data:/app/data` | named volume | `bamdude.db` (SQLite), `archive/` (3MFs + thumbnails), `library/` (file manager), `certs/` (per-VP TLS material), uploads, backups |
+| `bamdude_logs:/app/logs` | named volume | `bamdude.log` rotated app logs |
+| `./virtual_printer:/app/data/virtual_printer` | bind-mount | Per-VP slicer certificates (shared with a parallel native install if you have one) |
+
+Docker Compose v2 prefixes named volumes with the **project name** (the basename of the directory the compose file lives in), so the actual volume on disk is e.g. `bamdude_bamdude_data`, not `bamdude_data`. List all of them with `docker volume ls`.
 
 !!! tip "Backup"
-    To backup your data, simply copy these files/directories. See [Backup & Restore](../features/backup.md) for the built-in backup feature.
+    To back up your data, copy the volume contents (or use the built-in [Backup & Restore](../features/backup.md) feature in **Settings → Backup**, which packages everything into a single zip). The application-level backup is preferred — it captures encryption-key metadata and scheduled-backup state that a raw `tar` of the volume leaves behind.
+
+!!! warning "Renaming the compose folder = new empty volumes"
+    If you upgrade by renaming `~/bamdude` to `~/bamdude-old` and unpacking a fresh checkout in its place, Docker Compose creates a **fresh, empty** `bamdude_bamdude_data` and your real data sits in the old `bamdude-old_bamdude_data` volume. This is the most common cause of "new container started empty after upgrade". See [Upgrading & Migration → Data persistence](upgrading.md#9-data-persistence-new-container-started-empty) for every scenario and its fix (named-volume namespacing, bind-mount path drift, container-layer-only data, PUID/PGID mismatch, accidental `down -v`, GUI-manager namespacing).
 
 ---
 

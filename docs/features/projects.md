@@ -13,6 +13,18 @@ Projects are the way to group a set of related prints — a model with multiple 
 - An optional **BOM** (filament type / colour / grams budgeted)
 - **Cross-install export** as a ZIP bundle or a JSON manifest
 
+## :material-format-list-checks: Use cases
+
+| Project | What goes in it |
+|---|---|
+| **Voron Build** | Frame plates + electronics enclosure + tools + spare wear parts. Track plate progress vs total parts so you know when the kit is print-complete. |
+| **Gift Set** | A handful of unrelated prints (vase + planter + keychains) that ship together for a birthday. Use cover image + URL pointing at the order email. |
+| **Customer order** | 10 copies of the same model for a client. Set Target Plates × copies on the plan row; the live counter tells you how many are left. |
+| **Calibration suite** | Test prints for a new filament — flow ratio, temp tower, retraction tower. Group them so the calibration archives don't pollute the main archive list. |
+| **Single big print** | One model with one large 3MF — still useful for a project so the cover image, URL, and BOM live next to the print. |
+
+---
+
 ## :material-folder-multiple: Creating a project
 
 1. Open **Projects** in the side nav.
@@ -53,6 +65,93 @@ Each project can carry an external URL plus a hero cover image — both surface 
 
 Typical use: paste the MakerWorld / Printables / Thingiverse link the model came from into URL, drop a photo of the assembled product into Cover. Future-you will thank present-you when revisiting a project a year later.
 
+## :material-target: Target Plates vs Target Parts
+
+A project can carry two independent progress counters:
+
+| Target | Counts |
+|---|---|
+| **Target Plates** | Number of distinct print jobs (each time you click Print = +1). |
+| **Target Parts** | Total objects across all jobs (a plate with 4 copies of a bracket = 4 parts). |
+
+Set both for a multi-plate build that ships a precise count of objects, e.g. a Voron BOM might be 25 plates / 150 parts. The project card surfaces dual progress bars:
+
+```
+Plates  [████████░░░░░░░░░░] 40%   2 of 5 print jobs
+Parts   [████████░░░░░░░░░░] 40%   10 of 25 parts
+```
+
+### Auto-detection from 3MF
+
+When an archive lands, BamDude reads `slice_info.config` from the 3MF, counts the non-skipped objects, and stamps that count onto the archive's `quantity` column automatically. A plate with 4 instances of a bracket → archive quantity 4 → project parts counter +4.
+
+### Manual quantity override
+
+Open the archive in edit mode and set **Items printed** to the right number — handy when the slicer config disagreed with reality (e.g. you skipped 2 of 4 objects mid-print). The project parts counter recomputes immediately.
+
+---
+
+## :material-palette: Color coding
+
+Each project carries a colour badge for visual identification across the UI:
+
+- :material-circle:{ style="color: #f44336" } Red
+- :material-circle:{ style="color: #ff9800" } Orange
+- :material-circle:{ style="color: #ffeb3b" } Yellow
+- :material-circle:{ style="color: #4caf50" } Green
+- :material-circle:{ style="color: #2196f3" } Blue
+- :material-circle:{ style="color: #9c27b0" } Purple
+- :material-circle:{ style="color: #607d8b" } Grey
+
+Badges show on the project card, on every archive card linked to the project, and as a chip-filter on the Archives page.
+
+---
+
+## :material-view-dashboard: Project card
+
+Each project displays as a card with progress + quick stats:
+
+- **Color badge + name** — primary identifier
+- **Cover image thumbnail** strip if a cover is uploaded
+- **Plates progress** bar with raw "2 of 5" text
+- **Parts progress** bar with raw "10 of 25" text
+- **Print-time elapsed** — sum of every linked archive's logged print duration
+- **Last activity** — timestamp of the most recent linked archive
+- **File count** — how many library files are linked to this project
+- **External URL** icon (if set) — clickable :material-arrow-top-right:
+
+---
+
+## :material-folder-arrow-down: Adding archives to projects
+
+In addition to folder-link / per-file-link auto-population, you can attach archives manually:
+
+- **Right-click** any archive card → **Add to project** → pick the project. Same gesture works on archive list rows.
+- **Bulk assignment** — click **Select** on the Archives page (or hold Shift/Ctrl while clicking), pick multiple archives, then click **Project** in the bottom toolbar. Same modal has **Remove from project** to bulk-detach.
+
+The project picker on individual archive detail pages auto-saves on selection — no separate Save click.
+
+---
+
+## :material-filter: Filtering archives by project
+
+The Archives page has a project chip-filter at the top. Click any project chip to narrow the grid to just that project's archives. Combine with the date / printer / status filters to slice further.
+
+---
+
+## :material-printer: Printing files from a project
+
+If a project links one or more library folders, the project detail page lists every printable file inline — no detour through File Manager.
+
+Each plan-row gets two inline action buttons (only on `.gcode` and `.gcode.3mf` files):
+
+- :material-play: **Print Now** — opens the print dialog (printer picker + AMS mapping + options) and dispatches.
+- :material-calendar-plus: **Add to Queue** — opens the schedule dialog to add to the queue.
+
+**Auto-linking.** Prints triggered from the project detail page auto-attach the resulting archive back to this project. No "Assign to project" step. Reprints from elsewhere (Archives / File Manager / direct link) are **not** auto-linked — only the project-page launch creates the implicit association.
+
+---
+
 ## :material-cart-check: Bill of Materials (BOM)
 
 Each project also accepts a freeform BOM — entries for filament types, colours, and gram budgets you intend to consume. The BOM doesn't auto-deduct from spools (that's what the per-print spool consumption tracking is for); it's a planning aid for "I need 480 g of black PLA + 120 g of grey TPU" so you can compare against current spool stock before you commit.
@@ -67,6 +166,49 @@ Two paths:
 | **Dispatch entire plan** | Adds every row, in order, to the chosen printer's queue. Per-row copies become individual queue items so you can still cancel / reorder copies after dispatch. |
 
 Plan items are not re-dispatched automatically when their archive completes — finishing a row just bumps its completed counter. To re-run the project, dispatch again.
+
+---
+
+## :material-archive-arrow-up: Project archives view
+
+Open any project to land on the detail page. The **Archives** sub-tab shows just the archives linked to this project — same filtering / sorting as the main Archives page, but pre-filtered. Useful for jumping into "show me all the prints from the Voron build" without typing a search.
+
+---
+
+## :material-paperclip: File attachments
+
+A project can also carry reference files that aren't the print itself — assembly instructions, datasheets, photos, parametric source.
+
+| Category | Extensions |
+|---|---|
+| **3D files** | `.3mf`, `.stl`, `.step`, `.f3d`, `.scad`, `.obj` |
+| **Documents** | `.pdf`, `.md`, `.txt`, `.doc`, `.docx` |
+| **Images** | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg` |
+| **Other** | `.zip`, `.json`, `.yaml`, `.gcode`, `.cfg` |
+
+Upload via drag-drop into the project detail page's Attachments section, or click **Upload** to pick a file. Attachments are stored alongside the project and shipped in ZIP exports.
+
+---
+
+## :material-currency-usd: Cost tracking
+
+The grand-totals strip and per-row Cost column compute three categories:
+
+| Category | Source |
+|---|---|
+| **Material** | Filament weight × spool cost (from Inventory) per linked archive. |
+| **Energy** | kWh delta from a bound smart plug × your configured tariff (Settings → General). |
+| **Labor** | Manual hours you log against the project (optional) × your configured hourly rate. |
+
+Material + energy are computed automatically from the underlying archives. Labor is freeform — type how many hours you spent post-processing / packaging / shipping and the rate is pulled from project settings.
+
+---
+
+## :material-delete: Deleting projects
+
+Hit the trash icon on a project card and confirm. Deleting a project does **not** delete the archives or library files linked to it — they stay in the main Archives / Library, just without a project association.
+
+If you want a hard cascade ("delete the project AND every archive AND every library file linked to it"), an admin can use the cascade option in the deletion modal. Default is preserve-archives.
 
 ## :material-tray-arrow-down: Export & import
 

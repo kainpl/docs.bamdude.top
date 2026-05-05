@@ -62,6 +62,30 @@ The default groups grant both to **Operators** and only `makerworld:view` to **V
 
 ---
 
+## :material-cursor-default-click: Per-plate actions
+
+Once a model is resolved, each plate row carries its own action strip:
+
+| Action | What it does |
+|--------|--------------|
+| **Save** | Downloads the 3MF and files it into the library. The plate row gets a green "Already in library" badge afterwards. |
+| **Save & Slice in Bambu Studio** | Same as Save, plus opens the saved file in Bambu Studio if you've configured Slicer Integration. |
+| **Save & Slice in OrcaSlicer** | Same as Save, plus opens it in OrcaSlicer. MakerWorld plates are **unsliced source files** so the slicer is the right next step before printing. |
+| **Delete** | Per-plate trash button on already-imported rows — goes through the standard BamDude confirm modal, removes both the library row and the file on disk. The plate can be re-imported from MakerWorld any time. |
+| **View in File Manager** | Jumps to the library row for the imported plate. |
+
+### :material-import: Import all plates
+
+For multi-plate models, the **Import all** button sequentially downloads every plate of the model in one click. The button shows live progress with the format:
+
+```
+Importing 2/5 · Downloading · 12s
+```
+
+Plates already in your library are skipped (no redundant download); the counter still advances so you can see progress against the full set.
+
+---
+
 ## :material-history: Recent imports
 
 The **MakerWorld** page shows a sidebar of the last 10 imports (newest first), keyed off `source_type='makerworld'`. Useful for quickly re-printing something you imported the day before without retyping the URL.
@@ -89,6 +113,20 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 - **No price/points handling.** Plates that are content-gated (paid, region-locked, points-required) return `HTTP 403` with MakerWorld's own refusal message, surfaced verbatim in the toast.
 - **3MF size cap: 200 MB.** Larger plates fail the SSRF-guarded download with a clear error.
 
+!!! warning "Bambu Cloud token has ~90-day lifetime"
+    Bambu Cloud bearers expire after roughly 90 days. If MakerWorld imports suddenly start failing with `401` / "Please log in to download models" after months of working, sign out and back into Bambu Cloud under **Settings → Bambu Cloud** to refresh the token. K-profile fetches and firmware checks would also break — re-auth fixes all three at once.
+
+---
+
+## :material-shield-check: Privacy, security, and compliance
+
+- BamDude is **not affiliated with or endorsed by** MakerWorld or Bambu Lab.
+- The integration only uses community-documented endpoints — `api.bambulab.com/v1/design-service/*` for metadata and `api.bambulab.com/v1/iot-service/api/user/profile/{pid}` for the download URL. Credit to **Pr0zak/YASTL#51** for publishing the iot-service endpoint shape that makes the import flow possible.
+- Thumbnails and CDN images are proxied through `/api/v1/makerworld/thumbnail` so the user's IP is never exposed to MakerWorld's CDN on page render. The proxy enforces a host allowlist and does **not** follow redirects.
+- The MakerWorld description HTML (model summary, instructions) is sanitised with **DOMPurify** before rendering — user-authored content can't inject scripts, event handlers, or `javascript:` URLs.
+- The Bambu Cloud bearer is sent **only** to `api.bambulab.com`; it is never forwarded to the MakerWorld CDN or to S3 presigned fetches.
+- Filenames returned by MakerWorld responses are sanitised with `os.path.basename` before persistence so a malicious response cannot surface path-traversal strings into the UI. **On-disk storage uses UUID filenames** regardless of the human-readable name shown in the library.
+
 ---
 
 ## :material-cog-outline: Settings
@@ -99,6 +137,37 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 - **Default folder** — defaults to the auto-created top-level `MakerWorld` folder. Override per import via the folder picker on the import button.
 
 There are no other tunables — credentials live in **Settings → Bambu Cloud**, the proxy host allowlist is hard-coded for security.
+
+---
+
+## :material-file-code: Developer reference
+
+### Endpoints
+
+| Endpoint | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/v1/makerworld/status` | GET | `makerworld:view` | Report Bambu Cloud token presence and regional host. |
+| `/api/v1/makerworld/resolve` | POST | `makerworld:view` | Resolve URL → design + plate list + already-imported profile IDs. |
+| `/api/v1/makerworld/import` | POST | `makerworld:import` | Download a specific plate (`profile_id`) into the library. |
+| `/api/v1/makerworld/recent-imports` | GET | `makerworld:view` | Last N MakerWorld library files (default 10, clamped `[1, 50]`). |
+| `/api/v1/makerworld/thumbnail` | GET | public (whitelisted) | Proxy MakerWorld / public-cdn for `<img>` rendering — host-allowlisted, no redirects. |
+
+### Upstream flow
+
+The reverse-engineered three-step flow against `api.bambulab.com` (undocumented by Bambu; reverse-engineered via Pr0zak/YASTL#51):
+
+1. `GET https://api.bambulab.com/v1/design-service/design/{designId}` — public metadata. Returns `{id, modelId, title, coverUrl, instances[], …}`. The `modelId` field is the alphanumeric identifier (e.g. `US2bb73b106683e5`) — **different from** the integer `designId` from the URL.
+2. `GET https://api.bambulab.com/v1/iot-service/api/user/profile/{profileId}?model_id={modelId}` with `Authorization: Bearer {cloud_token}`. Returns `{url, name}` where `url` is a 5-minute-TTL presigned S3 URL (`s3.<region>.amazonaws.com/...?at=…&exp=…&key=…`).
+3. Fetch the presigned URL **without following redirects** and **without re-encoding the query string** — S3 signatures are computed over the exact query bytes, so any normalising HTTP client (httpx default, requests, aiohttp without `raw_path`) breaks them with `SignatureDoesNotMatch`. BamDude uses `urllib.request` with a no-op `HTTPRedirectHandler` for this step.
+
+The older `makerworld.com/api/v1/design-service/instance/{id}/f3mf` path that some reverse-engineering projects document is cookie-gated at Cloudflare and returns "Please log in to download models" regardless of bearer. The `api.bambulab.com` path does not go through that gate.
+
+### Code
+
+- `backend/app/services/makerworld.py` — API client + download logic + thumbnail proxy helpers.
+- `backend/app/api/routes/makerworld.py` — FastAPI routes.
+- `backend/app/schemas/makerworld.py` — Pydantic request/response models.
+- `frontend/src/components/MakerWorldImportModal.tsx` + `frontend/src/pages/MakerworldPage.tsx` — UI: paste, preview, plate list, image gallery, recent imports sidebar, confirm modal, in-flight progress labels.
 
 ---
 

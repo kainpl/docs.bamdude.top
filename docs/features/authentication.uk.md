@@ -63,19 +63,222 @@ BamDude поставляється з завжди увімкненою авте
 
 Права мають формат `resource:action` -- наприклад, `printers:control`, `archives:read`. Ендпоінти оголошують потрібне право через `RequirePermission(...)`, тож матриця застосовується однаково на REST, WebSocket і Telegram-поверхнях.
 
-- **Printers** -- read, create, update, delete, control, files, clear_plate
-- **Archives** -- read, create, update_own / update_all, delete_own / delete_all, reprint_own / reprint_all
-- **Queue** -- read, create, update_own / update_all, delete_own / delete_all, reorder
-- **Library** -- read, upload, update_own / update_all, delete_own / delete_all
-- **Settings** -- read, update, backup, restore
-- **Users / Groups** -- read, create, update, delete
+- **Printers** -- `printers:read`, `printers:create`, `printers:update`, `printers:delete`, `printers:control`, `printers:files`, `printers:ams_rfid`, `printers:clear_plate`
+- **Archives** -- `archives:read`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
+- **Queue** -- `queue:read`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
+- **Library** -- `library:read`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (минути trash, hard-delete одразу)
+- **Inventory** -- `inventory:read`, `inventory:create`, `inventory:update`, `inventory:delete`, `inventory:view_assignments`
+- **Cloud** -- `cloud:auth` (per-user логін у Bambu Cloud + CRUD cloud-профілів; `settings:read` НЕ потрібен)
+- **Settings** -- `settings:read`, `settings:update`, `settings:backup`, `settings:restore`
+- **Notifications** -- `notifications:read`, `notifications:update`, `notifications:user_email` (гейт для per-user email opt-in сторінки)
+- **Stats** -- `stats:read`, `stats:filter_by_user` (фільтр дашбордів за `started_by` / `uploaded_by`)
+- **Users / Groups** -- `users:read`, `users:create`, `users:update`, `users:delete`, `groups:read`, `groups:create`, `groups:update`, `groups:delete`
 
 !!! tip "Права власності"
-    Використовуйте права `*_own` для користувачів, які мають змінювати лише свої власні завантаження та елементи черги. Operators зазвичай отримують `*_all`; Viewers -- ні те, ні інше.
+    Використовуйте права `*_own` для користувачів, які мають змінювати лише свої власні завантаження та елементи черги. Operators зазвичай отримують `*_all`; Viewers -- ні те, ні інше. `*_all` завжди включає `*_own`.
+
+!!! tip "Cloud-профілі — per-user"
+    Кожен користувач має свій логін у Bambu Cloud — вхід User A не впливає на сесію User B. Єдине право `cloud:auth` покриває login, logout і весь CRUD cloud-профілів; `settings:read` **не** потрібен.
+
+!!! tip "Inventory vs видимість AMS-призначень"
+    `inventory:view_assignments` показує що завантажено в кожен AMS-слот на сторінці Printers **без** експозиції повного inventory. Видавай окремо операторам, яким треба швидко звірити spool→слот, але які не повинні бачити покупки, lot-коди й залишки.
+
+### Семантика `*_own` vs `*_all`
+
+| Форма права | Ефект |
+|---|---|
+| `archives:delete_own` | Видаляти лише архіви, **які ти створив / запустив**. |
+| `archives:delete_all` | Видаляти будь-який архів, включно з ownerless. Включає `*_own`. |
+| `queue:update_own` | Редагувати лише свої queue-айтеми. |
+| `library:update_all` | Перейменовувати / переміщувати / видаляти будь-який library-файл. |
+
+**Ownerless-айтеми.** Деякий контент не має власника — наприклад, архіви до увімкнення auth, друки, тригернуті auto-virtual-printer, library-файли через webhook. Для модифікації потрібен `*_all`; користувачі лише з `*_own` бачать їх як read-only.
+
+Користувачі в кількох групах отримують **об'єднання** прав усіх своїх груп — призначення додаються, не мінімізуються.
 
 ---
 
-## :material-clock-fast: Управління сесіями
+## :material-account-multiple-plus: Управління користувачами
+
+**Settings -> Users -> вкладка Users.** Видно всім з `users:read`; модифікації потребують `users:create` / `users:update` / `users:delete`.
+
+### Створення користувача
+
+1. Натисни **Add User**.
+2. Заповни **Username**, **Password** (за паролевою політикою), **Confirm password**, відміть одну або кілька **Groups**.
+3. (Опційно) Додай **Email** — потрібен для email OTP, password-reset поштою і per-user сповіщень про друк.
+4. **Create**. Користувач може логінитись одразу.
+
+Коли увімкнено [Advanced Auth via Email](#advanced-auth-via-email), поле password **замінюється** полем email: BamDude генерує безпечний випадковий пароль і шле його напряму користувачу. Жоден адмін пароля не бачить — це строго безпечніше за передачу пароля в чаті.
+
+### Редагування
+
+Клік олівчик на рядку. Username, email, password, group memberships — все редаговане. Збереження зміни пароля штампує `password_changed_at` і вбиває всі існуючі сесії цього користувача.
+
+### Видалення
+
+Клік корзинку. Якщо користувач має контент (архіви, queue items, library files, started prints) — BamDude питає що з ним робити:
+
+| Вибір | Ефект |
+|---|---|
+| **Delete user AND their items** | Hard-delete архівів, queue items, library files і всього іншого owned-контенту. Cascade. |
+| **Delete user, keep items** | Видаляє користувача; його контент стає ownerless і модифікувати може лише `*_all`. Activity-tracking ("Started by alice") зберігається — username показується as-recorded, навіть коли user-row уже немає. |
+| **Re-assign to admin** | Переписує власність усіх рядків на обраного адміна одною транзакцією. Зручно при offboarding-у. |
+
+Сам себе видалити не можеш, останнього адміна видалити не можеш — UI грейає кнопки з тултіпом-поясненням.
+
+---
+
+## :material-account-group-outline: UI керування групами
+
+**Settings -> Users -> вкладка Groups.** Кожна група показує name, description, і per-category count badge ("Printers 7/8", "Archives 9/9") — щоб одним поглядом охопити покриття.
+
+Клік **Add Group** (або олівчик на існуючій) відкриває **повносторінковий редактор груп**:
+
+- **Search bar** живо фільтрує permission-grid за назвою чи описом.
+- **Select all** / **Clear all** масово тогглять усі чекбокси.
+- **Чекбокси на заголовку категорії** тогглять усі права в категорії одним кліком.
+- Per-category **count badges** ("5/7") оновлюються по мірі тіку.
+- Description — звичайний текст; пиши що насправді планується від групи, майбутній-ти подякує.
+
+Системні групи (Administrators / Operators / Viewers) видалити не можна, але їхні permission-сети редаговані. Кастомні видаляються будь-коли; користувачі, що були лише в ній, лишаються без груп і втрачають усі права до перепризначення.
+
+---
+
+## :material-email-fast: Advanced Auth via Email
+
+Опційний SMTP-шар, що дає passwordless onboarding, self-service password reset і per-user сповіщення про друк. Тогглиться незалежно від базового auth.
+
+### Конфіг SMTP
+
+**Settings -> вкладка Email.**
+
+| Поле | Примітки |
+|---|---|
+| **SMTP host** | напр. `smtp.gmail.com`, `smtp.fastmail.com`, твій self-hosted Postfix. |
+| **SMTP port** | `587` для STARTTLS (типове), `465` для implicit TLS. |
+| **Use STARTTLS** | Увімкнено за замовчуванням для 587. Вимкнено для 465 (там уже TLS). |
+| **Username / password** | Для Gmail / Fastmail / Apple — app-specific password. |
+| **From address** | Адреса відправника. Деякі провайдери вимагають збігу з auth user. |
+| **External URL** | Reachable URL твого BamDude — вшивається в reset / welcome листи. Має реально резолвитись з браузера користувача. |
+
+Натисни **Test email** до того, як вмикати тоглер — летить one-shot на твою адмінську адресу і показує SMTP-помилку verbatim, якщо щось не так.
+
+### Вбудовані шаблони
+
+Редагуються під **Settings -> Email -> Templates**:
+
+- **Welcome** — новий акаунт з авто-згенерованим паролем
+- **Password reset** — self-service або admin-triggered, містить one-time токен (за замовчуванням 1 година)
+- **Two-Factor code** — доставка email OTP
+- **Printer error** — per-user лист коли його друк зафейлився
+- **Print complete / failed / stopped** — per-user lifecycle листи
+
+Шаблони i18n-aware (en + uk); кожен несе subject і body зі змінними `{username}`, `{printer_name}`, `{archive_url}`.
+
+### Self-service password reset
+
+1. Користувач клікає **Forgot your password?** на login-сторінці.
+2. Вводить username або email. Endpoint завжди відповідає success (анти-енумерація), але лист шле лише якщо адреса існує.
+3. Лист містить one-shot URL, валідний 1 годину. Токен single-use.
+4. Користувач клікає, ставить новий пароль (за паролевою політикою), і одразу залогінений.
+
+Адміни можуть тригернути той самий флоу одним кліком зі сторінки Users — корисно коли тіммейту тільки що здох authenticator і він залочений з TOTP-protected reset.
+
+### Per-user email сповіщення
+
+Коли Advanced Auth увімкнено, окремі користувачі гейтять сповіщення **для своїх власних робіт** під **Notifications** у бічному меню. Список:
+
+- **Print started** — лист коли твоя робота починається
+- **Print completed** — успіх
+- **Print failed** — HMS-помилка / cancel
+- **Print stopped** — manual cancel
+
+Потребує email на акаунті і права `notifications:user_email` (за замовчуванням Administrators + Operators, вимкнено для Viewers). Це **незалежно** від глобальної системи сповіщень — мейлить лише submitter-у, не всій фермі.
+
+---
+
+## :material-server-network: LDAP / Active Directory
+
+BamDude підтримує LDAP-автентифікацію для оточень з Active Directory, FreeIPA чи OpenLDAP. Локальні акаунти співіснують з LDAP — локальний адмін завжди працює як fallback при недосяжному directory.
+
+### Конфіг
+
+**Settings -> Authentication -> вкладка LDAP.**
+
+| Поле | Примітки |
+|---|---|
+| **Server URL** | `ldaps://ad.example.com:636` (LDAPS) або `ldap://ad.example.com:389` (StartTLS). Чистий plaintext LDAP без StartTLS відхиляється — credentials мають шифруватись на дроті. |
+| **Security** | StartTLS (upgrade plain → TLS на 389) або LDAPS (TLS з першого байта на 636). |
+| **Bind DN** | Service-account DN для пошуку юзерів (напр. `CN=bamdude-svc,OU=Service,DC=example,DC=com`). |
+| **Bind password** | Service-account пароль. Encrypted at rest коли встановлено `MFA_ENCRYPTION_KEY`. |
+| **Search base** | Де шукати (напр. `OU=Users,DC=example,DC=com`). |
+| **User filter** | LDAP-фільтр; `{username}` підставляється на login. AD: `(sAMAccountName={username})`. OpenLDAP / FreeIPA: `(uid={username})`. |
+
+Натисни **Test connection** до **Enable LDAP** — робить dry-run bind + search і показує raw error при misconfig.
+
+### Group mapping
+
+Маппінг directory-груп на BamDude-групи через JSON-об'єкт:
+
+```json
+{
+  "BamDudeAdmins": "Administrators",
+  "BamDudeOps": "Operators",
+  "BamDudeViewers": "Viewers"
+}
+```
+
+Ключі — LDAP `cn` груп (case-insensitive); значення — імена BamDude-груп. Підтримані обидва стилі: AD `memberOf` і POSIX `memberUid`. Membership **ре-синкається на кожному login** — пониження в AD доїде максимум один BamDude-логін потому.
+
+Якщо мапінгу нема — LDAP-користувачі auto-provision-яться без груп і їх треба призначати руками.
+
+### Provisioning
+
+| Тоглер | Ефект |
+|---|---|
+| **Auto-provision** | On = перший успішний LDAP-логін авто-створює локальний рядок з `auth_source=ldap`. Off = адміни мають пре-створити користувача; невідомі LDAP-юзернейми відхиляються. |
+| **Sync email on login** | Email юзера переписується з LDAP при кожному логіні (так AD-зміни доходять). |
+
+LDAP-provisioned юзери показують **LDAP** badge у списку Users. Кнопка **Change password** прихована — паролі живуть у directory, не в BamDude. Admin-triggered password reset і self-service forgot-password заблоковані для LDAP-акаунтів з ясним повідомленням "managed by LDAP".
+
+### Local admin fallback
+
+Локальний адмін завжди працює незалежно від LDAP-стану. Якщо directory-сервер ліг, LDAP-логіни фейляться з повідомленням "directory unreachable, retry or use local account"; локальний адмін зайде і розрулить. **Не видаляй останнього локального адміна** — це твій get-out-of-jail-free якщо AD коли-небудь злетить.
+
+Якщо локальний і LDAP-юзер ділять username — **локальний виграє**: LDAP не може silently override existing local-row.
+
+---
+
+## :material-account-eye: Трекінг активності користувачів
+
+При діях під автентифікованою сесією BamDude записує хто-що-зробив і світить це на картках по всьому UI:
+
+| Активність | Де показується |
+|---|---|
+| Library file uploaded | "Uploaded by *username*" badge на картці файла. |
+| Архів створено з друку | "Started by *username*" на картці архіву + сторінці деталей. |
+| Queue item доданий | Username поряд з queue-рядком. |
+| Print started (auto-dispatch / cloud / external) | Трекається коли тригер мав авторизованого користувача; на картці принтера під час активного друку. |
+
+Трекінг автоматичний — privacy-тоглера нема. Історична атрибуція **зберігається** навіть коли користувача потім видалили (username рендериться as-recorded, але не клікабельний). Для team-аудиту видавай `stats:filter_by_user` operator-групам — зможуть пивотити дашборди за `started_by` / `uploaded_by`.
+
+---
+
+## :material-package-down: Backup & Restore
+
+Користувачі та групи входять у стандартний backup, якщо при backup-і відмітити **Include users** та **Include groups**:
+
+- **Group definitions + memberships зберігаються** повністю.
+- **Паролі НЕ входять** — backup несе username + email + group memberships, ніколи не PBKDF2-хеш. Це навмисно: leak backup-файла не дорівнює leak credentials.
+- На restore у кожного користувача порожній пароль. Адміни мають:
+  - Виставити паролі вручну для кожного відновленого юзера (Users -> Edit), **або**
+  - При увімкненому Advanced Auth — натиснути **Reset password** на кожному користувачу, щоб надіслати свіжий пароль поштою, **або**
+  - Направити юзерів на **Forgot password?** флоу якщо SMTP налаштовано.
+- TOTP-секрети та OIDC-зв'язки **входять** (encrypted at rest якщо `MFA_ENCRYPTION_KEY` встановлено і на source, і на destination).
+- API-ключі НЕ входять — перегенеруй на новій інсталяції.
+
+Плануй rollover у maintenance window, щоб юзери могли пере-виставити паролі без черги збентежених тікетів.
 
 BamDude використовує модель sliding-сесії: короткоживучий access-токен + довгоживучий refresh-cookie з ротацією.
 
@@ -298,6 +501,35 @@ docker compose start bamdude
 
 !!! warning "Запускайте при зупиненому сервері"
     І CLI, і сервер тримають SQLite WAL. Запуск їх одночасно може пошкодити БД. Спочатку зупиняйте сервер.
+
+---
+
+## :material-help-circle: Усунення несправностей
+
+### "Cannot access feature" / кнопка сіра
+
+Disabled-контрол з тултіпом ("you need *X* permission") означає, що у твоєму ефективному permission-сеті її нема. Іди по ланцюгу:
+
+1. Відкрий **Settings -> Users**, знайди свій рядок, перевір у яких ти **групах**.
+2. Відкрий **Settings -> Users -> Groups**, клікай по кожній своїй групі, упевнись що відсутнього права справді нема.
+3. Якщо мав би мати доступ — попроси адміна додати право в одну з твоїх груп (або перенести тебе в групу, де воно вже є).
+4. Розбіжність `*_own` vs `*_all`: перевір, чи ресурс **ownerless** — тоді працює лише `*_all`.
+
+### Сесія завершилась посеред дії
+
+Access-токени — 1 година. Зазвичай refresh-cookie тримає тебе залогіненим прозоро; якщо refresh теж впав (cookie expired, сервер рестартанули з новим секретом, пароль змінили деінде), тебе hard-redirect-нуть на `/login`. Залогінься і продовжуй — in-flight-форми не зберігаються.
+
+### "setup_required" 503 після апгрейду
+
+Setup-gate cache думає, що адмін не існує. Рестартни контейнер — gate чиститься на наступному boot якщо хоч один admin-row є в БД. Якщо лишається — admin-юзера, певно, видалили; запусти `python -m backend.app.cli reset_admin` і перестворюй.
+
+### Forgot password (SMTP нема)
+
+Без Advanced Auth лінк **Forgot password** прихований. Попроси адміна reset-нути пароль зі **Settings -> Users -> Edit -> set new password**. З Advanced Auth — просто **Forgot password?** на login-сторінці.
+
+### LDAP-юзери не логіняться, локальний адмін заходить
+
+Майже завжди — connectivity issue з directory. Відкрий **Settings -> Authentication -> LDAP -> Test connection** і прочитай raw error. Типові причини: VPN відвалився, AD service-account password ротувався, LDAPS-серт прострочився, фаєрвол закрив 636/389.
 
 ---
 

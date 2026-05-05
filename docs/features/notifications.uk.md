@@ -35,6 +35,179 @@ description: Push-сповіщення про події друку через �
 
 ---
 
+## :material-cog: Налаштування на провайдер
+
+### ntfy
+
+Topic-based, безкоштовно, без облікового запису. Найпростіший канал, щоб підняти.
+
+| Поле | Значення |
+|---|---|
+| **Server** | `https://ntfy.sh` (default) або URL власної self-hosted інстанції |
+| **Topic** | Унікальний рядок — будь-хто, хто його знає, може писати, тож роби невідгадуваним |
+| **Bearer token** | Опційно; потрібно для self-hosted topic-ів за ACL |
+
+Підпишись на телефоні через [ntfy Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy) чи [iOS](https://apps.apple.com/app/ntfy/id1625396347). ntfy підтримує **5 рівнів priority**, які BamDude мапить на подію:
+
+| Priority | ntfy value | Типове використання |
+|---|---|---|
+| **Min** | 1 | Diagnostics-style ping-и — без звуку, без бейджа |
+| **Low** | 2 | Інформаційне, не-термінове (напр. "first layer complete") |
+| **Default** | 3 | Стандартне сповіщення |
+| **High** | 4 | Audible / urgent (напр. "filament low") |
+| **Urgent** | 5 | Будить пристрій, ігнорує Do-Not-Disturb (напр. "print failed") |
+
+### WhatsApp / Signal (CallMeBot)
+
+Безкоштовний міст до WhatsApp / Signal — без власної бот-інфраструктури.
+
+1. Додай CallMeBot у контакти: **+34 644 51 95 23**
+2. Надішли `I allow callmebot to send me messages` через WhatsApp
+3. CallMeBot відповість твоїм **API-ключем**
+
+| Поле | Значення |
+|---|---|
+| **Phone number** | Твій номер у форматі E.164 (напр. `+1234567890`) |
+| **API key** | Ключ, який повернув CallMeBot |
+
+### Discord
+
+URL webhook каналу — найпростіший спосіб закинути rich embed-повідомлення з мініатюрами в Discord-сервер.
+
+1. У Discord відкрий settings цільового каналу → **Integrations** → **Webhooks**
+2. Натисни **New Webhook**, кастомізуй ім'я/аватар, **Copy Webhook URL**
+3. Встав URL у форму провайдера BamDude
+
+BamDude постить як embed-и зі snapshot-картинкою inline, коли вона є.
+
+### Pushover
+
+Per-user push-сервіс з нативними iOS/Android-додатками і on-device priority-ескалацією.
+
+1. Створи акаунт на [pushover.net](https://pushover.net/) і встанови додаток
+2. Створи **Application** у дашборді
+
+| Поле | Значення |
+|---|---|
+| **User key** | Зі сторінки твого акаунту Pushover |
+| **API token** | З Application, який ти щойно створив |
+
+Pushover priority мапиться на numeric levels `-2…+2` на подію в BamDude — ідея та сама, що й у ntfy, але зі шкалою Pushover.
+
+### SMTP / Gmail
+
+Звичайний SMTP — працює з будь-яким провайдером, що дає username + password auth.
+
+| Поле | Приклад |
+|---|---|
+| **SMTP host** | `smtp.gmail.com` |
+| **Port** | `587` (STARTTLS) або `465` (SSL) |
+| **Security** | `STARTTLS` / `SSL` / `plain` |
+| **Username** | Повна email-адреса |
+| **Password** | App password (не пароль акаунту — Gmail відхилить останній) |
+| **From address** | Адреса відправника, яку бачать отримувачі |
+| **To address** | Per-provider; дозволяє різним членам команди отримувати різні тіла |
+
+Для Gmail: увімкни 2FA, потім згенеруй [App Password](https://myaccount.google.com/apppasswords) і використай його тут.
+
+### Home Assistant
+
+Zero-config, коли HA вже підключений у **Settings** → **Network** → **Home Assistant** (або через `HA_URL` / `HA_TOKEN` env vars). Провайдер не має додаткових полів — події стають викликами `persistent_notification.create` в дашборді HA.
+
+!!! tip "Форвард HA-сповіщень в інші канали"
+    Використовуй HA-автоматизації, щоб дзеркалити persistent-сповіщення на HA Companion app, Telegram, ntfy тощо — отримаєш єдиний audit log в HA плюс звичний мобільний push.
+
+### Generic Webhook
+
+Для всього іншого — n8n, Node-RED, кастомні HTTP-ендпоінти, Slack-format інтеграції.
+
+| Поле | Значення |
+|---|---|
+| **URL** | Твій ендпоінт (HTTPS рекомендовано) |
+| **Headers** | Опційно — для `Authorization: Bearer …` тощо |
+| **Format** | `generic` (структурований BamDude JSON) або `slack` (тільки `{"text": "..."}`) |
+
+Дивись **Webhook Payload Schema** нижче для форми структурованого JSON.
+
+---
+
+## :material-code-json: Webhook Payload Schema
+
+Generic-format webhooks шлють стандартизований JSON-конверт: `title`, `message`, `timestamp`, `source`, `event` (рядок типу події), плюс усі event-specific поля піднімаються на top-level ключі, тож automation-tools можуть branch-итися на `event` без парсингу message-тексту.
+
+**`print_complete`:**
+
+```json
+{
+  "title": "Print Complete",
+  "message": "Workshop X1C: benchy.3mf completed in 2h 15m",
+  "timestamp": "2026-04-02T14:30:00.123456",
+  "source": "BamDude",
+  "event": "print_complete",
+  "printer": "Workshop X1C",
+  "filename": "benchy.3mf",
+  "duration": "2h 15m",
+  "filament_grams": "15.2",
+  "filament_details": "AMS-A T1 PLA: 15.2g"
+}
+```
+
+**`print_failed`** (і `print_stopped`) несуть додаткові поля `progress` + `reason`:
+
+```json
+{
+  "title": "Print Failed",
+  "message": "Workshop X1C: benchy.3mf failed at 50%",
+  "timestamp": "2026-04-02T15:15:00.123456",
+  "source": "BamDude",
+  "event": "print_failed",
+  "printer": "Workshop X1C",
+  "filename": "benchy.3mf",
+  "duration": "0h 45m",
+  "filament_grams": "7.6",
+  "filament_details": "PLA: 7.6g",
+  "progress": "50",
+  "reason": "Filament runout"
+}
+```
+
+**`printer_offline`** — мінімальний payload, тільки те, що релевантне:
+
+```json
+{
+  "title": "Printer Offline",
+  "message": "Workshop X1C is offline",
+  "timestamp": "2026-04-02T14:30:00.123456",
+  "source": "BamDude",
+  "event": "printer_offline",
+  "printer": "Workshop X1C"
+}
+```
+
+**`first_layer_complete`** — включає base64-encoded JPEG-snapshot у полі `image`:
+
+```json
+{
+  "title": "First Layer Complete",
+  "message": "Workshop X1C: benchy.3mf — Layer 1/200 done",
+  "timestamp": "2026-04-02T14:30:00.123456",
+  "source": "BamDude",
+  "event": "first_layer_complete",
+  "printer": "Workshop X1C",
+  "filename": "benchy.3mf",
+  "total_layers": "200",
+  "image": "/9j/4AAQSkZJRg..."
+}
+```
+
+!!! tip "Декодування картинки"
+    Поле `image` — стандартний base64-encoded JPEG. Home Assistant: передай у `notify.mobile_app_*` як `image` data через template. Node-RED: `Buffer.from(msg.payload.image, 'base64')`. Поле присутнє лише, коли snapshot реально був захоплений — не всі події його містять.
+
+!!! info "Slack / Mattermost format compatibility"
+    З **format = slack** шлеться тільки `{"text": "..."}` — структуровані поля події відкидаються. Юзай generic-формат для будь-якої automation, що читає структуровані дані; slack — лише для людино-читабельних channel-постів.
+
+---
+
 ## :material-tune: Тригери подій
 
 Кожен провайдер підписується незалежно. Вимкнення події на одному провайдері не зупиняє її на інших.
@@ -141,6 +314,148 @@ description: Push-сповіщення про події друку через �
 Підстановка змінних — простий `{plate_holder}` синтаксис (`{printer_name}`, `{filament_grams}`, `{eta}` і т.д.); схема залочена на подію, тож редактор сам попереджає, коли placeholder не резолвиться.
 
 Шаблон вибирається **за мовою отримувача**: Telegram-чат, прив'язаний до оператора з `settings.language=uk`, отримає українське тіло; email до іншого юзера з `settings.language=en` — англійське. Нові ключі додавайте в **обидва** JSON-файли — BamDude постачається лише з en + uk.
+
+---
+
+## :material-email-newsletter: Приклад Daily Digest
+
+Коли провайдер має `daily_digest_enabled` + `daily_digest_time` встановлене, кожна подія, яка спрацювала за день, кладеться в чергу і об'єднується в одне summary-повідомлення на digest-час:
+
+```
+Daily Print Summary (Apr 14)
+
+3 prints completed
+1 print failed
+Total time: 8h 45m
+Filament used: 245g
+
+Details:
+- Benchy (2h 15m) - completed
+- Phone Stand (45m) - completed
+- Cable Clip (15m) - completed
+- Prototype v3 (3h 30m) - failed
+```
+
+Digest-повідомлення поважає той самий вибір мови шаблону, що й immediate-сповіщення — Telegram-чати, прив'язані до операторів з uk-мовою, отримують українське summary, а англомовний email-отримувач — англійське.
+
+---
+
+## :material-file-document-edit: Змінні шаблонів
+
+Шаблони підставляють `{variable}`-плейсхолдери. Схема залочена на подію, тож редактор попереджає, коли використано невідомий плейсхолдер. Змінні згруповані за категорією події:
+
+**Print events** (`print_start`, `print_complete`, `print_failed`, `print_stopped`, `print_progress`):
+
+| Змінна | Значення |
+|---|---|
+| `{printer_name}` (alias `{printer}`) | Display-ім'я принтера |
+| `{print_name}` (alias `{filename}`) | Файл, який зараз друкується |
+| `{progress}` | % завершення (тільки failed/stopped) |
+| `{eta_minutes}` / `{eta}` | Wall-clock час завершення |
+| `{estimated_time}` | Прогнозована тривалість друку (напр. `1h 23m`) |
+| `{duration}` | Реальний elapsed-час друку |
+| `{filament_used_g}` (alias `{filament_grams}`) | Загальні грами (scaled by progress для фейлів) |
+| `{filament_details}` | Per-spool breakdown (напр. `AMS-A T1 PLA: 15.2g`) |
+| `{material}` | Aggregate material name |
+| `{reason}` | Причина фейлу (тільки failed/stopped) |
+| `{finish_photo_url}` | URL camera-snapshot (див. нижче) |
+
+**Printer events** (`printer_offline`, `printer_error`):
+
+| Змінна | Значення |
+|---|---|
+| `{printer_name}` | Display-ім'я принтера |
+| `{error_code}` (alias `{error_type}`) | HMS error code |
+| `{error_message}` (alias `{error_detail}`) | Людино-читабельний опис (BamDude перекладає каталог 853 кодів) |
+
+**AMS events** (`ams_humidity_high`, `ams_temperature_high`, `filament_low`, `print_missing_spool_assignment`):
+
+| Змінна | Значення |
+|---|---|
+| `{ams_id}` | AMS-юніт (`AMS-A`, `AMS-B`, …) |
+| `{slot}` | Tray index (`T1`–`T4`) |
+| `{material}` | Матеріал, призначений на слот |
+| `{remaining_percent}` | Залишок філаменту (`filament_low`) |
+| `{humidity}` | % вологості (humidity events) |
+| `{missing_slots}` | Comma-separated лейбли слотів (`A1, A3`) для `print_missing_spool_assignment` |
+| `{missing_slot_details}` | Per-slot breakdown з очікуваним профілем (`- A1: PLA Basic`) |
+
+**Common для будь-якої події:** `{timestamp}`, `{app_name}` (завжди `"BamDude"`).
+
+Натисни **Reset to default** у редакторі, щоб відновити оригінальний шаблон з `notification_templates_{en,uk}.json`.
+
+### Finish Photo URL
+
+Плейсхолдер `{finish_photo_url}` вшиває посилання на camera-snapshot — корисно у WhatsApp / email / webhook-тілах, які не підтягуватимуть image-attachment-и inline. Потребує доступної external URL:
+
+1. **Settings** → **System** → **External URL** — постав адресу, до якої отримувачі мають доступ (напр. `https://bamdude.example.com` чи `http://192.168.1.100:8000`)
+2. Налаштування auto-detect-иться з браузера, коли вперше відкриваєш System settings
+3. Відредагуй шаблон і додай `{finish_photo_url}` куди хочеш
+
+!!! note "External URL — обов'язкова умова"
+    Без сконфігурованого External URL плейсхолдер рендериться порожнім. Camera-snapshot-и також ходять через [stream-token camera flow](authentication.uk.md) — URL вшиває short-lived токен, тож отримувач забирає JPEG без Authorization-хедера.
+
+---
+
+## :material-bell-off: Quick Disable
+
+Глобальний mute-toggle живе у sidebar-і — клік по іконці дзвоника гасить **усі** вихідні сповіщення на **усіх** провайдерах, поки не клікнеш ще раз. Корисно під maintenance-вікно, demo-прогон чи галасливу міграцію, коли не хочеться флудити team-чат.
+
+Toggle не видаляє digest-и-в-роботі — події, що впали в digest-чергу до mute, все одно вийдуть на наступний `daily_digest_time`. Щоб затримати digest, відключи daily-digest на самому провайдері.
+
+---
+
+## :material-printer: Per-Printer фільтрація
+
+Кожен провайдер має picker **Printers** — обери **All** для підписки на всі принтери (default) або прив'яжи провайдер до підмножини. Події з принтерів поза вибраною множиною ніколи не доходять до цього провайдера, незалежно від event-toggle-ів. Корисні патерни:
+
+- Один Discord-webhook на майстерню — кожен прив'язаний до її принтерів
+- "VIP printer" Telegram-чат, прив'язаний до однієї production-одиниці, що генерує дохід
+- Maintenance-only ntfy провайдер, прив'язаний до принтерів, у яких підходять заміни фільтрів / ременів
+
+---
+
+## :material-account-bell: Per-User Email сповіщення
+
+Окремо від системи провайдерів вище — BamDude вміє писати email **власнику** друку напряму, коли той завершиться / провалиться / зупиниться — корисно у shared / multi-tenant deployment-ах, де кожен юзер хоче пошту своїх друків в особисту скриньку.
+
+### Вимоги
+
+- Authentication увімкнена (вона завжди увімкнена з 0.4.0+)
+- SMTP сконфігурований у **Settings** → **System** → **Email**
+- **Settings** → **Notifications** → **User Notifications** перемкнуто on
+- У користувача є email на акаунті
+- Користувач має право `notifications:user_email` (за замовчуванням у **Administrators** + **Operators** — див. [Authentication](authentication.uk.md))
+
+### Підтримувані події
+
+| Подія | Спрацьовує на |
+|---|---|
+| `user_print_start` | Друк користувача стартує |
+| `user_print_complete` | Його друк завершився успішно |
+| `user_print_failed` | Його друк збився |
+| `user_print_stopped` | Він сам скасував свій друк |
+
+Користувач може opt in/out на кожну подію окремо в персональному пункті sidebar **Notifications**. Майстер-перемикач "User Notifications" — у operator-а / admin-а під **Settings** → **Notifications**.
+
+---
+
+## :material-bed: Bed-Cooled / Plate-Not-Empty bypass quiet-hours
+
+Дві події за замовчуванням обходять quiet-hours, бо потребують дії:
+
+- **`plate_not_empty`** — зловив непорожній стіл перед стартом queue-job-а (auto-pause dispatch). Проспати — означає, що черга стане до пробудження.
+- **`bed_cooled`** — стіл впав нижче налаштованого порога (default 35 °C) після друку, сигнал, що деталь можна знімати. Корисно у будь-яку годину для high-volume операторів.
+
+Bypass — конфігурований на провайдер: відкрий edit-форму провайдера і перемкни **Bypass quiet hours** на потрібному event-row-і, якщо хочеш, щоб усе поважало вікно.
+
+---
+
+## :material-check-circle: Тестування
+
+Кожен провайдер має кнопку **Send Test** поряд із save-action. Клік запускає синтетичну подію через повний pipeline (template render, quiet-hour gate, priority mapping, transport-specific wrap), тож результуюче повідомлення — точне прев'ю того, як виглядатимуть реальні події, не stripped-down "hello world".
+
+Re-test після редагування шаблонів, зміни priority чи transport-level полів типу SMTP credentials. Тест обходить digest-чергу (завжди шлеться одразу), тож не треба чекати digest-час, щоб побачити результат.
 
 ---
 
