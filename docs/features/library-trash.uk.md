@@ -13,7 +13,7 @@ BamDude має дві незалежні **корзини**, щоб видале
 Обидві корзини одного крою: soft-delete на ручне видалення, конфігурований restore-window, scheduled-retention sweeper що hard-delete'ить усе після вікна, і chain-of-custody guard, що відмовляється hard-delete'ити байти бібліотеки, якщо на них ще посилається активний архів.
 
 !!! note "Чому archive auto-purge видалили в 0.4.2"
-    Upstream-портований archive auto-purge запускався щодня і переносив будь-який archive-рядок старший за поріг у корзину. У BamDude post-b1 це виявилося і **редундантним** (per-design [3MF Auto-Cleanup](archiving.uk.md#material-broom-avtochistka-3mf-041-drift-rezhim-u-042) вже звільняє диск для холодних дизайнів, зберігаючи історію), і **шкідливим** (per-row aging означало, що модель, яку друкують щотижня два роки, втрачала найраніші ~70 archive-рядків поодинці, навіть коли дизайн ще hot — мовчки знищуючи print-історію, заради якої BamDude і існує). Ручний flow delete → trash → restore → empty-trash лишається інтактним для явного видалення рядків; зник лише щоденний auto-purge sweep.
+    Upstream-портований archive auto-purge запускався щодня і переносив будь-який archive-рядок старший за поріг у корзину. У BamDude post-b1 це виявилося і **редундантним** (per-design [3MF Auto-Cleanup](archiving.uk.md#авточистка-3mf-041-drift-режим-у-042) вже звільняє диск для холодних дизайнів, зберігаючи історію), і **шкідливим** (per-row aging означало, що модель, яку друкують щотижня два роки, втрачала найраніші ~70 archive-рядків поодинці, навіть коли дизайн ще hot — мовчки знищуючи print-історію, заради якої BamDude і існує). Ручний flow delete → trash → restore → empty-trash лишається інтактним для явного видалення рядків; зник лише щоденний auto-purge sweep.
 
 ---
 

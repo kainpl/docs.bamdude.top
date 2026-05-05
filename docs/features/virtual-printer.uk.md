@@ -673,7 +673,7 @@ FTPS-сервер стартує, логує `FTP PASV address override: 192.168
    nc -zv BAMDUDE_IP 3002
    ```
 4. **Фаєрвол**: 3000/tcp, 3002/tcp, 2021/udp мають бути відкриті між слайсером і BamDude.
-5. **Кілька NIC?** [Network Interface Override](#material-network-strength-4-network-interface-override) — пін SSDP на потрібний інтерфейс.
+5. **Кілька NIC?** [Network Interface Override](#network-interface-override) — пін SSDP на потрібний інтерфейс.
 
 ### "Failed to connect" / TLS error -1 / cert untrusted
 
@@ -704,7 +704,7 @@ FTPS-сервер стартує, логує `FTP PASV address override: 192.168
 
 ### "Wrong printer model"
 
-Модель пресета слайсера і [SSDP-код VP](#material-list-box-ssdp-коди-моделей) не збігаються. Постав однакову модель з обох боків — перевірка сумісності читає саме SSDP-код VP.
+Модель пресета слайсера і [SSDP-код VP](#ssdp-коди-моделей) не збігаються. Постав однакову модель з обох боків — перевірка сумісності читає саме SSDP-код VP.
 
 ### Authentication failed
 
@@ -723,7 +723,7 @@ FTPS-сервер стартує, логує `FTP PASV address override: 192.168
 
 1. **Права** на `<DATA_DIR>/virtual_printer/` — має бути writeable юзером, від якого крутиться BamDude.
 2. **Порт 990 вже занятий?** `sudo ss -tlnp | grep :990` — вимкни конфліктуючий FTP.
-3. **`CAP_NET_BIND_SERVICE` нема** — див. [Linux native вище](#tab-linux-native).
+3. **`CAP_NET_BIND_SERVICE` нема** — див. [Linux native вище](#платформенне-налаштування).
 4. **Bridge-режим Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` обовʼязковий; без нього PASV анонсує внутрішній IP контейнера, і канал даних рветься.
 
 ### Proxy mode: принтер offline у слайсері
@@ -770,7 +770,7 @@ FTPS-сервер стартує, логує `FTP PASV address override: 192.168
 
 - Кільком VP потрібен **окремий bind IP кожному** — interface-аліаси за таблицею вище.
 - **SSDP працює тільки на одній LAN / маршрутизованих підмережах**. VPN tun mode і Docker bridge — додавати вручну за IP.
-- Слайсер повинен довіряти самопідписаному CA BamDude — див. [Встановлення сертифікату](#material-certificate-встановлення-сертифікату).
+- Слайсер повинен довіряти самопідписаному CA BamDude — див. [Встановлення сертифікату](#встановлення-сертифікату).
 - **FTP data channel нешифрований** з боку слайсера — VPN, якщо хочеш повне шифрування.
 - **Docker Desktop на macOS / Windows = тільки один VP** (interface-аліаси у VM не зробити).
 

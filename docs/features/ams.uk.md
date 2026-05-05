@@ -41,7 +41,7 @@ BamDude забезпечує комплексний моніторинг ваш�
 Коли відкриваєш модалку Configure AMS Slot для слота, що вже має конфігурацію, BamDude pre-populate-ить форму, щоб міг переглянути / підтвикнути без старту з нуля:
 
 - **Filament preset** — попередньо-налаштований preset обирається (резолвиться зі збереженого mapping-у або матчингом slot-ового `tray_info_idx` до відповідного preset-у).
-- **Колір** — color-picker pre-populate-иться поточним кольором філаменту слота, резолвлячи проти [`color_catalog`](inventory.uk.md#kataloh-koliorov).
+- **Колір** — color-picker pre-populate-иться поточним кольором філаменту слота, резолвлячи проти [`color_catalog`](inventory.uk.md#каталог-кольорів).
 - **K-profile** — активний pressure-advance profile pre-selected матчингом slot-ового `cali_idx` до доступних [K-profile](kprofiles.uk.md) entries.
 - **Auto-scroll** — preset-список авто-скролить до обраного запису, тож він видний без manual-скролу. Для empty-слотів список скролить до останнього використаного preset-у, тож common refills — один клік.
 
@@ -274,12 +274,12 @@ Power-related issues також виринають як HMS (Health Management S
 
 - Хоча б один **scheduled** queue-item ("Queue Only" не рахується)
 - AMS 2 Pro або AMS-HT (original AMS не має heater)
-- Підтримувана firmware принтера (див. [Вимоги до firmware принтера](#vymohy-do-firmware-pryntera))
+- Підтримувана firmware принтера (див. [Вимоги до firmware принтера](#вимоги-до-firmware-принтера))
 - Вологість вище Fair-порогу
-- Без активних `dry_sf_reason` кодів (див. [Коди `dry_sf_reason`](#kody-dry_sf_reason))
+- Без активних `dry_sf_reason` кодів (див. [Коди `dry_sf_reason`](#hms-error-codes-ams-power))
 - Принтер online і підключений до BamDude
 
-Якщо хочеш, щоб drying запускався без scheduled-друку — див. [Ambient-сушка](#ambient-sushka).
+Якщо хочеш, щоб drying запускався без scheduled-друку — див. [Ambient-сушка](#ambient-сушка).
 
 #### Налаштовувані drying-пресети
 

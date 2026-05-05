@@ -22,7 +22,7 @@ graph LR
     E --> F[Status -> completed/failed/cancelled<br/>заповнюється тривалість + енергія]
 ```
 
-Якщо FTP-витяг не вдається, рядок усе одно створюється -- див. [Відновлення завантаження 3MF](#material-cloud-download-vidnovlennya-zavantazhennya-3mf) нижче. Той самий диспатчер створює рівно один архів на фізичний друк і прив'язує `PrintQueueItem.archive_id` до нього в межах однієї транзакції (post-b1: більше нема гонок між планувальником та диспатчером, які створювали б рядки-дублікати).
+Якщо FTP-витяг не вдається, рядок усе одно створюється -- див. [Відновлення завантаження 3MF](#відновлення-завантаження-3mf) нижче. Той самий диспатчер створює рівно один архів на фізичний друк і прив'язує `PrintQueueItem.archive_id` до нього в межах однієї транзакції (post-b1: більше нема гонок між планувальником та диспатчером, які створювали б рядки-дублікати).
 
 !!! warning "Потрібна SD-картка"
     У принтері має бути встановлена SD-картка -- саме звідти BamDude витягує 3MF через FTP. Без неї можна записати лише метадані, що повідомляються через MQTT; мініатюри й 3D-перегляд недоступні.
@@ -59,7 +59,7 @@ graph LR
 
     | Поле | Опис |
     |-------|-------------|
-    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped` або `archived`. Див. [бейджі статусу](#material-tag-text-bejdzhi-statusu-arkhivu). |
+    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped` або `archived`. Див. [бейджі статусу](#бейджі-статусу-архіву). |
     | `started_at`, `completed_at` | Wall-clock межі запуску (NULL, доки не настануть). |
     | `failure_reason` | Короткий код причини (напр. `firmware_error`). |
     | `error_message` | Докладна діагностика від диспатчера / планувальника -- показується при наведенні на бейдж. |
@@ -323,8 +323,8 @@ URL вʼюера несе посилання на архів, тож refresh с�
 
 - **Auto-match** запускається першим: BamDude парує кожен required-філамент з найкращим AMS-слотом за типом + кольором, з fuzzy hex tolerance, тож трохи зрушений RGB (batch-shift) усе одно резолвиться як збіг.
 - **Manual override на слот** — клік на dropdown будь-якого рядка, щоб вибрати інший AMS-слот. Manually-overridden слоти отримують **синє кільце**-індикатор, тож на одному погляді видно, які рядки ти чіпав.
-- **Лейбли слотів** включають AMS-юніт + номер слота (напр. `AMS-B Slot 3`) і поважають будь-які [Custom AMS Labels](ams.uk.md#custom-ams-labels), що ти налаштував.
-- **Імена кольорів** беруться з [`color_catalog`](inventory.uk.md#kataloh-koliorov) (виробник Bambu Lab виграє для спільного hex; HSL fallback для невідомого hex).
+- **Лейбли слотів** включають AMS-юніт + номер слота (напр. `AMS-B Slot 3`) і поважають будь-які [Custom AMS Labels](ams.uk.md#custom-ams-лейбли), що ти налаштував.
+- **Імена кольорів** беруться з [`color_catalog`](inventory.uk.md#каталог-кольорів) (виробник Bambu Lab виграє для спільного hex; HSL fallback для невідомого hex).
 - **Re-read AMS** кнопка зверху модалки тягне свіжий AMS-стан з принтера, якщо ти перетаскав котушку, поки модалка була відкрита.
 - **Multi-plate архіви** показують plate-grid селектор спочатку — лише філаменти, використані обраною плитою, відображаються для маппінгу; це запобігає cross-plate mis-mapping, що інакше тягнув би всі філаменти всіх плит в один список.
 
@@ -336,7 +336,7 @@ URL вʼюера несе посилання на архів, тож refresh с�
 |---|---|---|
 | **Bed Levelling** | Enabled | Auto-level перед друком |
 | **Flow Calibration** | Disabled | Калібровка flow екструзії |
-| **Mesh-mode fast check** | Inherit з налаштувань принтера | Коли off — gcode-патчер BamDude коментує `M970`/`M970.3` vibration-probe — див. [chain-of-custody](#material-content-copy-deduplikatsiya-ta-lantsyuzhok-pokhodzhennya) |
+| **Mesh-mode fast check** | Inherit з налаштувань принтера | Коли off — gcode-патчер BamDude коментує `M970`/`M970.3` vibration-probe — див. [chain-of-custody](#дедуплікація-та-ланцюжок-походження) |
 | **First Layer Inspection** | Disabled | AI-інспекція першого шару |
 | **Timelapse** | Disabled | Записати timelapse-відео |
 | **G-code injection** | Per-job | Інʼєктувати власний G-code (див. [G-code Injection](gcode-injection.uk.md)) |

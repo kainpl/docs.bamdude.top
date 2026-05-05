@@ -126,7 +126,7 @@ The bundle is the right thing to attach to a [GitHub issue](https://github.com/k
 |---|---|---|
 | **Optimize / vacuum SQLite** — runs `ANALYZE`, `PRAGMA wal_checkpoint(TRUNCATE)`, then `VACUUM` | `POST /api/v1/settings/optimize-db` | `settings:backup` |
 | **Rebuild archive search index** — see [Search](search.md) | `POST /api/v1/archives/search/rebuild-index` | `archives:update_all` |
-| **Check for updates** — see [Updates](#material-update-update-checker) below | `GET /api/v1/updates/check` | `system:read` |
+| **Check for updates** — see [Updates](#update-checker) below | `GET /api/v1/updates/check` | `system:read` |
 
 There is **no separate "Clear Cache" button** on the BamDude System page — the page-level caches (storage breakdown, system info) auto-expire on their own; the only manual flush is the `?refresh=true` query param on `/system/storage-usage`.
 

@@ -126,7 +126,7 @@ Bundle — правильна штука, щоб приклеїти до [GitHub
 |---|---|---|
 | **Optimize / vacuum SQLite** — виконує `ANALYZE`, `PRAGMA wal_checkpoint(TRUNCATE)`, потім `VACUUM` | `POST /api/v1/settings/optimize-db` | `settings:backup` |
 | **Rebuild archive search index** — див. [Search](search.uk.md) | `POST /api/v1/archives/search/rebuild-index` | `archives:update_all` |
-| **Check for updates** — див. [Updates](#material-update-update-checker) нижче | `GET /api/v1/updates/check` | `system:read` |
+| **Check for updates** — див. [Updates](#update-checker) нижче | `GET /api/v1/updates/check` | `system:read` |
 
 **Окремої "Clear Cache" кнопки** на BamDude System-сторінці немає — page-level кеші (storage breakdown, system info) автоекспайряться самі; єдиний manual flush — `?refresh=true` query-param на `/system/storage-usage`.
 

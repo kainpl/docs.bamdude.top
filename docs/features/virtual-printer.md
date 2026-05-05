@@ -523,7 +523,7 @@ Open the [ports listed above](#required-ports) in your firewall.
         restart: unless-stopped
     ```
 
-    `VIRTUAL_PRINTER_PASV_ADDRESS` is **mandatory** in bridge mode — without it FTP PASV advertises the container's internal IP and the data channel fails. See [PASV Address](#material-network-outline-pasv-address-nat-docker-bridge) below.
+    `VIRTUAL_PRINTER_PASV_ADDRESS` is **mandatory** in bridge mode — without it FTP PASV advertises the container's internal IP and the data channel fails. See [PASV Address](#pasv-address-nat-docker-bridge) below.
 
 === "Unraid / Synology / TrueNAS SCALE"
 
@@ -673,7 +673,7 @@ The FTPS server boots, logs `FTP PASV address override: 192.168.1.100`, and from
    nc -zv BAMDUDE_IP 3002
    ```
 4. **Firewall**: 3000/tcp, 3002/tcp, 2021/udp must be open between slicer and BamDude.
-5. **Multiple NICs?** Use [Network Interface Override](#material-network-strength-4-network-interface-override) to pin SSDP to the right interface.
+5. **Multiple NICs?** Use [Network Interface Override](#network-interface-override) to pin SSDP to the right interface.
 
 ### "Failed to connect" / TLS error -1 / cert untrusted
 
@@ -704,7 +704,7 @@ The slicer doesn't trust BamDude's CA. In order:
 
 ### "Wrong printer model" rejection
 
-The slicer profile model and the VP's [SSDP code](#material-list-box-printer-model-ssdp-codes) don't match. Pick the same model on both sides — the VP's model code is what the slicer's compatibility check reads.
+The slicer profile model and the VP's [SSDP code](#printer-model-ssdp-codes) don't match. Pick the same model on both sides — the VP's model code is what the slicer's compatibility check reads.
 
 ### Authentication failed
 
@@ -723,7 +723,7 @@ Multi-NIC host (Tailscale, Docker bridges, dual LAN) — auto-detection picks th
 
 1. **Permissions** on `<DATA_DIR>/virtual_printer/` — must be writable by the user running BamDude.
 2. **Port 990 already in use?** `sudo ss -tlnp | grep :990` — disable any conflicting FTP server.
-3. **`CAP_NET_BIND_SERVICE` missing** — see the [Linux native tab](#tab-linux-native) above.
+3. **`CAP_NET_BIND_SERVICE` missing** — see the [Linux native tab](#platform-setup) above.
 4. **Bridge-mode Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` is mandatory; without it PASV advertises the container's internal IP and the data channel fails mid-handshake.
 
 ### Proxy mode: printer offline in slicer
@@ -770,7 +770,7 @@ Large 3MFs over slow uplinks. Either run a VPN (Tailscale / WireGuard) so the da
 
 - Multiple VPs need a **dedicated bind IP each** — interface aliases per the table above.
 - **SSDP works only on the same LAN / routed subnets**. VPN tun mode and Docker bridge networks need manual add by IP.
-- The slicer must trust BamDude's self-signed CA — see [Certificate Installation](#material-certificate-certificate-installation).
+- The slicer must trust BamDude's self-signed CA — see [Certificate Installation](#certificate-installation).
 - **FTP data channel is unencrypted** on the slicer side — VPN if you need full encryption.
 - **Docker Desktop on macOS / Windows = one VP only** (no interface aliases inside the VM).
 

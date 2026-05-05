@@ -68,7 +68,7 @@ BamDude має власний інвентар фізичних котушок �
 
 | Поле | Опис |
 |---|---|
-| **Slicer Preset** | Search-and-select filament-profile (Bambu Cloud, local OrcaSlicer-імпорти або built-in fallback — див. [Звідки беруться preset-и](#zvidky-berutsya-preset-y) нижче). Вибір preset auto-fill-ить *Material*, *Brand*, *Subtype* з імені preset-у. |
+| **Slicer Preset** | Search-and-select filament-profile (Bambu Cloud, local OrcaSlicer-імпорти або built-in fallback — див. [Звідки беруться preset-и](#звідки-беруться-slicer-profiles) нижче). Вибір preset auto-fill-ить *Material*, *Brand*, *Subtype* з імені preset-у. |
 | **Material** | PLA, PETG, ABS, ASA, TPU, PA, PC, … — приймає кастомні значення, див. [Custom materials](#custom-materials). |
 | **Brand** | Виробник; auto-complete з previously-seen брендів. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
@@ -349,4 +349,4 @@ Spool-inventory сам по собі **printer-agnostic**. Додай котуш
 
 ### Звідки беруться slicer-profiles?
 
-Три джерела, перевірені у priority-порядку: **Bambu Cloud** (твої synced presets, включно з кастомними) → **Local Profiles** (OrcaSlicer-імпорти) → **Built-in Fallback** (~150 Bambu Lab filament-ID). Навіть без cloud-login-у останні два гарантують, що preset-список ніколи не порожній. Див. [Звідки беруться preset-и](#zvidky-berutsya-preset-y) для деталей.
+Три джерела, перевірені у priority-порядку: **Bambu Cloud** (твої synced presets, включно з кастомними) → **Local Profiles** (OrcaSlicer-імпорти) → **Built-in Fallback** (~150 Bambu Lab filament-ID). Навіть без cloud-login-у останні два гарантують, що preset-список ніколи не порожній. Див. [Звідки беруться preset-и](#звідки-беруться-slicer-profiles) для деталей.

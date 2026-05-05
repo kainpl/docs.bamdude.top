@@ -40,7 +40,7 @@ Whatever filter chips you have selected on the Archives page propagate into the 
 | Date range | Inclusive `date_from` … `date_to` (ISO 8601) |
 | Search | Matches `print_name`, `filename`, `tags`, `notes`, `designer` |
 
-Two exclusions are always on: `status='archived'` (uploaded but never printed) and trashed archives (`deleted_at IS NOT NULL`). This keeps the export numerically consistent with what the [Statistics](statistics.md) dashboard shows.
+Two exclusions are always on: `status='archived'` (uploaded but never printed) and trashed archives (`deleted_at IS NOT NULL`). This keeps the export numerically consistent with what the [Statistics](stats.md) dashboard shows.
 
 ---
 
@@ -228,7 +228,7 @@ BamDude does not run an internal cron for exports — keep the API key flow simp
 
 ## :material-link: Related
 
-- [Statistics](statistics.md) — visual analytics for the same data
+- [Statistics](stats.md) — visual analytics for the same data
 - [Failure Analysis](failure-analysis.md) — the source of stats-export numbers
 - [Archiving](archiving.md) — filter chips reused for export scope; the underlying `print_archives` table
 - [Energy Tracking](energy.md) — `energy_kwh` / `energy_cost` columns

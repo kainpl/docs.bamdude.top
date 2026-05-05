@@ -180,7 +180,7 @@ The same numbers feed the [Export](export.md) page. `GET /api/v1/archives/stats/
 
 ## :material-link: Related
 
-- [Statistics](statistics.md) — broader analytics (filament usage, energy, costs)
+- [Statistics](stats.md) — broader analytics (filament usage, energy, costs)
 - [Archiving](archiving.md) — the underlying `print_archives` table and its `status` / `failure_reason` fields
 - [Obico AI Detection](obico.md) — proactive failure detection
 - [Notifications](notifications.md) — alert routing for failure events

@@ -182,7 +182,7 @@ The Statistics page surfaces energy in three places:
 - **Energy cost** in your configured currency
 - **Per-printer breakdown** so you can see which machine is drawing most
 
-Charts and totals are kept in sync with the `print` vs `total` switch — toggling rebuilds them server-side. See [Statistics](statistics.md) for the full widget tour.
+Charts and totals are kept in sync with the `print` vs `total` switch — toggling rebuilds them server-side. See [Statistics](stats.md) for the full widget tour.
 
 ---
 
@@ -190,7 +190,7 @@ Charts and totals are kept in sync with the `print` vs `total` switch — toggli
 
 - [Smart Plugs](smart-plugs.md) — plug types, configuration, HA / Tasmota / REST / MQTT setup
 - [Archiving](archiving.md) — `energy_kwh` / `energy_cost` fields on each archive row
-- [Statistics](statistics.md) — energy widget, cost charts, date-range filters
+- [Statistics](stats.md) — energy widget, cost charts, date-range filters
 - [Print Queue](print-queue.md) — auto-power-off after print + smart-plug-driven queue automation
 - [Export](export.md) — CSV/XLSX with per-print energy + cost columns
 

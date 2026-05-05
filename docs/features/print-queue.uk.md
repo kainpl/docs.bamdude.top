@@ -210,7 +210,7 @@ Per-printer **AMS-маппінги** конфігуряться per-row — mult
 
 Замість пін на конкретний принтер, став у чергу під **Any [model]**:
 
-- Filament-aware: scheduler не диспатчить на принтер, у якого AMS не несе потрібний тип філаменту (а з [Force colour match](virtual-printer.uk.md#print-queue-mode-force-color-match) — і колір)
+- Filament-aware: scheduler не диспатчить на принтер, у якого AMS не несе потрібний тип філаменту (а з [Force colour match](virtual-printer.uk.md#auto_queue) — і колір)
 - Location-aware: опційний фільтр локації ("any printer in Workshop A")
 - **Manual filament override**: якщо ні один принтер автоматом не підходить, ставимо ручний маппінг, який черга юзає незалежно
 

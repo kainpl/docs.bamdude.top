@@ -180,7 +180,7 @@ Failure Analysis каже вам, *що вже зламалося*. Щоб зу�
 
 ## :material-link: Дивіться також
 
-- [Statistics](statistics.md) — ширша аналітика (витрата філаменту, енергія, кости)
+- [Statistics](stats.uk.md) — ширша аналітика (витрата філаменту, енергія, кости)
 - [Archiving](archiving.md) — таблиця `print_archives` та її поля `status` / `failure_reason`
 - [Obico AI Detection](obico.md) — proactive failure detection
 - [Notifications](notifications.md) — маршрутизація алертів для failure events

@@ -20,7 +20,7 @@ The index covers six columns of `print_archives`:
 | `designer` | Author / designer string from the 3MF metadata. |
 | `filament_type` | The material code (PLA, PETG, ABS, …). |
 
-That's it for the searchable surface. AMS colour names, printer name, project name, plate-level metadata, and library files are **not** in the index — see [Limits](#material-alert-outline-limits) below.
+That's it for the searchable surface. AMS colour names, printer name, project name, plate-level metadata, and library files are **not** in the index — see [Limits](#limits) below.
 
 !!! note "Two backends, one endpoint"
     On SQLite the search runs `archive_fts MATCH :term`. On PostgreSQL it runs `search_vector @@ to_tsquery('simple', :term)` with `ts_rank` ordering. The route auto-detects the dialect via `is_postgres()`. If FTS itself fails (corrupt index, a malformed query that the parser rejects), the route silently falls back to a slower `LIKE` scan over the same columns, so search never goes 500 — just slower.

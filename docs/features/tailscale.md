@@ -13,7 +13,7 @@ This is **opt-in per VP**: existing setups keep advertising on LAN by default, a
 
 ## :material-lan-disconnect: When this matters
 
-The shipped alternative — [VP `proxy` mode](virtual-printer.md#proxy) — works for remote printing too, but funnels every byte through BamDude's own TCP relay. Tailscale's wire-level mesh is faster (direct peer-to-peer when possible, DERP-relayed otherwise), zero-config from the slicer side, and lets the slicer think it's talking to a regular Bambu printer.
+The shipped alternative — [VP `proxy` mode](virtual-printer.md#modes) — works for remote printing too, but funnels every byte through BamDude's own TCP relay. Tailscale's wire-level mesh is faster (direct peer-to-peer when possible, DERP-relayed otherwise), zero-config from the slicer side, and lets the slicer think it's talking to a regular Bambu printer.
 
 | Scenario | Recommended path |
 |---|---|

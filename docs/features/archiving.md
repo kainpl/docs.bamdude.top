@@ -22,7 +22,7 @@ graph LR
     E --> F[Status -> completed/failed/cancelled<br/>fill duration + energy]
 ```
 
-If the FTP fetch fails the row is still created — see [3MF download recovery](#material-cloud-download-3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
+If the FTP fetch fails the row is still created — see [3MF download recovery](#3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
 
 !!! warning "SD card required"
     The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
@@ -59,7 +59,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
 
     | Field | Description |
     |-------|-------------|
-    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped`, or `archived`. See [status badges](#material-tag-text-archive-status-badges). |
+    | `status` | `printing`, `completed`, `failed`, `cancelled`, `stopped`, or `archived`. See [status badges](#archive-status-badges). |
     | `started_at`, `completed_at` | Wall-clock bounds of the run (NULL until they happen). |
     | `failure_reason` | Short cause code (e.g. `firmware_error`). |
     | `error_message` | Verbose diagnostic from the dispatcher / scheduler — shown on hover over the badge. |
@@ -336,7 +336,7 @@ The modal exposes the same options table as the new-print and queue modals — s
 |---|---|---|
 | **Bed Levelling** | Enabled | Auto-level before print |
 | **Flow Calibration** | Disabled | Calibrate extrusion flow |
-| **Mesh-mode fast check** | Inherits from printer setting | When off, BamDude's gcode patcher comments out `M970`/`M970.3` vibration probes — see [archive chain-of-custody](#material-content-copy-deduplication-chain-of-custody) |
+| **Mesh-mode fast check** | Inherits from printer setting | When off, BamDude's gcode patcher comments out `M970`/`M970.3` vibration probes — see [archive chain-of-custody](#deduplication-chain-of-custody) |
 | **First Layer Inspection** | Disabled | AI inspection of first layer |
 | **Timelapse** | Disabled | Record timelapse video |
 | **G-code injection** | Per-job | Inject custom G-code (see [G-code Injection](gcode-injection.md)) |

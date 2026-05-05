@@ -182,7 +182,7 @@ automation:
 - **Energy cost** у вашій валюті
 - **Per-printer breakdown** — який саме принтер тягне найбільше
 
-Графіки і totals синхронізовані з тогл `print` vs `total` — перемикання перебудовує їх серверно. Повний тур по віджетах — у [Statistics](statistics.md).
+Графіки і totals синхронізовані з тогл `print` vs `total` — перемикання перебудовує їх серверно. Повний тур по віджетах — у [Statistics](stats.uk.md).
 
 ---
 
@@ -190,7 +190,7 @@ automation:
 
 - [Smart Plugs](smart-plugs.md) — типи розеток, конфігурація, HA / Tasmota / REST / MQTT setup
 - [Archiving](archiving.md) — поля `energy_kwh` / `energy_cost` на кожному рядку архіву
-- [Statistics](statistics.md) — energy віджет, cost charts, date-range фільтри
+- [Statistics](stats.uk.md) — energy віджет, cost charts, date-range фільтри
 - [Print Queue](print-queue.md) — auto-power-off після друку + smart-plug-driven автоматизація черги
 - [Export](export.md) — CSV/XLSX з колонками per-print energy + cost
 

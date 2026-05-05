@@ -40,7 +40,7 @@ description: Bulk-експорт метаданих архіву та стати
 | Date range | Включно `date_from` … `date_to` (ISO 8601) |
 | Search | Match по `print_name`, `filename`, `tags`, `notes`, `designer` |
 
-Два виключення завжди увімкнено: `status='archived'` (uploaded but never printed) і trashed архіви (`deleted_at IS NOT NULL`). Це тримає експорт чисельно консистентним з тим, що показує дашборд [Statistics](statistics.md).
+Два виключення завжди увімкнено: `status='archived'` (uploaded but never printed) і trashed архіви (`deleted_at IS NOT NULL`). Це тримає експорт чисельно консистентним з тим, що показує дашборд [Statistics](stats.uk.md).
 
 ---
 
@@ -228,7 +228,7 @@ BamDude не має внутрішнього cron'у для експортів �
 
 ## :material-link: Дивіться також
 
-- [Statistics](statistics.md) — візуальна аналітика тих же даних
+- [Statistics](stats.uk.md) — візуальна аналітика тих же даних
 - [Failure Analysis](failure-analysis.md) — джерело stats-export чисел
 - [Archiving](archiving.md) — фільтр-чіпи переюзані для export scope; underlying таблиця `print_archives`
 - [Energy Tracking](energy.md) — колонки `energy_kwh` / `energy_cost`

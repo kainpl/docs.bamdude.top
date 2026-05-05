@@ -20,7 +20,7 @@ BamDude індексує фіксований набір полів архівн
 | `designer` | Author / designer string з 3MF metadata. |
 | `filament_type` | Material code (PLA, PETG, ABS, ...). |
 
-Все. AMS color names, printer name, project name, plate-level metadata, library files **не** в індексі — див. [Обмеження](#material-alert-outline-) нижче.
+Все. AMS color names, printer name, project name, plate-level metadata, library files **не** в індексі — див. [Обмеження](#обмеження) нижче.
 
 !!! note "Два бекенди, один endpoint"
     На SQLite пошук виконує `archive_fts MATCH :term`. На PostgreSQL — `search_vector @@ to_tsquery('simple', :term)` з `ts_rank` ordering. Route автодетектить діалект через `is_postgres()`. Якщо FTS сам падає (corrupt index, malformed query, який parser відкидає), route тихо фолбекається на повільніший `LIKE` scan по тих самих колонках, тож пошук ніколи не дає 500 — просто повільніше.

@@ -144,6 +144,9 @@ markdown_extensions:
   - toc:
       permalink: true
       toc_depth: 3
+      # Cyrillic-friendly slug — default toc.slugify strips non-ASCII
+      # which breaks every UK-heading anchor.
+      slugify: !!python/name:markdown.extensions.toc.slugify_unicode
 
   # Python Markdown Extensions
   - pymdownx.arithmatex:

@@ -210,7 +210,7 @@ Per-printer **AMS mappings** are configured per row — the multi-printer modal 
 
 Instead of pinning a job to a specific printer, queue it under **Any [model]**:
 
-- Filament-aware: the scheduler refuses to dispatch onto a printer whose AMS doesn't have the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#print-queue-mode-force-color-match) is on)
+- Filament-aware: the scheduler refuses to dispatch onto a printer whose AMS doesn't have the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#auto_queue) is on)
 - Location-aware: optional location filter ("any printer in Workshop A")
 - **Manual filament override**: if no eligible printer matches automatically, set a manual mapping that the queue uses regardless
 

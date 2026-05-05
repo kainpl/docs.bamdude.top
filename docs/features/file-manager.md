@@ -56,7 +56,7 @@ Above the grid is a chip row that filters by file extension:
 - `.stl`, `.obj`, `.step` — raw geometry
 - `.gcode` — bare gcode (no embedded metadata)
 
-Chips are AND-combined with the [tag chip filter](#material-tag-multiple-tag-chip-filter) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
+Chips are AND-combined with the [tag chip filter](#tag-chip-filter) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
 
 ---
 
