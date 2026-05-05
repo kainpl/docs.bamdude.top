@@ -35,6 +35,16 @@ Hard fork of [Bambuddy](https://github.com/maziggy/bambuddy) with per-printer qu
 
 ---
 
+## :material-help-circle-outline: Why this exists
+
+BamDude is a **fleet manager**, not a passive backend that just listens to your slicer. The classic "slice → print → BamDude logs whatever it can" flow is fine for one or two printers, but it falls apart the moment accurate history and real spool control start mattering.
+
+The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in your slicer, route it to a BamDude virtual printer in File Manager mode, then in BamDude pick how many printers and how many copies. BamDude dispatches the file, runs swap macros, watches progress, writes history, and tracks every gram of filament — across the whole fleet, from one place.
+
+[Read the full pitch :material-arrow-right:](why.md){ .md-button }
+
+---
+
 ## :rocket: Quick Start
 
 <div class="quick-start" markdown>

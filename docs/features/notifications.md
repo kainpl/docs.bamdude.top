@@ -296,20 +296,42 @@ This is independent of the daily digest / quiet hours pipeline below — a quiet
 
 ## :material-clock: Quiet hours & daily digest
 
-Both are configured **per provider**, not globally — a Discord channel can stay loud while your phone gets only a 9 a.m. summary.
+Configuration shape varies by provider type — the Telegram bot is special.
+
+**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot)** carry both settings on the provider row itself:
 
 | Setting | Where | Effect |
 |---|---|---|
 | `quiet_hours_enabled` + `quiet_hours_start` / `quiet_hours_end` | Provider config | Events that fire inside the window are dropped (not queued — quiet hours is "shut up", not "delay"). |
 | `daily_digest_enabled` + `daily_digest_time` | Provider config | Events that fire any time in the day are queued in `notification_digest_queue`; the next time the wall clock crosses `daily_digest_time` BamDude flushes the queue as a single digest message. |
 
-The Telegram chat list (Settings → Notifications → Telegram Chats) has the same pair of toggles per chat, plus a `notification_events` filter so each chat subscribes only to events it cares about.
+**Telegram (m045)** is structured differently: the bot/provider row keeps only the **schedule** (`daily_digest_enabled` + `daily_digest_time`), while the per-event opt-in, quiet hours, and digest opt-in all live on each `TelegramChat` row. So one chat can be in quiet hours while another stays loud, both fed by the same bot. See [Telegram Bot Setup](telegram-bot.md) for the per-chat fields.
 
 ---
 
 ## :material-file-document-edit: Template editor
 
 Every event has a default template in `data/notification_templates_{en,uk}.json`. The Templates tab under Settings → Notifications lets you override any of them — title + body — with a MarkdownV2 toolbar and live preview.
+
+The Templates tab groups the 28 default templates by purpose so a glance tells you which dispatch path each one feeds:
+
+| Group | Count | What it's for |
+|---|---|---|
+| **Print events** | 9 | `print_start/complete/failed/stopped/progress`, `plate_not_empty`, `bed_cooled`, `first_layer_complete`, `print_missing_spool_assignment` |
+| **Printer status** | 4 | `printer_offline`, `printer_error`, `filament_low`, `maintenance_due` |
+| **AMS environmental** | 2 | `ams_humidity_high`, `ams_temperature_high` (also reused at runtime for the AMS-HT events) |
+| **Print queue** | 6 | `queue_job_added/started/waiting/skipped/failed`, `queue_completed` |
+| **Job owner emails** | 4 | `user_print_start/complete/failed/stopped` — SMTP-only, sent to the print job owner |
+| **System emails** | 2 | `user_created` (welcome), `password_reset` |
+| **Test** | 1 | `test` — used by the "Send test" buttons |
+
+Each card carries a small UPPERCASE channel badge:
+
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). The 21 entries in the first 4 groups.
+- **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
+- **Amber `TEST`** — internal test-button helper.
+
+The mapping is metadata about which dispatch path consumes each template; it's not stored on the row, just rendered from a static lookup in the frontend.
 
 Variable substitution uses simple curly-brace placeholders (`{printer_name}`, `{filament_grams}`, `{eta}`, etc.); the schema is locked per-event so the editor warns when a placeholder doesn't resolve.
 

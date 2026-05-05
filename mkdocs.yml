@@ -65,6 +65,7 @@ plugins:
           build: true
           nav_translations:
             Home: Головна
+            Why BamDude: Чому BamDude
             Getting Started: Початок роботи
             Installation: Встановлення
             Docker: Docker
@@ -195,6 +196,7 @@ extra_css:
 
 nav:
   - Home: index.md
+  - Why BamDude: why.md
 
   - Getting Started:
     - getting-started/index.md

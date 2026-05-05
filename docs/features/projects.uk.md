@@ -33,10 +33,12 @@ description: Групуй друки в проєкти зі впорядкова
 
 Новий проєкт пустий. Додавай файли одним з двох способів:
 
-- **Лінк папки** — постав проєкт на папку у File Manager; усі файли всередині отримують `project_id`, і файли, переміщені пізніше, теж його успадковують.
-- **Лінк окремих файлів** — кожен рядок файла у File Manager має кнопку "Link to project".
+- **Лінк папки** — обери один або кілька проєктів на папці у File Manager через chip multi-select; усі файли всередині отримують той самий список проєктів, і файли, переміщені пізніше, теж його успадковують.
+- **Лінк окремих файлів** — кожен рядок файла у File Manager має кнопку "Link to project", яка відкриває той самий chip multi-select.
 
-Залінковані файли автоматично з'являються як plan items по 1 копії.
+Файл бібліотеки (або папка) може належати **кільком проєктам одночасно** — зв'язок many-to-many (m044). Один файл у N проєктах дає N незалежних plan-рядків, кожен зі своїм `copies` і `order_index`. Залінковані файли автоматично з'являються як plan items по 1 копії на проєкт.
+
+Щоб видалити одну прив'язку без зачіпання інших, тисни маленький `×` на потрібному chip-у в діалозі редагування файлу/папки (або кнопку "remove from project" на рядку проєкт-сторінки) — обидва шляхи йдуть через окремий `DELETE /library/{files|folders}/{id}/projects/{project_id}` ендпоінт, тож файл у 3 проєктах можна відв'язати від 1, не торкаючись решти.
 
 ## :material-playlist-edit: Print plan
 
@@ -50,9 +52,11 @@ Plan — це плаский впорядкований список. Кожен
 | **Time** | Час на рядок (slicer-estimate × копії). |
 | **Filament** | Грами на копії, розбиті за кольором/матеріалом якщо multi-spool. |
 | **Cost** | Ціна пластика × копії плюс ціна енергії якщо є прив'язана розумна розетка. |
-| **Status** | Прогрес на рядок: скільки копій вже завершено (driven архівами, що лінкуються назад на файл). |
+| **Printed / Remaining** | Прогрес на рядок: `✓N` показує скільки копій цього файлу завершилось у цьому проєкті (рахуються тільки `status='completed'` — невдалі / aborted / external prints не зменшують); `📋M` показує `max(0, copies − printed)`. Прогрес ключований по `(project_id, library_file_id)`, тому файл у двох проєктах має незалежний прогрес у кожному. |
 
 Grand-totals strip знизу сумує кожен рядок — корисно для "у мене вистачить зеленого PLA на цей проєкт?" перевірки до того, як натиснути dispatch.
+
+Три головні плашки нагорі сторінки проєкту (Print Jobs / Print Time / Filament Used) несуть другорядний "remaining" subtitle з тих самих plan-рядків: jobs сумує `remaining_count`, time сумує `print_time_seconds × remaining_count`, filament сумує `filament_grams × remaining_count`. Subtitle **зелений** коли план повністю виконано (`всі надруковано`) і **амбер** інакше — оператор бачить одним поглядом, чи лишилась робота.
 
 ## :material-link-variant: Зовнішній URL і обкладинка
 
@@ -221,11 +225,12 @@ Material + energy обчислюються автоматично з underlying-
 
 ## :material-database: За кулісами
 
-Схема (m016) розділяє стан на дві таблиці:
+Схема розділяє стан на три таблиці:
 
 - `projects` — name, description, status, color, target counts, notes, attachments, tags, due date, priority, budget, плюс self-FK `parent_id` для sub-проєктів і прапор `is_template`. Проєкти **не** мають `owner_id` — це install-wide об'єкти, гейтовані набором прав `projects:*`, а не власністю.
-- `project_print_plan_items` — впорядкований план, один рядок на `(project_id, library_file_id)`. Колонки: `copies` і `order_index`. Per-row "notes" / "sequence" як колонок немає — sequence це `order_index`, а notes належать самому проєкту.
+- `library_file_projects` + `library_folder_projects` (m044) — pivot-таблиці, що пов'язують library-файли / папки з проєктами. Композитний primary key `(file_id, project_id)` / `(folder_id, project_id)` і `ON DELETE CASCADE` на кожному FK. Legacy single-FK колонки `library_files.project_id` і `library_folders.project_id` дроплено в m044; код бібліотеки тепер читає / пише M2M-зв'язок.
+- `project_print_plan_items` (m016, переформатовано m044) — впорядкований план, один рядок на `(project_id, library_file_id)` завдяки m044-reshape unique constraint з `(library_file_id)` → `(project_id, library_file_id)`. Колонки: `copies` і `order_index`. Per-row "notes" / "sequence" як колонок немає — sequence це `order_index`, а notes належать самому проєкту.
 
-Обидва FK (`project_id` → `projects.id` і `library_file_id` → `library_files.id`) — `ON DELETE CASCADE`. Видалення проєкту або зв'язаного library-файла видаляє відповідні plan-рядки. Архіви, що з файла прийшли, незалежні — `print_archives.library_file_id` має `ON DELETE SET NULL` (m018, окремо), тож per-copy completed-лічильники продовжують трекати навіть після зникнення source-файла.
+Усі FK — `ON DELETE CASCADE`. Видалення проєкту прибирає його pivot-рядки + plan-рядки; видалення library-файла прибирає його pivot-рядки + plan-рядки. Архіви, що з файла прийшли, незалежні — `print_archives.library_file_id` має `ON DELETE SET NULL` (m018, окремо), тож per-copy completed-лічильники продовжують трекати навіть після зникнення source-файла.
 
-Per-row completed-counts обчислюються при читанні з `print_archives`, а не зберігаються на plan-рядку. Reprints, plate-by-plate dispatches і dedup-by-hash всі інкрементять рядок консистентно — жодного дрейфу між живим планом і історичними архівами.
+Per-row completed-counts (`printed_count` / `remaining_count`) обчислюються при читанні одним bulk-запитом `SELECT library_file_id, count(id) FROM print_archives WHERE project_id = ? AND status = 'completed' GROUP BY library_file_id` — без N+1, і reprints / plate-by-plate dispatches / dedup-by-hash всі інкрементять правильний рядок консистентно. Колонка `project_id` на `print_archives` тримає лічильник у межах проєкту, тож файл у двох проєктах отримує два незалежних printed-лічильники.

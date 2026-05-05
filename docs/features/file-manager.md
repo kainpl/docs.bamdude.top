@@ -227,9 +227,11 @@ Single-plate files don't render the gallery — the existing main thumbnail cove
 
 ## :material-link-variant: Project & Folder Links
 
-- **Per-folder link** -- linking a folder to a project sets `project_id` on every file inside, and any file moved into that folder later inherits the link.
-- **Per-file link** -- each file row also has its own `Link2` button to attach it to a project independently of its folder.
-- **Per-project plan items** (m016) -- the project page renders a flat plan list with copies/order/totals; rows auto-appear when files / folders link to the project, and per-row totals (filament, time, cost) feed the project-level grand totals.
+- **Per-folder link** -- linking a folder to one or more projects (chip multi-select in the folder edit dialog) attaches every file inside to those projects, and any file moved into that folder later inherits the same project list.
+- **Per-file link** -- each file row also has its own `Link2` button that opens the same chip multi-select to attach the file to any number of projects independently of its folder.
+- **Many-to-many** (m044) -- a file or folder can belong to several projects at once; the legacy single-FK `project_id` was replaced by `library_file_projects` + `library_folder_projects` pivot tables. The same file in N projects shows up as N independent plan rows on the project pages.
+- **Per-chip unlink** -- each selected project chip in the file/folder dialog has a small `×` icon that removes only that one association via `DELETE /library/{files|folders}/{id}/projects/{project_id}`. The bulk "Unlink from all" button is gone — use the chip multi-select to set `project_ids: []` instead.
+- **Per-project plan items** (m016, reshaped by m044) -- the project page renders a flat plan list with copies/order/totals; rows auto-appear when files / folders link to the project, and per-row totals (filament, time, cost) feed the project-level grand totals. The unique constraint is now `(project_id, library_file_id)` so a shared file gets independent plan rows per project.
 
 ---
 
@@ -391,15 +393,16 @@ External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `
 
 ## :material-link: Linking folders to projects / archives
 
-Right-click a folder (or use its three-dot menu) → **Link to project** / **Link to archive** to attach a folder to a [Project](projects.md) or an existing [Archive](archiving.md).
+Right-click a folder (or use its three-dot menu) → **Link to project** / **Link to archive** to attach a folder to a [Project](projects.md) or an existing [Archive](archiving.md). The project picker is a chip multi-select — pick any number of projects in one go.
 
 | Action | Where |
 |---|---|
 | **Link folder** | Right-click on folder → "Link to project / archive" |
-| **Change link** | Click the colored badge on the linked folder |
-| **Remove link** | Same badge → "Remove link" |
+| **Add / drop a project** | Open the link dialog, toggle chips on/off, save |
+| **Remove one project** | Click the `×` on the relevant chip in the dialog (single-pivot DELETE) |
+| **Remove all projects** | Clear every chip in the dialog and save (`project_ids: []`) |
 
-Linked folders show a colored badge in the sidebar and grid. Per-folder links propagate `project_id` to every file inside, plus any file moved into the folder later inherits the link.
+Linked folders show a colored badge in the sidebar and grid. When a folder is linked to multiple projects the badge carries an `×N` overflow counter and the tooltip lists every project name. Per-folder links propagate the project list to every file inside via the M2M pivot, plus any file moved into the folder later inherits the same list.
 
 ---
 
