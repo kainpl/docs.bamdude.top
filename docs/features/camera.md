@@ -55,8 +55,8 @@ Connect external network cameras to replace the built-in printer camera. Useful 
 !!! tip "RTSP authentication"
     Embed credentials in the URL: `rtsp://user:password@192.168.1.50:554/stream`.
 
-!!! tip "Snapshot URL override (go2rtc, IP cams with `/frame.jpeg`-style endpoints)"
-    For **MJPEG**, **RTSP**, and **USB** types, you can optionally provide a separate **Snapshot URL** below the live-stream URL. When set, BamDude fetches single-frame captures (notification thumbnails, finish photos, layer-timelapse, plate detection) from this URL via plain HTTP GET instead of opening the live stream. Useful for go2rtc setups (`/api/frame.jpeg?src=<name>` is faster than reading from the MJPEG stream) or IP cams with a dedicated snapshot endpoint. Click **Test** next to the Snapshot URL to verify it returns a valid frame. Leave blank to use the default behaviour: capture from the live stream with automatic warm-up-frame skip.
+!!! tip "go2rtc and IP cameras: warm-up-frame skip"
+    Many MJPEG sources — go2rtc most notably, plus several IP cameras — emit a "warm-up" / often-black frame on the byte that follows connection accept (the encoder's last keyframe before it catches up to live content). Since 0.4.4 BamDude reads past the first frame and returns the second on every single-frame capture path (notification thumbnails, finish photo, layer-timelapse, plate detection, Obico inference). Slow / single-frame streams that don't deliver a second frame within the timeout fall back to the first so callers always get *something*. No configuration needed. If you still see black frames, raise the camera's keep-alive timeout, point BamDude at go2rtc's `/api/stream.mjpeg?src=<name>` rather than the bare camera URL, or open an issue with a packet-capture trace.
 
 ### USB / V4L2 setup
 

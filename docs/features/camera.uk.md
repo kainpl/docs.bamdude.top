@@ -55,8 +55,8 @@ BamDude забезпечує MJPEG-відеотрансляцію з вбудо�
 !!! tip "RTSP-авторизація"
     Креденшали в URL: `rtsp://user:password@192.168.1.50:554/stream`.
 
-!!! tip "Snapshot URL override (go2rtc, IP-cams з `/frame.jpeg`-style ендпоінтами)"
-    Для **MJPEG**, **RTSP** і **USB** типів можна опційно дати окремий **Snapshot URL** під live-stream URL. Коли заданий, BamDude тягне single-frame захоплення (notification thumbnail, finish photo, layer-timelapse, plate detection) з цього URL через plain HTTP GET замість відкриття live-стріма. Корисно для go2rtc сетапів (`/api/frame.jpeg?src=<name>` швидший за читання з MJPEG-стріма) або IP-камер зі snapshot-ендпоінтом. Натисни **Test** поряд зі Snapshot URL для перевірки. Залиш порожнім для дефолтної поведінки: захоплення з live-стріма з автоматичним warm-up-frame skip.
+!!! tip "go2rtc та IP-камери: warm-up-frame skip"
+    Багато MJPEG-джерел — особливо go2rtc, плюс ряд IP-камер — видають "warm-up" / часто чорний кадр на байті відразу після прийняття з'єднання (останній keyframe з енкодера до того, як він наздожене реальний live-контент). Починаючи з 0.4.4 BamDude читає повз перший кадр і повертає другий на всіх шляхах захоплення single-frame (notification thumbnails, finish photo, layer-timelapse, plate detection, Obico inference). Повільні / single-frame стріми, які не доставляють другий кадр у таймаут, падають на перший — щоб caller завжди отримав *щось*. Без додаткового налаштування. Якщо чорний кадр досі бачиш — підвищ keep-alive таймаут камери, направ BamDude на go2rtc'ський `/api/stream.mjpeg?src=<name>` замість голого URL камери, або відкрий issue з packet-capture трейсом.
 
 ### USB / V4L2 setup
 
