@@ -75,8 +75,8 @@ BamDude має власний інвентар фізичних котушок �
 | **Label Weight** | Чиста вага як надрукована на котушці (default 1000 г; AMS-HT cardboard core ~250 г). |
 | **Quantity (bulk)** | 1–100 котушок створюються в одній операції. Корисно для "купив 5-pack PLA" — кожна котушка створюється з ідентичним material / color / weight / cost. |
 | **Color** | Visual picker з shade + opacity + finish picker-ами. Recent-colors-стрічка + brand-палітри. |
-| **Extra colours** | Опційно. Comma-separated list з 2–8 hex-стопів (напр. `EC984C,#6CD4BC,A66EB9,D87694`) для multi-colour котушок. Малює swatch як gradient-стрічку; з **Effect = Multicolor** стає color-wheel pie. Формат як на 3dfilamentprofiles.com, тож paste-and-go працює. |
-| **Effect** | Опційний rendering hint. Накладається поверх color-swatch — **не** змінює slicer-profile. Повна enumerator-list: surface-effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*), sheen-варіанти (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*), structural-варіанти (*Gradient*, *Dual Color*, *Tri Color*, *Multicolor*, *Silk Dual*, *Glow Dual*, *Matte Dual*). |
+| **Extra colours** | Опційно. Comma-separated list з 2–8 hex-стопів (напр. `EC984C,#6CD4BC,A66EB9,D87694`) для multi-colour котушок. Малює swatch по-різному залежно від значення **Effect** нижче — плавний blend, hard-split смуги або color-wheel pie. Формат як на 3dfilamentprofiles.com, тож paste-and-go працює. |
+| **Effect** | Накладається поверх color-swatch — **не** змінює slicer-profile. Surface-effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*) малюють CSS-overlay; sheen-варіанти (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*) дають м'який sheen; structural-варіанти задають форму color-layer — *Gradient* = плавний 135° blend, *Dual Color* / *Tri Color* = hard-split горизонтальні смуги (кожен стоп у власному сегменті, без діагонального blend), *Multicolor* = conic-gradient color-wheel. Форма має live-preview pane під dropdown'ом, тож ви бачите ефект до збереження. |
 
 #### Quick Add (Stock) режим
 

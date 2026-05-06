@@ -75,8 +75,8 @@ The "+ Add Spool" form has two tabs. The first one — Filament Info — covers 
 | **Label Weight** | Net weight as printed on the spool (default 1000 g; AMS-HT cardboard core ~250 g). |
 | **Quantity (bulk)** | 1–100 spools created in one operation. Useful for "I bought a 5-pack of PLA" scenarios — every spool is created with identical material / colour / weight / cost. |
 | **Colour** | Visual picker with shade + opacity + finish pickers. Recent-colours strip + brand palettes. |
-| **Extra colours** | Optional. Comma-separated list of 2–8 hex stops (e.g. `EC984C,#6CD4BC,A66EB9,D87694`) for multi-colour spools. Renders the swatch as a gradient strip; with **Effect = Multicolor** it becomes a colour-wheel pie. Format matches 3dfilamentprofiles.com so paste-and-go works. |
-| **Effect** | Optional rendering hint. Layered on top of the colour swatch — does **not** change the slicer profile. Full enumeration: surface effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*), sheen variants (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*), structural variants (*Gradient*, *Dual Color*, *Tri Color*, *Multicolor*, *Silk Dual*, *Glow Dual*, *Matte Dual*). |
+| **Extra colours** | Optional. Comma-separated list of 2–8 hex stops (e.g. `EC984C,#6CD4BC,A66EB9,D87694`) for multi-colour spools. Renders the swatch differently based on the **Effect** value below — gradient blend, hard-split bars, or colour-wheel pie. Format matches 3dfilamentprofiles.com so paste-and-go works. |
+| **Effect** | Layered on top of the colour swatch — does **not** change the slicer profile. Full enumeration: surface effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*) paint a CSS overlay; sheen variants (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*) carry a soft sheen; structural variants drive the colour-layer shape — *Gradient* = smooth 135° blend, *Dual Color* / *Tri Color* = hard-split horizontal bars (each stop occupies its own contiguous segment, no diagonal blend), *Multicolor* = conic-gradient colour-wheel pie. The form has a live preview pane below the dropdown so you see the effect before save. |
 
 #### Quick Add (Stock) mode
 
