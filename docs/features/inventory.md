@@ -250,11 +250,57 @@ Painted, dual-colour, and silk filaments aren't one hex value — they're a grad
 !!! tip "Don't reintroduce hard-coded colour tables anywhere"
     BamDude deliberately removed hard-coded `tray_id_name` / hex tables that would inevitably mislabel third-party filaments. The catalog is the only source of truth — even if you're tempted to "shortcut" colour resolution somewhere.
 
+## :material-printer: Printable PDF labels
+
+Find a specific spool in a closet of 50 partials by sticking a label on each one. The Inventory header has a **Print labels…** action that opens a multi-select picker pre-loaded with the currently filtered spools; every inventory card and table row also has a per-spool printer icon for one-shot label printing.
+
+Four pre-built templates:
+
+| Template | Size | Sheet | Notes |
+|---|---|---|---|
+| **AMS holder** | 30 × 15 mm | One per page | Fits the popular Makerworld AMS Filament Label Holder (model 752566). Drops the QR — at this size there's no room for swatch + text + QR without truncating the spool ID. |
+| **Box label** | 62 × 29 mm | One per page | Sized for Brother PT/QL and Dymo small-label stock. Carries QR + storage location. |
+| **Avery L7160** | 38.1 × 63.5 mm | A4, 21 per sheet | EU sheet stock. Carries QR. |
+| **Avery 5160** | 25.4 × 66.7 mm | US Letter, 30 per sheet | US sheet stock. Carries QR. |
+
+Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand, material/subtype, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
+
+### Display name follows your template
+
+The bold central line on each label reuses the same **Spool display name template** the Inventory page uses (Settings → Inventory → Spool display name template). So if you set the template to `{brand} {material} {color_name} (#{id})` for the inventory list, that's exactly what gets printed on each label too. The 16 placeholders (`{brand}`, `{material}`, `{color_name}`, `{remaining_pct}`, `{filament_diameter}`, `{lot}`, …) are documented in the same Settings panel that lets you edit the template.
+
+### How the QR deeplink resolves
+
+The QR encodes `<base>/inventory?spool=<id>`. The base is resolved in this order:
+
+1. The `external_url` setting (Settings → Server → External URL) — preferred so a phone scan reaches your public BamDude URL rather than an internal address.
+2. The `APP_URL` environment variable.
+3. The current request's scheme + host (whatever you'd see in your browser when you fired the export).
+
+For phone-scan workflows, set `external_url` once — then every label across every template prints the right deeplink.
+
+### Picker UX for large libraries
+
+The modal scales to large inventories with:
+
+- **Search** — substring across the composed display name, brand, and `#ID`.
+- **Material filter chips** — derived from the visible spools.
+- **Select all visible / Deselect visible / Clear all** — selections survive filter changes (additive), so you can narrow to "PLA only", select all, then narrow to "PETG", and add those too.
+
+### Server-side rendering
+
+PDFs are rendered server-side via ReportLab + qrcode (added as deps). Pure Python, no headless browser, output is byte-identical across browsers, Avery sheets align to <0.1 mm. Endpoints (both gated on `inventory:read`):
+
+- `POST /inventory/labels` — local-DB spools.
+- `POST /spoolman/labels` — Spoolman-backed spools (only when Spoolman integration is enabled).
+
+Both accept `{spools: [{id, display_name?}], template}` and return `application/pdf` via streaming response. Capped at 500 spools per request.
+
 ## :material-account-multiple: Permissions
 
 | Permission | Effect |
 |---|---|
-| `inventory:read` | View spool list and AMS assignments. |
+| `inventory:read` | View spool list and AMS assignments; **render PDF labels**. |
 | `inventory:create` | Add new spools. |
 | `inventory:update` | Edit spool fields, assign to slots, set spool-specific K-profile overrides. |
 | `inventory:delete` | Remove spools (deletes related assignments too). |
