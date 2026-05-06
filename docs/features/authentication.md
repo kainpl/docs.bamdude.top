@@ -390,7 +390,8 @@ BamDude supports OpenID Connect single sign-on against any standards-compliant p
 | **Client secret** | Fernet-encrypted at rest when `MFA_ENCRYPTION_KEY` is set. |
 | **Scopes** | Default `openid profile email`. Add provider-specific scopes if needed. |
 | **Claim mapping** | Which OIDC claim maps to BamDude username / email. |
-| **Auto-create users** | Off by default -- new logins must match an existing local user by email. On = auto-create in the Viewers group. |
+| **Auto-create users** | Off by default -- new logins must match an existing local user by email. On = auto-create the user automatically (placed in the group set by **Default group** below). |
+| **Default group** | Group new auto-created users land in. Defaults to **Viewers (read-only)** for safety; pick a custom group for tenant-internal SSO setups where read-only is too restrictive. The picker is sourced from the live group list, so any custom group you create in **Settings → Authentication → Groups** is selectable here. If the chosen group is later deleted, new logins fall back to **Viewers**. |
 
 The login page renders an "Sign in with `<provider>`" button per configured provider, below the password form.
 

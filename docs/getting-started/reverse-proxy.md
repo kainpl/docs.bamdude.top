@@ -59,6 +59,12 @@ TRUSTED_PROXY_IPS=127.0.0.1
 # externally-reachable URL — even on hybrid, point this at the HTTPS one
 # so links shared via Telegram / email work from anywhere.
 APP_URL=https://bamdude.example.com
+
+# Optional. Comma-separated list of origins (scheme://host[:port]) allowed
+# to embed BamDude inside an <iframe>. Default = empty (strict: no cross-
+# origin embedding). Set this when you want to embed BamDude inside Home
+# Assistant's Webpage panel — see "Home Assistant Webpage panel" below.
+# TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123
 ```
 
 The `Settings → System → External URL` field in the UI is the same value as `APP_URL` env. Whichever is set takes precedence in the order: DB setting > env var > `http://localhost:5173` fallback.
@@ -151,6 +157,37 @@ The pragmatic split most operators use:
 | External | `https://bamdude.example.com` | nginx, public DNS — HSTS is fine |
 
 If you really want a hostname (not IP) on the LAN too, use a *different* one — `bamdude.lan` or `bamdude.home` — and make sure no client ever sees HTTPS at that name.
+
+---
+
+## :material-home-assistant: Home Assistant Webpage panel embedding
+
+By default BamDude blocks every cross-origin iframe — `X-Frame-Options: SAMEORIGIN` plus `Content-Security-Policy: frame-ancestors 'none'`. That's the safe choice for internet-exposed deployments, but it also means embedding the BamDude UI inside Home Assistant's **Webpage** dashboard panel always fails: HA on `:8123` and BamDude on `:8000` are different origins to the browser, and `SAMEORIGIN` is port-strict.
+
+To opt into iframe embedding from your HA instance, set `TRUSTED_FRAME_ORIGINS` to the origin (`scheme://host[:port]`) HA serves itself from:
+
+```bash
+TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123
+```
+
+When set:
+
+- `X-Frame-Options` is dropped entirely (the legacy `ALLOW-FROM <url>` syntax is deprecated and inconsistent across browsers — modern browsers honour CSP `frame-ancestors`, which takes precedence).
+- The CSP directive becomes `frame-ancestors 'self' <list>` on every CSP-bearing route. `'self'` is always included, so same-origin embedding never breaks even if you forget your own origin in the list.
+
+Multiple origins are comma-separated:
+
+```bash
+TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123,https://ha.example.com
+```
+
+Validation rules (invalid entries are dropped at startup with a warning, **not** failing the boot):
+
+- Only `http(s)` schemes — `ftp://`, `file://`, `javascript:` are rejected.
+- No paths, query strings, or fragments — only scheme + host + port.
+- No wildcards in the host (`*.example.com` would defeat the allowlist).
+
+In Home Assistant, configure the Webpage card with the BamDude URL it can reach (your reverse-proxy URL or the LAN URL) and you're done — no other HA-side knobs needed.
 
 ---
 

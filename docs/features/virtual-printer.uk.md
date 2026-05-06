@@ -36,6 +36,25 @@ VP працює в **рівно одному режимі**. Режим зада
 
 ---
 
+## :material-broadcast: Дзеркалення живого стану в non-proxy режимах
+
+Коли non-proxy VP (`file_manager` / `print_queue` / `auto_queue`) налаштований з **target-принтером**, слайсер, який говорить з VP, бачить **реальний живий стан принтера** — не заморожену idle-заглушку. Детект слотів AMS, FTS-роутинг, ідентифікація типу сопла, k-profiles на філамент і жива камера працюють так, ніби слайсер говорить безпосередньо з принтером. Ви зберігаєте чергу / архів / диспетчеризацію BamDude і отримуєте slicer-as-remote-ергономіку у тому ж VP.
+
+Як це працює (важливе для оператора):
+
+- BamDude вже тримає per-printer MQTT-підписку — другої сесії на принтері не відкриваємо, бюджет in-flight повідомлень фірмварі не страждає.
+- VP кешує останні `push_status` і `info.get_version` від принтера й віддає слайсеру майже байт-у-байт ідентичну копію реального push'а. Перевизначаємо лише upload-state-поля, якими керує BamDude (`gcode_state`, `gcode_file`, `prepare_percent`, `subtask_name`).
+- Slicer-команди (AMS load / unload, xcam, `extrusion_cali_get` для k-profile, …) форвардяться на реальний принтер. `project_file` / `gcode_file` все одно завершуються локально — файл лежить у BamDude.
+- Камера — raw TCP passthrough на `<bind_ip>:322` → `printer:322` (той самий підхід, що в proxy-режимі).
+
+!!! warning "Однаковий access code на VP і target-принтері"
+    BambuStudio автентифікує RTSPS access-кодом зі свого профілю слайсера — VP і його target мають мати **однаковий access code**, інакше кнопка камери впаде з "LAN connection failed". MQTT і FTPS працюють обома способами. Виставте через **Settings → Virtual Printer → Edit** і **Settings → Printers → Edit**.
+
+!!! info "Proxy-режим це не зачепило"
+    Proxy-режим тримає власні RTSP / FTP / MQTT проксі і роутить усе end-to-end на TCP-рівні — кешу немає чого дзеркалити. Поведінка вище — opt-in для трьох non-proxy режимів.
+
+---
+
 ## :material-cog: Налаштування
 
 **Налаштування → Virtual Printer → Add Virtual Printer**:
