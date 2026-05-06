@@ -160,6 +160,21 @@ If you really want a hostname (not IP) on the LAN too, use a *different* one —
 
 ---
 
+## :material-folder-network: Path-prefixed deployments (subpath)
+
+If you serve BamDude under a subpath — `https://example.com/bamdude/` (Traefik with a `PathPrefix(/bamdude)` rule, nginx `location /bamdude/`, Cloudflare Tunnel with path-routed services) — the SPA bundle since 0.4.3 emits **relative asset URLs** (`./assets/...`, `./manifest.json`, `./img/...`, `./sw-register.js`), so the browser resolves every script / stylesheet / icon against whatever path the document loaded from. No `BASE_URL` env var to tweak.
+
+What this means in practice:
+
+- **Strip the prefix at the proxy.** BamDude itself always sees the unprefixed path — your reverse proxy must rewrite `/bamdude/foo` to `/foo` before forwarding (Traefik: `StripPrefix` middleware; nginx: `proxy_pass http://bamdude:8000/` with the trailing slash).
+- **Service worker auto-scopes.** `sw-register.js` registers `sw.js` relatively, so the SW scope pins to the subpath you loaded the SPA from.
+- **Push subscriptions and PWA install** work as long as the prefix is stable across reloads. Don't rotate the prefix per-deploy; the SW caches the URLs it was served at.
+- **API client uses an absolute origin.** `api/client.ts` issues `/api/v1/...` relative to the page origin, so the same prefix-strip rule applies to API calls — your proxy needs to forward both `/<prefix>/api` and `/<prefix>/assets`. Don't try to host BamDude's API under a different path than its SPA.
+
+If you load the page and see a blank white screen with a `MIME type` console error, your proxy isn't stripping the prefix correctly — the browser is hitting your proxy's outer routing for `/<prefix>/assets/...` instead of BamDude's `/assets/...` mount.
+
+---
+
 ## :material-home-assistant: Home Assistant Webpage panel embedding
 
 By default BamDude blocks every cross-origin iframe — `X-Frame-Options: SAMEORIGIN` plus `Content-Security-Policy: frame-ancestors 'none'`. That's the safe choice for internet-exposed deployments, but it also means embedding the BamDude UI inside Home Assistant's **Webpage** dashboard panel always fails: HA on `:8123` and BamDude on `:8000` are different origins to the browser, and `SAMEORIGIN` is port-strict.

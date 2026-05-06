@@ -162,6 +162,21 @@ sudo systemctl reload nginx
 
 ---
 
+## :material-folder-network: Розгортання під subpath (path-prefix)
+
+Якщо віддаєте BamDude під subpath — `https://example.com/bamdude/` (Traefik з правилом `PathPrefix(/bamdude)`, nginx `location /bamdude/`, Cloudflare Tunnel з path-routed services) — SPA-бандл з 0.4.3 емітить **відносні URL для assets** (`./assets/...`, `./manifest.json`, `./img/...`, `./sw-register.js`), тож браузер резолвить кожен script / stylesheet / іконку відносно шляху, з якого завантажилась сторінка. Жодного `BASE_URL` env-варіанту не треба.
+
+Що це означає на практиці:
+
+- **Префікс зрізається на проксі.** Сам BamDude завжди бачить непрефіксований шлях — ваш reverse-proxy має переписати `/bamdude/foo` на `/foo` перед форвардом (Traefik: middleware `StripPrefix`; nginx: `proxy_pass http://bamdude:8000/` з trailing slash).
+- **Service worker авто-скопиться.** `sw-register.js` реєструє `sw.js` відносно, тож scope SW пінниться до subpath, з якого завантажилась SPA.
+- **Push subscriptions і PWA install** працюють, поки префікс стабільний між перезавантаженнями. Не ротуйте префікс на кожен деплой — SW кешує URL, з якими його віддали.
+- **API-клієнт використовує абсолютний origin.** `api/client.ts` емітить `/api/v1/...` відносно origin сторінки, тож те саме правило strip-префікса застосовується і до API-викликів — проксі має форвардити і `/<prefix>/api`, і `/<prefix>/assets`. Не намагайтеся хостити API BamDude під іншим шляхом, ніж SPA.
+
+Якщо завантажуєте сторінку і бачите білий екран із помилкою `MIME type` у консолі — ваш проксі не зрізає префікс правильно: браузер влучає в зовнішній routing проксі для `/<prefix>/assets/...` замість BamDude-маунту `/assets/...`.
+
+---
+
 ## :material-home-assistant: Webpage-панель Home Assistant — embedding BamDude
 
 За замовчуванням BamDude блокує будь-який cross-origin iframe — `X-Frame-Options: SAMEORIGIN` плюс `Content-Security-Policy: frame-ancestors 'none'`. Це безпечний дефолт для встановлень з виходом в інтернет, але вбудувати BamDude UI у дашборд Home Assistant через **Webpage**-панель не дозволяє: HA на `:8123` і BamDude на `:8000` — різні origins для браузера, а `SAMEORIGIN` строго прив'язаний до порту.

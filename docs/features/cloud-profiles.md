@@ -126,9 +126,11 @@ When the install has `MFA_ENCRYPTION_KEY` set (Fernet key), TOTP secrets and oth
 
 ## :material-power-plug: Headless / API key access
 
-API keys created in BamDude can call the cloud routes the same way they call any other route. Grant `can_read_status` if the key needs to read presets / devices, and the standard `X-API-Key` header rules apply (see [API Keys](api-keys.md)). The cloud-side calls run against **the user that owns the key… wait, BamDude API keys are not user-owned today** — so `cloud:*` calls from an API key fall through to the global Settings-table cred bag if one exists, and 401 if it doesn't.
+API keys created in BamDude can call the cloud routes the same way they call any other route. Grant `can_read_status` if the key needs to read presets / devices, and the standard `X-API-Key` header rules apply (see [API Keys](api-keys.md)).
 
-For mixed-user installs, sign in via the UI first; for single-user / auth-disabled installs the global Settings bag is the natural store.
+UI-created API keys are **stamped with the creating user's id**, so the cloud-side calls run against that user's per-user Bambu Cloud token — provided the key has the **Use Bambu Cloud** toggle ticked at create time. Without that opt-in flag, `cloud:*` routes refuse the call rather than silently spending the owner's cloud token. Pre-0.4.3 ownerless keys (the "Legacy" badge in the API-keys list) cannot be promoted to cloud-spend — the toggle is rejected at save time on rows without `user_id`. To migrate, re-create the key under your user account.
+
+For setups without per-user Bambu Cloud (single-user / auth-disabled), the global Settings-table cred bag is the natural store and Cloud-flagged keys still fall through to it as a last resort.
 
 ---
 
