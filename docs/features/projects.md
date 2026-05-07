@@ -85,6 +85,15 @@ Plates  [████████░░░░░░░░░░] 40%   2 of 5 pr
 Parts   [████████░░░░░░░░░░] 40%   10 of 25 parts
 ```
 
+### Pre-fill from the print plan
+
+You don't have to add up the numbers manually. Two zero-friction shortcuts feed the targets from the plan rows:
+
+- **Edit modal** auto-pre-fills empty Target Plates / Target Parts inputs with the plan totals on open, and shows a `From plan: N` link under each input — click to re-sync after the plan changed (link hides when the input already matches).
+- **`Apply to project`** button on the print plan totals row + the BOM totals row writes Target Plates (= sum of plate copies), Target Parts (= total objects), AND Budget (= filament cost + materials cost) onto the project in one click. Tooltip shows the exact values that will land before the click. The button hides when the project already matches all three (no-op write avoidance).
+
+Manual edits still win — once you change a value, the auto-fill won't overwrite it on subsequent modal opens. Use the `Apply to project` / `From plan: N` controls when you've reworked the plan and want the project numbers to follow.
+
 ### Auto-detection from 3MF
 
 When an archive lands, BamDude reads `slice_info.config` from the 3MF, counts the non-skipped objects, and stamps that count onto the archive's `quantity` column automatically. A plate with 4 instances of a bracket → archive quantity 4 → project parts counter +4.
