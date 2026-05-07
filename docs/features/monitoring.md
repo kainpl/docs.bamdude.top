@@ -103,9 +103,34 @@ In **Small** card size each card shows a single coloured pip instead of the full
 |:------:|---------|
 | :material-circle:{ style="color: #4caf50" } Green | Connected, no issues |
 | :material-circle:{ style="color: #f44336" } Red | Offline, or HMS fatal / serious (severity ≤ 2) |
-| :material-circle:{ style="color: #ff9800" } Amber | HMS warning (info / common severity) |
+| :material-circle:{ style="color: #ff9800" } Amber | HMS warning (info / common severity) **OR** print is currently paused |
 
-Hover the pip for the count of active HMS errors.
+Hover the pip for the count of active HMS errors, or the resolved pause cause when paused.
+
+### Pause chip + live elapsed counter
+
+When a printer is in the **PAUSE** state, an inline pill appears next to the printer name in the card header:
+
+```
+Bambu X1C  [⏸ Filament runout · 14m]
+```
+
+- **Reason text** (`pause_reason_label`) — resolved server-side from the printer's HMS error stack via `hms_errors.classify_pause_reason()`. Maps door-open codes / filament-runout codes / AI-detection codes / presence-check / file-pause-command into one normalised label. Internal pause triggers (e.g. plate-detect auto-pause) plant a hint that wins over HMS, since Bambu firmware always reports HMS `0300_8001` ("paused by user") for any pause command BamDude sends.
+- **Live elapsed counter** — ticks every second client-side against `pause_started_at` (epoch float in the snapshot, stamped server-side on the RUNNING→PAUSE edge). Format: `Ns` under 1 min → `Nm` under 1 hour → `Nh Mm` afterwards.
+- **F5-resilient** — the timestamp lives on the snapshot, not just in-memory, so the counter resumes from the correct value after page refresh.
+
+The chip renders in both compact (xs) and expanded (sm) view modes.
+
+### Pause / resume toast notifications
+
+When a printer transitions RUNNING→PAUSE or PAUSE→RUNNING, the WebSocket connection delivers an immediate browser toast independent of the regular printer-status polling:
+
+| Edge | Toast type | Body |
+|---|---|---|
+| **RUNNING→PAUSE** | warning (yellow) | `{printer} paused: {reason}` — e.g. `Bambu X1C paused: Filament ran out. Please load new filament.` |
+| **PAUSE→RUNNING** | success (green) | `{printer} resumed (paused for Nm Ms)` |
+
+These are local UI notifications — separate from the configured notification providers (Telegram / email / Discord / etc.) which fire the matching `print_paused` / `print_resumed` events. See [Notifications](notifications.md) for provider-side configuration.
 
 ### Status sorting + collapsible groups
 

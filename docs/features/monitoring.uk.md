@@ -103,9 +103,34 @@ X1 / X1 Carbon / X1E експортують MQTT-сигнал відкритих
 |:-----:|----------|
 | :material-circle:{ style="color: #4caf50" } Зелений | Підключено, без проблем |
 | :material-circle:{ style="color: #f44336" } Червоний | Offline, або HMS fatal / serious (severity ≤ 2) |
-| :material-circle:{ style="color: #ff9800" } Бурштин | HMS warning (info / common severity) |
+| :material-circle:{ style="color: #ff9800" } Бурштин | HMS warning (info / common severity) **АБО** друк зараз на паузі |
 
-На ховері — кількість активних HMS-помилок.
+На ховері — кількість активних HMS-помилок, або resolved причина паузи коли друк на паузі.
+
+### Чіп паузи + live-лічильник тривалості
+
+Коли принтер у стані **PAUSE**, поряд з ім'ям у заголовку картки з'являється inline-pill:
+
+```
+Bambu X1C  [⏸ Філамент скінчився · 14m]
+```
+
+- **Текст причини** (`pause_reason_label`) — резолвиться сервер-сайд з HMS-стеку принтера через `hms_errors.classify_pause_reason()`. Мапить door-open / filament-runout / AI-detection / presence-check / file-pause-command коди в одну нормалізовану категорію. Внутрішні pause-тригери (наприклад plate-detect auto-pause) плантують hint що бьє HMS, бо Bambu firmware завжди репортить HMS `0300_8001` ("paused by user") на будь-яку pause-команду від BamDude.
+- **Live-лічильник тривалості** — тікає щосекунди клієнтсайд проти `pause_started_at` (epoch float у snapshot'і, штампується сервер-сайд на RUNNING→PAUSE edge). Формат: `Ns` до 1 хв → `Nm` до 1 год → `Nh Mm` далі.
+- **F5-resilient** — timestamp живе у snapshot'і, не в in-memory state, тож лічильник продовжується з правильної точки після refresh сторінки.
+
+Chip рендериться і в compact (xs), і в expanded (sm) режимах.
+
+### Toast-сповіщення pause / resume
+
+Коли принтер переходить RUNNING→PAUSE або PAUSE→RUNNING, WebSocket доставляє миттєвий browser-toast незалежно від regular polling:
+
+| Edge | Тип toast | Body |
+|---|---|---|
+| **RUNNING→PAUSE** | warning (жовтий) | `{printer} на паузі: {reason}` — наприклад `Bambu X1C на паузі: Філамент скінчився. Завантаж новий.` |
+| **PAUSE→RUNNING** | success (зелений) | `{printer} відновлено (стояв на паузі Nm Ms)` |
+
+Це локальні UI-сповіщення — окремі від налаштованих notification-провайдерів (Telegram / email / Discord / etc.) що шлють відповідні `print_paused` / `print_resumed` події. Дивись [Сповіщення](notifications.uk.md) для конфігурації провайдер-сайду.
 
 ### Сортування по статусу + згортувані групи
 
