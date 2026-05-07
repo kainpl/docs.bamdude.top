@@ -210,6 +210,7 @@ Library files share the same `<ModelViewerModal>` as archives, with two library-
 - **Tab visibility from `file_tags` rather than file extension.** A sliced `.gcode.3mf` (which has both extensions) shows only the G-code tab — its embedded mesh is already rasterised into the gcode lines and re-rendering it under "3D Model" duplicates information. An unsliced `project` 3MF or raw `geometry` mesh shows only the 3D tab. Tabs are queried via `GET /library/files/{id}/capabilities` (mirrors the long-standing archive route).
 - **Per-plate G-code picker for multi-plate library files.** Library files are browseable, so the G-code tab gets a plate picker that re-keys the gcode-preview URL when you switch plates. Archives keep the single-plate behaviour because they record one specific print.
 - **Build-volume wireframe** — the 3D viewer draws a translucent box matching the printer the file was sliced for (read from `printer_settings`). G-code preview already painted a similar box; same visual cue across both tabs now.
+- **Shared modal features** — OBJ format support, wireframe / X-ray toggle, theme-synced canvas, dual-handle layer slider (Start + End), travel-moves toggle, layer-play with 1× / 2× / 4× / 8× speeds, streaming download progress, and Export-as-PNG. See [Archives → 3D + G-code Preview](archiving.md#material-cube-scan-3d-g-code-preview) for the full feature breakdown; library uses the same `<ModelViewerModal>` verbatim.
 
 ## :material-view-gallery: Per-plate gallery (multi-plate 3MFs)
 

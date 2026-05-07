@@ -269,33 +269,39 @@ The optional `?days=N` query param (1–3650, clamped) lets the manual dialog ov
 
 ---
 
-## :material-cube-scan: 3D Model Preview
+## :material-cube-scan: 3D + G-code Preview
 
-View models directly in the browser via Three.js:
+Open the preview from any archive card — click the layers badge in the bottom-right, or right-click → **3D Preview**. List view exposes the same action via the row menu. A single modal hosts both views as tabs, sharing one plate panel + bed-volume wireframe so the eye can match what's drawn against what's reported.
+
+### 3D Model tab
+
+Three.js scene with proper Phong shading:
 
 - **Rotate** — click and drag.
 - **Zoom** — scroll wheel.
 - **Pan** — right-click and drag.
 - **Build-volume wireframe** — translucent box matching the printer's bed; pulled from the 3MF's `printer_settings` so an A1-mini archive renders against a 180×180 box, not a hardcoded 256³.
+- **Wireframe / X-ray toggle** — flip every mesh in the scene from solid to wireframe so thin walls, supports, and non-manifold edges are visible. Persists across modal opens via `localStorage`.
+- **Supported formats:** `.stl`, `.3mf`, `.obj` (OBJ via Three's stock `OBJLoader`, mounted alongside STL + the custom 3MF parser).
+- **Theme-synced background** — light SPA theme renders the scene against a light grey, dark theme keeps the off-black bed; the canvas no longer punches a black rectangle through a light modal.
 
 For multi-plate prints the archive remembers which plate of the source 3MF was actually printed — the 3D preview, G-code preview, thumbnail, and per-plate slicer metadata (print time, filament weight, layers, printable objects) all reflect that plate. **There is no plate picker on archives** — the archive is a record of one specific print, not a browser. Migration **m038** populates `plate_index` on historical rows and re-parses 3MFs where `plate_index > 1` so older multi-plate archives gain the same correctness.
 
-The preview reads from the local archive copy — if the 3MF isn't on disk (fallback or cleaned), the preview is unavailable until the file is recovered.
+### G-code tab
 
----
+Renders the actual sliced toolpath layer-by-layer — what the printer physically extruded — using `gcode-preview` (WebGL).
 
-## :material-cube-scan: 3D G-code Preview
+- **Dual-handle layer slider** — separate **Start** and **End** ranges so you can crop both top and bottom (default range = full build). Useful for inspecting internal infill / specific layer ranges without losing the rest of the model. Chevron buttons step layer-by-layer.
+- **Play / pause + speed picker** — animates extrusion along the toolpath at **1× / 2× / 4× / 8×** selectable speeds. Pauses at end; press play again to restart from `Start`.
+- **Travel-moves toggle** — show / hide G0 (non-extrusion) moves to diagnose stringing / oozing patterns. Persisted in `localStorage`.
+- **Export PNG** — saves the current view (current Start / End range, current travels state) as a PNG with a filename like `<archive>_layers_42-198.png`. Useful for tickets and project notes.
+- **Streaming progress bar** — for big multi-plate gcodes (>20 MB) the loading state shows live `4.2 / 12.5 MB` instead of just spinning, then a separate "Parsing G-code…" state once the bytes have landed.
+- **Theme sync** — same as the 3D tab.
+- **Bed wireframe** auto-detected from the printer model the archive was sliced for (H2D → 350×320×325 mm, X1C/P1S → 256³, A1 → 256³, A1-mini → 180³, etc.). No configuration.
 
-Separate from the bare model preview above, the **G-code preview** renders the actual sliced toolpath layer-by-layer — what the printer will physically extrude — directly in the BamDude shell.
+For source-only archives (project 3MFs exported from BambuStudio without slicing) the modal hides the G-code tab automatically — there's no toolpath to render. The 3D Model tab still works because it renders the geometry, not the toolpath.
 
-- **Open it from the card** — click the layers badge in the bottom-right corner of any archive card, or right-click → **3D Preview**. List view exposes the same action via the row menu.
-- **Plate picker for multi-plate archives** — when the source 3MF carries more than one plate, a picker modal appears first with thumbnails, the first few object names per plate, and the plate's print time. Single-plate archives skip the picker.
-- **Layer slider** on the right scrubs through the build top-to-bottom; the **play** button animates extrusion along the toolpath at **1× / 3× / 10× / 25×** selectable speeds.
-- **Mouse** — left-drag rotates, scroll wheel zooms, right-drag pans.
-- **Bed wireframe is auto-detected** from the printer model the archive was sliced for (H2D → 350×320×325 mm, X1C/P1S → 256³, A1 → 256³, A1-mini → 180³, etc.). No configuration.
-- **Source-only fallback toast** — pure project 3MFs (exported from BambuStudio without slicing) carry no G-code. Clicking 3D Preview on those shows a short toast asking you to slice the file first; the viewer doesn't open. The flat **3D Model Preview** above still works on these because it renders the geometry, not the toolpath.
-
-The viewer URL carries the archive reference, so refreshing the page keeps you in the shell with the viewer re-rendering correctly.
+The viewer URL carries the archive reference, so refreshing the page keeps you in the shell with the viewer re-rendering correctly. The preview reads from the local archive copy — if the 3MF isn't on disk (fallback or cleaned), the preview is unavailable until the file is recovered.
 
 ---
 
