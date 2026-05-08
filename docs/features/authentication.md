@@ -355,18 +355,35 @@ For edge cases (e.g. TLS-terminating load balancer that doesn't set `X-Forwarded
 
 ### Encryption at rest
 
-When `MFA_ENCRYPTION_KEY` is set, TOTP secrets and OIDC client secrets are Fernet-encrypted in the database. Backup codes are pbkdf2-hashed regardless.
+TOTP secrets and OIDC client secrets are Fernet-encrypted in the database. Backup codes are pbkdf2-hashed regardless. **As of 0.4.4, encryption is on by default** -- BamDude bootstraps a key automatically on first start, so a fresh install never silently writes plaintext secrets.
+
+**Key resolution order** (first hit wins):
+
+1. `MFA_ENCRYPTION_KEY` environment variable -- the explicit pin (recommended for multi-host or multi-worker deployments where one key has to be shared).
+2. `DATA_DIR/.mfa_encryption_key` file (mode `0o600`) -- single-host installs typically end up here.
+3. Auto-generated -- on first boot, BamDude creates a fresh Fernet key and writes it to `.mfa_encryption_key`. Atomic create with `O_EXCL` so the mode bits are right from the first byte; never world-readable.
 
 ```ini
-# .env
+# .env (optional -- only set this when you want to pin a specific key)
 MFA_ENCRYPTION_KEY=<base64 32-byte Fernet key>
 ```
 
 !!! tip "Generate a key"
     `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
 
-!!! warning "Plaintext fallback"
-    If `MFA_ENCRYPTION_KEY` is unset, BamDude stores secrets in plaintext and logs a warning at boot. Secrets are **prefix-versioned**, so you can enable encryption later -- existing rows transparently re-encrypt on next read; users don't need to re-enrol.
+!!! info "Status panel"
+    **Settings → Authentication → Security** surfaces a live status card with five severity levels:
+
+    - 🟢 **Green** -- key configured, every secret encrypted.
+    - 🟡 **Amber** -- legacy plaintext rows still exist (will be re-encrypted on next write) **or** the key was auto-generated (back up `DATA_DIR/.mfa_encryption_key` so a future restore on a fresh host can decrypt secrets).
+    - 🔴 **Red** -- decryption broken (key configured but cannot decrypt existing rows -- happens after a key rotation or a cross-deployment restore where the running install holds the wrong key). Recovery: restore the original key file or re-enrol affected users.
+    - ⚫ **Grey** -- not configured at all and no encrypted rows exist.
+
+!!! warning "Backup integration"
+    `.mfa_encryption_key` is bundled into the backup ZIP alongside `bamdude.db`. Restore on a fresh host extracts the key **before** the database swap with `chmod 0o600` -- so a self-contained backup keeps access to encrypted secrets without manual intervention. The restore aborts with a clear 500 if the key write fails (RO disk / EACCES) before the DB is replaced, so a live install can never end up with the wrong-key combination.
+
+!!! note "Legacy install upgrade path"
+    Pre-0.4.4 installs that ran with `MFA_ENCRYPTION_KEY` unset have plaintext rows in the database. On the next startup after the upgrade, the auto-bootstrap generates a key and a one-shot migration re-encrypts those rows in place. Per-row transactions: a single corrupt row doesn't block the others, and the skipped count is surfaced on the status card so you can spot poison rows that need attention.
 
 ### Admin-initiated reset
 
