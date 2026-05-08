@@ -133,6 +133,20 @@ Preset-tiers (cloud / local / standard) backend об'єднує автомати
 
 Для multi-plate 3MF modal вбудовує **inline plate-selector** угорі body, дзеркаля picker плит з Print modal — вертикальний paginator + details-картка. Плита 1 авто-вибирається на load, щоб filament-requirements + presets-запити йшли без блокування на user-interaction; клік по іншій плиті пере-ключає ці запити. **Printer-mismatch warning** з'являється коли вихідний 3MF слайсився під іншу модель принтера ніж обраний профіль — кнопка Slice залишається disabled поки не зміниш профіль, бо CLI слайсера тихо falls-back на embedded-settings джерела замість видавати помилку.
 
+### Слайсерні бандли пресетів (.bbscfg)
+
+Оператори, які тримають єдиний відлагоджений набір printer / process / filament на кожен слайс, можуть один раз імпортувати "Printer Preset Bundle" (`.bbscfg`) з BambuStudio і обирати його у Slice-modal — це повністю замінює резолв cloud / local / standard tier'ів.
+
+**Навіщо бандли** — резолв пресетів має довгий хвіст corner-кейсів, які резолвер ловить на кожен слайс: cloud-пресети за стійким loginом, `# `-префікс який BambuStudio додає для user-clones, "from User"-сентинели в cloud-профілях, dangling `inherits:` посилання після rename. Бандл — це один зазипований снапшот curated триплета на конкретний принтер; ніяких живих резолвів, тільки `bundle_id + printer_name + process_name + filament_names[]` посилається у sidecar за іменами.
+
+**Імпорт** — Settings → Profiles → Slicer API → панель **Slicer Bundles** (видна лише коли `use_slicer_api` ввімкнено, бо upload round-trip'ить через sidecar). Натисни **Upload bundle** і вибери `.bbscfg` експортований з BambuStudio (File → Export → Export Preset Bundle → "Printer preset bundle"). Sidecar дедуплікує uploads за SHA-256-префіксом zip-контенту — повторний upload того ж файлу ідемпотентний. Панель показує кожен імпортований бандл з ім'ям принтера, кількістю process/filament-пресетів і версією; per-row Delete просить confirm перед видаленням.
+
+**Використання у Slice-modal** — коли імпортований хоча б один бандл, у топі modal'а з'являється dropdown **Слайсерний бандл** (над printer / process / filament picks). Вибір "Немає" залишає тебе на оригінальному 3-tier шляху; вибір бандла ховає cloud / local / standard dropdown'и і замінює їх на bundle-scope pickers (process + per-slot filament з вмісту обраного бандла — принтер implicit, бо кожен `.bbscfg` несе рівно один). Submit йде через `SliceRequest.bundle`, і sidecar матеріалізує JSON-триплет зі збереженого бандла за іменами.
+
+**Pin версії sidecar'а** — bundle-ендпоінти живуть у форку orca-slicer-api на bundle-import гілці; запіни відповідний тег docker-образа (або env-URL), щоб роути були доступні. Bundle-dropdown у Slice-modal'і тихо ховає себе, якщо `GET /api/v1/slicer/bundles` повертає `[]` (sidecar offline, не імпортовано бандлів, або build sidecar'а до bundle-support'у) — оператори на старіших sidecar'ах побачать оригінальний layout modal'а без змін.
+
+**3MF embedded-settings fallback** — якщо CLI sidecar'а відмовив на bundle-резолв-триплеті для конкретного 3MF (range-validation reject на corner-case і т.д.), dispatcher fall-back'ить до слайсингу без триплета з embedded-настройками файла (`used_embedded_settings=true` у відповіді). Bundle-aware preview-слайсинг для незакам'янілих project-файлів теж використовує bundle-контекст, тож грами в modal'і збігаються з тим, що насправді нарізає реальний слайс.
+
 ### Індикатори доступності
 
 Здоров'я sidecar'ів виходить на трьох поверхнях, всі шерять один React-Query-кеш + ендпоінт `GET /api/v1/slicer/health/{slicer}` (30 с in-process cache):

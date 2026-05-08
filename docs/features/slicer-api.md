@@ -133,6 +133,20 @@ An **owner filter** above the preset dropdowns (3-state segmented control: All /
 
 For multi-plate 3MFs the modal embeds an **inline plate selector** at the top of its body, mirroring the Print modal's plate picker — a vertical paginator + details card. Plate 1 auto-selects on load so the filament-requirements + presets queries flow without blocking on user interaction; clicking a different plate re-keys those queries. A **printer-mismatch warning** appears when the source 3MF was sliced for a different printer model than the picked profile — the Slice button stays disabled until you switch profiles, since the slicer CLI silently falls back to the source's embedded settings instead of raising an error.
 
+### Slicer Preset Bundles (.bbscfg)
+
+Operators who curate a single matched printer / process / filament triplet for every slice can import a BambuStudio "Printer Preset Bundle" (`.bbscfg`) once and pick it in the Slice modal — replacing the cloud / local / standard tier resolution entirely.
+
+**Why bundles** — preset resolution has a long tail of corner cases the resolver had to chase per slice: cloud presets behind a stale login, the `# `-prefix BambuStudio uses for user-clones, "from User" sentinels in cloud profiles, dangling `inherits:` links after a preset rename. A bundle is a single zipped snapshot of one printer's curated triplet — no live resolution at slice time, just `bundle_id + printer_name + process_name + filament_names[]` sent to the sidecar by name.
+
+**Import** — Settings → Profiles → Slicer API → **Slicer Bundles** panel (only visible when `use_slicer_api` is on, since the upload round-trips through the sidecar). Click **Upload bundle** and pick a `.bbscfg` exported from BambuStudio (File → Export → Export Preset Bundle → "Printer preset bundle"). The sidecar de-duplicates uploads by SHA-256 prefix of the zip content — re-uploading the same file is idempotent. The panel lists every imported bundle with its printer name, process count, filament count, and version; per-row Delete prompts a confirm before removing.
+
+**Use in the Slice modal** — when at least one bundle is imported, a **Slicer bundle** dropdown appears at the top of the modal (above the printer / process / filament picks). Selecting "None" leaves you on the original three-tier path; selecting a bundle hides the cloud / local / standard dropdowns and replaces them with bundle-scoped pickers (process + per-slot filament from the chosen bundle's contents — printer is implicit since each `.bbscfg` carries exactly one). Submit routes through `SliceRequest.bundle` and the sidecar materialises the JSON triplet from the stored bundle by name.
+
+**Sidecar version pinning** — the bundle endpoints ship on the orca-slicer-api fork's bundle-import branch; pin the matching sidecar image tag in `docker-compose.yml` (or the env-var URL) so the routes are reachable. The Slice modal's bundle dropdown silently hides itself when `GET /api/v1/slicer/bundles` returns `[]` (sidecar offline, no bundles imported, or the sidecar build pre-dates bundle support) — operators on older sidecars see the original modal layout unchanged.
+
+**3MF embedded-settings fallback** — if the sidecar's CLI rejects the bundle-resolved triplet for a given 3MF (range-validation reject on a corner case, etc.), the dispatcher falls back to slicing without a triplet using the file's embedded settings (`used_embedded_settings=true` surfaces in the response). Bundle-aware preview slicing for unsliced project files also uses the bundle context, so gram numbers in the modal match what the real print will produce.
+
 ### Reachability indicators
 
 Sidecar health surfaces in three places, sharing one React Query cache + the `GET /api/v1/slicer/health/{slicer}` endpoint (30 s in-process cache):
