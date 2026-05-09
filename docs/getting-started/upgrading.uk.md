@@ -134,7 +134,22 @@ sudo /opt/bamdude/install/update.sh
 
 ---
 
-## :material-database-cog: 4. Огляд міграцій -- що міняє кожна версія
+## :material-cursor-default-click-outline: 4. Процедура оновлення -- In-app апдейтер (Settings → System)
+
+Для native-інсталів найпростіший шлях -- in-app апдейтер. **Settings → System → Check for updates** показує latest реліз; кнопка **Install Update** під ним виконує повну послідовність (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) не виходячи з UI.
+
+Toggles на тій самій панелі:
+
+- **Check for updates automatically** -- вимкни щоб перестати polling-увати GitHub.
+- **Include beta updates** -- показувати `vX.Y.ZbN` релізи теж. За замовчуванням off. Апдейтер поважає або version-name convention, або GitHub-prerelease-флаг -- реліз явно marked-prerelease у GitHub UI теж сховається за цей toggle.
+
+Docker-інсталам in-app `Install Update` відмовлено -- запуск `git fetch` / `pip install` / `npm build` у запущеному контейнері зіпсує image. Замість того панель surface-ить дві бокові секції з resolved-тегом pre-filled: **image-based** (`pull && up -d` з правильним рядком `image:`, з beta-специфічним hint що `:latest` бети не трекає), і **source-build** (`git fetch --tags && git checkout v<tag> && compose build --pull && up -d`). Скопіюй один із блоків залежно від install-shape -- повний reference у [System Info → Update checker](../features/system-info.uk.md#update-checker).
+
+> In-app апдейтер захищений від pre-release tag mismatch, у який 0.4.3-та-раніше тихо потрапляли: клік Install Update на бета-релізі тихо no-op'ив, бо apply path робив hard-reset до `origin/main`, що не несе бета-тег. Виправлено у 0.4.4.
+
+---
+
+## :material-database-cog: 5. Огляд міграцій -- що міняє кожна версія
 
 BamDude трекає застосовані міграції в таблиці `_migrations`. Кожен реліз запускає всі очікуючі версії по порядку при першому завантаженні. Нові інсталяції спочатку запускають `create_all()` (створюючи таблиці з поточних означень моделей), потім `m000` + `m001` пре-проштамповуються як застосовані через bootstrap-крок, і фактично виконуються тільки пізніші міграції.
 
