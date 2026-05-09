@@ -224,6 +224,73 @@ This is the main reason most farm operators choose to run Spoolman alongside Bam
 
 ---
 
+## :material-table-cog: Inventory UI (BamDude-side, Spoolman-backed)
+
+When you run BamDude against Spoolman, the **Inventory page** (`/inventory`) and **Printers page** (`/`) light up a full first-class Spoolman experience: AMS slot assignments live in BamDude's own tables (so the assignment survives reboots and travels in BamDude backups), K-profiles per spool round-trip across BamDude installs that share the same Spoolman backend, and a free-form storage label sits next to every spool. Built on upstream Bambuddy [#1241](https://github.com/maziggy/bambuddy/pull/1241) ported in BamDude **0.4.4**.
+
+### :material-table-row: Three new pieces of state
+
+| Where | What | Why it isn't on Spoolman directly |
+|-------|------|-----------------------------------|
+| `spoolman_slot_assignments` (BamDude DB) | Which Spoolman spool ID lives in `(printer_id, ams_id, tray_id)`. AMS 0..7 + 255 (external feed). One spool per slot. | Spoolman's own `location` is free text — using it as the source of truth for "this spool is in printer X AMS A slot 3" loses structure (e.g. you can't filter inventory by "all spools currently loaded"). The structured table is queryable and gets cleared automatically on slot empty. |
+| `spoolman_k_profile` (BamDude DB) | Pressure-advance + setting_id per `(spoolman_spool_id, printer_id, extruder, nozzle_diameter)`. Single + dual extruder. | A K-profile is bound to physical filament ↔ physical printer + nozzle, not to a Spoolman row alone. Storing it BamDude-side means re-tapping the same Bambu RFID on a different printer doesn't lose the calibration done elsewhere. |
+| `spool.storage_location` (BamDude DB column) | Free-form label like `Drybox 3`, `Shelf A4`, `Workshop / locker 2`. | Mirrors the Spoolman `location` field but lives BamDude-side too so it shows in the Inventory page columns + the spool form even on Spoolman-mode installs. |
+
+The Spoolman `location` field is left untouched on Spoolman's side — operators can still populate it manually from Spoolman's own UI as a free-text label. BamDude's structured assignment table is the source of truth for "what's currently in printer X".
+
+### :material-printer: Printers page — Spoolman-mode slot integration
+
+Every slot kind on the Printers page reads Spoolman state when Spoolman mode is on:
+
+- **Regular AMS slots** (AMS 0..7, tray 0..3) — fill bar, preset name, color swatch, and the hover card "Assigned spool" pill all read from `spoolman_slot_assignments` joined against `spoolman_inventory/spools`. When the slot has no RFID-linked spool, the slot-assignment row drives the fill computation.
+- **HT (high-temperature) slots** — same flow as regular AMS, plus the H2D Ext-R single-tray external slot.
+- **External Spool 254 / 255** — reads from the same assignment table; the slot's hover card shows the assigned spool name + remaining weight + storage location.
+
+Per slot the hover card carries:
+
+| Button | When it appears |
+|--------|-----------------|
+| **Link to Spoolman** | Slot has a Bambu RFID tag, no assignment exists yet, and there's at least one unlinked Spoolman spool whose `extra.tag` matches. |
+| **Manual Link** | Slot has no RFID match (refilled core, third-party spool). Picker shows every unlinked Spoolman spool. |
+| **Assign** | Slot is empty in inventory but operator wants to manually point it at a Spoolman spool (no RFID involved). |
+| **Unassign** | Slot has either a Spoolman SlotAssignment OR a local SpoolAssignment — clears the BamDude-side assignment. |
+| **Open in Spoolman** | Slot is RFID-linked. Opens the spool's Spoolman edit page in a new tab. |
+
+The Link button auto-suppresses when a slot already has either a Spoolman SlotAssignment OR a local SpoolAssignment, so the operator can't accidentally double-bind.
+
+### :material-flash: K-profile auto-reapply on AMS change
+
+When an AMS slot's contents change (RFID re-tap, slot reset, slicer-side `extrusion_cali_sel` issued from another path), BamDude looks up the assigned spool's stored K-profile for the exact `(printer_id, extruder, nozzle_diameter)` triplet. If the printer's live `cali_idx` differs from the stored K-profile's, BamDude re-issues the right `extrusion_cali_sel` over MQTT to restore the K-value the operator chose last time. Without this, firmware would reset the K back to slot index 0 on every re-tap.
+
+Drift detection is bounded — BamDude only re-issues when there's a genuine difference, so the steady-state push doesn't spam the printer.
+
+### :material-storage: Storage location column
+
+`Settings → Filaments` (Inventory page) gains a **Storage location** column shipped on every backend (local-DB inventory + Spoolman). Edit per row inline; the value is stored on `spool.storage_location` and surfaced everywhere the spool is rendered (cards, hover-cards, spool form, search). On Spoolman-mode installs the field is BamDude-local — Spoolman's own `location` field stays for the operator to manage independently if they prefer that flow.
+
+### :material-tag-multiple: Wider RFID UID support
+
+BamDude widens `spool.tag_uid` from 16 to 32 chars on Postgres (SQLite ignores VARCHAR length). Bambu's RFID UIDs are 16 hex chars, but third-party tags (e.g. NTAG216 stickers) carry up to 32 hex chars — the wider column lets you bind those tags to refilled cores without truncation.
+
+### :material-api: API surface
+
+The full Spoolman inventory feature ships under `/api/v1/spoolman/inventory/*` (19 endpoints, all gated on `RequirePermission(INVENTORY_*)`). Highlights worth knowing about for scripting:
+
+- `GET /spoolman/inventory/spools` + `GET /spoolman/inventory/spools/{id}` — list / single spool with BamDude joins (slot assignment, storage location, K-profile counts).
+- `POST /spoolman/inventory/spools` + `POST /spoolman/inventory/spools/bulk` + `PATCH /spoolman/inventory/spools/{id}` — create / bulk-create / update.
+- `POST /spoolman/inventory/spools/{id}/archive` + `/restore` — soft-delete via Spoolman's archive flag.
+- `POST /spoolman/inventory/slot-assignments` + `DELETE /spoolman/inventory/slot-assignments/{id}` — assign / unassign.
+- `GET /spoolman/inventory/slot-assignments` — list-all-enriched (joined with spool data).
+- `POST /spoolman/inventory/spools/{id}/sync-weight` — pull current AMS weight into the spool row.
+- `POST /spoolman/inventory/ams-weights/sync` — bulk sync every assigned slot's weight in one call.
+- `GET /spoolman/inventory/spools/{id}/k-profiles` + `POST /spoolman/inventory/spools/{id}/k-profiles` — per-spool K-profile read / save.
+- `PATCH /spoolman/inventory/filaments/{id}` — rename + propagate `spool_weight` to every spool of that filament (toggle `keep_existing_spools` to cap the cascade).
+- `GET /spoolman/inventory/filaments` + `POST /spoolman/inventory/spools/{id}/link-tag` — picker queries.
+
+Full API contract: [API Reference → Spoolman Inventory](../reference/api.md).
+
+---
+
 ## :material-help-circle: Troubleshooting
 
 **Connection failed**

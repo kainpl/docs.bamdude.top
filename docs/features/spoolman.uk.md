@@ -224,6 +224,73 @@ AMS Lite (наприклад, A1 серія) **не має сенсора ваг
 
 ---
 
+## :material-table-cog: Інвентарний UI (BamDude-сторона, бекенд — Spoolman)
+
+Коли BamDude підключений до Spoolman, **сторінка інвентарю** (`/inventory`) і **сторінка принтерів** (`/`) розгортаються у повноцінний Spoolman-flow: AMS-присвоєння слотів живе у власних таблицях BamDude (присвоєння переживає рестарт і їде разом з бекапами), K-профайли по котушці їдуть між інсталами BamDude, що ділять один Spoolman-бекенд, а вільне сторадж-полe лежить біля кожної котушки. Базується на upstream Bambuddy [#1241](https://github.com/maziggy/bambuddy/pull/1241), портовано в BamDude **0.4.4**.
+
+### :material-table-row: Три нові шари стану
+
+| Де | Що | Чому не на стороні Spoolman |
+|----|-----|-----------------------------|
+| `spoolman_slot_assignments` (БД BamDude) | Який Spoolman spool ID живе в `(printer_id, ams_id, tray_id)`. AMS 0..7 + 255 (зовнішня подача). Один spool на слот. | Власне `location` у Spoolman — це вільний текст; використовувати його як джерело істини для "котушка зараз у слоті 3 AMS A принтера X" втрачає структуру (наприклад, не можна відфільтрувати "усі котушки, зараз завантажені"). Структурна таблиця піддається query і автоматично очищається коли слот спорожнів. |
+| `spoolman_k_profile` (БД BamDude) | Pressure-advance + setting_id по `(spoolman_spool_id, printer_id, extruder, nozzle_diameter)`. Один + два екструдери. | K-профайл прив'язаний до фізичного філамент ↔ фізичний принтер + сопло, не лише до Spoolman-рядка. Зберігання на BamDude-стороні значить, що повторне тапання тієї самої Bambu RFID на іншому принтері не втратить калібрування, зроблене в іншому місці. |
+| `spool.storage_location` (колонка БД BamDude) | Вільний текст типу `Drybox 3`, `Полиця A4`, `Цех / шафа 2`. | Дзеркалить Spoolman-полe `location`, але живе теж BamDude-сторінкою — щоб поле відображалось у колонках сторінки інвентарю + у формі котушки навіть на Spoolman-mode інсталах. |
+
+Spoolman-полe `location` лишається недоторканим зі сторони Spoolman — оператори далі можуть заповнювати його з власного UI Spoolman як вільний текстовий лейбл. Структурна таблиця присвоєнь BamDude — джерело істини для "що зараз у принтері X".
+
+### :material-printer: Сторінка принтерів — Spoolman-mode інтеграція слотів
+
+Кожен тип слота на сторінці принтерів читає Spoolman-стан коли Spoolman-mode увімкнений:
+
+- **Звичайні AMS-слоти** (AMS 0..7, лоток 0..3) — fill bar, ім'я пресета, swatch кольору і "Assigned spool" пілюлька в hover-карті — все читається з `spoolman_slot_assignments` приєднаних до `spoolman_inventory/spools`. Коли в слоті немає RFID-прив'язаної котушки, обчислення fill керується рядком присвоєння.
+- **HT (high-temperature) слоти** — той самий flow, що й звичайні AMS, плюс H2D Ext-R single-tray зовнішній слот.
+- **External Spool 254 / 255** — читає з тієї ж таблиці присвоєнь; hover-карта слота показує ім'я призначеної котушки + залишок ваги + сторадж.
+
+На слот hover-карта несе:
+
+| Кнопка | Коли з'являється |
+|--------|------------------|
+| **Link to Spoolman** | Слот має Bambu RFID-таг, присвоєння ще немає, і є хоч одна непов'язана Spoolman-котушка з `extra.tag`, що співпадає. |
+| **Manual Link** | Слот не має RFID-співпадіння (перезаряджена бобіна, third-party). Пікер показує кожну непов'язану Spoolman-котушку. |
+| **Assign** | Слот пустий в інвентарі, але оператор хоче вручну вказати Spoolman-котушку (без RFID). |
+| **Unassign** | Слот має або Spoolman SlotAssignment, або локальний SpoolAssignment — очищає BamDude-стороннє присвоєння. |
+| **Open in Spoolman** | Слот RFID-прив'язаний. Відкриває Spoolman-сторінку котушки в новій вкладці. |
+
+Кнопка Link авто-приховується коли слот уже має або Spoolman SlotAssignment, або локальний SpoolAssignment — щоб оператор не зміг випадково подвійно прив'язати.
+
+### :material-flash: Авто-перепризначення K-профайлу при зміні AMS
+
+Коли вміст AMS-слота змінюється (повторне RFID-тапання, скид слота, slicer-side `extrusion_cali_sel` зі сторони), BamDude підіймає збережений K-профайл присвоєної котушки для точного triplet'у `(printer_id, extruder, nozzle_diameter)`. Якщо живий `cali_idx` принтера відрізняється від збереженого — BamDude перевидає правильний `extrusion_cali_sel` через MQTT, відновлюючи K-значення, яке оператор обрав минулого разу. Без цього прошивка скидала б K на slot index 0 при кожному ре-тапі.
+
+Drift-detection обмежений — BamDude перевидає тільки коли є справжня різниця, тож steady-state push не спамить принтер.
+
+### :material-storage: Колонка Storage location
+
+`Налаштування → Філаменти` (сторінка інвентарю) отримує колонку **Storage location**, що шипається на будь-якому бекенді (локальна БД + Spoolman). Редагування inline по рядку; значення зберігається в `spool.storage_location` і виводиться скрізь, де рендериться котушка (карти, hover-карти, форма, пошук). На Spoolman-mode інсталах поле — BamDude-локальне; власне `location` Spoolman лишається оператору на самостійне ведення, якщо звичніше.
+
+### :material-tag-multiple: Ширша підтримка RFID UID
+
+BamDude розширює `spool.tag_uid` з 16 до 32 символів на Postgres (SQLite VARCHAR-довжину ігнорує). Bambu RFID UID — 16 hex; third-party таги (наприклад, NTAG216 стікери) несуть до 32 hex — ширша колонка дозволяє прив'язувати такі таги до перезаряджених бобін без обрізки.
+
+### :material-api: API-поверхня
+
+Повний Spoolman-inventory шипається під `/api/v1/spoolman/inventory/*` (19 endpoint'ів, усі gate на `RequirePermission(INVENTORY_*)`). Корисне для скриптів:
+
+- `GET /spoolman/inventory/spools` + `GET /spoolman/inventory/spools/{id}` — list / single з BamDude-приєднаннями (slot assignment, storage_location, лічильники K-профайлів).
+- `POST /spoolman/inventory/spools` + `POST /spoolman/inventory/spools/bulk` + `PATCH /spoolman/inventory/spools/{id}` — створення / bulk / update.
+- `POST /spoolman/inventory/spools/{id}/archive` + `/restore` — soft-delete через Spoolman archive-флаг.
+- `POST /spoolman/inventory/slot-assignments` + `DELETE /spoolman/inventory/slot-assignments/{id}` — присвоїти / зняти.
+- `GET /spoolman/inventory/slot-assignments` — list-all з даними котушок.
+- `POST /spoolman/inventory/spools/{id}/sync-weight` — підтягнути поточну AMS-вагу в рядок котушки.
+- `POST /spoolman/inventory/ams-weights/sync` — bulk-sync ваги по всіх присвоєних слотах одним запитом.
+- `GET /spoolman/inventory/spools/{id}/k-profiles` + `POST /spoolman/inventory/spools/{id}/k-profiles` — per-spool K-профайл read/save.
+- `PATCH /spoolman/inventory/filaments/{id}` — переіменування + propagate `spool_weight` на кожну котушку цього філамента (`keep_existing_spools` обмежує каскад).
+- `GET /spoolman/inventory/filaments` + `POST /spoolman/inventory/spools/{id}/link-tag` — пікер-запити.
+
+Повний контракт API: [API Reference → Spoolman Inventory](../reference/api.md).
+
+---
+
 ## :material-help-circle: Траблшутинг
 
 **Connection failed**
