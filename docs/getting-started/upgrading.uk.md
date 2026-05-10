@@ -134,9 +134,9 @@ sudo /opt/bamdude/install/update.sh
 
 ---
 
-## :material-cursor-default-click-outline: 4. Процедура оновлення -- In-app апдейтер (Settings → System)
+## :material-cursor-default-click-outline: 4. Процедура оновлення -- In-app апдейтер (сторінка Інформація)
 
-Для native-інсталів найпростіший шлях -- in-app апдейтер. **Settings → System → Check for updates** показує latest реліз; кнопка **Install Update** під ним виконує повну послідовність (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) не виходячи з UI.
+Для native-інсталів найпростіший шлях -- in-app апдейтер. У боковому меню пункт **Інформація** (route `/system`) → **Check for updates** показує latest реліз; кнопка **Install Update** під ним виконує повну послідовність (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) не виходячи з UI.
 
 Toggles на тій самій панелі:
 

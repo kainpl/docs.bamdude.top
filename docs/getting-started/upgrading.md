@@ -134,9 +134,9 @@ sudo /opt/bamdude/install/update.sh
 
 ---
 
-## :material-cursor-default-click-outline: 4. Upgrade procedure — In-app updater (Settings → System)
+## :material-cursor-default-click-outline: 4. Upgrade procedure — In-app updater (Information page)
 
-For native installs the easiest path is the in-app updater. **Settings → System → Check for updates** shows the latest release; **Install Update** (the button below it) does the full sequence (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) without leaving the UI.
+For native installs the easiest path is the in-app updater. The sidebar **Information** entry (route `/system`) → **Check for updates** shows the latest release; **Install Update** (the button below it) does the full sequence (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) without leaving the UI.
 
 Toggles in the same panel:
 
@@ -336,7 +336,7 @@ Both registries publish the same tags. GHCR is the preferred source (built in CI
 After the service is back up:
 
 1. **`/system/health` returns 200.**
-2. **Settings → System → version** reflects the new release.
+2. **Information page → version** reflects the new release.
 3. **Connect to a printer that was working pre-upgrade** — should reconnect within 30 seconds; check the printer card on the Printers page.
 4. **Open the latest few archives** — thumbnails should still render, the 3D preview should work, the printer-icon click should jump to the owning printer.
 5. **Trigger a queue dispatch on two printers at once** — the bottom-right toast should show both jobs progressing in parallel. The DB-insert phase is briefly serialised (startup-lock), but FTP upload + start happen concurrently. See [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour).

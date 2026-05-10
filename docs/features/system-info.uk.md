@@ -1,11 +1,11 @@
 ---
 title: System Info і діагностика
-description: Сторінка Settings → System — версія, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, rebuild search index, update checker
+description: Сторінка Інформація — версія, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, rebuild search index, update checker
 ---
 
 # System Info і діагностика
 
-Сторінка Settings → System — це адмін-діагностична поверхня BamDude — version metadata, DB row counts, storage breakdown, log viewer, debug-logging toggle, support bundle generator і кнопки maintenance (optimize DB, rebuild search index, check for updates).
+Сторінка **Інформація** (бокова панель → Інформація, route `/system`) — це адмін-діагностична поверхня BamDude — version metadata, DB row counts, storage breakdown, log viewer, debug-logging toggle, support bundle generator і кнопки maintenance (optimize DB, rebuild search index, check for updates).
 
 ## :material-information: Що це
 

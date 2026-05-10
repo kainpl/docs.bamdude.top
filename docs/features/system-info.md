@@ -1,11 +1,11 @@
 ---
 title: System Info & Diagnostics
-description: Settings → System page — version, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, search-index rebuild, update checker
+description: Information page — version, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, search-index rebuild, update checker
 ---
 
 # System Info & Diagnostics
 
-The Settings → System page is BamDude's admin diagnostics surface — version metadata, database row counts, storage breakdown, the log viewer, debug-logging toggle, support bundle generator, and the maintenance buttons (optimize DB, rebuild search index, check for updates).
+The **Information** page (sidebar → Information, route `/system`) is BamDude's admin diagnostics surface — version metadata, database row counts, storage breakdown, the log viewer, debug-logging toggle, support bundle generator, and the maintenance buttons (optimize DB, rebuild search index, check for updates).
 
 ## :material-information: What it is
 
