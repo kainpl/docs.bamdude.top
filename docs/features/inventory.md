@@ -171,6 +171,15 @@ These two actions look adjacent in the slot menu but do different things. Use th
 
 Assigning a spool is the simplest workflow — it handles tracking + printer configuration in one step. Use Configure Slot directly only when you want to override settings or set up a slot without an inventory spool.
 
+### Pre-load assignment (weigh-then-assign)
+
+You can assign a spool to a slot **before** loading the filament — useful when you've just weighed a fresh spool and want to track it from the very first print. When the target slot is empty (`tray_type` blank in the AMS data), BamDude:
+
+- Persists the `SpoolAssignment` row immediately so the inventory page reflects the pairing.
+- **Defers** the `ams_filament_setting` + `extrusion_cali_sel` MQTT publish — Bambu firmware silently drops both commands for unloaded slots (there's no filament context for the K-profile / pressure-advance index to attach to), and pushing them anyway would close the modal with a misleading "Assigned!" while the slicer kept showing default-PLA forever.
+- Surfaces this in the confirmation toast: *"Spool assigned. The slot will be configured when you insert the filament."*
+- Replays the full configuration automatically the moment the slot transitions to loaded. The "loaded" signal is the AMS state code (`state == 11`, "filament fed to extruder"), not the tray's material string — so 3rd-party spools without readable RFID (which report state=11 but keep `tray_type=""`) trigger the replay too. After the replay the assignment fingerprint is stamped, so subsequent AMS pushes don't re-fire.
+
 ## :material-water-percent: Automatic consumption tracking
 
 Every print BamDude dispatches reads the per-filament `weight` from the source 3MF. On `print_complete`, the dispatched grams are deducted from the spool that was assigned to the matching AMS slot at the time the print started:
