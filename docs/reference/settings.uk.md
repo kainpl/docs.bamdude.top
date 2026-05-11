@@ -81,6 +81,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
+| `log_retention_days` | `30` | Скільки днів ротованих архівів `bamdude.log.*.gz` тримати до видалення. Діапазон 1–365. Застосовується при старті та на кожній опівнічній ротації. Див. [System info → Ротація логів](../features/system-info.md#-логів). |
 | `bed_cooled_threshold` | `35.0` | Температура столу (°C), при якій стріляє нотифікація `bed_cooled`. |
 
 ## :material-bolt: Energy & cost

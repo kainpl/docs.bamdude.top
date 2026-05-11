@@ -18,6 +18,12 @@ The maintenance tracker helps you:
 - **Get notified** when maintenance is due
 - **Log** detailed maintenance history with notes
 
+### Page layout
+
+The Maintenance page renders all printers in a 3-column responsive grid (1 column on mobile, 2 on tablet, 3 on desktop). The in-header toolbar carries search-by-name, **Status** filter (All / Overdue / Due Soon / OK), **Location** filter (auto-populated from the `storage_location` field on each printer), **Hide offline** toggle, and a sort selector (Name / Status / Hours / Location). When a Location filter is active, printer cards are grouped under that location header — the same `storage_location` value is the grouping key everywhere across BamDude (Stats, Inventory).
+
+Each printer card is split into three segmented tabs: **Status** (current due/warning counts + per-task progress bars), **History** (last 5 logged completions for that printer, in-card), and **Settings** (per-task interval overrides + custom-type management + Hide-default-types toggles). The tab selection persists per-printer in localStorage so the operator can pin the History view on the machines they monitor closely without losing it on the others.
+
 ---
 
 ## :material-format-list-checks: Maintenance Types
