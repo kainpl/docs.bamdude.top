@@ -72,7 +72,6 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
 | Access Token | Personal Access Token. Stored encrypted at rest. |
 | Branch | Target branch (default `main`). |
 | API base URL | Self-hosted GitLab only. |
-| Allow insecure HTTP | For self-hosted Gitea/Forgejo/GitLab without HTTPS. |
 | Schedule | `hourly` / `daily` / `weekly`, or off. |
 
 ### :material-account-key: Provider setup walkthroughs
@@ -105,7 +104,6 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
     3. **Configure in BamDude**:
         - Provider: `gitlab`.
         - For self-hosted GitLab, also fill **API base URL**.
-        - If hosted locally without HTTPS, tick **Allow insecure HTTP**.
         - Repository URL: e.g. `https://gitlab.com/username/bamdude-backup`.
         - Enter the PAT.
         - Click **Test Connection**.
@@ -124,11 +122,13 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
         - Click **Generate token**.
     3. **Configure in BamDude**:
         - Provider: `gitea`.
-        - Repository URL: e.g. `https://gitea.example.com/username/bamdude-backup`.
-        - If hosted locally without HTTPS, tick **Allow insecure HTTP**.
+        - Repository URL: e.g. `https://gitea.example.com/username/bamdude-backup` (the URL validator accepts plain `http://` for local self-hosted instances on the same shape).
         - Specify the correct **Branch** (`main`, `master`, etc.).
         - Enter the PAT.
         - Click **Test Connection**.
+
+    !!! note "Gitea-shape API divergences from GitHub (handled internally)"
+        BamDude's `GiteaBackend` overrides three GitHub-incompatible response shapes Gitea introduced over time: list-shaped `GET /git/refs/heads/{branch}` response (single match still returns an array), the empty-repo Git Data API write refusal (every blob POST 404 until a commit exists — bootstrap routes through the Contents API in one transaction), and the wrapped Commit schema in Gitea 1.24+ (`commit.tree.sha` instead of GitHub's flat `tree.sha`). All transparent to operators — listed here only as a reference for self-hosted deployments noting Gitea version compatibility (1.18+ verified, 1.24+ verified).
 
 === ":material-git: Forgejo"
 
@@ -139,10 +139,12 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
         - Click **Generate Token**.
     3. **Configure in BamDude**:
         - Provider: `forgejo`.
-        - Repository URL: e.g. `https://forgejo.example.com/username/bamdude-backup`.
-        - If hosted locally without HTTPS, tick **Allow insecure HTTP**.
+        - Repository URL: e.g. `https://forgejo.example.com/username/bamdude-backup` (plain `http://` accepted on the same shape for local instances).
         - Enter the PAT.
         - Click **Test Connection**.
+
+    !!! note "API-compatible with Gitea"
+        Forgejo's API is currently `/api/v1`-compatible with Gitea, and BamDude's `ForgejoBackend` inherits all of `GiteaBackend`'s behaviour. If the two projects diverge in a future Forgejo release, override-by-override patches in `forgejo.py` will surface here.
 
 !!! warning "Bambu Cloud login required for K-profiles + Cloud profiles"
     Backing up *Cloud profiles* and *K-profiles* requires an active Bambu Cloud login. Sign in via **Profiles → Cloud Profiles** before scheduling a Git backup that includes those categories — otherwise the relevant directories will be empty in the repo.

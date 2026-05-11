@@ -219,6 +219,8 @@ Each provider subscribes independently. Toggling an event off on one provider do
 | `print_start` | Print starts on a printer |
 | `first_layer_complete` | Layer 1 finishes (catch first-layer fails fast) |
 | `print_progress` | At configurable progress milestones |
+| `print_paused` | Printer transitioned RUNNING→PAUSE — body carries a normalised `{reason}` (door open / filament runout / presence-check / file-pause-command / AI defect / plate-objects / paused by user / HMS-other) plus the underlying `{hms_code}` for forensics. Default ON for new providers + included in the default Telegram-chat event set. |
+| `print_resumed` | Printer transitioned PAUSE→RUNNING — body carries `{paused_for}` (mm:ss) computed from the matching pause edge. Default ON for new providers; opt-in for Telegram chats. |
 | `print_complete` | Print finishes successfully |
 | `print_failed` | HMS error / hardware fault stopped the print |
 | `print_stopped` | User-initiated stop |

@@ -59,6 +59,12 @@ TRUSTED_PROXY_IPS=127.0.0.1
 # externally-reachable URL — even on hybrid, point this at the HTTPS one
 # so links shared via Telegram / email work from anywhere.
 APP_URL=https://bamdude.example.com
+
+# Optional. Comma-separated list of origins (scheme://host[:port]) allowed
+# to embed BamDude inside an <iframe>. Default = empty (strict: no cross-
+# origin embedding). Set this when you want to embed BamDude inside Home
+# Assistant's Webpage panel — see "Home Assistant Webpage panel" below.
+# TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123
 ```
 
 The `Settings → System → External URL` field in the UI is the same value as `APP_URL` env. Whichever is set takes precedence in the order: DB setting > env var > `http://localhost:5173` fallback.
@@ -151,6 +157,52 @@ The pragmatic split most operators use:
 | External | `https://bamdude.example.com` | nginx, public DNS — HSTS is fine |
 
 If you really want a hostname (not IP) on the LAN too, use a *different* one — `bamdude.lan` or `bamdude.home` — and make sure no client ever sees HTTPS at that name.
+
+---
+
+## :material-folder-network: Path-prefixed deployments (subpath)
+
+If you serve BamDude under a subpath — `https://example.com/bamdude/` (Traefik with a `PathPrefix(/bamdude)` rule, nginx `location /bamdude/`, Cloudflare Tunnel with path-routed services) — the SPA bundle since 0.4.3 emits **relative asset URLs** (`./assets/...`, `./manifest.json`, `./img/...`, `./sw-register.js`), so the browser resolves every script / stylesheet / icon against whatever path the document loaded from. No `BASE_URL` env var to tweak.
+
+What this means in practice:
+
+- **Strip the prefix at the proxy.** BamDude itself always sees the unprefixed path — your reverse proxy must rewrite `/bamdude/foo` to `/foo` before forwarding (Traefik: `StripPrefix` middleware; nginx: `proxy_pass http://bamdude:8000/` with the trailing slash).
+- **Service worker auto-scopes.** `sw-register.js` registers `sw.js` relatively, so the SW scope pins to the subpath you loaded the SPA from.
+- **Push subscriptions and PWA install** work as long as the prefix is stable across reloads. Don't rotate the prefix per-deploy; the SW caches the URLs it was served at.
+- **API client uses an absolute origin.** `api/client.ts` issues `/api/v1/...` relative to the page origin, so the same prefix-strip rule applies to API calls — your proxy needs to forward both `/<prefix>/api` and `/<prefix>/assets`. Don't try to host BamDude's API under a different path than its SPA.
+
+If you load the page and see a blank white screen with a `MIME type` console error, your proxy isn't stripping the prefix correctly — the browser is hitting your proxy's outer routing for `/<prefix>/assets/...` instead of BamDude's `/assets/...` mount.
+
+---
+
+## :material-home-assistant: Home Assistant Webpage panel embedding
+
+By default BamDude blocks every cross-origin iframe — `X-Frame-Options: SAMEORIGIN` plus `Content-Security-Policy: frame-ancestors 'none'`. That's the safe choice for internet-exposed deployments, but it also means embedding the BamDude UI inside Home Assistant's **Webpage** dashboard panel always fails: HA on `:8123` and BamDude on `:8000` are different origins to the browser, and `SAMEORIGIN` is port-strict.
+
+To opt into iframe embedding from your HA instance, set `TRUSTED_FRAME_ORIGINS` to the origin (`scheme://host[:port]`) HA serves itself from:
+
+```bash
+TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123
+```
+
+When set:
+
+- `X-Frame-Options` is dropped entirely (the legacy `ALLOW-FROM <url>` syntax is deprecated and inconsistent across browsers — modern browsers honour CSP `frame-ancestors`, which takes precedence).
+- The CSP directive becomes `frame-ancestors 'self' <list>` on every CSP-bearing route. `'self'` is always included, so same-origin embedding never breaks even if you forget your own origin in the list.
+
+Multiple origins are comma-separated:
+
+```bash
+TRUSTED_FRAME_ORIGINS=http://homeassistant.local:8123,https://ha.example.com
+```
+
+Validation rules (invalid entries are dropped at startup with a warning, **not** failing the boot):
+
+- Only `http(s)` schemes — `ftp://`, `file://`, `javascript:` are rejected.
+- No paths, query strings, or fragments — only scheme + host + port.
+- No wildcards in the host (`*.example.com` would defeat the allowlist).
+
+In Home Assistant, configure the Webpage card with the BamDude URL it can reach (your reverse-proxy URL or the LAN URL) and you're done — no other HA-side knobs needed.
 
 ---
 

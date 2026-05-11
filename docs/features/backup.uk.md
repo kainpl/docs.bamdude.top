@@ -72,7 +72,6 @@ Legacy `bambuddy-backup-*.zip` файли (від upstream-інсталяцій)
 | Access Token | Personal Access Token. Зберігається зашифрованим at rest. |
 | Гілка | Цільова гілка (за замовчуванням `main`). |
 | API base URL | Тільки для self-hosted GitLab. |
-| Allow insecure HTTP | Для self-hosted Gitea/Forgejo/GitLab без HTTPS. |
 | Schedule | `hourly` / `daily` / `weekly` або off. |
 
 ### :material-account-key: Покрокові гайди по провайдерах
@@ -105,7 +104,6 @@ Legacy `bambuddy-backup-*.zip` файли (від upstream-інсталяцій)
     3. **Налаштуй у BamDude**:
         - Provider: `gitlab`.
         - Для self-hosted GitLab заповни **API base URL**.
-        - Якщо хостиш локально без HTTPS, постав **Allow insecure HTTP**.
         - Repository URL: наприклад `https://gitlab.com/username/bamdude-backup`.
         - Введи PAT.
         - Натисни **Test Connection**.
@@ -124,11 +122,13 @@ Legacy `bambuddy-backup-*.zip` файли (від upstream-інсталяцій)
         - Натисни **Generate token**.
     3. **Налаштуй у BamDude**:
         - Provider: `gitea`.
-        - Repository URL: наприклад `https://gitea.example.com/username/bamdude-backup`.
-        - Якщо локально без HTTPS, постав **Allow insecure HTTP**.
+        - Repository URL: наприклад `https://gitea.example.com/username/bamdude-backup` (URL-валідатор приймає `http://` теж — для self-hosted локальних інстансів на тій же формі).
         - Вкажи правильну **Branch** (`main`, `master`, тощо).
         - Введи PAT.
         - Натисни **Test Connection**.
+
+    !!! note "Розбіжності API Gitea від GitHub (обробляються внутрішньо)"
+        `GiteaBackend` BamDude перекриває три GitHub-несумісні форми відповідей, які Gitea ввела з часом: list-shape `GET /git/refs/heads/{branch}` (один матч все одно повертає масив), refusal Git Data API на пустий репо (кожен blob POST 404 поки немає коміта — bootstrap йде через Contents API в одній транзакції), і wrapped Commit schema у Gitea 1.24+ (`commit.tree.sha` замість плоского `tree.sha` GitHub'а). Все прозоро для оператора — згадано тут лише як референс для self-hosted деплоїв з зазначенням сумісних версій (1.18+ і 1.24+ перевірені).
 
 === ":material-git: Forgejo"
 
@@ -139,10 +139,12 @@ Legacy `bambuddy-backup-*.zip` файли (від upstream-інсталяцій)
         - Натисни **Generate Token**.
     3. **Налаштуй у BamDude**:
         - Provider: `forgejo`.
-        - Repository URL: наприклад `https://forgejo.example.com/username/bamdude-backup`.
-        - Якщо локально без HTTPS, постав **Allow insecure HTTP**.
+        - Repository URL: наприклад `https://forgejo.example.com/username/bamdude-backup` (плоска `http://` теж приймається для локальних інстансів на тій же формі).
         - Введи PAT.
         - Натисни **Test Connection**.
+
+    !!! note "API-сумісний з Gitea"
+        API Forgejo наразі `/api/v1`-сумісний з Gitea, і `ForgejoBackend` BamDude успадковує всю поведінку `GiteaBackend`. Якщо два проєкти розійдуться у майбутніх релізах Forgejo, override-by-override патчі в `forgejo.py` з'являться тут.
 
 !!! warning "Bambu Cloud login обов'язковий для K-profiles + Cloud profiles"
     Для бекапу *Cloud profiles* і *K-profiles* потрібен активний Bambu Cloud login. Авторизуйся через **Profiles → Cloud Profiles** перед тим, як планувати Git-бекап з цими категоріями — інакше відповідні директорії будуть пусті в репо.

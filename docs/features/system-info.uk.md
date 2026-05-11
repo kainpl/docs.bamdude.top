@@ -1,11 +1,11 @@
 ---
 title: System Info і діагностика
-description: Сторінка Settings → System — версія, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, rebuild search index, update checker
+description: Сторінка Інформація — версія, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, rebuild search index, update checker
 ---
 
 # System Info і діагностика
 
-Сторінка Settings → System — це адмін-діагностична поверхня BamDude — version metadata, DB row counts, storage breakdown, log viewer, debug-logging toggle, support bundle generator і кнопки maintenance (optimize DB, rebuild search index, check for updates).
+Сторінка **Інформація** (бокова панель → Інформація, route `/system`) — це адмін-діагностична поверхня BamDude — version metadata, DB row counts, storage breakdown, log viewer, debug-logging toggle, support bundle generator і кнопки maintenance (optimize DB, rebuild search index, check for updates).
 
 ## :material-information: Що це
 
@@ -134,20 +134,53 @@ Bundle — правильна штука, щоб приклеїти до [GitHub
 
 ## :material-update: Update checker
 
-`GET /api/v1/updates/check` poll-ить GitHub Releases і порівнює latest-tag до `APP_VERSION`. Поведінка:
+`GET /api/v1/updates/check` poll-ить GitHub Releases і порівнює latest-tag до `APP_VERSION`. Два setting keys кермують поведінкою:
 
 | Setting key | Ефект |
 |---|---|
 | `check_updates` (default `true`) | Коли `false`, endpoint повертає `{update_available: false, message: "Update checks are disabled"}` без походу на GitHub. |
-| `include_beta_updates` (default `false`) | Коли `true`, prerelease-и (`X.Y.ZbN`) — eligible matches. Коли `false`, тільки stable-релізи. |
+| `include_beta_updates` (default `false`) | Коли `true`, prerelease-и (`X.Y.ZbN`) — eligible matches. Коли `false`, тільки stable-релізи. Detection — dual-signal: реліз вважається prerelease якщо тег матчить `bN`/`betaN`/`alphaN`/`rcN` **АБО** якщо marked-prerelease у GitHub UI. |
 
-Endpoint surface-ить badge у сайдбарі, коли update available; **auto-install не робить**. Для Docker-інсталів (target deployment) апдейтись через pull нового image:
+Check-response несе `is_prerelease`, `is_docker`, `latest_version` — UI рендерить правильні install-команди per-channel + per-install-shape.
 
-```bash
-docker compose pull bamdude && docker compose up -d bamdude
+### In-app apply (native-інстали)
+
+`POST /api/v1/updates/apply` робить фактичний git checkout + dependency install. Поведінка з **0.4.4**:
+
+- Приймає опційний `tag_name` body field — frontend передає те, що тільки що отримав з `/check`, щоб apply ударив exact-реліз який юзер бачив.
+- Резолвить у `vX.Y.Z[bN]` git-ref через `_resolve_git_ref()` (працює і з `v`-prefixed і з bare формами).
+- Виконує `git fetch origin --tags --prune --force` потім `git reset --hard refs/tags/<ref>`. Працює для **будь-якого tag незалежно від гілки** — pre-fix хардкодив `git reset --hard origin/main`, що тихо no-op'ило бета-інстали (бо бета-теги на `dev`, не `main`).
+- Встановлює Python-deps (`pip install -r requirements.txt`) і ребілдить frontend-бандл (`npm install && npm run build`) коли npm доступний.
+
+Endpoint потребує `settings:update`. Запуск з **Settings → System → Install Update** коли update показано як available.
+
+### Docker-інстали
+
+Docker-інсталам `/apply` відмовляє з `is_docker: True` — запуск `git fetch` / `pip install` / `npm build` всередині запущеного контейнера зіпсує image. Замість того UI surface-ить дві бокові секції з конкретними командами що використовують resolved `latest_version` + `is_prerelease`:
+
+**Image-based (типове)** — більшість операторів запускає `image: kainpl/bamdude:<tag>` у compose-файлі:
+
+```yaml
+# docker-compose.yml
+image: kainpl/bamdude:0.4.5b1     # для бет — явний пін обов'язковий
+# АБО
+image: kainpl/bamdude:latest      # для stable (latest трекає тільки main)
 ```
 
-Є також `POST /api/v1/updates/apply` endpoint для in-app оновлень, але цей path призначений для bare-metal / systemd-інсталів і не входить у supported Docker workflow.
+```bash
+docker compose pull && docker compose up -d
+```
+
+Hint-текст у UI явно пояснює чому `:latest` не підтягне бету — `:latest` Docker tag трекає `main`, бети тегаються на `dev` і шипляться як `:X.Y.ZbN` без `:latest`-промоушна.
+
+**Source-build** — для операторів які склонували репо і використовують `build:` у compose:
+
+```bash
+git fetch origin --tags --prune --force
+git checkout v0.4.5b1
+docker compose build --pull
+docker compose up -d
+```
 
 Це BamDude self-update path. Для **printer firmware** оновлень див. [Firmware Updates](firmware-updates.md) — повністю окремий flow.
 

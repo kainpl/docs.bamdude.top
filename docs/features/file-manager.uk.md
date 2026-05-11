@@ -210,6 +210,7 @@ Page-level drop захищено правом `library:upload` — у в'юве�
 - **Видимість вкладок з `file_tags`, а не з розширення файлу.** Сліцений `.gcode.3mf` (у якого обидва розширення) показує тільки вкладку G-code — його вбудована сітка вже растерізована в gcode-лінії, рендерити її ще раз під "3D Model" — дублікат. Нерізаний `project` 3MF або голий `geometry` mesh показує тільки 3D-вкладку. Вкладки питаються через `GET /library/files/{id}/capabilities` (дзеркало давнього архівного ендпоінта).
 - **Per-plate G-code picker для мульти-плейт бібліотечних файлів.** Файли бібліотеки — для browse, тож G-code-вкладка отримує picker плит, що пере-ключає URL gcode-preview, коли перемикаєш плиту. Архіви тримають single-plate-поведінку, бо вони — запис одного конкретного друку.
 - **Вайрфрейм друкарського об'єму** — 3D-в'ювер малює напівпрозорий бокс, що відповідає принтеру, для якого файл нарізано (читається з `printer_settings`). G-code preview уже малював схожий бокс; тепер однаковий візуальний натяк на обох вкладках.
+- **Спільні фічі модалки** — підтримка OBJ, wireframe / X-ray-перемикач, theme-synced canvas, двохрукоятковий layer slider (Start + End), травел-перемикач, layer-play на швидкостях 1× / 2× / 4× / 8×, streaming-прогрес завантаження і Export-as-PNG. Повний breakdown — [Архіви → 3D + G-code перегляд](archiving.uk.md#material-cube-scan-3d-g-code); library використовує той самий `<ModelViewerModal>` verbatim.
 
 ## :material-view-gallery: Per-plate gallery (multi-plate 3MF)
 

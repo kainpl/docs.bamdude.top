@@ -75,8 +75,8 @@ BamDude має власний інвентар фізичних котушок �
 | **Label Weight** | Чиста вага як надрукована на котушці (default 1000 г; AMS-HT cardboard core ~250 г). |
 | **Quantity (bulk)** | 1–100 котушок створюються в одній операції. Корисно для "купив 5-pack PLA" — кожна котушка створюється з ідентичним material / color / weight / cost. |
 | **Color** | Visual picker з shade + opacity + finish picker-ами. Recent-colors-стрічка + brand-палітри. |
-| **Extra colours** | Опційно. Comma-separated list з 2–8 hex-стопів (напр. `EC984C,#6CD4BC,A66EB9,D87694`) для multi-colour котушок. Малює swatch як gradient-стрічку; з **Effect = Multicolor** стає color-wheel pie. Формат як на 3dfilamentprofiles.com, тож paste-and-go працює. |
-| **Effect** | Опційний rendering hint. Накладається поверх color-swatch — **не** змінює slicer-profile. Повна enumerator-list: surface-effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*), sheen-варіанти (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*), structural-варіанти (*Gradient*, *Dual Color*, *Tri Color*, *Multicolor*, *Silk Dual*, *Glow Dual*, *Matte Dual*). |
+| **Extra colours** | Опційно. Comma-separated list з 2–8 hex-стопів (напр. `EC984C,#6CD4BC,A66EB9,D87694`) для multi-colour котушок. Малює swatch по-різному залежно від значення **Effect** нижче — плавний blend, hard-split смуги або color-wheel pie. Формат як на 3dfilamentprofiles.com, тож paste-and-go працює. |
+| **Effect** | Накладається поверх color-swatch — **не** змінює slicer-profile. Surface-effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*) малюють CSS-overlay; sheen-варіанти (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*) дають м'який sheen; structural-варіанти задають форму color-layer — *Gradient* = плавний 135° blend, *Dual Color* / *Tri Color* = hard-split горизонтальні смуги (кожен стоп у власному сегменті, без діагонального blend), *Multicolor* = conic-gradient color-wheel. Форма має live-preview pane під dropdown'ом, тож ви бачите ефект до збереження. |
 
 #### Quick Add (Stock) режим
 
@@ -250,11 +250,57 @@ Painted, dual-color і silk-пластики — це не одне hex-знач
 !!! tip "Не реінтроʼдьюс хардкод-таблиці кольорів"
     BamDude свідомо викинув хардкод `tray_id_name` / hex-таблиці, які неминуче mislabel-или third-party пластики. Каталог — єдина точка істини, навіть коли спокусливо "shortcut-нути" резолвлення кольору десь в коді.
 
+## :material-printer: Друкові PDF-наліпки
+
+Знайти конкретну котушку у шафі з 50 залишками — наклей на кожну наліпку. У хедері Inventory є кнопка **Друк наліпок…**, що відкриває multi-select picker, попередньо заповнений котушками за поточним фільтром. Кожна картка інвентарю та рядок таблиці теж має per-spool printer-іконку для one-shot друку наліпки.
+
+Чотири готових шаблони:
+
+| Шаблон | Розмір | Аркуш | Примітки |
+|---|---|---|---|
+| **AMS holder** | 30 × 15 мм | По одній на сторінку | Підходить для популярного Makerworld AMS Filament Label Holder (model 752566). Без QR — на цьому розмірі немає місця на swatch + текст + QR без обрізання spool ID. |
+| **Box label** | 62 × 29 мм | По одній на сторінку | Розмір під Brother PT/QL та Dymo small-label stock. Несе QR + storage location. |
+| **Avery L7160** | 38.1 × 63.5 мм | A4, 21 на аркуш | Європейський формат. Несе QR. |
+| **Avery 5160** | 25.4 × 66.7 мм | US Letter, 30 на аркуш | Американський формат. Несе QR. |
+
+Кожна наліпка має кольоровий swatch (з multi-color смугами для котушок з `extra_colors`), бренд, матеріал/subtype, відображувану назву котушки, **spool ID** як killer-поле для розрізнення 8 котушок "PLA White" одна від одної, і (де розмір дозволяє) QR-код, що deep-лінкує на `/inventory?spool=<id>` — скан з телефона стрибає прямо в BamDude на рядок цієї котушки.
+
+### Назва на наліпці слідує шаблону
+
+Жирний центральний рядок на наліпці використовує той самий **шаблон відображувальної назви котушки**, що й сама сторінка Inventory (Settings → Inventory → Spool display name template). Тож якщо ти задав шаблон `{brand} {material} {color_name} (#{id})` для списку — саме це й буде друкуватися на кожній наліпці. 16 placeholder-ів (`{brand}`, `{material}`, `{color_name}`, `{remaining_pct}`, `{filament_diameter}`, `{lot}`, …) задокументовані в тій самій Settings-панелі, де редагується шаблон.
+
+### Як резолвиться QR-deeplink
+
+QR кодує `<base>/inventory?spool=<id>`. Base резолвиться в порядку:
+
+1. Налаштування `external_url` (Settings → Server → External URL) — preferred, щоб скан з телефону потрапив на твій публічний URL BamDude, а не на внутрішню адресу.
+2. Змінна оточення `APP_URL`.
+3. Scheme + host поточного запиту (те, що у браузері в момент експорту).
+
+Для phone-scan workflow задай `external_url` один раз — і кожна наліпка з кожного шаблону друкуватиме правильний deeplink.
+
+### UX picker-а для великих бібліотек
+
+Modal масштабується для великого інвентарю:
+
+- **Пошук** — substring по composed display name + бренд + `#ID`.
+- **Material filter chips** — виводяться з видимих котушок.
+- **Обрати всі видимі / Зняти видимі / Скинути все** — selections survive при зміні фільтра (additive), тож можна звузити до "PLA only", обрати всі, потім звузити до "PETG", і додати ще.
+
+### Server-side rendering
+
+PDF-и рендеряться на сервері через ReportLab + qrcode (додані як deps). Чистий Python, без headless-браузера, output байт-ідентичний у всіх браузерах, аркуші Avery вирівнюються до <0.1 мм. Endpoints (обидва gated на `inventory:read`):
+
+- `POST /inventory/labels` — local-DB котушки.
+- `POST /spoolman/labels` — Spoolman-backed котушки (тільки якщо Spoolman-інтеграція ввімкнена).
+
+Обидва приймають `{spools: [{id, display_name?}], template}` і повертають `application/pdf` через streaming response. Cap — 500 котушок на запит.
+
 ## :material-account-multiple: Дозволи
 
 | Permission | Ефект |
 |---|---|
-| `inventory:read` | Переглянути список котушок і AMS-призначення. |
+| `inventory:read` | Переглянути список котушок і AMS-призначення; **рендерити PDF-наліпки**. |
 | `inventory:create` | Додати нові котушки. |
 | `inventory:update` | Редагувати поля котушки, призначати слоти, ставити spool-specific K-profile overrides. |
 | `inventory:delete` | Видаляти котушки (також видаляє пов'язані assignments). |

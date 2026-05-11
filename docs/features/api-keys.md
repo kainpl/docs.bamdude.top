@@ -42,10 +42,14 @@ prefix              random body
 | **Can queue** | Allow this key to add jobs to the print queue (`POST /queue`) |
 | **Can control printer** | Allow start / pause / stop / cancel commands |
 | **Can read status** | Allow live printer state, archive lists, statistics — the read surface |
+| **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
 | **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. Calls against any other printer return 403 |
 | **Expires at** | Optional ISO timestamp. After that, the key is rejected even if it isn't revoked |
 
 The create response carries the full `key` field — **copy it before closing the dialog**. Subsequent reads of the row will only show the `bb_…` prefix.
+
+!!! info "Cloud / Legacy badges"
+    UI-created keys are stamped with the creating user's id, so a key shown with the **Cloud** badge can spend that user's Bambu Cloud token. Pre-0.4.3 keys imported from older installs are ownerless and surface a **Legacy** badge — they cannot be promoted to `Use Bambu Cloud` (the toggle is rejected at save time without an owner). Re-create such keys under your user account to enable cloud spend.
 
 !!! tip "Principle of least privilege"
     Don't blanket-tick all three flags. A Home Assistant dashboard usually needs only `can_read_status`. A queue-poster from your slicer needs `can_queue` + `can_read_status` and *not* `can_control_printer`. Separate keys per consumer make rotation painless and the audit trail readable.

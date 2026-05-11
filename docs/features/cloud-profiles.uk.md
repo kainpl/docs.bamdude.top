@@ -126,9 +126,11 @@ Field-definition каталог `GET /api/v1/cloud/fields/{filament|process|prin
 
 ## :material-power-plug: Headless / API key access
 
-API keys, створені в BamDude, можуть дзвонити cloud routes так само, як будь-які інші. Постав `can_read_status`, якщо ключ читає presets / девайси, і стандартні `X-API-Key` правила (див. [API Keys](api-keys.md)). Cloud-side дзвінки бігли б проти **юзера-власника ключа… але BamDude API keys не user-owned сьогодні** — тож `cloud:*` дзвінки з API key падають у global Settings-table cred bag, якщо такий є, і 401, якщо нема.
+API keys, створені в BamDude, можуть дзвонити cloud routes так само, як будь-які інші. Постав `can_read_status`, якщо ключ читає presets / девайси, і стандартні `X-API-Key` правила (див. [API Keys](api-keys.md)).
 
-Для mixed-user install-ів логінься через UI спочатку; для single-user / auth-disabled — global Settings bag природне сховище.
+Створені через UI API keys **стампляться id юзера-творця**, тож cloud-side дзвінки бігтимуть проти per-user Bambu Cloud-токена цього юзера — за умови, що при створенні ключа ввімкнено тогл **Use Bambu Cloud**. Без цього opt-in `cloud:*` маршрути відмовляються від виклику, замість того щоб мовчки витрачати cloud-token власника. Pre-0.4.3 ownerless ключі (значок "Legacy" у списку API keys) у cloud-spend не підняти — при збереженні з `user_id IS NULL` тогл відхиляється. Щоб мігрувати, перестворіть ключ під своїм юзер-аккаунтом.
+
+Для сетапів без per-user Bambu Cloud (single-user / auth-disabled), global Settings cred-bag — природне сховище, і Cloud-флагнуті ключі все одно падають туди як last resort.
 
 ---
 

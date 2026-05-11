@@ -217,6 +217,20 @@ Spool overrides (`spool_kprofile`) are governed by `inventory:update` — same s
 
 ---
 
+## :material-cog-refresh: RFID re-tap and live calibration preservation
+
+When an AMS slot reads a Bambu RFID tag and the matching spool has a K-profile registered for the **same printer + nozzle diameter**, BamDude pushes that profile's calibration index to the slot. So any time you re-insert a calibrated spool, the slot snaps back to the correct K immediately — you don't have to re-pick it from the printer screen.
+
+If the spool has **no stored K-profile** for that specific printer + nozzle combo (you've calibrated this filament on Printer A but just inserted it into Printer B for the first time, or you've changed the nozzle and haven't re-calibrated yet), BamDude preserves the slot's **currently-selected calibration** instead of letting the firmware silently snap it to slot 0. The exact behaviour:
+
+- The slot's live `cali_idx` (whatever profile was already loaded — manually picked from the printer screen, or carried over from the previous spool in the same slot) is re-issued to the AMS so it sticks.
+- If the slot has no calibration loaded at all (`cali_idx < 0`), no command is sent — the firmware default behaviour stands.
+- A diagnostic log line records `No stored K-profile for spool … — preserved live cali_idx=N` so the choice is observable in Settings → System → Diagnostics.
+
+Why this matters: prior versions left the slot un-touched on re-tap when no stored profile existed, which on some firmware revisions produced a silent regression to slot 0 that operators only noticed mid-print as a quality drop. The new behaviour is a strict no-op for slots that already have your manually-picked calibration, but a corrective re-issue for the rare slots that would have regressed.
+
+---
+
 ## :material-alert: Troubleshooting
 
 **Fetch from Printer fails**

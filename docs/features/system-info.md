@@ -1,11 +1,11 @@
 ---
 title: System Info & Diagnostics
-description: Settings → System page — version, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, search-index rebuild, update checker
+description: Information page — version, DB stats, storage breakdown, log viewer, debug-logging toggle, support bundle, optimize-DB, search-index rebuild, update checker
 ---
 
 # System Info & Diagnostics
 
-The Settings → System page is BamDude's admin diagnostics surface — version metadata, database row counts, storage breakdown, the log viewer, debug-logging toggle, support bundle generator, and the maintenance buttons (optimize DB, rebuild search index, check for updates).
+The **Information** page (sidebar → Information, route `/system`) is BamDude's admin diagnostics surface — version metadata, database row counts, storage breakdown, the log viewer, debug-logging toggle, support bundle generator, and the maintenance buttons (optimize DB, rebuild search index, check for updates).
 
 ## :material-information: What it is
 
@@ -134,20 +134,53 @@ There is also **no "Restart application" button** — the upstream Bambuddy conc
 
 ## :material-update: Update checker
 
-`GET /api/v1/updates/check` polls GitHub Releases and compares the latest tag to `APP_VERSION`. Behaviour:
+`GET /api/v1/updates/check` polls GitHub Releases and compares the latest tag to `APP_VERSION`. Two settings keys steer it:
 
 | Setting key | Effect |
 |---|---|
 | `check_updates` (default `true`) | When `false`, the endpoint returns `{update_available: false, message: "Update checks are disabled"}` without hitting GitHub. |
-| `include_beta_updates` (default `false`) | When `true`, prereleases (`X.Y.ZbN`) are eligible matches. When `false`, only stable releases are surfaced. |
+| `include_beta_updates` (default `false`) | When `true`, prereleases (`X.Y.ZbN`) are eligible matches. When `false`, only stable releases are surfaced. Detection is dual-signal: a release is treated as a prerelease if its tag matches `bN`/`betaN`/`alphaN`/`rcN` **OR** if it's marked prerelease in the GitHub UI. |
 
-The endpoint surfaces a badge in the sidebar when an update is available; **it does not auto-install**. For Docker installs (the target deployment), update by pulling the new image:
+The check response carries `is_prerelease`, `is_docker`, and `latest_version` so the UI can render the right install guidance per channel + per install shape.
 
-```bash
-docker compose pull bamdude && docker compose up -d bamdude
+### In-app apply (native installs)
+
+`POST /api/v1/updates/apply` does the actual git checkout + dependency install. Behaviour as of **0.4.4**:
+
+- Accepts an optional `tag_name` body field — the frontend passes back what it just got from `/check` so apply hits the exact release the user saw.
+- Resolves to a `vX.Y.Z[bN]` git ref via `_resolve_git_ref()` (handles both `v`-prefixed and bare forms).
+- Runs `git fetch origin --tags --prune --force` followed by `git reset --hard refs/tags/<ref>`. This works for **any tag regardless of branch** — pre-fix it hardcoded `git reset --hard origin/main` which silently no-op'd beta installs (because beta tags live on `dev`, not `main`).
+- Installs Python deps (`pip install -r requirements.txt`) and rebuilds the frontend bundle (`npm install && npm run build`) when npm is available.
+
+The endpoint requires `settings:update`. Trigger from **Settings → System → Install Update** when an update is shown as available.
+
+### Docker installs
+
+Docker installs reject `/apply` with `is_docker: True` — running `git fetch` / `pip install` / `npm build` inside a live container would corrupt the image. Instead, the UI surfaces two side-by-side blocks with concrete commands using the resolved `latest_version` + `is_prerelease`:
+
+**Image-based (typical)** — most operators run `image: kainpl/bamdude:<tag>` in their compose file:
+
+```yaml
+# docker-compose.yml
+image: kainpl/bamdude:0.4.5b1     # for betas — explicit pin required
+# OR
+image: kainpl/bamdude:latest      # for stable (latest only tracks main)
 ```
 
-There is also a `POST /api/v1/updates/apply` endpoint for in-app updates, but that path is intended for bare-metal / systemd installs and is not part of the supported Docker workflow.
+```bash
+docker compose pull && docker compose up -d
+```
+
+The hint text in the UI explicitly explains why `:latest` won't pick up a beta — the `:latest` Docker tag tracks `main`, betas are tagged on `dev` and ship as `:X.Y.ZbN` only.
+
+**Source-build** — for operators who cloned the repo and use `build:` in compose:
+
+```bash
+git fetch origin --tags --prune --force
+git checkout v0.4.5b1
+docker compose build --pull
+docker compose up -d
+```
 
 This is the BamDude self-update path. For **printer firmware** updates, see [Firmware Updates](firmware-updates.md) — completely separate flow.
 

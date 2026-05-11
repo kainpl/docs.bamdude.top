@@ -263,6 +263,7 @@ nav:
       - System Info: features/system-info.md
       - PostgreSQL: features/postgresql.md
       - Backup & Restore: features/backup.md
+      - Bug Report: features/bug-report.md
 
   - Reference:
     - reference/index.md

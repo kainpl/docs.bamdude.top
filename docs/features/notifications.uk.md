@@ -219,6 +219,8 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 | `print_start` | Друк запустився на принтері |
 | `first_layer_complete` | Завершився перший шар (швидко ловить first-layer фейли) |
 | `print_progress` | На налаштовних milestone-ах прогресу |
+| `print_paused` | Принтер перейшов RUNNING→PAUSE — у тілі нормалізована `{reason}` (двері відкриті / філамент скінчився / presence-check / G-code pause / AI defect / об'єкти на платі / paused by user / HMS-other) плюс `{hms_code}` для forensics. За замовчуванням **ON** для нових провайдерів + входить у дефолтний event-набір Telegram-чату. |
+| `print_resumed` | Принтер перейшов PAUSE→RUNNING — у тілі `{paused_for}` (mm:ss) обчислений по delta між edge'ами. За замовчуванням **ON** для нових провайдерів; opt-in для Telegram-чатів. |
 | `print_complete` | Друк завершився успішно |
 | `print_failed` | HMS-помилка / hardware-фейл зупинили друк |
 | `print_stopped` | Користувач зупинив друк |

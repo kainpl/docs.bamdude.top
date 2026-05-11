@@ -134,7 +134,22 @@ sudo /opt/bamdude/install/update.sh
 
 ---
 
-## :material-database-cog: 4. Migration overview — what each version changes
+## :material-cursor-default-click-outline: 4. Upgrade procedure — In-app updater (Information page)
+
+For native installs the easiest path is the in-app updater. The sidebar **Information** entry (route `/system`) → **Check for updates** shows the latest release; **Install Update** (the button below it) does the full sequence (`git fetch --tags`, `git reset --hard refs/tags/<release>`, `pip install`, `npm run build`) without leaving the UI.
+
+Toggles in the same panel:
+
+- **Check for updates automatically** — turn off to stop GitHub polling entirely.
+- **Include beta updates** — surface `vX.Y.ZbN` releases too. Off by default. The updater respects either the version-name convention OR GitHub's prerelease flag, so a release explicitly marked prerelease in the GitHub UI is also gated behind this toggle.
+
+Docker installs reject the in-app `Install Update` button — running `git fetch` / `pip install` / `npm build` inside a live container would corrupt the image. Instead, the panel surfaces two side-by-side blocks with the resolved tag pre-filled: **image-based** (`pull && up -d` with the right `image:` line, including a beta-specific hint that `:latest` doesn't track betas), and **source-build** (`git fetch --tags && git checkout v<tag> && compose build --pull && up -d`). Copy-paste either block depending on your install shape — full reference in [System Info → Update checker](../features/system-info.md#update-checker).
+
+> The in-app updater is hardened against the pre-release tag mismatch that 0.4.3-and-earlier silently fell into: clicking Install Update on a beta release used to no-op because the apply path hard-reset to `origin/main`, which doesn't carry the beta tag. Fixed in 0.4.4.
+
+---
+
+## :material-database-cog: 5. Migration overview — what each version changes
 
 BamDude tracks applied migrations in the `_migrations` table. Each release runs every pending version in order on first boot. New installs run `create_all()` first (creating tables from the current model definitions), then `m000` + `m001` are pre-stamped as applied via the bootstrap step, and only later migrations actually execute.
 
@@ -321,7 +336,7 @@ Both registries publish the same tags. GHCR is the preferred source (built in CI
 After the service is back up:
 
 1. **`/system/health` returns 200.**
-2. **Settings → System → version** reflects the new release.
+2. **Information page → version** reflects the new release.
 3. **Connect to a printer that was working pre-upgrade** — should reconnect within 30 seconds; check the printer card on the Printers page.
 4. **Open the latest few archives** — thumbnails should still render, the 3D preview should work, the printer-icon click should jump to the owning printer.
 5. **Trigger a queue dispatch on two printers at once** — the bottom-right toast should show both jobs progressing in parallel. The DB-insert phase is briefly serialised (startup-lock), but FTP upload + start happen concurrently. See [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour).

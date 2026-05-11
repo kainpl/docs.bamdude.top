@@ -36,6 +36,25 @@ A VP runs in **exactly one mode**. The mode is set per-VP and validated server-s
 
 ---
 
+## :material-broadcast: Live-state mirroring in non-proxy modes
+
+When a non-proxy VP (`file_manager` / `print_queue` / `auto_queue`) is configured with a **target printer**, the slicer talking to the VP sees the **real printer's live state** — not a frozen idle stub. AMS slot detection, FTS routing, nozzle-type identification, per-filament k-profiles, and the live camera all work as if the slicer were talking to the printer directly. You keep BamDude's queue / archive / dispatch features and gain slicer-as-remote ergonomics in the same VP.
+
+How it works (operator-relevant subset):
+
+- BamDude's existing per-printer MQTT subscription is reused — no second session on the printer, so firmware in-flight budget is unaffected.
+- The VP caches the printer's last `push_status` and `info.get_version` and serves a near-byte-identical copy to the slicer. Only the upload-state fields BamDude owns (`gcode_state`, `gcode_file`, `prepare_percent`, `subtask_name`) are overridden.
+- Slicer-issued commands (AMS load / unload, xcam toggles, `extrusion_cali_get` k-profile fetches, …) are forwarded to the real printer. `project_file` / `gcode_file` still terminate locally — the file lives on BamDude.
+- Camera streaming uses a raw TCP passthrough on `<bind_ip>:322` → `printer:322` (same approach proxy mode uses).
+
+!!! warning "Same access code on the VP and its target"
+    BambuStudio authenticates RTSPS with whatever access code is in its slicer profile — the VP and its target printer must share the same access code, or the camera button will hit "LAN connection failed". MQTT and FTPS work either way. Set both via **Settings → Virtual Printer → Edit** and **Settings → Printers → Edit**.
+
+!!! info "Proxy mode unaffected"
+    Proxy mode owns its own RTSP / FTP / MQTT proxies and routes everything end-to-end at the TCP layer — there's no caching layer to mirror. The behaviour described above is opt-in for the three non-proxy modes only.
+
+---
+
 ## :material-cog: Setup
 
 **Settings → Virtual Printer → Add Virtual Printer**:
