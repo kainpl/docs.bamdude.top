@@ -171,6 +171,22 @@ These two actions look adjacent in the slot menu but do different things. Use th
 
 Assigning a spool is the simplest workflow — it handles tracking + printer configuration in one step. Use Configure Slot directly only when you want to override settings or set up a slot without an inventory spool.
 
+### Stock forecasting + Logistics view
+
+A third inventory tab next to **Table** / **Cards** that turns the raw `spool_usage_history` table into reorder intelligence:
+
+- **Daily-consumption rate** — exponentially-weighted moving average with a 30-day half-life, computed per SKU group (material / subtype / brand). One spool of recent prints weighs more than a year-old burst.
+- **Days-left projection** — current stock divided by daily rate, with a 95%-service-level safety stock factored in (`σ × √lead_time × 1.65`).
+- **Reorder-by date** — when to place the order so the new spool arrives *before* you run out, given the configured lead time.
+- **Per-SKU expanded editors** — lead-time-days, safety-margin (dual-unit days|grams), alert-snooze toggle. Each setting persists across sessions in the `filament_sku_settings` table; SKUs with no settings yet fall back to the global lead-time floor (Settings → Inventory → **Forecast global lead time**).
+- **Top-5 chart** — stacked-area projection of the five fastest-burning SKUs with ROP reference lines. Timeframe toggle: 1W / 1M / 6M.
+- **Shopping list (Logistics view)** — separate panel below the forecast table. Add SKUs to a `pending → purchased → received` queue. Marking an item *received* auto-creates `category='Stock'` spools via bulk-create (uses the average historical spool weight). CSV export + clear-all helpers.
+- **Notification toggles** — two new notification-provider events appear in **Settings → Notifications → Inventory Alerts**: *Reorder Alert* (SKU crossed reorder point) and *Stock Break Alert* (will run out before lead time). **These toggles are currently visual-only on the provider** — the forecast panel surfaces alerts in-app; a future scheduled aggregator can fire them via the existing templates without a schema change.
+
+The forecast tab is **hidden in Spoolman mode** because BamDude proxies the spool list there and doesn't populate the per-print usage history. To use forecasting, run BamDude in local-inventory mode.
+
+Permissions: `inventory:forecast_read` (see the panel) and `inventory:forecast_write` (modify SKU settings + shopping list) are added to existing groups automatically on upgrade — viewers get read, operators get both.
+
 ### Pre-load assignment (weigh-then-assign)
 
 You can assign a spool to a slot **before** loading the filament — useful when you've just weighed a fresh spool and want to track it from the very first print. When the target slot is empty (`tray_type` blank in the AMS data), BamDude:
