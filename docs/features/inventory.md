@@ -51,6 +51,14 @@ The toolbar above the list combines a free-form search box with chip strips and 
 
 Spools are owned by the user that created them. `inventory:create` is required to add new ones; `inventory:read` lets a Viewer see the list.
 
+### Copy Spool — duplicate an existing row
+
+Every spool row (cards view + table view + grouped rows) has a **Copy** button next to Edit. Clicking it opens the spool form pre-filled with everything from the source row except `weight_used`, which resets to **0** — useful when you've just bought a second / third / nth spool of an existing filament. The header reads **Copy Spool** instead of Edit Spool, the footer button reads **Copy Spool** instead of Save, and Quick Add (the bulk `quantity` toggle) is hidden so you don't accidentally produce N copies under the singular-title modal. The source row is untouched; saving creates a brand-new spool with its own `id`. Spool form is printer-agnostic, so the same Copy button works in Spoolman mode — the existing create-mutation routing handles both paths.
+
+### Slicer Preset dropdown shows every per-printer / per-nozzle variant
+
+The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
+
 ### Per-spool category & low-stock override
 
 Two extra optional fields on the spool form fine-tune both filtering and alerting:
@@ -254,16 +262,17 @@ Painted, dual-colour, and silk filaments aren't one hex value — they're a grad
 
 Find a specific spool in a closet of 50 partials by sticking a label on each one. The Inventory header has a **Print labels…** action that opens a multi-select picker pre-loaded with the currently filtered spools; every inventory card and table row also has a per-spool printer icon for one-shot label printing.
 
-Four pre-built templates:
+Five pre-built templates:
 
 | Template | Size | Sheet | Notes |
 |---|---|---|---|
 | **AMS holder** | 30 × 15 mm | One per page | Fits the popular Makerworld AMS Filament Label Holder (model 752566). Drops the QR — at this size there's no room for swatch + text + QR without truncating the spool ID. |
+| **Box 40 × 30** | 40 × 30 mm | One per page | Common DK / Brother roll size; fits between the AMS holder and the 62×29 box label. Roomy enough for swatch + QR + full text column including hex code — good for filament-bag and storage-bin labels. |
 | **Box label** | 62 × 29 mm | One per page | Sized for Brother PT/QL and Dymo small-label stock. Carries QR + storage location. |
 | **Avery L7160** | 38.1 × 63.5 mm | A4, 21 per sheet | EU sheet stock. Carries QR. |
 | **Avery 5160** | 25.4 × 66.7 mm | US Letter, 30 per sheet | US sheet stock. Carries QR. |
 
-Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand, material/subtype, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
+Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand in **bold** at the top so it reads at arm's length, material/subtype, the colour **hex code** (`#RRGGBB`, alpha-stripped, uppercase) so near-identical colour+material spools are still tellable apart from up close, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
 
 ### Display name follows your template
 

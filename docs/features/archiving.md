@@ -470,7 +470,11 @@ Designer attribution is searchable via the archive search box, so "all prints by
 
 ## :material-card-text: Archive Cards & Actions
 
-Each card shows the thumbnail, filename, printer, duration, status badge, filament, tags, and project badge. The project badge is clickable — it jumps to the project's detail page (the click doesn't bubble up to open the archive modal).
+Each card shows the thumbnail, filename, printer / model line, duration, status badge, filament, tags, and project badge. The project badge is clickable — it jumps to the project's detail page (the click doesn't bubble up to open the archive modal).
+
+The printer / model line is **uniform across provenance**: archives tied to a real BamDude printer used to render `H2D-1 GCODE …` while slicer-only uploads rendered `Sliced for X1C GCODE …` — two different shapes on the same line. The `Sliced for ` prefix is gone, so both now read as `<name-or-model> [bed-icon] GCODE <hash>` and scan identically regardless of whether the archive came from a live printer or a slicer-only upload.
+
+The **build-plate icon** sits next to the printer / model name and reflects the plate the 3MF was sliced for (Cool / Cool SuperTack / Engineering / High Temp / Textured PEI / Smooth PEI), with the full plate name in the hover tooltip — so you don't have to open the source 3MF in a slicer just to read the bed setting before a re-print. The icon is populated from `curr_bed_type` in the 3MF's `slice_info.config` (per-plate, authoritative) with a fallback to `project_settings.config` for older 3MF shapes; archives created before this feature shipped show no icon until you hit the per-archive **Rescan** action, which re-parses the on-disk 3MF.
 
 | Button | Description |
 |--------|-------------|
@@ -480,6 +484,9 @@ Each card shows the thumbnail, filename, printer, duration, status badge, filame
 | :material-download: | Download the 3MF file. Disabled if `file_path` is empty. |
 | :material-pencil: | Edit archive details (tags, notes, project, cost, photos). |
 | :material-cloud-download: | Retry 3MF download. Only visible when `file_path = ""`. |
+
+!!! tip "Action button labels hide on narrow card widths"
+    Reprint / Schedule / Slice labels appear only at viewport ≥ 1280 px where the responsive grid (`md:2 lg:3 xl:4`) gives cards real horizontal room. Below that the buttons render icon-only and the existing `title=` attribute serves as the hover tooltip — fixes the previous `"Re..."` / `"Sc..."` label-truncation on narrow viewports.
 
 ---
 
