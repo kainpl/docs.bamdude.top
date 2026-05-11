@@ -313,6 +313,32 @@ The earlier "one job at a time across the whole farm" gate that landed in mid-0.
 
 ---
 
+## :material-cancel: Cancel during dispatch — what happens to the queue
+
+Cancelling a print **while the dispatcher is still uploading the 3MF or sending `start_print`** (the brief window between you clicking Print Now / queue dispatch firing and the printer reporting `RUNNING`) is treated as an explicit operator action — not a dispatch failure.
+
+| Slice | Queue item status | Queue state | Archive status |
+|---|---|---|---|
+| Cancel arrives during FTP upload / MQTT start | `cancelled` | `paused` | `cancelled` |
+| Dispatcher hits an actual error (FTP timeout, start-print refused) | `failed` | `error` | `failed` |
+| Cancel arrives after print is `RUNNING` on the printer | n/a (handled by stop-print path) | running | per stop-print outcome |
+
+The semantic distinction matters: the queue moving to `paused` (not `error`) tells the operator that **nothing failed** — the rest of the queue is fine, they decided to abort one item. They can inspect the remaining items and resume the queue when ready. Before this distinction was wired in, a cancel during the dispatch window left the queue in `error` with the just-cancelled row marked `failed`, which was misleading.
+
+Cancelled queue rows live alongside failed and skipped rows in the queue card's **Issues** section so they don't clutter the live `pending` list but stay visible for retry.
+
+### :material-restart: Restart a cancelled item
+
+Every cancelled item in the Issues section gets a **Restart** button (`RotateCcw` icon) that:
+
+- Resets the item's `status` back to `pending`.
+- Re-appends it to the **end** of the queue (so it doesn't jump ahead of anything you queued in the meantime).
+- Leaves the archive trail intact — the old cancelled archive stays for forensics; a fresh `printing` archive is created when the item actually dispatches.
+
+The same `POST /api/v1/print-queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items — it now accepts both `failed` and `cancelled` as source states. The bulk-restart from the Issues section uses `POST /api/v1/print-queue/bulk` with the same retry verb.
+
+---
+
 ## :material-history: Queue history & archives
 
 In 0.4.0 the live queue and the durable history were split apart (migration `m019`).

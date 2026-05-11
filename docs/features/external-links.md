@@ -9,9 +9,11 @@ External Links let an admin add custom items to the BamDude sidebar that point a
 
 ## :material-link: What it is
 
-A small admin-managed table of `(name, url, icon, open_in_new_tab, sort_order)` rows. Anyone with `external_links:read` permission sees the rendered links in the sidebar; only users with `external_links:create` / `external_links:update` / `external_links:delete` can manage them. URLs are validated to start with `http://` or `https://` (other schemes like `mailto:` or `ssh://` are rejected by the backend validator).
+A small admin-managed table of `(name, url, icon, open_in_new_tab, nav_group, sort_order)` rows. Anyone with `external_links:read` permission sees the rendered links in the sidebar; only users with `external_links:create` / `external_links:update` / `external_links:delete` can manage them. URLs are validated to start with `http://` or `https://` (other schemes like `mailto:` or `ssh://` are rejected by the backend validator).
 
-There is **no per-group visibility** in BamDude's external_links model — every authenticated user with `external_links:read` sees the same list. If you need group-scoped links, use a dashboard tool with its own auth and link to it.
+There is **no per-user visibility scoping** on external_links — every authenticated user with `external_links:read` sees the same list. If you need group-scoped links, use a dashboard tool with its own auth and link to it.
+
+Each link belongs to a **sidebar group** (`nav_group`) — Operations / Workshop / Resources / Care / System / Links — so admin-defined links slot into the same six-bucket grouping as the built-in nav instead of getting tacked onto the bottom of the sidebar as a flat list. The `links` (`external`) bucket sits **before** `system`, so new links are visible without scrolling.
 
 ## :material-plus-circle: Adding a link
 
@@ -22,9 +24,10 @@ There is **no per-group visibility** in BamDude's external_links model — every
 | **Name** | 1–50 chars. Shown next to the icon in the sidebar. |
 | **URL** | 1–500 chars. Must start with `http://` or `https://`. |
 | **Icon** | Either pick a [Lucide](https://lucide.dev/icons/) icon by name from the icon picker, or upload a custom image. |
+| **Sidebar group** | Dropdown: Operations / Workshop / Resources / Care / System / Links. Defaults to `external` (the Links bucket) for new entries — they show up just before the System group instead of getting buried under all other nav items. |
 | **Open in new tab** | When `true`, the link opens with `target="_blank"` so BamDude stays in the current tab. Leave off for in-app navigation (only useful if the URL is on the same origin as BamDude). |
 
-New links are appended at the bottom of the list (`sort_order` is auto-set to `max(existing) + 1`).
+New links are appended at the bottom of the chosen group (`sort_order` is auto-set to `max(existing in group) + 1`).
 
 !!! tip "Lucide vs Material icon names"
     The upstream Bambuddy wiki referred to mkdocs-material icon names — BamDude actually uses [Lucide](https://lucide.dev/icons/) icon names (because the frontend imports `lucide-react`). If you don't see your icon, check the Lucide catalog, not Material Design Icons.
@@ -44,7 +47,7 @@ Switching back from a custom icon to a Lucide preset deletes the uploaded file f
 
 ## :material-sidebar: Sidebar position and behaviour
 
-External links render **below the built-in BamDude nav** (Dashboard, Printers, Library, Archives, Inventory, etc.) in a separate section. There is no toggle to hide them per user — if a link is in the table, every authenticated user with `external_links:read` sees it.
+External links render **inside their `nav_group` bucket** in the sidebar, sharing the same group as related built-in entries. The default `external` group sits between `care` and `system` — so a newly-created link is visible immediately, not buried at the bottom of the sidebar. There is no toggle to hide them per user — if a link is in the table, every authenticated user with `external_links:read` sees it.
 
 | Behaviour | What happens |
 |---|---|
@@ -55,7 +58,13 @@ External links render **below the built-in BamDude nav** (Dashboard, Printers, L
 
 ## :material-sort: Reordering
 
-Drag-and-drop in **Settings → External Links** to change the order. The frontend sends a `PUT /api/v1/external-links/reorder` with the new ID list; the backend assigns `sort_order = index` to each. The new order takes effect on the next page load.
+Drag-and-drop on the **sidebar itself** (or in **Settings → External Links**) changes the order. The drag is **group-constrained**:
+
+- **Within a group** — drag any item up or down inside its own group. The drop indicator only appears on valid targets (same group); cross-group drops are silently rejected.
+- **Whole groups** — grab a group's header row (shows a `GripVertical` handle on hover in the expanded sidebar) and drag the entire group up or down as a block. Order persists in the same `sidebarOrder` `localStorage` entry as the per-item order.
+- **Cross-group moves** — to move a link to a different group, edit the link and change `nav_group` (drag-and-drop won't do this on purpose, so you can't accidentally scramble the grouping).
+
+The frontend sends a `PUT /api/v1/external-links/reorder` with the new ID list; the backend assigns `sort_order = index` to each. The new order takes effect immediately.
 
 ## :material-pencil: Editing and deleting
 
@@ -133,7 +142,7 @@ All endpoints live under `/api/v1/external-links` and require the matching permi
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/external-links/` | List all links, ordered by `sort_order` then `id`. |
-| `POST` | `/external-links/` | Create a link. Body: `{name, url, icon, open_in_new_tab}`. |
+| `POST` | `/external-links/` | Create a link. Body: `{name, url, icon, open_in_new_tab, nav_group}`. `nav_group` defaults to `external` when omitted. |
 | `GET` | `/external-links/{id}` | Fetch one link. |
 | `PATCH` | `/external-links/{id}` | Update one or more fields. |
 | `DELETE` | `/external-links/{id}` | Delete a link (and its custom icon file, if any). |
