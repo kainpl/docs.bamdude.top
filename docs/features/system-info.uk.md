@@ -91,6 +91,14 @@ Multi-line entry-ї (особливо stack traces) пересобираютьс
 !!! note "DEBUG-level logging gated"
     Helper `_apply_log_level` пінить `httpcore` і `httpx` на WARNING навіть у DEBUG mode — full request URL logging would leak bearer-токени в Discord / generic-webhook URL-ах. `paho.mqtt` перемикається на DEBUG, коли toggle on — там і живе більшість корисного printer-protocol detail.
 
+### Ротація + retention логів
+
+Активний файл логу (`bamdude.log`) ротується опівночі (за локальним часом) — учорашні логи пакуються в `bamdude.log.YYYY-MM-DD.gz` і зберігаються згідно з `log_retention_days` (за замовчуванням **30**). При старті BamDude сканує `<log_dir>/bamdude.log.*.gz` і видаляє все, старше за retention-налаштування.
+
+Сторінка system-info показує панель **Архіви логів** зі списком усіх gzip-архівів на диску — для кожного: дата, розмір, **Завантажити** (стримить `.gz`), і **Видалити** (двостадійно: перший клік ставить деструктивну кнопку «озброєною», другий — таки видаляє). У парі з кнопкою **Обрізати** на активному файлі логу панель дає повний контроль за днями без заходу в контейнер.
+
+`log_retention_days` живе в **Налаштування → Система** (діапазон 1–365) — оператори з `settings:update` можуть змінювати в інтерфейсі. Налаштування також застосовується на наступну ротацію опівночі, тож зменшення з 30 до 7 звільняє диск на наступному добовому тіку.
+
 ## :material-lifebuoy: Support bundle
 
 `GET /api/v1/support/bundle` створює ZIP-файл з:

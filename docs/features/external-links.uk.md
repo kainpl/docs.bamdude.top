@@ -9,9 +9,11 @@ External Links дозволяють адміну додати в сайдбар 
 
 ## :material-link: Що це
 
-Невеличка адмін-керована таблиця рядків `(name, url, icon, open_in_new_tab, sort_order)`. Будь-хто з permission-ом `external_links:read` бачить рендер у сайдбарі; тільки користувачі з `external_links:create` / `external_links:update` / `external_links:delete` можуть ними керувати. URL валідується — повинен починатися з `http://` або `https://` (інші схеми типу `mailto:` чи `ssh://` бекенд відкидає).
+Невеличка адмін-керована таблиця рядків `(name, url, icon, open_in_new_tab, nav_group, sort_order)`. Будь-хто з permission-ом `external_links:read` бачить рендер у сайдбарі; тільки користувачі з `external_links:create` / `external_links:update` / `external_links:delete` можуть ними керувати. URL валідується — повинен починатися з `http://` або `https://` (інші схеми типу `mailto:` чи `ssh://` бекенд відкидає).
 
-В моделі external_links **немає per-group visibility** — кожен авторизований користувач з `external_links:read` бачить той самий список. Якщо треба group-scoped посилання, використовуй якийсь dashboard-tool з власною авторизацією і клади посилання на нього.
+На external_links **немає per-user visibility-скоупу** — кожен авторизований користувач з `external_links:read` бачить той самий список. Якщо треба group-scoped посилання, використовуй якийсь dashboard-tool з власною авторизацією і клади посилання на нього.
+
+Кожне посилання належить до **групи сайдбара** (`nav_group`) — Operations / Workshop / Resources / Care / System / Links — тож адмінські посилання потрапляють у те саме 6-бакетне групування, що й вбудована навігація, замість того щоб телепатися flat-списком у кінці сайдбару. Бакет `links` (`external`) стоїть **перед** `system`, тож нові посилання видно одразу без скролу.
 
 ## :material-plus-circle: Додавання посилання
 
@@ -22,9 +24,10 @@ External Links дозволяють адміну додати в сайдбар 
 | **Name** | 1–50 символів. Відображається біля іконки в сайдбарі. |
 | **URL** | 1–500 символів. Має починатися з `http://` або `https://`. |
 | **Icon** | Або вибрати [Lucide](https://lucide.dev/icons/) icon за іменем з icon-picker, або завантажити власне зображення. |
+| **Sidebar group** | Дропдаун: Operations / Workshop / Resources / Care / System / Links. Для нових записів дефолт — `external` (бакет Links): вони з'являються прямо перед групою System, замість того щоб тонути під рештою навігації. |
 | **Open in new tab** | Якщо `true`, посилання відкривається з `target="_blank"`, тож BamDude залишається у поточній вкладці. Лиши off для in-app навігації (корисно тільки якщо URL на тому ж origin, що і BamDude). |
 
-Нові посилання додаються в кінець списку (`sort_order` авто-ставиться `max(existing) + 1`).
+Нові посилання додаються в кінець обраної групи (`sort_order` авто-ставиться `max(existing у групі) + 1`).
 
 !!! tip "Lucide vs Material icon names"
     Upstream Bambuddy wiki вказувала на mkdocs-material icon names — BamDude насправді використовує [Lucide](https://lucide.dev/icons/) icon names (бо frontend імпортує `lucide-react`). Якщо своєї іконки не бачиш — дивись Lucide-каталог, не Material Design Icons.
@@ -44,7 +47,7 @@ External Links дозволяють адміну додати в сайдбар 
 
 ## :material-sidebar: Позиція і поведінка в сайдбарі
 
-External links рендеряться **під вбудованою навігацією BamDude** (Dashboard, Printers, Library, Archives, Inventory і т.п.) в окремому розділі. Per-user toggle, щоб приховати, немає — якщо посилання в таблиці, кожен авторизований користувач з `external_links:read` його бачить.
+External links рендеряться **всередині свого бакету `nav_group`** у сайдбарі, в одній групі з тематично пов'язаними вбудованими пунктами. Дефолтна група `external` стоїть між `care` і `system` — тож щойно створене посилання видно одразу, а не похованим у самому кінці сайдбару. Per-user toggle, щоб приховати, немає — якщо посилання в таблиці, кожен авторизований користувач з `external_links:read` його бачить.
 
 | Поведінка | Що відбувається |
 |---|---|
@@ -55,7 +58,13 @@ External links рендеряться **під вбудованою навіга
 
 ## :material-sort: Reordering
 
-Drag-and-drop у **Settings → External Links** змінює порядок. Frontend відсилає `PUT /api/v1/external-links/reorder` зі списком ID; бекенд проставляє `sort_order = index` кожному. Новий порядок діє з наступного page-load.
+Drag-and-drop **прямо на сайдбарі** (або в **Settings → External Links**) змінює порядок. Перетаскування **обмежене групою**:
+
+- **Всередині групи** — тягни будь-який елемент вгору або вниз всередині своєї групи. Drop-індикатор з'являється лише на валідних таргетах (тій самій групі); cross-group drop'и тихо відкидаються.
+- **Цілі групи** — хапай header-ряд групи (показує `GripVertical` handle на hover у розгорнутому сайдбарі) і тягни цілу групу вгору/вниз як блок. Порядок зберігається у тому самому `sidebarOrder` `localStorage`-ключі, що й порядок елементів.
+- **Зміна групи** — щоб перенести посилання в іншу групу, відредагуй його і поміняй `nav_group` (drag-and-drop цього навмисно не вміє, щоб ти випадково не розламав групування).
+
+Frontend відсилає `PUT /api/v1/external-links/reorder` зі списком ID; бекенд проставляє `sort_order = index` кожному. Новий порядок діє одразу.
 
 ## :material-pencil: Редагування і видалення
 
@@ -133,7 +142,7 @@ External links — частина стандартної БД BamDude, тож в
 | Method | Path | Призначення |
 |---|---|---|
 | `GET` | `/external-links/` | Список усіх посилань, відсортованих за `sort_order`, потім `id`. |
-| `POST` | `/external-links/` | Створити посилання. Body: `{name, url, icon, open_in_new_tab}`. |
+| `POST` | `/external-links/` | Створити посилання. Body: `{name, url, icon, open_in_new_tab, nav_group}`. Якщо `nav_group` опущено, береться `external`. |
 | `GET` | `/external-links/{id}` | Отримати одне посилання. |
 | `PATCH` | `/external-links/{id}` | Оновити одне або декілька полів. |
 | `DELETE` | `/external-links/{id}` | Видалити посилання (і custom-іконку, якщо є). |

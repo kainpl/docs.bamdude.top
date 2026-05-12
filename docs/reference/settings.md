@@ -81,6 +81,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `ams_temp_good` | `28.0` | Green-zone temperature threshold (°C) on AMS cards. |
 | `ams_temp_fair` | `35.0` | Yellow-zone temperature threshold. Above is red. |
 | `ams_history_retention_days` | `30` | How many days of AMS history to keep before pruning. |
+| `log_retention_days` | `30` | How many days of rotated `bamdude.log.*.gz` archives to keep before deletion. Range 1–365. Enforced on startup + each midnight rollover. See [System info → Log rotation](../features/system-info.md#log-rotation-retention). |
 | `bed_cooled_threshold` | `35.0` | Bed temperature (°C) at which the `bed_cooled` notification fires. |
 
 ## :material-bolt: Energy & cost

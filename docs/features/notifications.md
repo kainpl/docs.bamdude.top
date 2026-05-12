@@ -221,6 +221,9 @@ Each provider subscribes independently. Toggling an event off on one provider do
 | `print_progress` | At configurable progress milestones |
 | `print_paused` | Printer transitioned RUNNING→PAUSE — body carries a normalised `{reason}` (door open / filament runout / presence-check / file-pause-command / AI defect / plate-objects / paused by user / HMS-other) plus the underlying `{hms_code}` for forensics. Default ON for new providers + included in the default Telegram-chat event set. |
 | `print_resumed` | Printer transitioned PAUSE→RUNNING — body carries `{paused_for}` (mm:ss) computed from the matching pause edge. Default ON for new providers; opt-in for Telegram chats. |
+
+The pause-state is also visualised on the Printers page in real time — a paused card surfaces a small `<PauseChip>` next to the status badge with the classified reason and a live mm:ss counter, plus a yellow warning pip in the corner. The chip disappears the moment the printer resumes; the resume event keeps the same `{paused_for}` value the notification body carries.
+
 | `print_complete` | Print finishes successfully |
 | `print_failed` | HMS error / hardware fault stopped the print |
 | `print_stopped` | User-initiated stop |

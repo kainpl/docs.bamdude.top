@@ -51,6 +51,14 @@ The toolbar above the list combines a free-form search box with chip strips and 
 
 Spools are owned by the user that created them. `inventory:create` is required to add new ones; `inventory:read` lets a Viewer see the list.
 
+### Copy Spool — duplicate an existing row
+
+Every spool row (cards view + table view + grouped rows) has a **Copy** button next to Edit. Clicking it opens the spool form pre-filled with everything from the source row except `weight_used`, which resets to **0** — useful when you've just bought a second / third / nth spool of an existing filament. The header reads **Copy Spool** instead of Edit Spool, the footer button reads **Copy Spool** instead of Save, and Quick Add (the bulk `quantity` toggle) is hidden so you don't accidentally produce N copies under the singular-title modal. The source row is untouched; saving creates a brand-new spool with its own `id`. Spool form is printer-agnostic, so the same Copy button works in Spoolman mode — the existing create-mutation routing handles both paths.
+
+### Slicer Preset dropdown shows every per-printer / per-nozzle variant
+
+The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
+
 ### Per-spool category & low-stock override
 
 Two extra optional fields on the spool form fine-tune both filtering and alerting:
@@ -163,6 +171,31 @@ These two actions look adjacent in the slot menu but do different things. Use th
 
 Assigning a spool is the simplest workflow — it handles tracking + printer configuration in one step. Use Configure Slot directly only when you want to override settings or set up a slot without an inventory spool.
 
+### Stock forecasting + Logistics view
+
+A third inventory tab next to **Table** / **Cards** that turns the raw `spool_usage_history` table into reorder intelligence:
+
+- **Daily-consumption rate** — exponentially-weighted moving average with a 30-day half-life, computed per SKU group (material / subtype / brand). One spool of recent prints weighs more than a year-old burst.
+- **Days-left projection** — current stock divided by daily rate, with a 95%-service-level safety stock factored in (`σ × √lead_time × 1.65`).
+- **Reorder-by date** — when to place the order so the new spool arrives *before* you run out, given the configured lead time.
+- **Per-SKU expanded editors** — lead-time-days, safety-margin (dual-unit days|grams), alert-snooze toggle. Each setting persists across sessions in the `filament_sku_settings` table; SKUs with no settings yet fall back to the global lead-time floor (Settings → Inventory → **Forecast global lead time**).
+- **Top-5 chart** — stacked-area projection of the five fastest-burning SKUs with ROP reference lines. Timeframe toggle: 1W / 1M / 6M.
+- **Shopping list (Logistics view)** — separate panel below the forecast table. Add SKUs to a `pending → purchased → received` queue. Marking an item *received* auto-creates `category='Stock'` spools via bulk-create (uses the average historical spool weight). CSV export + clear-all helpers.
+- **Notification toggles** — two new notification-provider events appear in **Settings → Notifications → Inventory Alerts**: *Reorder Alert* (SKU crossed reorder point) and *Stock Break Alert* (will run out before lead time). **These toggles are currently visual-only on the provider** — the forecast panel surfaces alerts in-app; a future scheduled aggregator can fire them via the existing templates without a schema change.
+
+The forecast tab is **hidden in Spoolman mode** because BamDude proxies the spool list there and doesn't populate the per-print usage history. To use forecasting, run BamDude in local-inventory mode.
+
+Permissions: `inventory:forecast_read` (see the panel) and `inventory:forecast_write` (modify SKU settings + shopping list) are added to existing groups automatically on upgrade — viewers get read, operators get both.
+
+### Pre-load assignment (weigh-then-assign)
+
+You can assign a spool to a slot **before** loading the filament — useful when you've just weighed a fresh spool and want to track it from the very first print. When the target slot is empty (`tray_type` blank in the AMS data), BamDude:
+
+- Persists the `SpoolAssignment` row immediately so the inventory page reflects the pairing.
+- **Defers** the `ams_filament_setting` + `extrusion_cali_sel` MQTT publish — Bambu firmware silently drops both commands for unloaded slots (there's no filament context for the K-profile / pressure-advance index to attach to), and pushing them anyway would close the modal with a misleading "Assigned!" while the slicer kept showing default-PLA forever.
+- Surfaces this in the confirmation toast: *"Spool assigned. The slot will be configured when you insert the filament."*
+- Replays the full configuration automatically the moment the slot transitions to loaded. The "loaded" signal is the AMS state code (`state == 11`, "filament fed to extruder"), not the tray's material string — so 3rd-party spools without readable RFID (which report state=11 but keep `tray_type=""`) trigger the replay too. After the replay the assignment fingerprint is stamped, so subsequent AMS pushes don't re-fire.
+
 ## :material-water-percent: Automatic consumption tracking
 
 Every print BamDude dispatches reads the per-filament `weight` from the source 3MF. On `print_complete`, the dispatched grams are deducted from the spool that was assigned to the matching AMS slot at the time the print started:
@@ -254,16 +287,17 @@ Painted, dual-colour, and silk filaments aren't one hex value — they're a grad
 
 Find a specific spool in a closet of 50 partials by sticking a label on each one. The Inventory header has a **Print labels…** action that opens a multi-select picker pre-loaded with the currently filtered spools; every inventory card and table row also has a per-spool printer icon for one-shot label printing.
 
-Four pre-built templates:
+Five pre-built templates:
 
 | Template | Size | Sheet | Notes |
 |---|---|---|---|
 | **AMS holder** | 30 × 15 mm | One per page | Fits the popular Makerworld AMS Filament Label Holder (model 752566). Drops the QR — at this size there's no room for swatch + text + QR without truncating the spool ID. |
+| **Box 40 × 30** | 40 × 30 mm | One per page | Common DK / Brother roll size; fits between the AMS holder and the 62×29 box label. Roomy enough for swatch + QR + full text column including hex code — good for filament-bag and storage-bin labels. |
 | **Box label** | 62 × 29 mm | One per page | Sized for Brother PT/QL and Dymo small-label stock. Carries QR + storage location. |
 | **Avery L7160** | 38.1 × 63.5 mm | A4, 21 per sheet | EU sheet stock. Carries QR. |
 | **Avery 5160** | 25.4 × 66.7 mm | US Letter, 30 per sheet | US sheet stock. Carries QR. |
 
-Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand, material/subtype, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
+Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand in **bold** at the top so it reads at arm's length, material/subtype, the colour **hex code** (`#RRGGBB`, alpha-stripped, uppercase) so near-identical colour+material spools are still tellable apart from up close, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
 
 ### Display name follows your template
 
