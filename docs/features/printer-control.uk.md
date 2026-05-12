@@ -85,6 +85,69 @@ POST /api/v1/printers/{id}/clear-plate
 
 ---
 
+## :material-cog: Діалог налаштувань принтера
+
+Per-printer діалог, який віддзеркалює **Bambu Studio → Print Options + Printer Parts**. Відкрий його з kebab :material-dots-vertical: меню на картці принтера → **Printer Settings**.
+
+Дві вкладки:
+
+- **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery.
+- **Printer Parts** — read-only вид встановлених сопел (тип, діаметр, тип потоку). Редагування parts на принтері залишене на наступну фазу; зараз API повертає `409 parts_not_editable` на спроби запису.
+
+### Print Options — що там є
+
+| Група | Налаштування | Значення | MQTT |
+|---|---|---|---|
+| AI-детекції | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
+| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
+| Сенсори | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
+| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
+| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
+| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| Камера | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
+| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
+| Інше | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
+| | Prompt sound | On/Off | `print_option` (`sound_enable`) |
+| | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
+| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+
+### Видимість — що відображається залежно від принтера
+
+Per-model capability gating, та сама ідея, що й у [діалозі налаштувань AMS](ams.md#діалог-налаштувань-ams). Рядки з `false`-capability приховуються повністю — нема сенсу показувати **AI monitoring** на P1S чи **Purify air** на non-H2D Pro.
+
+| Група | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
+|---|---|---|---|---|---|
+| AI-детекції (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | так | — | — | так | так |
+| FOD + displacement | так | — | — | так | так |
+| Open-door check | так | так | — | так | так |
+| Purify air | — | — | — | — | **так** (тільки H2D Pro) |
+| Filament tangle | так | так | так | так | так |
+| Nozzle blob | так | так | — | так | так |
+| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | усі моделі | | | | |
+
+### Джерело правди — принтер
+
+BamDude **не** зберігає "desired state" на своєму боці. Стан у діалозі читається з MQTT-push принтера (`print.print_option` echoes). При тогл-у — BamDude публікує відповідну MQTT-команду і починає 3-секундний hold (`printer_settings_hold` per-key), щоб рядок не миготів між optimistic і підтвердженим значенням — той самий патерн, що й у AMS Settings dialog.
+
+Якщо принтер втратив налаштування (factory reset, firmware-update wipe) — BamDude це відобразить. Reconciliation немає. Відкрий діалог знову і перетогль.
+
+### Дозволи й аудит
+
+Kebab-пункт з'являється тільки для користувачів з `printers:update`. Той самий дозвіл захищає endpoint `POST /api/v1/printers/{id}/settings`.
+
+Кожна застосована зміна пише рядок у таблицю `printer_setting_audit` (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. UI-viewer-а поки немає; query напряму, якщо треба відповісти "хто вимкнув spaghetti-детекцію минулого четверга?"
+
+!!! info "Calibration залишається окремо"
+    Calibrate Belt / Nozzle Offset / Resonance Test досі живуть у власному kebab-пункті **Calibration** — це не тогли, а довгі рутини. Фаза-2 може їх злити; фаза-1 тримає окремо.
+
+---
+
 ## :material-arrow-up-down: Bed Jog (Z-вісь)
 
 Рухати plate вгору/вниз на фіксований step.

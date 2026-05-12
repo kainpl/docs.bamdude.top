@@ -85,6 +85,69 @@ Accepted printer states: `FINISH`, `FAILED`, **`IDLE`**. The IDLE case covers Au
 
 ---
 
+## :material-cog: Printer Settings Dialog
+
+A per-printer dialog that mirrors **Bambu Studio → Print Options + Printer Parts**. Open it from the kebab :material-dots-vertical: menu on a printer card → **Printer Settings**.
+
+Two tabs:
+
+- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery.
+- **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
+
+### Print Options — what's there
+
+| Group | Setting | Values | MQTT |
+|---|---|---|---|
+| AI detections | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
+| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
+| Sensors | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
+| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
+| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
+| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| Chamber | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
+| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
+| Misc | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
+| | Prompt sound | On/Off | `print_option` (`sound_enable`) |
+| | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
+| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+
+### Visibility — what shows up depends on the printer
+
+Per-model capability gating, same idea as the [AMS Settings dialog](ams.md#ams-settings-dialog). Rows whose capability is `false` are hidden entirely — no point showing **AI monitoring** on a P1S or **Purify air** on a non-H2D Pro.
+
+| Group | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
+|---|---|---|---|---|---|
+| AI detections (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | yes | — | — | yes | yes |
+| FOD + displacement | yes | — | — | yes | yes |
+| Open-door check | yes | yes | — | yes | yes |
+| Purify air | — | — | — | — | **yes** (only H2D Pro) |
+| Filament tangle | yes | yes | yes | yes | yes |
+| Nozzle blob | yes | yes | — | yes | yes |
+| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | all models | | | | |
+
+### State source of truth — the printer
+
+BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT `print.print_option` push echoes. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+
+If the printer drops a setting (factory reset, firmware-update wipe), BamDude reflects that — there's no reconciliation. Open the dialog again and re-toggle.
+
+### Permissions and audit
+
+The kebab item only appears for users with the `printers:update` permission. The same permission gates the `POST /api/v1/printers/{id}/settings` endpoint.
+
+Every applied change writes one row to the `printer_setting_audit` table (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. No in-UI viewer yet; query the table directly if you need to answer "who turned spaghetti-detection off last Thursday?"
+
+!!! info "Calibration stays separate"
+    Calibrate Belt / Nozzle Offset / Resonance Test still live under their own kebab entry **Calibration** — they're not toggles, they're long-running routines. Phase-2 may merge them; phase-1 keeps them distinct.
+
+---
+
 ## :material-arrow-up-down: Bed Jog (Z-Axis)
 
 Move the build plate up or down by a fixed step.
