@@ -148,6 +148,68 @@ Kebab-пункт з'являється тільки для користувач�
 
 ---
 
+## :material-flask: Калібровка філаменту
+
+Майстер, що відображає **Bambu Studio → Calibrate → Pressure Advance / Flow Rate / Towers** без виходу з BamDude. Відкривається через kebab :material-dots-vertical: на картці принтера → **Filament Calibration**. Перегляд історії — на сусідньому kebab-пункті → **Calibration History**.
+
+### Що калібруємо
+
+| Режим | Шлях | Результат |
+|---|---|---|
+| **PA Line** | Manual: 50-лінійна вежа → обрати найчистішу | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Pattern** | Manual: PA-сітка (зручно для bowden) | те саме |
+| **PA Tower** | Manual: вертикальна вежа зі сходинками PA | те саме |
+| **Auto PA** | X1 / X1E / H2D Pro: лідар сканує + рахує K/N | те саме (наперед заповнений save-діалог) |
+| **Flow Rate** | Manual: 9-блочний coarse (−20…+20 %) → 7-блочний fine | `flow_ratio` per combo |
+| **Auto Flow Rate** | Auto-варіант на лідарних X1 | те саме |
+| **Temp / VolSpeed / VFA / Retraction Tower** | Тільки manual-друк; результат читаєш очима і вписуєш у slicer | у БД нічого не пишеться |
+
+### Per-model capability gating
+
+Auto-шляхи потребують лідар + флаг підтримки у прошивці; manual-шляхи доступні універсально.
+
+| Шлях | X1-серія | P1 / P2 / X2D | A1 / A1 Mini | H2D / H2D Pro |
+|---|---|---|---|---|
+| Manual PA / Flow Rate / Towers | yes | yes | yes | yes |
+| Auto PA (lidar) | yes | — | — | yes (Pro) |
+| Auto Flow Rate (lidar) | yes | — | — | yes (Pro) |
+| Dual-extruder (per-extruder cali) | — | — | — | yes |
+
+### Стан + персистентність
+
+- Рядок у BamDude пишеться в `filament_calibration` (m062) з ключем `(printer_model, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)`. Багато історичних рядків на combo; рівно один `is_active=True` гарантує partial unique-індекс.
+- Принтер-side `extrusion_cali_set` пише той самий рядок у 16-слотну PA history принтера; `extrusion_cali_sel` авто-біндить його до AMS-слоту, що використовувався під час калібровки.
+- Диспетчер пере-синхронізує активну калібровку через `extrusion_cali_sel` на кожен non-cali старт друку — на випадок, якщо ти перемкнув Active у BamDude без ручного rebind.
+- 3MF-калібровочні assets взяті з BS `resources/calib/` (AGPL-3.0) і лежать у `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+
+### Шлях застосування на реальному друку
+
+`background_dispatch` резолвить активний `filament_calibration` рядок для кожного слоту філаменту, що бере участь у завданні, і відправляє `extrusion_cali_sel(ams_id, tray_id, cali_idx)` перед стартом друку. Принтер-side слот стає активним; прошивка автоматично застосовує K (або flow ratio) до друку. Інжекція gcode не потрібна.
+
+Друки із зовнішніх джерел (BS, екран принтера) теж отримують вигоду: bind зберігається на принтері до явної зміни, тож останній `extrusion_cali_sel`, що відправив BamDude, залишається в силі.
+
+### History modal
+
+Дві секції поряд:
+
+- **BamDude history** — рядки `filament_calibration` згруповані за nozzle. Per-row дії: **Set Active** (flip siblings + emit `extrusion_cali_sel`), **Delete**. Активний рядок виділений зеленим колечком + чекмарком.
+- **Printer-side history** — 16-слотний вид, підтягнутий через `extrusion_cali_get`. Кнопка Refresh форсує re-pull для заданого nozzle diameter.
+
+!!! info "Resume banner"
+    Якщо закрити майстер посеред потоку (друк закінчився, але збереження ще не пройшло), при повторному відкритті побачиш жовтий banner з **Resume / Discard** для цієї in-flight сесії.
+
+### Permissions та audit
+
+`printers:update` гейтить вхід у майстер і всі mutation-роути. Кожна дія пише рядок у `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`. UI-viewer-а поки немає; query напряму.
+
+### Що навмисно НЕМАЄ в BamDude (поки що)
+
+- **PA range customization** — start/end/step зафіксовані під BS-defaults. Якщо потрібен інший діапазон — калібруй у самому BS і імпортуй значення.
+- **External spool calibration** — virtual tray `tray_id >= 0x10000` вимкнено для auto-шляху; manual дозволяє, але прив'язка до tray може не пережити перезавантаження принтера.
+- **Tower-mode result entry в BamDude** — tower-режими лише запускають друк і закінчуються. Результат читаєш очима і вписуєш у профіль філаменту в slicer-і. (BS робить так само.)
+
+---
+
 ## :material-arrow-up-down: Bed Jog (Z-вісь)
 
 Рухати plate вгору/вниз на фіксований step.

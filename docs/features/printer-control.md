@@ -148,6 +148,68 @@ Every applied change writes one row to the `printer_setting_audit` table (m061) 
 
 ---
 
+## :material-flask: Filament Calibration
+
+A wizard that mirrors **Bambu Studio → Calibrate → Pressure Advance / Flow Rate / Towers** without leaving BamDude. Open it from the kebab :material-dots-vertical: menu on a printer card → **Filament Calibration**. History review lives on a sibling kebab entry → **Calibration History**.
+
+### What's calibrated
+
+| Mode | Path | Output |
+|---|---|---|
+| **PA Line** | Manual: 50-line tower → pick best line | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Pattern** | Manual: PA grid (bowden-friendly) | same |
+| **PA Tower** | Manual: stepped vertical tower | same |
+| **Auto PA** | X1 / X1E / H2D Pro: lidar scans + reports K/N | same (pre-filled save dialog) |
+| **Flow Rate** | Manual: 9-block coarse (−20…+20 %) → 7-block fine refinement | `flow_ratio` per combo |
+| **Auto Flow Rate** | X1 lidar variant | same |
+| **Temp / VolSpeed / VFA / Retraction Tower** | Manual print only; read result with your eyes, enter in slicer | no DB row written |
+
+### Per-model capability gating
+
+Per-model rules — auto paths need lidar + firmware support flag; manual paths universally available.
+
+| Path | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D / H2D Pro |
+|---|---|---|---|---|
+| Manual PA / Flow Rate / Towers | yes | yes | yes | yes |
+| Auto PA (lidar) | yes | — | — | yes (Pro) |
+| Auto Flow Rate (lidar) | yes | — | — | yes (Pro) |
+| Dual-extruder (per-extruder cali) | — | — | — | yes |
+
+### State + persistence
+
+- BamDude row written to `filament_calibration` (m062) keyed by `(printer_model, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)`. Many history rows per combo; one `is_active=True` enforced by a partial unique index.
+- Printer-side `extrusion_cali_set` writes the same row into the printer's 16-slot PA history; `extrusion_cali_sel` auto-binds it to the AMS slot used for calibration.
+- Dispatcher re-syncs the active calibration via `extrusion_cali_sel` on every non-cali print start — covers cases where you flip Active in BamDude without re-binding manually.
+- 3MF calibration assets ship from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+
+### Apply path on a real print
+
+`background_dispatch` resolves the active `filament_calibration` row for each filament slot used by the job and fires `extrusion_cali_sel(ams_id, tray_id, cali_idx)` before the print starts. The printer-side history slot becomes active; firmware applies the K (or flow ratio) to the print automatically. No gcode injection needed.
+
+External-source prints (BS, printer screen) still benefit: the slot binding persists on the printer until explicitly changed, so the last `extrusion_cali_sel` BamDude fired stays in effect.
+
+### History modal
+
+Two sections side by side:
+
+- **BamDude history** — `filament_calibration` rows grouped by nozzle. Per-row actions: **Set Active** (flips siblings + fires `extrusion_cali_sel`), **Delete**. Active row marked with green ring + checkmark.
+- **Printer-side history** — 16-slot view pulled via `extrusion_cali_get`. Refresh button forces a re-pull for a given nozzle diameter.
+
+!!! info "Resume banner"
+    If you close the wizard mid-flow (after the print finished but before you saved), reopening the wizard shows a yellow banner with **Resume / Discard** for the in-flight session.
+
+### Permissions and audit
+
+`printers:update` gates the wizard entry and all mutation routes. Every action writes a row to `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`. No in-UI viewer yet; query the table directly.
+
+### What's intentionally NOT in BamDude (yet)
+
+- **PA range customization** — start/end/step are fixed to BS defaults. If you need a different range, calibrate in BS itself and import the value.
+- **External spool calibration** — virtual tray `tray_id >= 0x10000` is disabled for the auto path; the manual path allows it but tray binding may not survive printer reboot.
+- **Tower-mode result entry in BamDude** — tower modes start the print and finish. Read the result with your eyes, enter it in your slicer's filament profile. (BS does the same.)
+
+---
+
 ## :material-arrow-up-down: Bed Jog (Z-Axis)
 
 Move the build plate up or down by a fixed step.
