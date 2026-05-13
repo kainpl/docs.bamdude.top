@@ -177,14 +177,17 @@ Per-model rules — auto paths need lidar + firmware support flag; manual paths 
 
 ### State + persistence
 
-- BamDude row written to `filament_calibration` (m062) keyed by `(printer_model, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)`. Many history rows per combo; one `is_active=True` enforced by a partial unique index.
-- Printer-side `extrusion_cali_set` writes the same row into the printer's 16-slot PA history; `extrusion_cali_sel` auto-binds it to the AMS slot used for calibration.
-- Dispatcher re-syncs the active calibration via `extrusion_cali_sel` on every non-cali print start — covers cases where you flip Active in BamDude without re-binding manually.
+- BamDude row written to `filament_calibration` keyed by `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` since m063 — per-printer-instance, not per-model. Two X1Cs in the same farm carry independent K values for the same material.
+- The printer is the source of truth. BamDude's table is a cache. Whenever BamDude reads `extrusion_cali_get` it mirrors every visible profile into the cache by stable identity (`name` + `filament_id` + `pa_k_value`) — new rows arrive inactive; you promote one row per combo from the History modal.
+- `is_active=True` per combo is enforced by a partial unique index. Promoting a row flips its siblings to inactive.
+- Spool ↔ K-profile links (m064) are thin: a `spool_k_profile` row carries only `(spool, printer, extruder, filament_calibration_id)`. One hundred PETG spools sharing the same calibration collapse to one cache row + many links instead of duplicated K data.
 - 3MF calibration assets ship from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Apply path on a real print
 
-`background_dispatch` resolves the active `filament_calibration` row for each filament slot used by the job and fires `extrusion_cali_sel(ams_id, tray_id, cali_idx)` before the print starts. The printer-side history slot becomes active; firmware applies the K (or flow ratio) to the print automatically. No gcode injection needed.
+`background_dispatch` calls the unified `apply_active_calibration_to_slot` helper for every AMS slot the job will use. Resolution order: explicit spool→calibration link → active `filament_calibration` row by combo. The helper then re-matches the cached row against `client.state.kprofiles` by **stable identity** (`name` + `filament_id` + `pa_k_value`) to find the LIVE `cali_idx` — the printer reorders slots when you delete a neighbour, so the stored number is a hint only — and fires `extrusion_cali_sel(ams_id, slot_id, cali_idx)` before the print starts.
+
+The same helper now runs from the post-RFID-refresh path, the tray-tag drift detect, the auto-spool tagger, and both inventory + Spoolman slot-assign endpoints — six call sites collapsed onto one. Closes the silent-drift gap where the firmware was falling back to the default profile after RFID re-taps, slot reassignments, or restarts even though your `SpoolAssignment` row was intact.
 
 External-source prints (BS, printer screen) still benefit: the slot binding persists on the printer until explicitly changed, so the last `extrusion_cali_sel` BamDude fired stays in effect.
 

@@ -177,14 +177,17 @@ Auto-шляхи потребують лідар + флаг підтримки у
 
 ### Стан + персистентність
 
-- Рядок у BamDude пишеться в `filament_calibration` (m062) з ключем `(printer_model, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)`. Багато історичних рядків на combo; рівно один `is_active=True` гарантує partial unique-індекс.
-- Принтер-side `extrusion_cali_set` пише той самий рядок у 16-слотну PA history принтера; `extrusion_cali_sel` авто-біндить його до AMS-слоту, що використовувався під час калібровки.
-- Диспетчер пере-синхронізує активну калібровку через `extrusion_cali_sel` на кожен non-cali старт друку — на випадок, якщо ти перемкнув Active у BamDude без ручного rebind.
+- Рядок у BamDude пишеться в `filament_calibration` з ключем `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` починаючи з m063 — per-printer-instance, не per-model. Два X1C в одній фермі тримають незалежні K-значення для того ж матеріалу.
+- Принтер — джерело істини. Таблиця BamDude — це кеш. Щоразу як BamDude читає `extrusion_cali_get`, він віддзеркалює кожен видимий профіль у кеш за стабільною ідентичністю (`name` + `filament_id` + `pa_k_value`) — нові рядки приходять неактивними; ти явно промотиш один рядок на combo з модалки історії.
+- `is_active=True` на combo гарантує partial unique-індекс. Промотиш рядок — siblings автоматично стають неактивними.
+- Spool ↔ K-profile-зв'язки (m064) тепер тонкі: рядок `spool_k_profile` несе лише `(spool, printer, extruder, filament_calibration_id)`. Сотня PETG-котушок з однаковою калібровкою колапсує в один рядок кешу + багато link-рядків замість дублювати K-дані.
 - 3MF-калібровочні assets взяті з BS `resources/calib/` (AGPL-3.0) і лежать у `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Шлях застосування на реальному друку
 
-`background_dispatch` резолвить активний `filament_calibration` рядок для кожного слоту філаменту, що бере участь у завданні, і відправляє `extrusion_cali_sel(ams_id, tray_id, cali_idx)` перед стартом друку. Принтер-side слот стає активним; прошивка автоматично застосовує K (або flow ratio) до друку. Інжекція gcode не потрібна.
+`background_dispatch` викликає уніфікований хелпер `apply_active_calibration_to_slot` для кожного AMS-слоту, який буде задіяний завданням. Порядок резолву: явний spool→calibration link → активний `filament_calibration` рядок за combo. Далі хелпер пере-зіставляє кешований рядок з `client.state.kprofiles` за **стабільною ідентичністю** (`name` + `filament_id` + `pa_k_value`), щоб знайти ЖИВИЙ `cali_idx` — принтер переставляє слоти після видалення сусіда, тому збережений номер це лише підказка — і фаєрить `extrusion_cali_sel(ams_id, slot_id, cali_idx)` перед стартом друку.
+
+Той самий хелпер тепер ганяє з post-RFID-refresh шляху, tray-tag drift detect, auto-spool-теггера, і обох slot-assign ендпоінтів (inventory + Spoolman) — шість call-сайтів злиті в один. Закриває діру з тихим дрейфом, коли прошивка відкочувалася на дефолтний профіль після RFID-перетеггань, перепризначень слотів або рестартів, навіть якщо `SpoolAssignment` рядок був на місці.
 
 Друки із зовнішніх джерел (BS, екран принтера) теж отримують вигоду: bind зберігається на принтері до явної зміни, тож останній `extrusion_cali_sel`, що відправив BamDude, залишається в силі.
 
