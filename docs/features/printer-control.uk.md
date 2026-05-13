@@ -175,6 +175,27 @@ Auto-шляхи потребують лідар + флаг підтримки у
 | Auto Flow Rate (lidar) | yes | — | — | yes (Pro) |
 | Dual-extruder (per-extruder cali) | — | — | — | yes |
 
+### Гейтування за слайсер-сайдкаром *(0.4.5)*
+
+Bambu Studio шипить калібровочну геометрію у двох формах:
+
+- **Pre-sliced 3MF** — `pa_pattern.3mf`, `flowrate-test-pass1.3mf` / `pass2.3mf`, `auto_pa_line_{single,dual}.3mf`. BamDude дзеркалить їх під `backend/app/data/calib_assets/` і заливає одразу на принтер незалежно від філаменту в слоті. Слайсер не потрібен.
+- **STL / STEP-геометрія** — `tower.stl` (PA Line / PA Tower), `temperature_tower.stl`, `VFA.stl`, `retraction_tower.stl`, `SpeedTestStructure.step`. Цю треба **порізати під твій активний філаментний пресет** перш ніж стартувати — потрібен підключений OrcaSlicer або Bambu Studio сайдкар (налаштовується у **Settings → Профілі → Slicer API**).
+
+| Режим | Працює з коробки | Потрібен сайдкар |
+|---|:---:|:---:|
+| PA Pattern | ✓ | |
+| Auto PA / Auto Flow Rate | ✓ | |
+| Flow Rate (pass 1 + 2) | ✓ | |
+| PA Line | | ✓ |
+| PA Tower | | ✓ |
+| Temperature Tower | | ✓ |
+| Volumetric Speed Tower | | ✓ |
+| VFA Tower | | ✓ |
+| Retraction Tower | | ✓ |
+
+Коли жоден сайдкар недосяжний, майстер дисейблить ці режими з тултіпом-посиланням на slicer-налаштування; сервер на спробу запуску повертає `409 {detail: "slicer_sidecar_required"}`. Сам slicing-pipeline для STL-геометрії — Wave 2 калібровочної дорожньої карти; гейтування стоїть зараз щоб ці режими автоматично загорілись як тільки W2 приземлиться.
+
 ### Стан + персистентність
 
 - Рядок у BamDude пишеться в `filament_calibration` з ключем `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` починаючи з m063 — per-printer-instance, не per-model. Два X1C в одній фермі тримають незалежні K-значення для того ж матеріалу.
@@ -183,7 +204,7 @@ Auto-шляхи потребують лідар + флаг підтримки у
 - Кожен рядок кешу несе printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) — видно, на якому фізичному соплі було знято калібровку. На P1S / A1 / A1 mini (де per-profile id не приходить) BamDude деривує його з device-level стану сопла.
 - `is_active=True` на combo гарантує partial unique-індекс. Промотиш рядок — siblings автоматично стають неактивними.
 - Spool ↔ K-profile-зв'язки (m064) тепер тонкі: рядок `spool_k_profile` несе лише `(spool, printer, extruder, filament_calibration_id)`. Сотня PETG-котушок з однаковою калібровкою колапсує в один рядок кешу + багато link-рядків замість дублювати K-дані.
-- 3MF-калібровочні assets взяті з BS `resources/calib/` (AGPL-3.0) і лежать у `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+- Калібровочні assets дзеркаляться з BS `resources/calib/` (AGPL-3.0) у `backend/app/data/calib_assets/` — п'ять pre-sliced 3MF працюють з коробки; шість STL/STEP файлів чекають на Wave 2 slicer-pipeline (див. *Гейтування за слайсер-сайдкаром* вище). PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Шлях застосування на реальному друку
 

@@ -175,6 +175,27 @@ Per-model rules — auto paths need lidar + firmware support flag; manual paths 
 | Auto Flow Rate (lidar) | yes | — | — | yes (Pro) |
 | Dual-extruder (per-extruder cali) | — | — | — | yes |
 
+### Slicer-sidecar gating *(0.4.5)*
+
+Bambu Studio ships calibration geometry in two shapes:
+
+- **Pre-sliced 3MFs** — `pa_pattern.3mf`, `flowrate-test-pass1.3mf` / `pass2.3mf`, `auto_pa_line_{single,dual}.3mf`. BamDude mirrors these under `backend/app/data/calib_assets/` and uploads them straight to the printer, regardless of which filament is loaded. No slicer needed.
+- **STL / STEP geometry** — `tower.stl` (PA Line / PA Tower), `temperature_tower.stl`, `VFA.stl`, `retraction_tower.stl`, `SpeedTestStructure.step`. These need to be sliced **with your active filament profile** before they can run; that needs a connected OrcaSlicer or Bambu Studio sidecar (configure under **Settings → Profiles → Slicer API**).
+
+| Mode | Ready out of the box | Needs sidecar |
+|---|:---:|:---:|
+| PA Pattern | ✓ | |
+| Auto PA / Auto Flow Rate | ✓ | |
+| Flow Rate (pass 1 + 2) | ✓ | |
+| PA Line | | ✓ |
+| PA Tower | | ✓ |
+| Temperature Tower | | ✓ |
+| Volumetric Speed Tower | | ✓ |
+| VFA Tower | | ✓ |
+| Retraction Tower | | ✓ |
+
+When no sidecar is reachable the wizard disables the gated modes and surfaces a tooltip pointing at the slicer settings; the server-side guard returns `409 {detail: "slicer_sidecar_required"}` if a request slips through. The slicing pipeline that consumes the STL geometry is Wave 2 of the calibration roadmap — the gating is in place so the modes light up automatically once it lands.
+
 ### State + persistence
 
 - BamDude row written to `filament_calibration` keyed by `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` since m063 — per-printer-instance, not per-model. Two X1Cs in the same farm carry independent K values for the same material.
@@ -183,7 +204,7 @@ Per-model rules — auto paths need lidar + firmware support flag; manual paths 
 - Every cache row carries the printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) so you can see which physical nozzle each calibration was captured on. On P1S / A1 / A1 mini — where the per-profile id isn't shipped — BamDude derives it from the device-level nozzle hardware state.
 - `is_active=True` per combo is enforced by a partial unique index. Promoting a row flips its siblings to inactive.
 - Spool ↔ K-profile links (m064) are thin: a `spool_k_profile` row carries only `(spool, printer, extruder, filament_calibration_id)`. One hundred PETG spools sharing the same calibration collapse to one cache row + many links instead of duplicated K data.
-- 3MF calibration assets ship from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+- Calibration assets are mirrored from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/` — five pre-sliced 3MFs run out of the box; six STL/STEP files wait for the Wave 2 slicer pipeline (see *Slicer-sidecar gating* above). PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Apply path on a real print
 
