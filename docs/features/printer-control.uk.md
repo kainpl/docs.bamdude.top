@@ -179,6 +179,8 @@ Auto-шляхи потребують лідар + флаг підтримки у
 
 - Рядок у BamDude пишеться в `filament_calibration` з ключем `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` починаючи з m063 — per-printer-instance, не per-model. Два X1C в одній фермі тримають незалежні K-значення для того ж матеріалу.
 - Принтер — джерело істини. Таблиця BamDude — це кеш. Щоразу як BamDude читає `extrusion_cali_get`, він віддзеркалює кожен видимий профіль у кеш за стабільною ідентичністю (`name` + `filament_id` + `pa_k_value`) — нові рядки приходять неактивними; ти явно промотиш один рядок на combo з модалки історії.
+- Sync запускається автоматично на кожен (ре)коннект MQTT і коли список K-profile принтера реально змінюється (hash-diff фільтр, щоб не смикати БД на кожен push_status). Manage / History-діалоги все ще тригерять свіжі тяги по запиту.
+- Кожен рядок кешу несе printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) — видно, на якому фізичному соплі було знято калібровку. На P1S / A1 / A1 mini (де per-profile id не приходить) BamDude деривує його з device-level стану сопла.
 - `is_active=True` на combo гарантує partial unique-індекс. Промотиш рядок — siblings автоматично стають неактивними.
 - Spool ↔ K-profile-зв'язки (m064) тепер тонкі: рядок `spool_k_profile` несе лише `(spool, printer, extruder, filament_calibration_id)`. Сотня PETG-котушок з однаковою калібровкою колапсує в один рядок кешу + багато link-рядків замість дублювати K-дані.
 - 3MF-калібровочні assets взяті з BS `resources/calib/` (AGPL-3.0) і лежать у `backend/app/data/calib_assets/`. PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
