@@ -205,7 +205,10 @@ Two sections side by side:
 
 ### Permissions and audit
 
-`printers:update` gates the wizard entry and all mutation routes. Every action writes a row to `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`. No in-UI viewer yet; query the table directly.
+`printers:update` gates the wizard entry and all mutation routes. Every action writes a row to `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`, plus the legacy K-profiles UI page mutations from 0.4.5: `kprofile_add / kprofile_edit / kprofile_batch_add / kprofile_delete`. No in-UI viewer yet; query the table directly.
+
+!!! note "Edit-Save with no printer-relevant change skips the printer"
+    Since 0.4.5 the K-profiles edit dialog diffs `name` / `k_value` / `filament_id` / `nozzle_id` / `nozzle_diameter` against the loaded row before publishing. Identical → only the note (BamDude-local) is saved; no `extrusion_cali_set` fires. Stops the printer from regenerating `setting_id` on every Save click, which used to drift the cache row.
 
 ### What's intentionally NOT in BamDude (yet)
 

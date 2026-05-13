@@ -513,7 +513,7 @@ Organize archives with custom tags. Filter by printer, tags, material, color, fi
 | **Printer** | Single-select; defaults to "All printers". |
 | **Colour** | Multi-select. Default semantics is **OR** — pick *Red* + *Blue* to see archives that used Red **or** Blue. The chip strip exposes an **AND/OR toggle** — flip to AND when you need archives that used *Red* **and** *Blue* together (multi-colour prints). |
 | **Material** | Multi-select OR (PLA + PETG → either). |
-| **File type** | Single-select: GCODE / SOURCE / ALL. |
+| **Kind** | Single-select: **All prints** / **Calibration prints** / **Regular prints**. Keyed on the `is_calibration` flag the Filament Calibration wizard stamps on every test print it dispatches (since 0.4.5). The old GCODE / SOURCE / ALL split lost meaning once archive went print-history-only in 0.4.2. |
 | **Favourites** | Toggle: show only archives flagged with the heart. |
 | **Date range** | Two-input picker: shows archives whose `started_at` falls inside the range. Pairs with the calendar view. |
 | **Status** | Multi-select status filter — printing / completed / failed / cancelled / archived. |

@@ -513,7 +513,7 @@ Hover над архівом у **List** або **Calendar** в'юшці — і �
 | **Принтер** | Single-select; default "Всі принтери". |
 | **Колір** | Multi-select. Default-семантика — **OR** — пікни *Red* + *Blue*, щоб бачити архіви, що використали Red **або** Blue. Чіп-стрічка виставляє **AND/OR toggle** — переключи на AND, коли треба архіви, що використали *Red* **і** *Blue* разом (multi-color друки). |
 | **Матеріал** | Multi-select OR (PLA + PETG → будь-який). |
-| **Тип файлу** | Single-select: GCODE / SOURCE / ALL. |
+| **Вид друку** | Single-select: **Усі друки** / **Калібровочні друки** / **Робочі друки**. Ключ — `is_calibration` прапор, який майстер Filament Calibration ставить на кожен тестовий друк, який диспетчиризує (з 0.4.5). Старий GCODE / SOURCE / ALL поділ втратив сенс після того, як архів став print-history-only у 0.4.2. |
 | **Обране** | Toggle: показати лише архіви, позначені серцем. |
 | **Date range** | Two-input picker: показує архіви, чий `started_at` потрапляє в діапазон. Парується з calendar-в'юшкою. |
 | **Status** | Multi-select status-фільтр — printing / completed / failed / cancelled / archived. |

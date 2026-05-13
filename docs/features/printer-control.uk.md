@@ -205,7 +205,10 @@ Auto-шляхи потребують лідар + флаг підтримки у
 
 ### Permissions та audit
 
-`printers:update` гейтить вхід у майстер і всі mutation-роути. Кожна дія пише рядок у `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`. UI-viewer-а поки немає; query напряму.
+`printers:update` гейтить вхід у майстер і всі mutation-роути. Кожна дія пише рядок у `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`, плюс мутації зі старої сторінки K-profiles з 0.4.5: `kprofile_add / kprofile_edit / kprofile_batch_add / kprofile_delete`. UI-viewer-а поки немає; query напряму.
+
+!!! note "Edit-Save без printer-relevant зміни не торкає принтер"
+    З 0.4.5 діалог редагування K-профіля порівнює `name` / `k_value` / `filament_id` / `nozzle_id` / `nozzle_diameter` з завантаженим рядком перед publish'ем. Усе збігається → зберігається лише нотатка (BamDude-local); `extrusion_cali_set` не йде. Тримає принтер від реґенерації `setting_id` на кожен клік Save, через що раніше плив cache-рядок.
 
 ### Що навмисно НЕМАЄ в BamDude (поки що)
 
