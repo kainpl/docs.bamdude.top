@@ -177,24 +177,15 @@ Per-model rules — auto paths need lidar + firmware support flag; manual paths 
 
 ### Slicer-sidecar gating *(0.4.5)*
 
-Bambu Studio ships calibration geometry in two shapes:
+Bambu Studio's calibration wizard always runs full slicing — even modes that look "pre-sliced" (PA Pattern, Flow Rate, Auto PA) load geometry from `resources/calib/` as scaffolds, then BS applies the active printer / process / filament preset plus per-mode g-code injection through `Plater::calib_*` / `CalibUtils::*`. BamDude mirrors the same 12 BS files under `backend/app/data/calib_assets/` but reaches the same slicing step through our **server-side slicing** sidecar (OrcaSlicer / Bambu Studio API).
 
-- **Pre-sliced 3MFs** — `pa_pattern.3mf`, `flowrate-test-pass1.3mf` / `pass2.3mf`, `auto_pa_line_{single,dual}.3mf`. BamDude mirrors these under `backend/app/data/calib_assets/` and uploads them straight to the printer, regardless of which filament is loaded. No slicer needed.
-- **STL / STEP geometry** — `tower.stl` (PA Line / PA Tower), `temperature_tower.stl`, `VFA.stl`, `retraction_tower.stl`, `SpeedTestStructure.step`. These need to be sliced **with your active filament profile** before they can run; that needs a connected OrcaSlicer or Bambu Studio sidecar (configure under **Settings → Profiles → Slicer API**).
+So every Filament Calibration mode needs a connected sidecar. To keep that visible:
 
-| Mode | Ready out of the box | Needs sidecar |
-|---|:---:|:---:|
-| PA Pattern | ✓ | |
-| Auto PA / Auto Flow Rate | ✓ | |
-| Flow Rate (pass 1 + 2) | ✓ | |
-| PA Line | | ✓ |
-| PA Tower | | ✓ |
-| Temperature Tower | | ✓ |
-| Volumetric Speed Tower | | ✓ |
-| VFA Tower | | ✓ |
-| Retraction Tower | | ✓ |
+- The **Filament Calibration** and **Calibration History** kebab entries on the printer card are **hidden when "Server-side slicing" is off** in Settings (General → General).
+- If a direct API call slips through, `POST /printers/{id}/calibration/sessions` returns `409 {detail: "slicer_sidecar_required"}` for any manual mode.
+- Auto modes (Auto PA / Auto Flow Rate on lidar-equipped X1 / X1E / H2D Pro) are printer-side only — they go through MQTT `extrusion_cali_start` / `flow_rate_cali_start` without any local slicing. But since the rest of the wizard depends on the sidecar, the entry points are gated together.
 
-When no sidecar is reachable the wizard disables the gated modes and surfaces a tooltip pointing at the slicer settings; the server-side guard returns `409 {detail: "slicer_sidecar_required"}` if a request slips through. The slicing pipeline that consumes the STL geometry is Wave 2 of the calibration roadmap — the gating is in place so the modes light up automatically once it lands.
+The slicing pipeline that consumes the BS scaffold geometry + active filament profile + per-mode g-code injection is **Wave 2** of the calibration roadmap; the kebab entries and 409 guard are in place so the surface lights up automatically once W2 lands.
 
 ### State + persistence
 
@@ -204,7 +195,7 @@ When no sidecar is reachable the wizard disables the gated modes and surfaces a 
 - Every cache row carries the printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) so you can see which physical nozzle each calibration was captured on. On P1S / A1 / A1 mini — where the per-profile id isn't shipped — BamDude derives it from the device-level nozzle hardware state.
 - `is_active=True` per combo is enforced by a partial unique index. Promoting a row flips its siblings to inactive.
 - Spool ↔ K-profile links (m064) are thin: a `spool_k_profile` row carries only `(spool, printer, extruder, filament_calibration_id)`. One hundred PETG spools sharing the same calibration collapse to one cache row + many links instead of duplicated K data.
-- Calibration assets are mirrored from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/` — five pre-sliced 3MFs run out of the box; six STL/STEP files wait for the Wave 2 slicer pipeline (see *Slicer-sidecar gating* above). PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+- Calibration assets are mirrored from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/` — 12 files total (3MF / STL / STEP scaffolds; see *Slicer-sidecar gating* above for why all modes still need a sidecar). PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Apply path on a real print
 

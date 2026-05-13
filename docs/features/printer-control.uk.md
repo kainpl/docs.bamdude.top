@@ -177,24 +177,15 @@ Auto-шляхи потребують лідар + флаг підтримки у
 
 ### Гейтування за слайсер-сайдкаром *(0.4.5)*
 
-Bambu Studio шипить калібровочну геометрію у двох формах:
+Калібровочний майстер Bambu Studio завжди запускає повне slicing — навіть режими, що виглядають «pre-sliced» (PA Pattern, Flow Rate, Auto PA), вантажать геометрію з `resources/calib/` як скаффолд, потім BS накладає активний printer / process / filament-пресет плюс per-mode g-code-інжект через `Plater::calib_*` / `CalibUtils::*`. BamDude дзеркалить ті ж 12 BS-файлів у `backend/app/data/calib_assets/`, але доходить до того ж slicing-кроку через **серверне нарізання** через сайдкар (OrcaSlicer / Bambu Studio API).
 
-- **Pre-sliced 3MF** — `pa_pattern.3mf`, `flowrate-test-pass1.3mf` / `pass2.3mf`, `auto_pa_line_{single,dual}.3mf`. BamDude дзеркалить їх під `backend/app/data/calib_assets/` і заливає одразу на принтер незалежно від філаменту в слоті. Слайсер не потрібен.
-- **STL / STEP-геометрія** — `tower.stl` (PA Line / PA Tower), `temperature_tower.stl`, `VFA.stl`, `retraction_tower.stl`, `SpeedTestStructure.step`. Цю треба **порізати під твій активний філаментний пресет** перш ніж стартувати — потрібен підключений OrcaSlicer або Bambu Studio сайдкар (налаштовується у **Settings → Профілі → Slicer API**).
+Тож кожен режим Filament Calibration потребує підключеного сайдкара. Щоб це було очевидно:
 
-| Режим | Працює з коробки | Потрібен сайдкар |
-|---|:---:|:---:|
-| PA Pattern | ✓ | |
-| Auto PA / Auto Flow Rate | ✓ | |
-| Flow Rate (pass 1 + 2) | ✓ | |
-| PA Line | | ✓ |
-| PA Tower | | ✓ |
-| Temperature Tower | | ✓ |
-| Volumetric Speed Tower | | ✓ |
-| VFA Tower | | ✓ |
-| Retraction Tower | | ✓ |
+- Kebab-пункти **Filament Calibration** і **Calibration History** на картці принтера **сховані коли "Серверне нарізання" вимкнено** в Налаштуваннях (Загальне → Загальне).
+- Якщо прямий API-виклик проскочить — `POST /printers/{id}/calibration/sessions` повертає `409 {detail: "slicer_sidecar_required"}` для будь-якого manual-режиму.
+- Auto-режими (Auto PA / Auto Flow Rate на лідарних X1 / X1E / H2D Pro) — суто printer-side; ідуть через MQTT `extrusion_cali_start` / `flow_rate_cali_start` без локального slicing. Але оскільки решта майстра залежить від сайдкара — вхід гейтиться разом.
 
-Коли жоден сайдкар недосяжний, майстер дисейблить ці режими з тултіпом-посиланням на slicer-налаштування; сервер на спробу запуску повертає `409 {detail: "slicer_sidecar_required"}`. Сам slicing-pipeline для STL-геометрії — Wave 2 калібровочної дорожньої карти; гейтування стоїть зараз щоб ці режими автоматично загорілись як тільки W2 приземлиться.
+Сам slicing-pipeline що споживає BS-скаффолд + активний філаментний пресет + per-mode g-code-інжект — це **Wave 2** калібровочної дорожньої карти; kebab-пункти і 409-гард на місці, щоб поверхня автоматично загорілась як тільки W2 приземлиться.
 
 ### Стан + персистентність
 
@@ -204,7 +195,7 @@ Bambu Studio шипить калібровочну геометрію у дво�
 - Кожен рядок кешу несе printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) — видно, на якому фізичному соплі було знято калібровку. На P1S / A1 / A1 mini (де per-profile id не приходить) BamDude деривує його з device-level стану сопла.
 - `is_active=True` на combo гарантує partial unique-індекс. Промотиш рядок — siblings автоматично стають неактивними.
 - Spool ↔ K-profile-зв'язки (m064) тепер тонкі: рядок `spool_k_profile` несе лише `(spool, printer, extruder, filament_calibration_id)`. Сотня PETG-котушок з однаковою калібровкою колапсує в один рядок кешу + багато link-рядків замість дублювати K-дані.
-- Калібровочні assets дзеркаляться з BS `resources/calib/` (AGPL-3.0) у `backend/app/data/calib_assets/` — п'ять pre-sliced 3MF працюють з коробки; шість STL/STEP файлів чекають на Wave 2 slicer-pipeline (див. *Гейтування за слайсер-сайдкаром* вище). PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+- Калібровочні assets дзеркаляться з BS `resources/calib/` (AGPL-3.0) у `backend/app/data/calib_assets/` — 12 файлів (3MF / STL / STEP-скаффолди; див. *Гейтування за слайсер-сайдкаром* вище — усі режими все одно потребують сайдкар). PA Line range: 0.0–0.1 step 0.002 (50 ліній). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
 
 ### Шлях застосування на реальному друку
 
