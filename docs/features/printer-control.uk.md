@@ -157,8 +157,8 @@ Kebab-пункт з'являється тільки для користувач�
 | Режим | Шлях | Результат |
 |---|---|---|
 | **PA Line** | Manual: 50-лінійна вежа → обрати найчистішу | `pa_k_value` per (filament, nozzle, extruder) |
-| **PA Pattern** | Manual: PA-сітка (зручно для bowden) | те саме |
-| **PA Tower** | Manual: вертикальна вежа зі сходинками PA | те саме |
+| **PA Tower** | Manual: вертикальна вежа зі сходинками PA — виміряй висоту (мм) де кути найчистіші, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Pattern** | Manual: гребінь V-стінок зі сходинковими K + цифровий tab знизу — обери найчистішу колонку, прочитай K за цифрою | `pa_k_value` per (filament, nozzle, extruder) |
 | **Auto PA** | X1 / X1E / H2D Pro: лідар сканує + рахує K/N | те саме (наперед заповнений save-діалог) |
 | **Flow Rate** | Manual: 9-блочний coarse (−20…+20 %) → 7-блочний fine | `flow_ratio` per combo |
 | **Auto Flow Rate** | Auto-варіант на лідарних X1 | те саме |
@@ -185,7 +185,11 @@ Auto-шляхи потребують лідар + флаг підтримки у
 - Якщо прямий API-виклик проскочить — `POST /printers/{id}/calibration/sessions` повертає `409 {detail: "slicer_sidecar_required"}` для будь-якого manual-режиму.
 - Auto-режими (Auto PA / Auto Flow Rate на лідарних X1 / X1E / H2D Pro) — суто printer-side; ідуть через MQTT `extrusion_cali_start` / `flow_rate_cali_start` без локального slicing. Але оскільки решта майстра залежить від сайдкара — вхід гейтиться разом.
 
-Сам slicing-pipeline що споживає BS-скаффолд + активний філаментний пресет + per-mode g-code-інжект — це **Wave 2** калібровочної дорожньої карти; kebab-пункти і 409-гард на місці, щоб поверхня автоматично загорілась як тільки W2 приземлиться.
+PA Tower (Phase 1) та PA Pattern (Phase 2) зведені end-to-end станом на 0.4.5. Решта manual-режимів (PA Line, Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) проходять стадію `verification` (завантажуєш сирий нарізаний 3MF для порівняння на десктопі) перед переходом у `production` — це послідовний rollout **Wave 2** калібровочної дорожньої карти.
+
+### Опції друку + swap-макроси *(0.4.5)*
+
+Сторінка пресетів майстра містить ті ж `PrintOptionsPanel` + `SwapMacrosPanel` що й звичайний діалог друку. Вона читає твої збережені преференції per-printer-model (PrintModal і калібровочний майстер ділять той самий storage-ключ), тож налаштування зроблені раз для моделі — наприклад завжди-увімкнені swap-макроси для зміни столу A1, чи layer inspection для X1E — автоматично застосовуються і до калібровочних друків. Збережене upsert-иться на кожен успішний start. Калібровочно-підлаштовані дефолти: `bed_levelling=true`, `flow_cali=false` (інакше pre-print flow-cali принтера перепише M900 K-sweep з gcode і замаскує тест), swap-макроси — opt-in. MQTT-action макроси (P1S світло on/off) автоматично спрацьовують через стандартні `print_started` / `print_finished` івент-хуки — без per-job-тогла.
 
 ### Стан + персистентність
 
