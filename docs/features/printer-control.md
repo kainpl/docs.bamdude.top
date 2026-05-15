@@ -156,7 +156,7 @@ A wizard that mirrors **Bambu Studio → Calibrate → Pressure Advance / Flow R
 
 | Mode | Path | Output |
 |---|---|---|
-| **PA Line** | Manual: 50-line tower → pick best line | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Line** | Manual: stepped K rows (slow / fast / slow extrusion each) — pick the cleanest row, K = label next to it | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Tower** | Manual: stepped vertical tower — measure the height (mm) where corners look cleanest, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Pattern** | Manual: comb of V-shaped walls at stepped K values + numbered digits in a glyph tab — pick the cleanest pattern column, read the K from its label | `pa_k_value` per (filament, nozzle, extruder) |
 | **Auto PA** | X1 / X1E / H2D Pro: lidar scans + reports K/N | same (pre-filled save dialog) |
@@ -185,7 +185,7 @@ So every Filament Calibration mode needs a connected sidecar. To keep that visib
 - If a direct API call slips through, `POST /printers/{id}/calibration/sessions` returns `409 {detail: "slicer_sidecar_required"}` for any manual mode.
 - Auto modes (Auto PA / Auto Flow Rate on lidar-equipped X1 / X1E / H2D Pro) are printer-side only — they go through MQTT `extrusion_cali_start` / `flow_rate_cali_start` without any local slicing. But since the rest of the wizard depends on the sidecar, the entry points are gated together.
 
-PA Tower (Phase 1) and PA Pattern (Phase 2) are wired end-to-end as of 0.4.5. The remaining manual modes (PA Line, Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) cycle through `verification` (downloads a sliced 3MF for desktop comparison) before flipping to `production` — that staged rollout is **Wave 2** of the calibration roadmap.
+PA Tower (Phase 1) and PA Pattern (Phase 2) are wired end-to-end as of 0.4.5; PA Line ships in `verification` — pick PA Line and the wizard hands you the sliced `.gcode.3mf` for desktop comparison against BS / Orca's own PA Line wizard output, then flips to production once the diff is signed off. The remaining manual modes (Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) cycle through the same `verification` → `production` staged rollout — that's **Wave 2** of the calibration roadmap.
 
 ### Print options + swap macros *(0.4.5)*
 

@@ -156,7 +156,7 @@ Kebab-пункт з'являється тільки для користувач�
 
 | Режим | Шлях | Результат |
 |---|---|---|
-| **PA Line** | Manual: 50-лінійна вежа → обрати найчистішу | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Line** | Manual: N горизонтальних рядків зі сходинковим K (slow / fast / slow в кожному) — обери найчистіший рядок, K = мітка біля нього | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Tower** | Manual: вертикальна вежа зі сходинками PA — виміряй висоту (мм) де кути найчистіші, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Pattern** | Manual: гребінь V-стінок зі сходинковими K + цифровий tab знизу — обери найчистішу колонку, прочитай K за цифрою | `pa_k_value` per (filament, nozzle, extruder) |
 | **Auto PA** | X1 / X1E / H2D Pro: лідар сканує + рахує K/N | те саме (наперед заповнений save-діалог) |
@@ -185,7 +185,7 @@ Auto-шляхи потребують лідар + флаг підтримки у
 - Якщо прямий API-виклик проскочить — `POST /printers/{id}/calibration/sessions` повертає `409 {detail: "slicer_sidecar_required"}` для будь-якого manual-режиму.
 - Auto-режими (Auto PA / Auto Flow Rate на лідарних X1 / X1E / H2D Pro) — суто printer-side; ідуть через MQTT `extrusion_cali_start` / `flow_rate_cali_start` без локального slicing. Але оскільки решта майстра залежить від сайдкара — вхід гейтиться разом.
 
-PA Tower (Phase 1) та PA Pattern (Phase 2) зведені end-to-end станом на 0.4.5. Решта manual-режимів (PA Line, Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) проходять стадію `verification` (завантажуєш сирий нарізаний 3MF для порівняння на десктопі) перед переходом у `production` — це послідовний rollout **Wave 2** калібровочної дорожньої карти.
+PA Tower (Phase 1) та PA Pattern (Phase 2) зведені end-to-end станом на 0.4.5; PA Line вийшов у `verification` — обираєш PA Line і майстер віддає тобі нарізаний `.gcode.3mf` для десктоп-порівняння з виходом BS / Orca PA Line wizard, тоді (після sign-off) переходить у production. Решта manual-режимів (Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) проходять той самий цикл `verification` → `production` — це **Wave 2** калібровочної дорожньої карти.
 
 ### Опції друку + swap-макроси *(0.4.5)*
 
