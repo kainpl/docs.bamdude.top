@@ -185,7 +185,7 @@ Auto-шляхи потребують лідар + флаг підтримки у
 - Якщо прямий API-виклик проскочить — `POST /printers/{id}/calibration/sessions` повертає `409 {detail: "slicer_sidecar_required"}` для будь-якого manual-режиму.
 - Auto-режими (Auto PA / Auto Flow Rate на лідарних X1 / X1E / H2D Pro) — суто printer-side; ідуть через MQTT `extrusion_cali_start` / `flow_rate_cali_start` без локального slicing. Але оскільки решта майстра залежить від сайдкара — вхід гейтиться разом.
 
-PA Tower (Phase 1) та PA Pattern (Phase 2) зведені end-to-end станом на 0.4.5; PA Line вийшов у `verification` — обираєш PA Line і майстер віддає тобі нарізаний `.gcode.3mf` для десктоп-порівняння з виходом BS / Orca PA Line wizard, тоді (після sign-off) переходить у production. Решта manual-режимів (Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) проходять той самий цикл `verification` → `production` — це **Wave 2** калібровочної дорожньої карти.
+PA Tower (Phase 1), PA Pattern (Phase 2) і PA Line (Phase 9) зведені end-to-end станом на 0.4.5 — обираєш будь-який з них у майстрі, сайдкар-слайсер пече pattern, BamDude льотить gcode на принтер, друкує, і вибиває діалог збереження по завершенню. Решта manual-режимів (Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) проходять стадію `verification` (завантажуєш сирий нарізаний 3MF для порівняння на десктопі) перед переходом у `production` — це послідовний rollout **Wave 2** калібровочної дорожньої карти.
 
 ### Опції друку + swap-макроси *(0.4.5)*
 
