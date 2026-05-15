@@ -156,7 +156,7 @@ A wizard that mirrors **Bambu Studio → Calibrate → Pressure Advance / Flow R
 
 | Mode | Path | Output |
 |---|---|---|
-| **PA Line** | Manual: stepped K rows (slow / fast / slow extrusion each) — pick the cleanest row, K = label next to it | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Line** | Manual: flat one-layer block of stepped-K rows (slow / fast / slow extrusion in each) + numbered side tab — pick the cleanest row, K = label next to it. Visually like PA Pattern but with straight lines instead of V-shaped walls | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Tower** | Manual: stepped vertical tower — measure the height (mm) where corners look cleanest, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Pattern** | Manual: comb of V-shaped walls at stepped K values + numbered digits in a glyph tab — pick the cleanest pattern column, read the K from its label | `pa_k_value` per (filament, nozzle, extruder) |
 | **Auto PA** | X1 / X1E / H2D Pro: lidar scans + reports K/N | same (pre-filled save dialog) |

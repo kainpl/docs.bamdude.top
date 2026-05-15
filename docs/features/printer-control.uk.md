@@ -156,7 +156,7 @@ Kebab-пункт з'являється тільки для користувач�
 
 | Режим | Шлях | Результат |
 |---|---|---|
-| **PA Line** | Manual: N горизонтальних рядків зі сходинковим K (slow / fast / slow в кожному) — обери найчистіший рядок, K = мітка біля нього | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Line** | Manual: плаский одношаровий блок зі сходинковими K-рядками (у кожному slow / fast / slow витискання) + цифровий tab збоку — обери найчистіший рядок, K = мітка біля нього. Зовні як PA Pattern, лише замість V-стінок — прямі лінії | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Tower** | Manual: вертикальна вежа зі сходинками PA — виміряй висоту (мм) де кути найчистіші, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
 | **PA Pattern** | Manual: гребінь V-стінок зі сходинковими K + цифровий tab знизу — обери найчистішу колонку, прочитай K за цифрою | `pa_k_value` per (filament, nozzle, extruder) |
 | **Auto PA** | X1 / X1E / H2D Pro: лідар сканує + рахує K/N | те саме (наперед заповнений save-діалог) |
