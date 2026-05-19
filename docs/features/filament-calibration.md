@@ -56,12 +56,13 @@ All three follow the full flow: slice → FTP → print → save dialog → K-pr
 | **Temperature Tower** | A tower whose nozzle temperature steps down 5 °C every 10 mm band — each band carries an embossed temperature number. |
 | **Volumetric Speed Tower** | A spiral-mode tower whose outer-wall speed ramps up with height. |
 | **VFA Tower** | Vibration Fine Artifacts tower — also spiral-mode, outer-wall speed ramps with height. |
+| **Retraction Tower** | A two-pillar stringing tower — each 1 mm of height retracts a little more filament. |
 
-All three are **production**. They are print-and-eyeball calibrations: the operator reads the cleanest band (Temperature) or the failure height (Volumetric Speed, VFA) by eye, then uses the finish-step calculator (see below). For the Temperature Tower, the start/end temperatures default to the right range for the loaded filament's material — PLA 230→190 °C, PETG 250→230 °C, ABS/ASA 270→230 °C, and so on.
+All four are **production**. They are print-and-eyeball calibrations: the operator reads the cleanest band (Temperature), the failure height (Volumetric Speed, VFA), or the height where stringing between the pillars cleans up (Retraction) by eye, then uses the finish-step calculator (see below). For the Temperature Tower, the start/end temperatures default to the right range for the loaded filament's material — PLA 230→190 °C, PETG 250→230 °C, ABS/ASA 270→230 °C, and so on.
 
 ### In development
 
-**Retraction Tower**, **Flow Rate**, and **Auto** (lidar-driven) calibration are being rolled out mode-by-mode. Until each one lands it appears greyed-out in the wizard.
+**Flow Rate** and **Auto** (lidar-driven) calibration are being rolled out mode-by-mode. Until each one lands it appears greyed-out in the wizard.
 
 ---
 
@@ -94,7 +95,7 @@ Pressure-advance modes end on a **save dialog**:
 
 The result is written to a `filament_calibration` row, pushed to the printer's 16-slot K-profile history over MQTT, and bound to the AMS slot — so subsequent prints automatically use it.
 
-### Tower modes (Temperature, VFA, Volumetric Speed)
+### Tower modes (Temperature, VFA, Volumetric Speed, Retraction)
 
 Tower modes are print-and-eyeball. The result is a **slicer-side setting** with no printer runtime knob. The finish step provides a **calculator**: enter the measured height (mm) and BamDude applies the per-mode formula, showing the result inline.
 
@@ -103,8 +104,9 @@ Tower modes are print-and-eyeball. The result is a **slicer-side setting** with 
 | **Temperature Tower** | `result = start − ⌊height / 10⌋ × 5` | °C |
 | **Volumetric Speed Tower** | `result = start + height × step` | mm³/s |
 | **VFA Tower** | `result = start + ⌊height / 5⌋ × step` | mm/s |
+| **Retraction Tower** | `result = start + ⌊max(0, height − 0.4)⌋ × step` | mm |
 
-The Temperature Tower descends 5 °C per 10 mm band; VFA bands the speed every 5 mm — hence the floor division in both.
+The Temperature Tower descends 5 °C per 10 mm band; VFA bands the speed every 5 mm; the Retraction Tower bands every 1 mm above a 1.4 mm base — hence the floor division in all three.
 
 Pressing **Save result** records the value in the calibration history as a farm record — "this filament, on this printer + nozzle, calibrated to X".
 
@@ -164,7 +166,7 @@ On H2D / H2D Pro the wizard exposes **per-extruder tabs**. Each extruder calibra
 
 **A mode is greyed out**
 
-- The mode is in the `disabled` state in this build — it has not shipped yet. Retraction Tower, Flow Rate, and Auto calibration roll out mode-by-mode; check the changelog for the build that enables the one you need.
+- The mode is in the `disabled` state in this build — it has not shipped yet. Flow Rate and Auto calibration roll out mode-by-mode; check the changelog for the build that enables the one you need.
 
 **Calibration print didn't dispatch**
 
@@ -178,4 +180,4 @@ On H2D / H2D Pro the wizard exposes **per-extruder tabs**. Each extruder calibra
 
 **A tower result had no effect**
 
-- Expected — a tower result (VFA, Volumetric Speed) is an inert record, not a printer-side setting. Copy the value into your slicer's filament profile yourself.
+- Expected — a tower result (VFA, Volumetric Speed, Retraction) is an inert record, not a printer-side setting. Copy the value into your slicer's filament profile yourself.
