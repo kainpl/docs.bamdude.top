@@ -106,6 +106,7 @@ plugins:
             "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
             "Spool Inventory": "Інвентар котушок"
             "Projects & Print Plan": "Проєкти та print plan"
+            "Filament Calibration": "Калібровка філаменту"
             "K-Profiles": "K-профілі"
             "Stats & Energy": "Статистика і енергія"
             "Energy Tracking": "Відстеження енергії"
@@ -242,6 +243,7 @@ nav:
     - Library, Inventory & Projects:
       - Spool Inventory: features/inventory.md
       - Projects & Print Plan: features/projects.md
+      - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
       - Stats & Energy: features/stats.md
       - Energy Tracking: features/energy.md

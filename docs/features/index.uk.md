@@ -162,6 +162,11 @@ G-code макроси, що активуються подіями друку, з
 </div>
 
 <div class="feature-card" markdown>
+### [:material-tune-vertical: Калібровка філаменту](filament-calibration.uk.md)
+Вбудований майстер калібровки — pressure-advance і speed/quality вежі, нарізані під твої власні пресети, з Bambu Studio parity.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-tune-variant: K-профілі](kprofiles.uk.md)
 Print-профілі на принтер з обмеженнями для двосопельних, імпорт/експорт та інтеграція з Git-бекапом.
 </div>

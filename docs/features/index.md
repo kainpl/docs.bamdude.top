@@ -162,6 +162,11 @@ Group prints into projects with an ordered print plan. Per-file copies stepper, 
 </div>
 
 <div class="feature-card" markdown>
+### [:material-tune-vertical: Filament Calibration](filament-calibration.md)
+In-app calibration wizard — pressure-advance and speed/quality towers sliced against your own presets, with Bambu Studio parity.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-tune-variant: K-Profiles](kprofiles.md)
 Per-printer print profiles with dual-nozzle gating, import/export, and Git-backup integration.
 </div>
