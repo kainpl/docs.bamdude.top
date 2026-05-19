@@ -49,18 +49,19 @@ Three pressure-advance modes, all **fully production**:
 
 All three follow the full flow: slice → FTP → print → save dialog → K-profile saved and bound to the AMS slot.
 
-### Speed & quality towers
+### Towers
 
 | Mode | What it prints |
 |---|---|
+| **Temperature Tower** | A tower whose nozzle temperature steps down 5 °C every 10 mm band — each band carries an embossed temperature number. |
 | **Volumetric Speed Tower** | A spiral-mode tower whose outer-wall speed ramps up with height. |
 | **VFA Tower** | Vibration Fine Artifacts tower — also spiral-mode, outer-wall speed ramps with height. |
 
-Both are **production**. They are print-and-eyeball calibrations: the operator reads the failure height by eye, then uses the finish-step calculator (see below).
+All three are **production**. They are print-and-eyeball calibrations: the operator reads the cleanest band (Temperature) or the failure height (Volumetric Speed, VFA) by eye, then uses the finish-step calculator (see below). For the Temperature Tower, the start/end temperatures default to the right range for the loaded filament's material — PLA 230→190 °C, PETG 250→230 °C, ABS/ASA 270→230 °C, and so on.
 
 ### In development
 
-**Temperature Tower**, **Retraction Tower**, **Flow Rate**, and **Auto** (lidar-driven) calibration are being rolled out mode-by-mode. Until each one lands it appears greyed-out in the wizard.
+**Retraction Tower**, **Flow Rate**, and **Auto** (lidar-driven) calibration are being rolled out mode-by-mode. Until each one lands it appears greyed-out in the wizard.
 
 ---
 
@@ -93,16 +94,17 @@ Pressure-advance modes end on a **save dialog**:
 
 The result is written to a `filament_calibration` row, pushed to the printer's 16-slot K-profile history over MQTT, and bound to the AMS slot — so subsequent prints automatically use it.
 
-### Tower modes (VFA, Volumetric Speed)
+### Tower modes (Temperature, VFA, Volumetric Speed)
 
-Tower modes are print-and-eyeball. The result is a **slicer-side setting** with no printer runtime knob. The finish step provides a **calculator**: enter the measured failure height (mm) and BamDude applies the per-mode formula, showing the result inline.
+Tower modes are print-and-eyeball. The result is a **slicer-side setting** with no printer runtime knob. The finish step provides a **calculator**: enter the measured height (mm) and BamDude applies the per-mode formula, showing the result inline.
 
 | Mode | Formula | Unit |
 |---|---|---|
+| **Temperature Tower** | `result = start − ⌊height / 10⌋ × 5` | °C |
 | **Volumetric Speed Tower** | `result = start + height × step` | mm³/s |
 | **VFA Tower** | `result = start + ⌊height / 5⌋ × step` | mm/s |
 
-VFA bands the speed every 5 mm, hence the floor division.
+The Temperature Tower descends 5 °C per 10 mm band; VFA bands the speed every 5 mm — hence the floor division in both.
 
 Pressing **Save result** records the value in the calibration history as a farm record — "this filament, on this printer + nozzle, calibrated to X".
 
@@ -162,7 +164,7 @@ On H2D / H2D Pro the wizard exposes **per-extruder tabs**. Each extruder calibra
 
 **A mode is greyed out**
 
-- The mode is in the `disabled` state in this build — it has not shipped yet. Temperature Tower, Retraction Tower, Flow Rate, and Auto calibration roll out mode-by-mode; check the changelog for the build that enables the one you need.
+- The mode is in the `disabled` state in this build — it has not shipped yet. Retraction Tower, Flow Rate, and Auto calibration roll out mode-by-mode; check the changelog for the build that enables the one you need.
 
 **Calibration print didn't dispatch**
 
