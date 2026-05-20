@@ -82,6 +82,8 @@ curl -H "Authorization: Bearer bb_..." http://localhost:8000/api/v1/printers/
     - `can_queue` — потрібен для `POST /queue` і queue-mutation ендпоінтів
     - `can_control_printer` — для start / pause / stop / cancel
     - `can_read_status` — для printer-state, archive, stats, monitoring
+    - `can_access_cloud` — для cloud-token-backed ендпоінтів (slicer presets, MakerWorld)
+    - `can_update_energy_cost` — для `POST /settings/electricity-price` (вузько-обмежений Home-Assistant dynamic-tariff endpoint — див. [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.uk.md#tibber--octopus--dynamic-tariff-integration)). НЕ дає загальний `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** звужує printer-bound дзвінки. Ключ з `printer_ids = [3, 7]` поверне 403 на `/printers/5/status`, навіть якщо `can_read_status=true`.
 
 Permissions, що гейтять **управління** самими ключами (хто може list / create / revoke), — звичайні permission-и юзер-груп:

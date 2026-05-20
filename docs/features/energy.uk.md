@@ -125,7 +125,10 @@ Mode `total` потребує **хоча б один snapshot до початк�
 
 ### 1. Створіть API key
 
-**Settings → API Keys → Create** з дозволом `settings:write`. Скопіюйте ключ.
+**Settings → API Keys → Create** і ввімкніть на ключі toggle **Update electricity price**. Це вузько-обмежений opt-in для `POST /settings/electricity-price` — він **не** надає загальний settings-write дозвіл (старий `PATCH /settings` лишається). Скопіюйте ключ.
+
+!!! note "Старі docs згадували `PATCH /settings`"
+    Загальний `PATCH /settings` все ще працює з API key, але виставляє увесь settings payload (SMTP / LDAP / MQTT credentials, HA token, всі UI-ручки) — значно ширшу поверхню, ніж потрібно для dynamic-tariff кейсу. Новий `POST /settings/electricity-price` приймає тільки `{energy_cost_per_kwh}`, повертає повну settings response щоб HA міг переконатись що значення прийнялось, і захищений per-key toggle-ом — адмін має явно opt-in. Конфіги що вказують на legacy URL продовжать працювати; перейдіть на новий URL при наступному оновленні конфігу.
 
 ### 2. Додайте REST command у HA
 
@@ -134,8 +137,8 @@ Mode `total` потребує **хоча б один snapshot до початк�
 ```yaml
 rest_command:
   bamdude_electricity_price:
-    url: "http://YOUR_BAMDUDE_IP:8000/api/v1/settings"
-    method: PATCH
+    url: "http://YOUR_BAMDUDE_IP:8000/api/v1/settings/electricity-price"
+    method: POST
     headers:
       X-API-Key: "YOUR_API_KEY"
     content_type: "application/json"

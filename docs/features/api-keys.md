@@ -82,6 +82,8 @@ Two layers gate every API-keyed call:
     - `can_queue` — required for `POST /queue` and queue-mutation endpoints
     - `can_control_printer` — required for start / pause / stop / cancel
     - `can_read_status` — required for printer-state, archive, stats, monitoring reads
+    - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
+    - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber--octopus--dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** narrows printer-bound calls. A key with `printer_ids = [3, 7]` returns 403 on `/printers/5/status` even if `can_read_status` is on.
 
 The permissions that gate the **management** of the keys themselves (who can list / create / revoke) are normal user-group permissions:
