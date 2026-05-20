@@ -60,9 +60,17 @@ All three follow the full flow: slice → FTP → print → save dialog → K-pr
 
 All four are **production**. They are print-and-eyeball calibrations: the operator reads the cleanest band (Temperature), the failure height (Volumetric Speed, VFA), or the height where stringing between the pillars cleans up (Retraction) by eye, then uses the finish-step calculator (see below). For the Temperature Tower, the start/end temperatures default to the right range for the loaded filament's material — PLA 230→190 °C, PETG 250→230 °C, ABS/ASA 270→230 °C, and so on.
 
+### Flow Rate
+
+A two-pass test that calibrates the filament's flow ratio — the multiplier that scales every extrusion move so the right amount of plastic comes out. **Pass 1** (coarse) prints a plate of 9 patches at modifiers from −20 % to +20 % in 5 % steps centred on your filament's current `filament_flow_ratio`. The operator picks the smoothest patch in the wizard's coarse-save dialog; **pass 2** (fine) then prints 10 patches at modifiers from −9 % to 0 %, centred on the coarse pick. The final flow ratio is `coarse_pick × (100 + fine_modifier) / 100` — written into the calibration history and ready to copy into the slicer's filament profile.
+
+The baseline the test prints at is the picked filament preset's `filament_flow_ratio`, auto-prefilled in the verify-download page when the preset is local or resolvable; the operator can also override it to test from a fresh `1.0` without editing the slicer profile.
+
+**Production.** The wizard's two-pass auto-dispatch runs end-to-end — pass 1 slices, prints, you pick the block, pass 2 slices automatically with the picked baseline, prints, you pick the block, the wizard saves.
+
 ### In development
 
-**Flow Rate** and **Auto** (lidar-driven) calibration are being rolled out mode-by-mode. Until each one lands it appears greyed-out in the wizard.
+Only **Auto** (lidar-driven, X1 / H2D Pro) calibration is still rolling out. It appears greyed-out in the wizard on supported printers until it lands.
 
 ---
 
@@ -166,7 +174,7 @@ On H2D / H2D Pro the wizard exposes **per-extruder tabs**. Each extruder calibra
 
 **A mode is greyed out**
 
-- The mode is in the `disabled` state in this build — it has not shipped yet. Flow Rate and Auto calibration roll out mode-by-mode; check the changelog for the build that enables the one you need.
+- The mode is in the `disabled` state in this build — it has not shipped yet. Auto (lidar-driven) calibration rolls out separately; check the changelog for the build that enables it.
 
 **Calibration print didn't dispatch**
 
@@ -180,4 +188,4 @@ On H2D / H2D Pro the wizard exposes **per-extruder tabs**. Each extruder calibra
 
 **A tower result had no effect**
 
-- Expected — a tower result (VFA, Volumetric Speed, Retraction) is an inert record, not a printer-side setting. Copy the value into your slicer's filament profile yourself.
+- Expected — a tower result (VFA, Volumetric Speed, Retraction) or a Flow Rate result is an inert record, not a printer-side setting. Copy the value into your slicer's filament profile yourself.
