@@ -237,10 +237,18 @@ BamDude підтримує LDAP-автентифікацію для оточен
 
 | Тоглер | Ефект |
 |---|---|
-| **Auto-provision** | On = перший успішний LDAP-логін авто-створює локальний рядок з `auth_source=ldap`. Off = адміни мають пре-створити користувача; невідомі LDAP-юзернейми відхиляються. |
+| **Auto-provision** | On = перший успішний LDAP-логін авто-створює локальний рядок з `auth_source=ldap`. Off = адміни мають пре-створити користувача через вкладку **LDAP** у Create User модалі (див. нижче); невідомі LDAP-юзернейми відхиляються при логіні. |
 | **Sync email on login** | Email юзера переписується з LDAP при кожному логіні (так AD-зміни доходять). |
 
 LDAP-provisioned юзери показують **LDAP** badge у списку Users. Кнопка **Change password** прихована — паролі живуть у directory, не в BamDude. Admin-triggered password reset і self-service forgot-password заблоковані для LDAP-акаунтів з ясним повідомленням "managed by LDAP".
+
+### Manual onboarding (вкладка LDAP)
+
+Коли LDAP увімкнено, **Create User** модал у Settings → Users отримує **Local / LDAP** перемикач вкладок. LDAP-вкладка — це debounced пошук у директорії (≥2 символи), повертає до 25 збігів через service-account bind. Кожен рядок показує `displayName` / email / DN з директорії і має позначку **Already provisioned** для імен, що вже існують як BamDude-користувачі (тож подвійний клік неможливий). Вибрати один + натиснути **Provision user** → BamDude перерезолвить ім'я через service bind і створить BamDude-рядок через ту саму гілку коду, що auto-provision при логіні — group mapping, default-group fallback і email sync застосовуються однаково.
+
+Використовуй це коли **Auto-provision** вимкнено, але треба все-таки пре-створити directory-користувачів вручну без редагування БД.
+
+Потрібний дозвіл: `users:create` (admin за замовчуванням).
 
 ### Local admin fallback
 

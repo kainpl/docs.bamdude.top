@@ -237,10 +237,18 @@ If no mapping is configured, LDAP users are auto-provisioned with no group membe
 
 | Toggle | Effect |
 |---|---|
-| **Auto-provision** | On = first successful LDAP login auto-creates a local row tagged `auth_source=ldap`. Off = admins must pre-create the user first; unknown LDAP usernames are rejected. |
+| **Auto-provision** | On = first successful LDAP login auto-creates a local row tagged `auth_source=ldap`. Off = admins must pre-create the user first via the **LDAP** tab in the Create User modal (see below); unknown LDAP usernames are rejected on login. |
 | **Sync email on login** | The user's email attribute is overwritten from LDAP on every login (so AD changes propagate). |
 
 LDAP-provisioned users show an **LDAP** badge in the Users list. Their **Change password** button is hidden -- passwords live at the directory, not in BamDude. Admin-triggered password resets and self-service forgot-password are blocked for LDAP accounts with a clear "managed by LDAP" message.
+
+### Manual onboarding (LDAP tab)
+
+When LDAP is enabled, the **Create User** modal in Settings → Users gains a **Local / LDAP** tab toggle. The LDAP tab is a debounced directory search (≥2 chars) that returns up to 25 matches via the service-account bind. Each row shows the directory's `displayName` / email / DN and is annotated **Already provisioned** for usernames that already exist as BamDude users (so a duplicate-click is impossible). Picking one and clicking **Provision user** re-resolves the username via the service bind and creates the BamDude row through the same code path the auto-provision login uses — group mapping, default-group fallback, and email sync apply identically.
+
+Use this when **Auto-provision** is off but you still want to pre-create directory users one at a time without hand-editing the database.
+
+Permission required: `users:create` (admin by default).
 
 ### Local admin fallback
 
