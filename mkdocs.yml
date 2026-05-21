@@ -134,6 +134,7 @@ plugins:
             API Reference: Довідка API
             "Keyboard Shortcuts": "Гарячі клавіші"
             Troubleshooting: Усунення неполадок
+            Privacy: Приватність
 
 markdown_extensions:
   # Python Markdown
@@ -274,5 +275,7 @@ nav:
     - API Reference: reference/api.md
     - Keyboard Shortcuts: reference/shortcuts.md
     - Troubleshooting: reference/troubleshooting.md
+
+  - Privacy: privacy.md
 
 copyright: Copyright &copy; 2025-2026 BamDude Contributors
