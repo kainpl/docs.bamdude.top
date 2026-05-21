@@ -17,7 +17,7 @@ Once a day BamDude sends a small anonymized snapshot to `https://bamdude.top/api
 
 - App version + release channel
 - OS platform / release / architecture, Python version, whether running in Docker
-- Aggregate counts: archives, printers, spools, projects, smart plugs
+- Aggregate counts: archives, printers, spools, projects, smart plugs, users, AMS units
 - Printer **models** (e.g. `P1S`, `A1`)
 - Enabled integrations (Spoolman, Obico, Telegram, OIDC, Git backup, slicer API) as on/off flags
 - Daily print counts (completed / failed)
