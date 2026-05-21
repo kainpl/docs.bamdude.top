@@ -346,6 +346,21 @@ Configure in **Settings → Smart Plugs** with cooldown temperature and time set
 
 **Keep enabled toggle**: per-plug **Keep enabled** flag overrides auto-off — useful for the print-room HVAC plug or chamber lights you don't want auto-cycling. The Auto Power Off block on the plug card greys out when Keep enabled is on.
 
+### Auto Off After Drying
+
+A separate per-plug toggle, **Auto Off After Drying**, powers the plug down after an AMS drying cycle finishes — independent of the print-finish auto-off above. It fires whenever **any** AMS unit on the linked printer completes a drying cycle. Because the trigger is read from firmware state, all three drying paths are caught: queue-triggered drying, ambient drying, and a manually started cycle.
+
+It has its own delay field, **defaulting to 10 minutes** (vs. 5 minutes for print-finish auto-off). The AMS chamber stays hot right after a cycle, so the longer default gives the filament and chamber more time to cool before power is cut.
+
+It honours the same guards as the print-finish auto-off:
+
+- The master plug **enabled** flag must be on.
+- Home Assistant `script.*` entities can be *triggered* but never *turned off* (scripts are one-shot, not stateful).
+- It always uses the **time-delay branch**. The temperature-based cooldown path applies to the hotend and isn't meaningful after a drying cycle, so it's bypassed here.
+
+!!! note "Trigger granularity is per-printer, not per-AMS"
+    The plug model is plug→printer, so per-AMS routing (a dedicated plug for just one AMS unit) isn't supported. The toggle fires when *any* AMS on the linked printer finishes drying — not a specific unit.
+
 ### Safety considerations
 
 - Auto-off **never fires** while bed temp is above the cooldown threshold (default 50 °C, configurable per-plug). Stops you from yanking power off a still-hot bed.

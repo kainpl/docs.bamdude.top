@@ -28,6 +28,7 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **Search box** — matches on name, brand, material, or hex colour. Press `/` from anywhere on the page to focus it.
 - **Material chips** — multi-select OR (PLA + PETG → either).
 - **Colour chips** — multi-select OR by default; matches on the resolved colour-catalog name so all "Cobalt Blue" spools group regardless of brand.
+- **Storage Location chip** — narrows the spool list to a single storage location, so you can see just the spools kept in one box / shelf / dry-box.
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns) or **Cards** (visual swatches).
@@ -232,6 +233,10 @@ If you re-assign a spool to a slot **during** a print:
 
 This makes mid-batch refills work correctly without manual reconciliation: load a fresh spool when one runs low, re-assign it in BamDude, and the rest of the print is billed to the new spool.
 
+### Reset usage to 0
+
+Each spool has an eraser action that resets its tracked usage to zero (a reset-all variant clears every spool's usage at once). Mechanically it records a `weight_used_baseline`, so reported consumption becomes "used since the last reset" rather than lifetime — useful when you refill or swap a roll but keep the same inventory entry instead of creating a new one.
+
 ---
 
 ## :material-currency-usd: Cost Tracking
@@ -287,11 +292,12 @@ Painted, dual-colour, and silk filaments aren't one hex value — they're a grad
 
 Find a specific spool in a closet of 50 partials by sticking a label on each one. The Inventory header has a **Print labels…** action that opens a multi-select picker pre-loaded with the currently filtered spools; every inventory card and table row also has a per-spool printer icon for one-shot label printing.
 
-Five pre-built templates:
+Six pre-built templates:
 
 | Template | Size | Sheet | Notes |
 |---|---|---|---|
-| **AMS holder** | 30 × 15 mm | One per page | Fits the popular Makerworld AMS Filament Label Holder (model 752566). Drops the QR — at this size there's no room for swatch + text + QR without truncating the spool ID. |
+| **AMS holder (74 × 33)** | 74 × 33 mm | One per page | `ams_holder_74x33`. Fits popular Makerworld AMS Filament Label Holder inserts. Large enough for the full layout — swatch on the left, QR on the right, multi-line text in the middle (brand, material, hex, spool ID). |
+| **AMS holder (75 × 55)** | 75 × 55 mm | One per page | `ams_holder_75x55`. Taller AMS-holder variant; same full layout (swatch + QR + multi-line text) with more vertical room. |
 | **Box 40 × 30** | 40 × 30 mm | One per page | Common DK / Brother roll size; fits between the AMS holder and the 62×29 box label. Roomy enough for swatch + QR + full text column including hex code — good for filament-bag and storage-bin labels. |
 | **Box label** | 62 × 29 mm | One per page | Sized for Brother PT/QL and Dymo small-label stock. Carries QR + storage location. |
 | **Avery L7160** | 38.1 × 63.5 mm | A4, 21 per sheet | EU sheet stock. Carries QR. |
@@ -320,6 +326,7 @@ The modal scales to large inventories with:
 - **Search** — substring across the composed display name, brand, and `#ID`.
 - **Material filter chips** — derived from the visible spools.
 - **Select all visible / Deselect visible / Clear all** — selections survive filter changes (additive), so you can narrow to "PLA only", select all, then narrow to "PETG", and add those too.
+- **Sort toggle (By ID / By colour)** — *By ID* (default) lists spools in ascending-ID order; *By colour* hue-clusters them (chromatic colours ordered by hue, achromatic neutrals ordered by lightness trailing the rainbow) so a printed sheet comes out rainbow-ordered. Session-only — resets to By ID each time you open the picker.
 
 ### Server-side rendering
 

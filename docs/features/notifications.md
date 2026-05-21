@@ -250,7 +250,12 @@ The pause-state is also visualised on the Printers page in real time — a pause
 
 | Event | Fires when |
 |-------|------------|
-| `queue_job_added` / `queue_job_started` / `queue_job_waiting` / `queue_job_skipped` / `queue_job_failed` / `queue_completed` | Self-explanatory queue lifecycle events. Only the events you opt into. |
+| `queue_job_added` / `queue_job_started` / `queue_job_waiting` / `queue_job_skipped` / `queue_job_failed` | Self-explanatory queue lifecycle events. Only the events you opt into. |
+| `queue_completed` | The **entire install's** queues drain — fires only once every printer is idle with nothing pending. |
+| `printer_queue_completed` | An **individual printer's own** queue drains — fires the moment that printer finishes its last pending job, regardless of what other printers are doing. |
+
+!!! note "Global vs. per-printer queue completion"
+    On a single-printer setup the two are equivalent. On a **multi-printer farm** they differ: `queue_completed` waits for *every* printer to go idle, so a long job on one printer suppresses it for all the others. `printer_queue_completed` fires per printer the moment that printer's own queue empties — pick this one if you want a "this machine is free, load the next plate" ping per printer. `printer_queue_completed` is **ON** by default for new providers; `queue_completed` is off by default.
 
 **User / system:**
 
@@ -318,21 +323,21 @@ Configuration shape varies by provider type — the Telegram bot is special.
 
 Every event has a default template in `data/notification_templates_{en,uk}.json`. The Templates tab under Settings → Notifications lets you override any of them — title + body — with a MarkdownV2 toolbar and live preview.
 
-The Templates tab groups the 28 default templates by purpose so a glance tells you which dispatch path each one feeds:
+The Templates tab groups the default templates by purpose so a glance tells you which dispatch path each one feeds:
 
 | Group | Count | What it's for |
 |---|---|---|
 | **Print events** | 9 | `print_start/complete/failed/stopped/progress`, `plate_not_empty`, `bed_cooled`, `first_layer_complete`, `print_missing_spool_assignment` |
 | **Printer status** | 4 | `printer_offline`, `printer_error`, `filament_low`, `maintenance_due` |
 | **AMS environmental** | 2 | `ams_humidity_high`, `ams_temperature_high` (also reused at runtime for the AMS-HT events) |
-| **Print queue** | 6 | `queue_job_added/started/waiting/skipped/failed`, `queue_completed` |
+| **Print queue** | 7 | `queue_job_added/started/waiting/skipped/failed`, `queue_completed`, `printer_queue_completed` |
 | **Job owner emails** | 4 | `user_print_start/complete/failed/stopped` — SMTP-only, sent to the print job owner |
 | **System emails** | 2 | `user_created` (welcome), `password_reset` |
 | **Test** | 1 | `test` — used by the "Send test" buttons |
 
 Each card carries a small UPPERCASE channel badge:
 
-- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). The 21 entries in the first 4 groups.
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). The entries in the first 4 groups.
 - **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
 - **Amber `TEST`** — internal test-button helper.
 

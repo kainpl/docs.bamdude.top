@@ -63,7 +63,7 @@ The snapshot table is bounded — old rows are pruned after a configurable reten
 
 | Cost | Formula |
 |---|---|
-| **Per-print filament cost** | `filament_used_grams × (spool.cost / spool.weight)`. Falls back to `default_filament_cost / 1000` per gram if no spool was assigned. |
+| **Per-print filament cost** | Sum of each tracked spool's share (`grams_from_spool × spool.cost / spool.weight`). Any grams **not** covered by an assigned spool are topped up at `default_filament_cost / 1000` per gram. So a multi-colour print with only some AMS slots mapped to inventory still reflects the whole print, not just the tracked slots; a fully-untracked print falls back entirely to the default rate. |
 | **Per-print energy cost** | `energy_kwh × energy_cost_per_kwh`. Zero when no plug capture (`energy_kwh IS NULL`). |
 | **Total** | Filament + energy. |
 

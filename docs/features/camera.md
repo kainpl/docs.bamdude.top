@@ -300,6 +300,26 @@ When a stall is detected:
 
 ---
 
+## :material-stethoscope: Camera diagnostics
+
+When a camera won't stream, BamDude can run a built-in diagnostic that tests the connection stage by stage and tells you *which* link in the chain is broken. A **Diagnose** button sits next to **Retry** on the viewer's error state, and a small stethoscope icon lives in the always-visible control bar (between :material-refresh: Refresh and :material-fullscreen: Fullscreen) for a pre-flight check before you even start streaming.
+
+It calls `POST /api/v1/printers/{id}/camera/diagnose` and shows the results inline in a modal: one row per stage with a pass / fail / skipped marker, the per-stage duration in milliseconds, and a translated remediation hint. A **Run again** button re-runs the whole check without closing the modal.
+
+### Stages
+
+| Stage | What it checks |
+|-------|----------------|
+| **`tcp_reachable`** | Opens a raw TCP socket to the camera port — `322` for RTSPS, `6000` for chamber-image — with a 3-second timeout. It distinguishes a **timeout** ("printer not reachable"), a **refused** connection ("camera port closed — check LAN-Only Mode + Developer Mode"), and a **host-unreachable** error. |
+| **`first_frame`** | Captures one JPEG end-to-end with a 15-second timeout, using the same pipeline that powers `/camera/snapshot`. Proves the full path actually delivers an image, not just an open port. |
+
+!!! note "Live-stream shortcut"
+    If a viewer is already watching the camera **and** the buffered last frame is fresher than 10 seconds, the diagnostic skips the real test and reports the stream as live / healthy. Opening a fresh socket would kick the live viewer off on firmwares that allow only a single camera connection — so when there's already proof the camera works, BamDude doesn't disturb it.
+
+The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), and a summary code.
+
+---
+
 ## :material-image-area: Camera Snapshot on Print Complete
 
 BamDude can automatically capture a camera snapshot when prints complete:

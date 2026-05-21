@@ -43,7 +43,7 @@ Every queue item carries one of these statuses (visible on the queue card chip):
 | `waiting_for_stagger` | Multi-printer batch — waiting for the staggered-start tick |
 | `waiting_for_dispatch` | Dispatcher is in flight (FTP upload + MQTT start_print) |
 | `failed` | Dispatch or print failed; verbose `error_message` on hover |
-| `cancelled` | Cancelled by user before completion |
+| `cancelled` | Cancelled before completion — by the user, or automatically with reason "Source archive deleted" when a still-pending item's source archive is moved to trash (it can no longer dispatch, so it's cancelled rather than left stuck pending) |
 | `skipped` | Auto-skipped after a previous failure on the same job |
 | `completed` | Print finished — auto-deletes once the matching archive lands (m019) |
 

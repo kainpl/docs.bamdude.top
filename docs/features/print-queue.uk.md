@@ -43,7 +43,7 @@ description: Незалежні черги друку для кожного пр
 | `waiting_for_stagger` | Multi-printer batch — чекає тіку staggered-start |
 | `waiting_for_dispatch` | Диспатчер працює (FTP upload + MQTT start_print) |
 | `failed` | Диспатч або друк зафейлився; докладний `error_message` на ховері |
-| `cancelled` | Скасовано користувачем до завершення |
+| `cancelled` | Скасовано до завершення — користувачем, або автоматично з причиною "Source archive deleted", коли source-архів ще-pending елемента переміщено в кошик (він уже не може диспатчитись, тож скасовується, а не зависає в pending) |
 | `skipped` | Авто-skip після попереднього failure на цьому ж завданні |
 | `completed` | Прінт завершений — авто-видалення коли архів приземляється (m019) |
 

@@ -633,6 +633,40 @@ A VP in either Queue mode (`print_queue` or `auto_queue`) honours the `auto_disp
 
 ---
 
+## :material-tune-variant: System default print options (slicer-silent dispatches) {#system-default-print-options}
+
+When a slicer sends a print to a Queue-mode VP, it normally carries the per-job print-option toggles — **bed levelling**, **flow calibration**, **layer inspection**, and **timelapse**. Some slicer builds and headless / scripted upload paths **omit** these flags. Previously a queue item with a missing flag fell straight back to the printer model's built-in column default.
+
+A queue item now resolves each of those four flags with this precedence:
+
+| Priority | Source | When it applies |
+|---|---|---|
+| 1 (highest) | **Slicer-sent value** | The slicer included an explicit choice for the flag. Always wins. |
+| 2 | **Per-model system default** | The slicer omitted the flag **and** a system default is configured for this printer model. |
+| 3 (fallback) | **Built-in column default** | Neither of the above — the model's hardcoded default. |
+
+!!! info "It only fills gaps — never overrides the slicer"
+    A flag the slicer **does** send always wins. The system default exists purely to fill the toggles a silent slicer leaves blank; it never overrides an explicit in-slicer choice.
+
+### Configuring a system default
+
+System defaults live alongside the per-user saved profiles under **Settings → Print → Saved Print Profiles**. The profiles table now offers a **"System (slicer fallback)"** pseudo-user in addition to the real users:
+
+1. Open the **Add / Edit** profile dialog.
+2. Pick **System (slicer fallback)** as the user.
+3. Choose the **printer model** the defaults apply to.
+4. Set the four toggles and save.
+
+There is **at most one system default per printer model** — picking the same model again edits the existing one rather than creating a duplicate.
+
+!!! note "`use_ams` is not a system default"
+    `use_ams` is **not** one of the saved-profile toggles, so it is intentionally excluded from the system default. AMS usage stays **slicer-sent-or-column-default** — set it in the slicer (or rely on the model's built-in default), not here.
+
+!!! tip "Example — always timelapse on a P1S fleet"
+    To force timelapse on every silent-slicer dispatch to your P1S printers — even from a slicer build that doesn't send the flag — add a **System (slicer fallback)** profile for the **P1S** model with timelapse on. Every queue item that lands on a P1S without an explicit timelapse choice now inherits it.
+
+---
+
 ## :material-router-network: auto_queue mode {#auto_queue}
 
 `auto_queue` is the natural pairing between the VP and the [auto-queue router](auto-queue.md). On upload the VP:
