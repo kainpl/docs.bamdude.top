@@ -83,6 +83,13 @@ details.
 | **Access Code** | 8-character code from Developer Mode | `12345678` |
 | **Serial Number** | Your printer's serial number (auto-discovery fills this) | `01P00A000000001` |
 
+!!! note "The connection is verified before the printer is saved"
+    When you click Add, BamDude probes the printer over MQTT first. If it
+    can't connect — wrong access code, wrong IP, or the printer is off /
+    not in LAN-Only Mode — the add is rejected with an explanatory message
+    and nothing is saved, so you never end up with a dead, empty printer
+    card. Make sure the printer is powered on and reachable before adding.
+
 !!! tip "Model selection matters"
     BamDude derives several capabilities from the model — door-state
     detection, dual-nozzle UI, AMS-HT slot rendering, maintenance task
