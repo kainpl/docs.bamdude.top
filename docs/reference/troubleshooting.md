@@ -208,6 +208,36 @@ The format is short (8 hex chars, `[trace=abc12345]` in log lines) so log lines 
 
 ---
 
+## :material-stethoscope: Self-service diagnostics
+
+BamDude can triage most setup problems for you. On the **System** page, the **Connection Diagnostic** section probes each printer (ports, LAN developer mode, Docker network mode, subnet, credentials) and the **System Health** section scans recent logs against the known-issue catalog below. The in-app bug reporter runs both when you open it, so a fixable problem is surfaced before you file a report. The "How to fix" links on each finding point at the matching section here.
+
+### Wrong access code
+
+The printer rejected the file-transfer login. The access code is wrong, or it changed after Developer Mode was toggled. Re-copy the access code from the printer screen (LAN settings) and update it in the printer's settings in BamDude. Note that the serial number is case-sensitive — BamDude now uppercases it for you on save.
+
+### FTPS port 990 blocked
+
+BamDude could not reach the printer's file-transfer port (FTPS 990). The port is blocked, or the printer is off or on another subnet. Make sure nothing (firewall, Docker bridge networking) blocks port 990 between BamDude and the printer, and that both are on the same network.
+
+### FTPS TLS failure
+
+The TLS handshake with the printer's file-transfer server failed — often a firewall/proxy intercepting the connection, or outdated printer firmware. Update the printer firmware and check that nothing intercepts port 990.
+
+### MQTT connection unstable
+
+The control connection (MQTT 8883) repeatedly disconnects and reconnects — usually a weak network path or a partially blocked port. Check the Wi-Fi signal at the printer, prefer a wired connection, and make sure port 8883 is reliably reachable.
+
+### Camera RTSPS port 322
+
+The live camera could not be reached on port RTSPS 322. The port is blocked, or the camera / LAN liveview is off on the printer. Enable the camera and LAN liveview on the printer and make sure port 322 is not blocked. This does not affect printing.
+
+### Database is locked
+
+The SQLite database is hitting "database is locked" errors under load — common when running several printers at once. Switch BamDude to an external PostgreSQL database (see the PostgreSQL guide).
+
+---
+
 ## :material-bug: Getting Help
 
 When reporting issues, include:
