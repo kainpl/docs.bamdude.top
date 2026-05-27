@@ -237,6 +237,10 @@ This makes mid-batch refills work correctly without manual reconciliation: load 
 
 Each spool has an eraser action that resets its tracked usage to zero (a reset-all variant clears every spool's usage at once). Mechanically it records a `weight_used_baseline`, so reported consumption becomes "used since the last reset" rather than lifetime — useful when you refill or swap a roll but keep the same inventory entry instead of creating a new one.
 
+### Removing usage records
+
+Each row in a spool's **Usage History** has a hover **×** to delete just that entry; the bulk **Clear** button does the same for the whole list. Removing a record treats that consumption as if it never happened: its weight is **returned to the spool** (`weight_used` drops, so remaining weight goes back up) and the same amount is subtracted from the linked print's recorded filament, so the [Stats](stats.md) page stays in step with inventory. For a multi-colour print the deduction is per-record — removing one colour's entry only reclaims that colour's share and leaves the rest of the print intact. Handy for un-counting a mistaken or test print against a roll.
+
 ---
 
 ## :material-currency-usd: Cost Tracking

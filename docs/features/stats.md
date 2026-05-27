@@ -14,7 +14,7 @@ The header bar shows four lifetime counters:
 | Metric | Source |
 |---|---|
 | **Prints completed** | `print_archives` rows with `status='completed'`. |
-| **Filament consumed** | Sum of `filament_used_grams` across completed archives, grouped by material/colour. |
+| **Filament consumed** | Sum of `filament_used_grams` across all archives in range (not just completed), grouped by material/colour. Failed / cancelled prints contribute the filament **actually** extruded, not the full slicer estimate, so the total matches what inventory was deducted. |
 | **Print time** | Sum of `print_time_seconds`. |
 | **Energy used** | Sum of `energy_kwh` (the per-print delta the dispatcher computed at completion) over completed archives that had a smart-plug bound at print start. Falls back to a ranged sum from `smart_plug_energy_snapshots` when individual-print captures are missing. |
 
