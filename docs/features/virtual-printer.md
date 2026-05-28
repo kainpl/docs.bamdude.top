@@ -779,6 +779,14 @@ Multi-NIC host (Tailscale, Docker bridges, dual LAN) — auto-detection picks th
 3. **`CAP_NET_BIND_SERVICE` missing** — see the [Linux native tab](#platform-setup) above.
 4. **Bridge-mode Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` is mandatory; without it PASV advertises the container's internal IP and the data channel fails mid-handshake.
 
+### Slicer says "The printer is busy with another print job"
+
+The slicer refuses to send because it reads the VP as mid-print. This is the VP's *preparing* state — it flips there the moment you start a send, and clears once the upload completes.
+
+- **Fixed in 0.4.5.** Before 0.4.5 an interrupted or failed upload (or a file that didn't arrive as a `.3mf`) could leave the VP stuck *preparing* until BamDude restarted, so every later send saw it as busy. The VP now always returns to ready when an upload ends — success or failure, any file type — and only reports *preparing* while an upload is genuinely in flight. If you hit this on **0.4.5+**, it should clear on its own within a status cycle.
+- **Workaround on older builds**: toggle the VP off→on (or re-save its config) to reset its state; restarting BamDude does the same.
+- Applies to all non-proxy modes (File Manager, Queue, Auto-Queue) and to both Bambu Studio and OrcaSlicer.
+
 ### Proxy mode: printer offline in slicer
 
 - Target printer is online in BamDude? Card on Printers page should show `Online`.
