@@ -26,8 +26,8 @@ The Inventory page opens with five summary cards above the spool list, each clic
 The toolbar above the list combines a free-form search box with chip strips and view-mode toggles:
 
 - **Search box** — matches on name, brand, material, or hex colour. Press `/` from anywhere on the page to focus it.
-- **Material chips** — multi-select OR (PLA + PETG → either).
-- **Colour chips** — multi-select OR by default; matches on the resolved colour-catalog name so all "Cobalt Blue" spools group regardless of brand.
+- **Material dropdown** — single-select.
+- **Colour dropdown** — single-select. Options are the colours you actually have in stock — built from your existing (non-archived) spools — and grouped by the resolved colour-catalog name, so two near-identical hexes that both read as "Cobalt Blue" filter together regardless of brand. The dropdown only appears once at least one in-stock spool has a resolvable colour.
 - **Storage Location chip** — narrows the spool list to a single storage location, so you can see just the spools kept in one box / shelf / dry-box.
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.

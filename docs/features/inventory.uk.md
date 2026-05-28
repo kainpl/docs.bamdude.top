@@ -26,8 +26,8 @@ BamDude має власний інвентар фізичних котушок �
 Тулбар над списком комбінує free-form search-box з chip-стрічками і view-mode toggle-ами:
 
 - **Search-box** — матчить за іменем, брендом, матеріалом, hex-кольором. Натисни `/` будь-де на сторінці, щоб сфокусуватися.
-- **Material chips** — multi-select OR (PLA + PETG → будь-який).
-- **Color chips** — multi-select OR за замовчуванням; матчить на resolved color-catalog name, тож усі "Cobalt Blue" котушки групуються незалежно від бренду.
+- **Material dropdown** — single-select.
+- **Color dropdown** — single-select. Опції — кольори, які реально є в наявності (з твоїх існуючих, не архівованих котушок), згруповані за resolved color-catalog name, тож два близьких hex, що обидва читаються як "Cobalt Blue", фільтруються разом незалежно від бренду. Дропдаун зʼявляється, лише коли хоча б одна котушка в наявності має резолвабельний колір.
 - **Storage Location chip** — звужує список котушок до однієї локації зберігання, тож можна бачити лише котушки з однієї коробки / полиці / dry-box.
 - **Status tabs** — Active / Archived / All, плюс quick filters Used / New, плюс stock filter All / Stock (без slicer profile) / Configured (зі slicer profile).
 - **Brand dropdown** — single-select.
