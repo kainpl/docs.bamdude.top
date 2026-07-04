@@ -72,6 +72,7 @@ plugins:
             Upgrading: Оновлення
             First Printer Setup: Перший принтер
             "Mobile & PWA": "Мобільний і PWA"
+            Appearance: Оформлення
             Features: Функції
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
@@ -209,6 +210,7 @@ nav:
     - First Printer Setup: getting-started/first-printer.md
     - Reverse Proxy & HTTPS: getting-started/reverse-proxy.md
     - Mobile & PWA: getting-started/mobile.md
+    - Appearance: getting-started/appearance.md
 
   - Features:
     - features/index.md
