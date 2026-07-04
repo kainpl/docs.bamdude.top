@@ -96,6 +96,12 @@ Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal
 
 Plate index is preserved across restart-recovery + reprint flows. See [archiving](archiving.md) for chain-of-custody on multi-plate dispatches.
 
+### Build-plate type on queue items + print dialog
+
+On a farm with many plates it's easy to lose track of which physical plate a queued job actually needs. Every pending queue item now carries a **build-plate icon** (hover for the plate name) — the same bed icon the archive card shows — so you can see the target plate at a glance before it dispatches. The print dialog also shows the selected plate's type right next to the plate picker.
+
+Multi-plate 3MFs are resolved **per plate**: the value re-reads the file for the plate you actually picked rather than assuming every plate uses the first plate's bed, so a file mixing (say) Textured PEI and Engineering plates labels each one correctly.
+
 ### Print options
 
 When adding to queue, expand **Print options**:

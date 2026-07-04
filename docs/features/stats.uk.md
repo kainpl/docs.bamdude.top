@@ -101,7 +101,7 @@ Layout **персистнутий per-user** на бекенді, тож той 
 
 | Віджет | Що показує |
 |---|---|
-| **Print Success Rate** | Pie-chart — completed / failed / stopped split. Per-printer filterable. |
+| **Print Success Rate** | Donut-gauge зі split-ом completed / failed / **Cancelled**. Per-printer filterable. Див. нотатку нижче про те, як рахуються скасовані друки. |
 | **Filament by Type** | Pie-chart розподілу матеріалів (PLA / PETG / ABS / ...). Клік по сегментах — фільтрує. |
 | **Print Activity Calendar** | GitHub-style heatmap, кількість друків на день, клік по дню — drill в архіви того дня. |
 | **Print Duration Distribution** | Бакетна bar-діаграма: `<30m`, `30m–1h`, `1–2h`, `2–4h`, `4–8h`, `8–12h`, `12–24h`, `24h+`. Показує твою типову довжину друку. |
@@ -119,6 +119,14 @@ Multi-select-чіпи над віджетами scope-ять **увесь даш
 - Кнопка експорту поважає той самий фільтр
 
 Корисно для "покажи мені тільки ряд A1 у моєму MakerSpace" або "порівняй X1C-A vs X1C-B side-by-side".
+
+### Скасовані друки мають власний bucket
+
+Друки, які ти (або черга) зупинив, **не** рахуються як failures. Архіви `stopped`, `cancelled` і `skipped` падають в окремий **Cancelled** bucket, окремо від справжніх quality-failures (`failed` / `aborted`), тож abort друку не псує твої числа:
+
+- **Success Rate** ділить на *completed + failed only* — скасовані друки виключені і з чисельника, і зі знаменника, тож зупинка друку ніколи не тягне gauge вниз.
+- **failure-rate report** (і його weekly trend) використовує те саме правило — cancelled / stopped / skipped друки виключені з обох сторін ratio.
+- Вони **все ще рахуються в Total Prints** і лишаються видимими на власному рядку **Cancelled** у Success Rate breakdown, тож нічого не зникає тихо.
 
 ### Per-User фільтрація
 

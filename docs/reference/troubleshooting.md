@@ -232,6 +232,14 @@ The control connection (MQTT 8883) repeatedly disconnects and reconnects — usu
 
 The live camera could not be reached on port RTSPS 322. The port is blocked, or the camera / LAN liveview is off on the printer. Enable the camera and LAN liveview on the printer and make sure port 322 is not blocked. This does not affect printing.
 
+### Store sent files on external storage
+
+BamDude read the printer's own report of the **Store sent files on external storage** setting (install step 4) and found it turned off. Without it, the printer never keeps the sliced `.gcode.3mf`, so every archived print is missing its thumbnail and slicer metadata. Turn the setting on in the slicer so each job is stored on the printer. Note that on some older firmware/slicer combinations this is a slicer-only preference the printer never reports back — the diagnostic can't see that variant, but the Archives page shows a banner when prints arrive without thumbnails.
+
+### Printer is publishing status
+
+The MQTT broker accepted the connection, but no status reports arrived from the printer. The broker accepts a connection even when the serial number is wrong or mis-cased — the printer's report topic is case-sensitive — so control looks connected while the slicer side shows empty AMS, no filaments, and no K-profiles. The diagnostic waits up to 10 seconds for the printer's first status report, showing a live elapsed-seconds counter so the wait doesn't look hung. If it fails, re-check the serial number for typos and case (BamDude now uppercases it on save) and confirm the printer is powered on and reachable.
+
 ### Database is locked
 
 The SQLite database is hitting "database is locked" errors under load — common when running several printers at once. Switch BamDude to an external PostgreSQL database (see the PostgreSQL guide).

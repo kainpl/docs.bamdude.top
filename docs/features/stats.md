@@ -101,7 +101,7 @@ Layout is **persisted per-user** in the backend, so the same login on a differen
 
 | Widget | What it shows |
 |---|---|
-| **Print Success Rate** | Pie chart — completed / failed / stopped split. Per-printer filterable. |
+| **Print Success Rate** | Donut gauge with a completed / failed / **Cancelled** split. Per-printer filterable. See the note below on how cancelled prints are counted. |
 | **Filament by Type** | Pie chart of material distribution (PLA / PETG / ABS / ...). Click segments to filter. |
 | **Print Activity Calendar** | GitHub-style heatmap, daily print count, click any day to drill into that day's archives. |
 | **Print Duration Distribution** | Bucket bar chart: `<30m`, `30m–1h`, `1–2h`, `2–4h`, `4–8h`, `8–12h`, `12–24h`, `24h+`. Surfaces your typical print length. |
@@ -119,6 +119,14 @@ Multi-select chips above the widgets scope the **entire dashboard** to a subset 
 - The export button respects the same filter
 
 Useful for "show me just my MakerSpace's row of A1s" or "compare X1C-A vs X1C-B side by side".
+
+### Cancelled prints have their own bucket
+
+Prints you (or the queue) stopped are **not** counted as failures. `stopped`, `cancelled`, and `skipped` archives land in a dedicated **Cancelled** bucket, separate from genuine quality failures (`failed` / `aborted`), so aborting a job doesn't punish your numbers:
+
+- **Success Rate** divides by *completed + failed only* — cancelled prints are excluded from both the numerator and the denominator, so stopping a print never drags the gauge down.
+- The **failure-rate report** (and its weekly trend) uses the same rule — cancelled / stopped / skipped prints are excluded from both sides of the ratio.
+- They **still count toward Total Prints**, and stay visible on their own **Cancelled** line in the Success Rate breakdown, so nothing silently vanishes.
 
 ### Per-User filtering
 

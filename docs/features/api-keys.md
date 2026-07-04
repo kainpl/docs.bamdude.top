@@ -42,6 +42,8 @@ prefix              random body
 | **Can queue** | Allow this key to add jobs to the print queue (`POST /queue`) |
 | **Can control printer** | Allow start / pause / stop / cancel commands |
 | **Can read status** | Allow live printer state, archive lists, statistics — the read surface |
+| **Manage Library** | Optional. Upload / rename / delete your **own** library files + MakerWorld import (`can_manage_library`). Read-only library access stays under **Can read status** |
+| **Manage Inventory** | Optional. Create / edit / delete spools, catalogue entries, and forecast settings (`can_manage_inventory`). Read-only inventory stays under **Can read status** |
 | **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
 | **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. Calls against any other printer return 403 |
 | **Expires at** | Optional ISO timestamp. After that, the key is rejected even if it isn't revoked |
@@ -52,7 +54,7 @@ The create response carries the full `key` field — **copy it before closing th
     UI-created keys are stamped with the creating user's id, so a key shown with the **Cloud** badge can spend that user's Bambu Cloud token. Pre-0.4.3 keys imported from older installs are ownerless and surface a **Legacy** badge — they cannot be promoted to `Use Bambu Cloud` (the toggle is rejected at save time without an owner). Re-create such keys under your user account to enable cloud spend.
 
 !!! tip "Principle of least privilege"
-    Don't blanket-tick all three flags. A Home Assistant dashboard usually needs only `can_read_status`. A queue-poster from your slicer needs `can_queue` + `can_read_status` and *not* `can_control_printer`. Separate keys per consumer make rotation painless and the audit trail readable.
+    Don't blanket-tick every scope. A Home Assistant dashboard usually needs only `can_read_status`. A queue-poster from your slicer needs `can_queue` + `can_read_status` and *not* `can_control_printer`. A file-uploader integration can now get `can_manage_library` without `can_queue`. Separate keys per consumer make rotation painless and the audit trail readable.
 
 ---
 
@@ -79,12 +81,20 @@ Two layers gate every API-keyed call:
 
 1. **The endpoint's required permission** is checked. API keys bypass *user* permission checks (they have no group membership), but…
 2. **The key's own flags** are evaluated:
-    - `can_queue` — required for `POST /queue` and queue-mutation endpoints
-    - `can_control_printer` — required for start / pause / stop / cancel
-    - `can_read_status` — required for printer-state, archive, stats, monitoring reads
+    - `can_queue` — required for `POST /queue` and queue-mutation endpoints (+ archive reprint, which enqueues an existing archive)
+    - `can_control_printer` — required for start / pause / stop / cancel (+ smart-plug control)
+    - `can_read_status` — required for printer-state, archive, stats, monitoring reads (and read-only library / inventory / settings-language)
+    - `can_manage_library` — required for library upload / rename / delete-**own** + notes + MakerWorld import. Bulk / all-ownership library ops stay admin-only
+    - `can_manage_inventory` — required for spool / catalogue / forecast **writes** (read-only inventory stays under `can_read_status`)
     - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
     - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber--octopus--dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** narrows printer-bound calls. A key with `printer_ids = [3, 7]` returns 403 on `/printers/5/status` even if `can_read_status` is on.
+
+!!! warning "Strict scope confinement"
+    A key now reaches **only** the endpoints its granted scopes cover. Anything outside them — settings writes, user / group / API-key administration, resource deletion (printers, archives, projects), and network discovery scans — is refused with `403`, even for an otherwise-valid, enabled key. Previously any valid key could reach almost every endpoint (start/stop prints, reorder the queue, reprint archives, delete another user's library files, read every resource) *regardless* of which scope checkboxes were ticked on it — upstream advisory **GHSA-r2qv-8222-hqg3** (CVSS 9.9 critical). The mapping is an allowlist: a permission with no scope entry is denied by default, so a newly-added admin endpoint is never silently reachable by a key.
+
+!!! info "Upgrade inheritance"
+    The two scopes added in this cycle — `can_manage_library` and `can_manage_inventory` — are backfilled from each key's existing **Manage Queue** (`can_queue`) setting on upgrade. A queue-enabled key keeps its prior upload + inventory-write workflow, while a hardened read-only key (`can_queue = false`) gains nothing. Adjust either scope afterwards with `PATCH /api-keys/{id}`.
 
 The permissions that gate the **management** of the keys themselves (who can list / create / revoke) are normal user-group permissions:
 
@@ -226,7 +236,10 @@ After any of those, in-flight requests already past the validator finish (the va
     The key's `printer_ids` scope is set and doesn't include this printer. Either expand the scope (`PATCH` with the new id list) or use a different key.
 
 ??? question "403 Forbidden on `/queue` POST with `can_queue=true`"
-    Some queue mutations also touch the library; check that the call's payload doesn't try to upload a file (which is a separate `library:upload` permission and isn't covered by `can_queue`).
+    Some queue mutations also touch the library; a payload that uploads a file needs the separate **Manage Library** (`can_manage_library`) scope — it isn't covered by `can_queue`.
+
+??? question "403 Forbidden writing library / inventory with a queue-enabled key"
+    Since strict-scope confinement, library writes need `can_manage_library` and inventory writes need `can_manage_inventory` — they're no longer implied by `can_queue`. On upgrade these were backfilled from `can_queue`, but a key edited to read-only, or created after the split, needs them ticked explicitly. `PATCH /api-keys/{id}` with the scope, then retry.
 
 ??? question "Key works for status but not for `/control/start`"
     `can_control_printer` is off. Toggle it on with `PATCH`, then retry — no need to recreate the key.

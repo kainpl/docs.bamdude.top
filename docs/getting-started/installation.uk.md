@@ -64,6 +64,64 @@ description: Встановлення BamDude на вашу систему, вк
 
 ---
 
+## :material-microsoft-windows: Windows (native)
+
+Для Windows 10/11 є власний PowerShell-інсталятор — без Docker, без WSL. Він ставить Git і Python 3.10+ через `winget`, якщо їх немає, клонує репозиторій, будує Python virtual environment, встановлює залежності, за бажанням додає правило Windows Firewall і може зареєструвати BamDude як **Windows Service** (через [NSSM](https://nssm.cc/)), який стартує при завантаженні системи.
+
+Запусти цей один рядок у PowerShell — скрипт **сам піднімається до Administrator**, якщо ще не запущений з правами адміна:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/kainpl/bamdude/main/install/windows-installer.ps1 -OutFile windows-installer.ps1; .\windows-installer.ps1"
+```
+
+В інтерактивному режимі він питає **директорію встановлення**, **порт** і чи **виставляти BamDude у LAN** чи слухати лише localhost. Твої **дані та логи лежать поза папкою з кодом** (`<InstallDir>\data` і `<InstallDir>\logs`), тож in-app git-оновлення їх ніколи не чіпають.
+
+### :material-tune-variant: Опції
+
+| Прапорець | За замовчуванням | Опис |
+|-----------|------------------|------|
+| `-InstallDir PATH` | `C:\BamDude` | Директорія встановлення |
+| `-Port PORT` | `8000` | Порт, на якому слухати |
+| `-LocalOnly` | вимк. (bind `0.0.0.0`, доступ по LAN) | Bind лише на `127.0.0.1` |
+| `-NoService` | вимк. (service реєструється) | Пропустити реєстрацію Windows Service |
+| `-NoStart` | вимк. | Не запускати BamDude після встановлення |
+| `-Yes` | вимк. | Неінтерактивний режим, приймати дефолти |
+| `-Silent` | вимк. | Неінтерактивний з меншим виводом у консоль |
+
+### :material-console: Приклади
+
+```powershell
+# Інтерактивне встановлення
+.\windows-installer.ps1
+
+# Unattended, кастомний шлях + порт, local-only
+.\windows-installer.ps1 -InstallDir D:\BamDude -Port 3000 -LocalOnly -Yes
+
+# Встановлення без реєстрації service
+.\windows-installer.ps1 -NoService -Yes
+```
+
+### :material-cog-outline: Керування сервісом
+
+Встановлений як Windows Service — керуй стандартними cmdlet-ами:
+
+```powershell
+Get-Service BamDude          # Статус
+Start-Service BamDude        # Старт
+Stop-Service BamDude         # Стоп
+Restart-Service BamDude      # Рестарт
+```
+
+Встановлений з `-NoService` — запускай вручну:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\BamDude\Start-BamDude.ps1"
+```
+
+Далі відкрий [http://localhost:8000](http://localhost:8000) (або порт, який ти обрав).
+
+---
+
 ## :material-tune: Конфігурація
 
 Налаштуйте BamDude через змінні середовища або файл `.env`:

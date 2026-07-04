@@ -311,6 +311,10 @@ Painted, dual-colour, and silk filaments aren't one hex value — they're a grad
 !!! tip "Don't reintroduce hard-coded colour tables anywhere"
     BamDude deliberately removed hard-coded `tray_id_name` / hex tables that would inevitably mislabel third-party filaments. The catalog is the only source of truth — even if you're tempted to "shortcut" colour resolution somewhere.
 
+### Transparent / clear filament
+
+Transparent filament is a first-class colour. The spool colour editor has a dedicated **Clear** quick-swatch, and the hex field accepts an 8-digit `RRGGBBAA` value, so you can mark a spool as fully or partially transparent. Clear spools render as a **checkerboard** swatch everywhere the colour appears — inventory cards, AMS slot indicators, the colour picker — instead of showing up as an invisible or solid-black chip.
+
 ## :material-printer: Printable PDF labels
 
 Find a specific spool in a closet of 50 partials by sticking a label on each one. The Inventory header has a **Print labels…** action that opens a multi-select picker pre-loaded with the currently filtered spools; every inventory card and table row also has a per-spool printer icon for one-shot label printing.

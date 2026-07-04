@@ -34,6 +34,17 @@ The folder tree on the left is the primary navigation. Click any folder to enter
 !!! tip "When to enable Collapse"
     If your library has many nested folders, turning on **Collapse** keeps the sidebar compact — you only see top-level folders and drill in when you need them. Small, flat libraries won't notice a difference because the toggle only affects nested folders.
 
+### "All Files" vs "External"
+
+Two top-level entries sit above the folder tree, keeping your own uploads and linked-folder content in separate views instead of one flat list.
+
+| Entry | What it shows |
+|---|---|
+| **All Files** | Your own uploads in BamDude's managed storage — nothing from linked/mounted folders. This is what "All Files" meant before external folders existed. |
+| **External** | The combined view across every linked [external folder](#material-folder-network-external-folder-mounting). It only appears once at least one external folder is linked — a single-folder library doesn't need it, since clicking the folder itself is just as fast. |
+
+The split stops a linked NAS that auto-imported hundreds of files from drowning your own uploads. Clicking an individual folder in the tree is unchanged — it always scopes to just that folder. To get the old combined-everything listing, click **External** once.
+
 ---
 
 ## :material-sort-variant: Sorting & filtering

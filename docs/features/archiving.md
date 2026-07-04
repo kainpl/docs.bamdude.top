@@ -193,6 +193,9 @@ While the row is a fallback:
 
 When recovery succeeds, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag.
 
+!!! tip "Archives-page banner — \"prints archived without thumbnails\""
+    When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
+
 ---
 
 ## :material-broom: 3MF Auto-Cleanup *(0.4.1, drift-mode in 0.4.2)*

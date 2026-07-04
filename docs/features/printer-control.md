@@ -34,6 +34,14 @@ The card also shows a red **"Printer busy"** overlay when you drop on a non-idle
 !!! note "Permission"
     `printers:control`. The library upload itself also checks `library:write`.
 
+### Nozzle Offset Calibration (dual-nozzle only)
+
+On the **H2D, H2D Pro, H2C and X2D**, the print dialog shows a **"Nozzle Offset Calibration"** toggle — **on by default**, matching Bambu Studio. It controls whether the printer runs its nozzle-offset calibration routine before the print starts.
+
+Previously this calibration was always skipped, with no way to enable it — and, just as importantly, no way to keep it *deliberately* off. That off case matters for diamond-nozzle setups, which must **not** run the routine.
+
+The toggle **only appears on dual-nozzle printers**. Single-nozzle machines always skip the calibration regardless of any setting. Your choice is remembered per queue item and applied on every dispatch path (queue, drag-and-drop, re-print).
+
 ### Pause / Resume
 
 | Button | When visible | Endpoint | What it sends |

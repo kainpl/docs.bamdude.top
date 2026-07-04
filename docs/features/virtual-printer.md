@@ -88,7 +88,7 @@ Each VP uses these ports on its bind IP:
 | File transfer tunnel | 6000 | TCP/TLS | Verify-job + file upload (proxy mode + A1/P1 camera) |
 | RTSP camera | 322 | TCP/TLS | Camera streaming for X1 / H2 / P2 series — proxy mode **and** non-proxy modes when a target printer is set (slicer's live camera goes through this port) |
 | FTPS | 990 | TCP/TLS | File transfer control |
-| FTP PASV data | 50000–50100 | TCP | FTP passive data channel |
+| FTP PASV data | 10-port slice per VP within `50000–50999` | TCP | Passive data channel — each non-proxy VP gets its own slice (VP 1 → `50000–50009`, VP 2 → `50010–50019`, …); proxy mode forwards the target printer's range instead |
 | Slicer proprietary | 2024–2026 | TCP/TLS | A1 / P1S printer ↔ slicer protocol (proxy mode) |
 
 !!! note "Why two bind ports"
@@ -96,6 +96,9 @@ Each VP uses these ports on its bind IP:
 
 !!! note "Privileged port 990"
     Port 990 is privileged (<1024). The process needs `CAP_NET_BIND_SERVICE` or root to bind it. The shipped Docker image and the systemd unit already grant the capability — no manual action needed for either of those install paths.
+
+!!! note "FTP passive ports are sliced per VP"
+    Each **non-proxy** VP gets its own **10-port passive-data slice**, allocated from its database id: VP 1 → `50000–50009`, VP 2 → `50010–50019`, and so on (the slot wraps after 100 VPs, so every slice stays inside `50000–50999`). This replaced the old flat `50000–50100` pool — under Docker's default userland proxy that wide range spawned ~2000 host processes (~3.5 GB host RAM). Open only the slices your VPs actually use, and add 10 ports for each extra VP. To see a running VP's exact slice, check its startup log line `FTP passive data port range: <min>-<max>`. **Proxy-mode** VPs are the exception — they forward the *target printer's* full passive range (roughly `50000–50100`).
 
 ---
 
@@ -407,6 +410,7 @@ The VP impersonates a real Bambu model so the slicer's compatibility check passe
 | `N2S` | A1 | 039 |
 | `N1` | A1 Mini | 030 |
 | `O1D` | H2D | 094 |
+| `O1E` / `O2D` | H2D Pro *(experimental — codes transcribed from the model reference, not yet confirmed against a live H2D Pro)* | 094 |
 | `O1C` / `O1C2` | H2C *(O1C2 = dual-nozzle variant)* | 094 |
 | `O1S` | H2S | 094 |
 
@@ -469,7 +473,7 @@ Open the [ports listed above](#required-ports) in your firewall.
     sudo ufw allow 6000/tcp
     sudo ufw allow 322/tcp
     sudo ufw allow 2024:2026/tcp
-    sudo ufw allow 50000:50100/tcp
+    sudo ufw allow 50000:50009/tcp   # one VP's passive slice; add 10 ports per extra VP (…:50019, …:50029, …)
     ```
 
     firewalld:
@@ -483,7 +487,7 @@ Open the [ports listed above](#required-ports) in your firewall.
     sudo firewall-cmd --permanent --add-port=6000/tcp
     sudo firewall-cmd --permanent --add-port=322/tcp
     sudo firewall-cmd --permanent --add-port=2024-2026/tcp
-    sudo firewall-cmd --permanent --add-port=50000-50100/tcp
+    sudo firewall-cmd --permanent --add-port=50000-50009/tcp   # one VP's passive slice; +10 ports per extra VP
     sudo firewall-cmd --reload
     ```
 
@@ -532,7 +536,7 @@ Open the [ports listed above](#required-ports) in your firewall.
           - "8883:8883"
           - "322:322"
           - "2024-2026:2024-2026"
-          - "50000-50100:50000-50100"
+          - "50000-50029:50000-50029"   # FTP passive data — covers 3 VPs (10-port slice each); widen to 50000-500N9 for N+1 VPs, or 50000-50100 for proxy mode
         volumes:
           - bamdude_data:/app/data
           - bamdude_logs:/app/logs
@@ -823,7 +827,7 @@ Large 3MFs over slow uplinks. Either run a VPN (Tailscale / WireGuard) so the da
 - **RTSP camera** (322): end-to-end TLS, transparent proxy.
 - **A1 / P1S proprietary** (2024–2026): end-to-end TLS, transparent proxy.
 - **FTPS control** (990): end-to-end TLS, transparent proxy.
-- **FTP data** (50000–50100): in proxy mode it's a transparent proxy — actual encryption depends on slicer/printer negotiation. Bambu Studio sends file data **in cleartext** even when it negotiates `PROT P`. Use a VPN if you care about data-channel confidentiality.
+- **FTP data** (per-VP 10-port slice from `50000`; proxy mode forwards the target printer's range): in proxy mode it's a transparent proxy — actual encryption depends on slicer/printer negotiation. Bambu Studio sends file data **in cleartext** even when it negotiates `PROT P`. Use a VPN if you care about data-channel confidentiality.
 - All connections require the 8-char access code — slicer auth on every TLS handshake.
 - CA persists in `<DATA_DIR>/virtual_printer/certs/`; per-VP device certs in `<DATA_DIR>/virtual_printer/certs/{id}/` regenerate when serial changes.
 

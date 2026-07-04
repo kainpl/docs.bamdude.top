@@ -64,6 +64,64 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
+## :material-microsoft-windows: Windows (native)
+
+Windows 10/11 has its own PowerShell installer — no Docker, no WSL. It installs Git and Python 3.10+ via `winget` if they're missing, clones the repo, builds a Python virtual environment, installs dependencies, optionally adds a Windows Firewall rule, and can register BamDude as a **Windows Service** (via [NSSM](https://nssm.cc/)) that starts on boot.
+
+Run this one line in PowerShell — the script **self-elevates to Administrator** if it isn't already:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/kainpl/bamdude/main/install/windows-installer.ps1 -OutFile windows-installer.ps1; .\windows-installer.ps1"
+```
+
+Run interactively it prompts for the **install directory**, **port**, and whether to **expose BamDude on your LAN** or bind to localhost only. Your **data and logs live outside the code folder** (`<InstallDir>\data` and `<InstallDir>\logs`), so in-app git updates never touch them.
+
+### :material-tune-variant: Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-InstallDir PATH` | `C:\BamDude` | Installation directory |
+| `-Port PORT` | `8000` | Port to listen on |
+| `-LocalOnly` | off (binds `0.0.0.0`, LAN-exposed) | Bind to `127.0.0.1` only |
+| `-NoService` | off (service is registered) | Skip Windows Service registration |
+| `-NoStart` | off | Don't start BamDude after install |
+| `-Yes` | off | Non-interactive mode, accept defaults |
+| `-Silent` | off | Non-interactive with reduced console output |
+
+### :material-console: Examples
+
+```powershell
+# Interactive installation
+.\windows-installer.ps1
+
+# Unattended, custom path + port, local-only
+.\windows-installer.ps1 -InstallDir D:\BamDude -Port 3000 -LocalOnly -Yes
+
+# Install without registering a service
+.\windows-installer.ps1 -NoService -Yes
+```
+
+### :material-cog-outline: Managing the service
+
+When installed as a Windows Service, manage it with the standard cmdlets:
+
+```powershell
+Get-Service BamDude          # Check status
+Start-Service BamDude        # Start
+Stop-Service BamDude         # Stop
+Restart-Service BamDude      # Restart
+```
+
+Installed with `-NoService`, run it on demand instead:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\BamDude\Start-BamDude.ps1"
+```
+
+Then open [http://localhost:8000](http://localhost:8000) (or the port you chose).
+
+---
+
 ## :material-tune: Configuration
 
 Configure BamDude using environment variables or a `.env` file:
