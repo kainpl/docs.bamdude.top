@@ -106,10 +106,12 @@ You can also override the env-var defaults that BamDude reads at startup: `SLICE
 
 | Setting | What it does |
 |---------|--------------|
-| **Preferred slicer** | `OrcaSlicer` or `Bambu Studio`. Default sidecar for server-side slicing and the desktop "Open in Slicer" URI on archives that aren't sliced server-side. When both sidecars are configured *and* reachable, the Slice modal also shows a per-job "Slice with" radio so you can override this default per source file (the choice is remembered per file in the browser's localStorage). |
+| **Preferred slicer** | `OrcaSlicer` or `Bambu Studio`. Default sidecar for server-side (in-app) slicing. When both sidecars are configured *and* reachable, the Slice modal also shows a per-job "Slice with" radio so you can override this default per source file (the choice is remembered per file in the browser's localStorage). |
 | **Enable server-side slicing** (`use_slicer_api`) | Master toggle. When off, the Slice button disappears from the File Manager — slicing falls back to opening the source in the user's local desktop slicer via URI scheme. |
 | **OrcaSlicer API URL** (`orcaslicer_api_url`) | URL of the OrcaSlicer sidecar — e.g. `http://localhost:3003` for the default compose recipe. Empty = use `SLICER_API_URL` env default. |
 | **BambuStudio API URL** (`bambu_studio_api_url`) | URL of the BambuStudio sidecar — e.g. `http://localhost:3001`. Empty = use `BAMBU_STUDIO_API_URL` env default. |
+
+The desktop **Open in Slicer** button is controlled by a separate, independent setting — **Settings → Slicer → Open in Slicer** — a dropdown that defaults to **Same as API slicer**. Point it at a different slicer to, e.g., slice through the Bambu Studio sidecar but open files locally in OrcaSlicer (or vice versa); existing setups are unchanged until you pick a different value.
 
 Preset tiers (cloud / local / standard) are merged automatically by the backend at slice time and don't need a per-install setting — see "Slicing a file" below.
 

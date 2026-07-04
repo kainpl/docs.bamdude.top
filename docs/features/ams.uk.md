@@ -215,10 +215,11 @@ Remote-drying потребує AMS з internal-heater. Original AMS (без heat
 | X1 / X1C | 01.09.00.00 | |
 | P1P / P1S | 01.08.00.00 | |
 | H2D | 01.02.30.00 | |
+| H2C | 01.02.00.00 | |
 | H2D Pro | будь-яка | Без version-gate |
 | X1E | будь-яка | Без version-gate |
 | P2S, A1, A1 mini | — | :material-close: не підтримується |
-| H2S, H2C | — | :material-close: не підтримується |
+| H2S | — | :material-close: не підтримується |
 
 Для моделей не зі списку (майбутнє hardware) — BamDude пропускає drying-команду. Якщо firmware принтера її не підтримує, виклик падає gracefully без side-ефектів.
 

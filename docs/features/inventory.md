@@ -62,6 +62,17 @@ The toolbar's **Bulk edit** button (internal inventory only) opens a dialog to c
 
 Each ticked field pre-fills only when the selection already shares one value (otherwise it shows *"— varies —"*); **only the fields you tick are written**, the rest are left exactly as they were, and **consumed weight and RFID tags are never touched**. Inputs mirror the single-spool form — preset / effect / diameter / empty-spool are dropdowns; material / brand / subtype autocomplete from everything the system knows (slicer presets + colour catalog + built-ins, not just the selected spools); the colour list comes from your colour catalog filtered by the brand + material being applied and refreshes when you change them.
 
+### CSV import / export
+
+Two buttons in the inventory header move whole spool lists in and out as CSV — handy for backing up your inventory, editing it in a spreadsheet, or bulk-loading a freshly-received order.
+
+- **Export** downloads a date-stamped `bamdude_inventory_YYYYMMDD.csv`, one row per active spool.
+- **Import** bulk-adds spools from a CSV. Instead of writing straight away, it first shows a **preview table** that marks every row as *valid*, *error*, or *skipped* — and flags rows where a colour was auto-filled from the colour catalogue, or where a matching spool already exists — **before anything is written**. A confirm click then saves only the valid rows.
+
+CSV headers are case- and spacing-tolerant, so a column titled `Label Weight`, `label_weight`, or `LABELWEIGHT` all resolve the same way. Only `material` is required; every other column is optional, and the same validation as the manual add-spool form applies to each row.
+
+CSV import/export is **local-inventory only**. In **Spoolman mode** both buttons are disabled, with a hint pointing you at Spoolman's own CSV tools instead.
+
 ### Slicer Preset dropdown shows every per-printer / per-nozzle variant
 
 The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
@@ -120,7 +131,7 @@ User presets that inherit from Bambu presets (e.g. *# Overture Matte PLA @BBL H2
 
 #### Custom materials
 
-The material dropdown ships with PLA, PETG, ABS, TPU, ASA, PC, PA, PVA, HIPS, PA-CF, PETG-CF, PLA-CF. If your material isn't listed (e.g. PCTG, PHA, PP, PVDF), type it directly into the Material field — a *Use custom material: PCTG* option appears at the bottom of the dropdown. Click it to commit.
+The material dropdown ships with the baseline set — PLA, PETG, ABS, TPU, ASA, PC, PA, PVA, HIPS — plus carbon-fibre, glass-fibre and specialty variants (PLA-CF/GF, PLA Aero, PETG-CF, ABS/ASA-GF, ASA-CF, PCTG, PAHT-CF, PA6-CF/GF, PPS/PPS-CF/GF), grouped by material family. If your material still isn't listed (e.g. PHA, PP, PVDF), type it directly into the Material field — a *Use custom material: …* option appears at the bottom of the dropdown. Click it to commit.
 
 Custom materials work like built-ins for inventory tracking, usage history, filtering, and notifications.
 
@@ -239,9 +250,11 @@ If you re-assign a spool to a slot **during** a print:
 
 This makes mid-batch refills work correctly without manual reconciliation: load a fresh spool when one runs low, re-assign it in BamDude, and the rest of the print is billed to the new spool.
 
-### Reset usage to 0
+### Reset counter
 
-Each spool has an eraser action that resets its tracked usage to zero (a reset-all variant clears every spool's usage at once). Mechanically it records a `weight_used_baseline`, so reported consumption becomes "used since the last reset" rather than lifetime — useful when you refill or swap a roll but keep the same inventory entry instead of creating a new one.
+Each spool has an eraser action — **Reset counter** — that zeroes the displayed **Total Consumed** counter (a reset-all variant resets every spool's counter at once). The button, its confirmation dialogs, and tooltips all read "Reset counter". Crucially, this only zeroes the *displayed* consumption figure — the spool's remaining weight is **not** changed (the old "Reset usage" name misleadingly implied it wiped the used grams). Mechanically it records a `weight_used_baseline`, so reported consumption becomes "used since the last reset" rather than lifetime — useful when you refill or swap a roll but keep the same inventory entry instead of creating a new one.
+
+The backing API endpoints were renamed accordingly — the per-spool and reset-all paths now end in `.../reset-consumed-counter` (previously `.../reset-usage`).
 
 ### Removing usage records
 

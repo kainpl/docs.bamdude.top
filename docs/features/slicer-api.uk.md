@@ -106,10 +106,12 @@ docker compose --profile all    up -d   # обидва
 
 | Опція | Що робить |
 |-------|-----------|
-| **Preferred slicer** | `OrcaSlicer` чи `Bambu Studio`. Sidecar за замовчуванням для server-side слайсингу і desktop "Open in Slicer" URI на архівах, що не слайсилися server-side. Коли обидва sidecar'и налаштовані *і* доступні, Slice-modal показує per-job радіо "Slice with" для перевизначення цього default'а per source file (вибір запам'ятовується для кожного файлу в browser localStorage). |
+| **Preferred slicer** | `OrcaSlicer` чи `Bambu Studio`. Sidecar за замовчуванням для server-side (in-app) слайсингу. Коли обидва sidecar'и налаштовані *і* доступні, Slice-modal показує per-job радіо "Slice with" для перевизначення цього default'а per source file (вибір запам'ятовується для кожного файлу в browser localStorage). |
 | **Enable server-side slicing** (`use_slicer_api`) | Master-тоглер. Коли off — кнопка Slice пропадає з File Manager, слайсинг падає на open-in-desktop-slicer через URI scheme. |
 | **OrcaSlicer API URL** (`orcaslicer_api_url`) | URL OrcaSlicer-sidecar'а — наприклад `http://localhost:3003` для дефолтного compose-рецепту. Порожнє = використати `SLICER_API_URL` env-дефолт. |
 | **BambuStudio API URL** (`bambu_studio_api_url`) | URL BambuStudio-sidecar'а — наприклад `http://localhost:3001`. Порожнє = `BAMBU_STUDIO_API_URL` env-дефолт. |
+
+Desktop-кнопка **Open in Slicer** керується окремим, незалежним налаштуванням — **Settings → Slicer → Open in Slicer** — dropdown'ом, що за замовчуванням стоїть на **Same as API slicer**. Вкажи інший слайсер, щоб, наприклад, слайсити через Bambu Studio sidecar, а файли відкривати локально в OrcaSlicer (чи навпаки); наявні налаштування не змінюються, поки ти сам не вибереш інше значення.
 
 Preset-tiers (cloud / local / standard) backend об'єднує автоматично у момент слайсингу — per-install setting не потрібен, див. "Слайсинг файлу" нижче.
 

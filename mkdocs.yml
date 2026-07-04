@@ -94,6 +94,7 @@ plugins:
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
             "Cloud Profiles": "Cloud-профілі"
+            "Orca Cloud": "Orca Cloud"
             "Local Profiles": "Локальні профілі"
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
@@ -232,6 +233,7 @@ nav:
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
       - Cloud Profiles: features/cloud-profiles.md
+      - Orca Cloud: features/orca-cloud.md
       - Local Profiles: features/local-profiles.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md

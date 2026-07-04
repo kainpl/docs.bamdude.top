@@ -9,6 +9,9 @@ Cloud Profiles — міст між твоїм Bambu Cloud аккаунтом і 
 
 Інтеграція **per-user**. Кожен BamDude-акк тримає свій Bambu Cloud token — твій колега, що логіниться у свій Bambu-акк, не вибиває тебе, і твій токен не тече до нього.
 
+!!! tip "Користуєшся ще й хмарою OrcaSlicer?"
+    BamDude може паралельно логінитись в **[Orca Cloud](orca-cloud.md)** — Supabase profile sync з OrcaSlicer 2.4.0-alpha — і показувати ті профілі поряд з Bambu Cloud presets у slice modal (вище за Bambu Cloud). Обидві інтеграції незалежні; підключай одну, обидві або жодну.
+
 ---
 
 ## :material-earth: Per-user регіон (BamDude розширення)
