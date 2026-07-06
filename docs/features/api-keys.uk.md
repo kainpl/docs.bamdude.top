@@ -42,6 +42,8 @@ prefix              random body
 | **Can queue** | Дозволити цьому ключу додавати завдання в чергу (`POST /queue`) |
 | **Can control printer** | Дозволити команди start / pause / stop / cancel |
 | **Can read status** | Дозволити live-стан принтера, списки архівів, статистику — read-поверхню |
+| **Manage Library** | Опціонально. Завантаження / перейменування / переміщення / видалення файлів бібліотеки — **будь-якого власника**, не лише творця ключа — плюс нотатки й імпорт з MakerWorld (`can_manage_library`). Read-only доступ до бібліотеки лишається під **Can read status** |
+| **Manage Inventory** | Опціонально. Створення / редагування / видалення котушок, записів каталогу й налаштувань прогнозу (`can_manage_inventory`). Read-only інвентар лишається під **Can read status** |
 | **Use Bambu Cloud** | Опціонально. Коли ввімкнено, ключ резолвить per-user Bambu Cloud-токен юзера-творця для маршрутів `cloud:*` (slicer presets, MakerWorld imports). За замовчуванням вимкнено, щоб legacy-ключі не могли мовчки витрачати cloud-token власника. Відхиляється при збереженні на ownerless-ключах — див. примітку про значки нижче. |
 | **Printer scope** | Опціонально. Залиш порожнім для "усіх принтерів", або обери конкретні printer ID, щоб звузити ключ. Дзвінки до інших принтерів повертатимуть 403 |
 | **Expires at** | Опційний ISO timestamp. Після нього ключ відкидається, навіть якщо не ревокнутий |
@@ -52,7 +54,7 @@ prefix              random body
     Ключі, створені через UI, стампляться id юзера-творця, тож ключ з значком **Cloud** може витрачати Bambu Cloud-токен цього юзера. Pre-0.4.3 ключі, імпортовані зі старіших інсталяцій, ownerless і відображаються зі значком **Legacy** — їх не підняти до `Use Bambu Cloud` (тогл відхиляється при збереженні без owner-а). Перестворіть такі ключі під своїм юзер-аккаунтом, щоб увімкнути cloud spend.
 
 !!! tip "Принцип найменших привілеїв"
-    Не ткай усі три прапорці підряд. HA-дашборд зазвичай потребує тільки `can_read_status`. Queue-poster зі слайсера потребує `can_queue` + `can_read_status` і *не* `can_control_printer`. Окремі ключі на consumer-а роблять ротацію безболісною, а audit trail — читабельним.
+    Не ткай усі прапорці підряд. HA-дашборд зазвичай потребує тільки `can_read_status`. Queue-poster зі слайсера потребує `can_queue` + `can_read_status` і *не* `can_control_printer`. Інтеграція-аплоадер тепер може отримати `can_manage_library` без `can_queue`. Окремі ключі на consumer-а роблять ротацію безболісною, а audit trail — читабельним.
 
 ---
 
@@ -79,10 +81,20 @@ curl -H "Authorization: Bearer bb_..." http://localhost:8000/api/v1/printers/
 
 1. **Required permission ендпоінта** перевіряється. API keys обходять *user* permission-чеки (бо не належать жодній групі), але…
 2. **Прапорці самого ключа** — ось вони:
-    - `can_queue` — потрібен для `POST /queue` і queue-mutation ендпоінтів
-    - `can_control_printer` — для start / pause / stop / cancel
-    - `can_read_status` — для printer-state, archive, stats, monitoring
+    - `can_queue` — потрібен для `POST /queue` і queue-mutation ендпоінтів (+ archive reprint, який енкʼюїть наявний архів)
+    - `can_control_printer` — для start / pause / stop / cancel (+ smart-plug control)
+    - `can_read_status` — для printer-state, archive, stats, monitoring (і read-only бібліотека / інвентар / settings-language)
+    - `can_manage_library` — для library upload / rename / move / delete + notes + імпорт з MakerWorld. Ключ їде на **all-ownership** варіантах (`library:update_all` / `library:delete_all`): API-ключі не несуть per-row ідентичності власника, тож Manage-Library ключ може курувати **будь-який** файл незалежно від власника. Лише `library:purge` (hard-delete поза вікном trash) лишається admin-only
+    - `can_manage_inventory` — для spool / catalog / forecast **writes** (read-only інвентар лишається під `can_read_status`)
+    - `can_access_cloud` — для cloud-token-backed ендпоінтів (slicer presets, MakerWorld)
+    - `can_update_energy_cost` — для `POST /settings/electricity-price` (вузько-обмежений Home-Assistant dynamic-tariff endpoint — див. [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.uk.md#tibber--octopus--dynamic-tariff-integration)). НЕ дає загальний `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** звужує printer-bound дзвінки. Ключ з `printer_ids = [3, 7]` поверне 403 на `/printers/5/status`, навіть якщо `can_read_status=true`.
+
+!!! warning "Сувора ізоляція scope-ів"
+    Ключ тепер дістає **тільки** ті ендпоінти, які покривають його видані scope-и. Усе поза ними — settings writes, user / group / API-key адміністрування, видалення ресурсів (принтери, архіви, проєкти), network discovery scan — відхиляється з `403`, навіть для валідного, увімкненого ключа. Раніше будь-який валідний ключ дотягувався майже до кожного ендпоінта (start/stop друку, reorder черги, reprint архівів, видалення чужих файлів бібліотеки, читання будь-якого ресурсу) *незалежно* від того, які прапорці scope на ньому стояли — upstream advisory **GHSA-r2qv-8222-hqg3** (CVSS 9.9 critical). Мапінг — allowlist: permission без scope-запису відхиляється за замовчуванням, тож новододаний admin-ендпоінт ніколи не буде мовчки доступний ключу.
+
+!!! info "Успадкування на апгрейді"
+    Два scope-и, додані цього циклу — `can_manage_library` і `can_manage_inventory` — на апгрейді бекфіляться зі значення `can_queue` (**Manage Queue**) кожного ключа. Queue-enabled ключ зберігає свій попередній upload + inventory-write workflow, а захардений read-only ключ (`can_queue = false`) не отримує нічого. Далі коригуй будь-який scope через `PATCH /api-keys/{id}`.
 
 Permissions, що гейтять **управління** самими ключами (хто може list / create / revoke), — звичайні permission-и юзер-груп:
 
@@ -224,7 +236,10 @@ rest_command:
     `printer_ids` scope ключа встановлений і не містить цього принтера. Або розширюй scope (`PATCH` з новим id-листом), або використовуй інший ключ.
 
 ??? question "403 Forbidden на `/queue` POST з `can_queue=true`"
-    Деякі queue-мутації зачіпають бібліотеку; перевір, що payload не намагається аплоднути файл (`library:upload` — окрема permission і не покривається `can_queue`).
+    Деякі queue-мутації зачіпають бібліотеку; payload, що аплоадить файл, потребує окремого scope **Manage Library** (`can_manage_library`) — він не покривається `can_queue`.
+
+??? question "403 Forbidden на записі library / inventory з queue-enabled ключем"
+    Після суворої ізоляції scope-ів записи в бібліотеку потребують `can_manage_library`, а записи в інвентар — `can_manage_inventory`; вони більше не мають на увазі `can_queue`. На апгрейді їх бекфілнуло з `can_queue`, але ключ, зроблений read-only, або створений після розділення, потребує їх увімкнення явно. `PATCH /api-keys/{id}` зі scope-ом, потім ретрай.
 
 ??? question "Ключ працює на статусі, але не на `/control/start`"
     `can_control_printer` вимкнений. Увімкни через `PATCH`, потім ретрай — створювати новий ключ не треба.

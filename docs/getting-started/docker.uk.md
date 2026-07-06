@@ -121,8 +121,42 @@ volumes:
 | `JWT_SECRET_KEY` | автогенерація, зберігається | Не змінюйте на запущеній інсталяції -- це анулює всі видані токени. |
 | `PUID` / `PGID` | `1000` / `1000` | UID / GID, від якого працює контейнер. Виставляй у відповідність власника mounted volumes, щоб уникнути permission-помилок. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | не задано | Перевизначити FTP-PASV IP, який анонсує віртуальний принтер. Обов'язково в **bridge mode** (LAN-IP Docker-хоста); у host-mode лиши порожнім. |
+| `USE_SYSTEM_TRUST_STORE` | не задано (off) | Opt-in. Постав будь-яке непорожнє значення (напр. `true`), щоб контейнер довіряв самопідписаним сертифікатам, змонтованим у `/usr/local/share/ca-certificates`. Див. [Довіра до самопідписаного сертифіката](#trusting-a-self-signed-certificate) нижче. |
 
 Повний перелік, включно з опціональними інтеграціями, див. у [Інсталяція > Змінні середовища](installation.uk.md#змінні-середовища).
+
+### Довіра до самопідписаного сертифіката { #trusting-a-self-signed-certificate }
+
+Деякі інтеграції живуть на HTTPS-ендпоінтах із **самопідписаними сертифікатами** — найчастіше це локальний Home Assistant, але те саме стосується OIDC-провайдерів чи будь-якого HTTPS-клієнта, з яким говорить BamDude. Замість того, щоб вимикати TLS-перевірку (це ослабило б кожне з'єднання), BamDude може додати твій власний сертифікат(и) у trust store контейнера.
+
+1. Змонтуй host-директорію зі своїми `.crt`-файлами у `/usr/local/share/ca-certificates`
+2. Постав `USE_SYSTEM_TRUST_STORE=true`
+
+На старті контейнера entrypoint виконує `update-ca-certificates --fresh` і експортує `SSL_CERT_DIR=/etc/ssl/certs`, тож увесь Python-стек (інтеграція Home Assistant, OIDC, будь-який HTTPS-клієнт) надалі довіряє сертифікату.
+
+```yaml
+services:
+  bamdude:
+    image: ghcr.io/kainpl/bamdude:latest
+    container_name: bamdude
+    network_mode: host
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+      # Поклади свій самопідписаний .crt у цю host-директорію.
+      - /path/to/certs:/usr/local/share/ca-certificates
+    environment:
+      - TZ=${TZ:-Europe/Kyiv}
+      - USE_SYSTEM_TRUST_STORE=true
+    restart: unless-stopped
+
+volumes:
+  bamdude_data:
+  bamdude_logs:
+```
+
+!!! warning "Падає голосно при невірній конфігурації"
+    Прапорець **вимкнений за замовчуванням**. Якщо ти його виставив, але **не** змонтував жодного `.crt`-файлу, контейнер виходить з помилкою замість тихого старту — інакше порожній mount виглядав би так, ніби прапорець нічого не зробив. Також потрібен **root**-контейнер: якщо ти задав non-root `user:` / `PUID`/`PGID`, entrypoint не зможе писати в системний trust store і вийде з помилкою. Запускай оновлення trust store від root (це default) — entrypoint усе одно скине привілеї після цього для самого застосунку.
 
 ---
 

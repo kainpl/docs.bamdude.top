@@ -14,7 +14,7 @@ The header bar shows four lifetime counters:
 | Metric | Source |
 |---|---|
 | **Prints completed** | `print_archives` rows with `status='completed'`. |
-| **Filament consumed** | Sum of `filament_used_grams` across completed archives, grouped by material/colour. |
+| **Filament consumed** | Sum of `filament_used_grams` across all archives in range (not just completed), grouped by material/colour. Failed / cancelled prints contribute the filament **actually** extruded, not the full slicer estimate, so the total matches what inventory was deducted. |
 | **Print time** | Sum of `print_time_seconds`. |
 | **Energy used** | Sum of `energy_kwh` (the per-print delta the dispatcher computed at completion) over completed archives that had a smart-plug bound at print start. Falls back to a ranged sum from `smart_plug_energy_snapshots` when individual-print captures are missing. |
 
@@ -63,7 +63,7 @@ The snapshot table is bounded — old rows are pruned after a configurable reten
 
 | Cost | Formula |
 |---|---|
-| **Per-print filament cost** | `filament_used_grams × (spool.cost / spool.weight)`. Falls back to `default_filament_cost / 1000` per gram if no spool was assigned. |
+| **Per-print filament cost** | Sum of each tracked spool's share (`grams_from_spool × spool.cost / spool.weight`). Any grams **not** covered by an assigned spool are topped up at `default_filament_cost / 1000` per gram. So a multi-colour print with only some AMS slots mapped to inventory still reflects the whole print, not just the tracked slots; a fully-untracked print falls back entirely to the default rate. |
 | **Per-print energy cost** | `energy_kwh × energy_cost_per_kwh`. Zero when no plug capture (`energy_kwh IS NULL`). |
 | **Total** | Filament + energy. |
 
@@ -101,7 +101,7 @@ Layout is **persisted per-user** in the backend, so the same login on a differen
 
 | Widget | What it shows |
 |---|---|
-| **Print Success Rate** | Pie chart — completed / failed / stopped split. Per-printer filterable. |
+| **Print Success Rate** | Donut gauge with a completed / failed / **Cancelled** split. Per-printer filterable. See the note below on how cancelled prints are counted. |
 | **Filament by Type** | Pie chart of material distribution (PLA / PETG / ABS / ...). Click segments to filter. |
 | **Print Activity Calendar** | GitHub-style heatmap, daily print count, click any day to drill into that day's archives. |
 | **Print Duration Distribution** | Bucket bar chart: `<30m`, `30m–1h`, `1–2h`, `2–4h`, `4–8h`, `8–12h`, `12–24h`, `24h+`. Surfaces your typical print length. |
@@ -119,6 +119,14 @@ Multi-select chips above the widgets scope the **entire dashboard** to a subset 
 - The export button respects the same filter
 
 Useful for "show me just my MakerSpace's row of A1s" or "compare X1C-A vs X1C-B side by side".
+
+### Cancelled prints have their own bucket
+
+Prints you (or the queue) stopped are **not** counted as failures. `stopped`, `cancelled`, and `skipped` archives land in a dedicated **Cancelled** bucket, separate from genuine quality failures (`failed` / `aborted`), so aborting a job doesn't punish your numbers:
+
+- **Success Rate** divides by *completed + failed only* — cancelled prints are excluded from both the numerator and the denominator, so stopping a print never drags the gauge down.
+- The **failure-rate report** (and its weekly trend) uses the same rule — cancelled / stopped / skipped prints are excluded from both sides of the ratio.
+- They **still count toward Total Prints**, and stay visible on their own **Cancelled** line in the Success Rate breakdown, so nothing silently vanishes.
 
 ### Per-User filtering
 

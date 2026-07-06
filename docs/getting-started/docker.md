@@ -121,8 +121,42 @@ volumes:
 | `PUID` / `PGID` | `1000` / `1000` | UID / GID the container runs as. Match the owner of your mounted volumes to avoid permission errors. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | unset | Override the FTP-PASV IP advertised by the virtual printer. Required in **bridge mode** (set to the Docker host's LAN IP); leave unset in host-mode. |
 | `JWT_SECRET_KEY` | auto-generated, persisted | Don't change on a running install -- it invalidates all issued tokens. |
+| `USE_SYSTEM_TRUST_STORE` | unset (off) | Opt-in. Set to any non-empty value (e.g. `true`) to make the container trust self-signed certificates mounted into `/usr/local/share/ca-certificates`. See [Trusting a self-signed certificate](#trusting-a-self-signed-certificate) below. |
 
 See [Installation > Environment Variables](installation.md#environment-variables) for the full list including optional integrations.
+
+### Trusting a self-signed certificate
+
+Some integrations live on HTTPS endpoints with **self-signed certificates** — most commonly a local Home Assistant instance, but the same applies to OIDC providers or any HTTPS client BamDude talks to. Rather than disabling TLS verification (which would weaken every connection), BamDude can add your own certificate(s) to the container's trust store.
+
+1. Mount the host directory holding your `.crt` file(s) into `/usr/local/share/ca-certificates`
+2. Set `USE_SYSTEM_TRUST_STORE=true`
+
+On container start the entrypoint runs `update-ca-certificates --fresh` and exports `SSL_CERT_DIR=/etc/ssl/certs`, so the whole Python stack (Home Assistant integration, OIDC, any HTTPS client) trusts the certificate from then on.
+
+```yaml
+services:
+  bamdude:
+    image: ghcr.io/kainpl/bamdude:latest
+    container_name: bamdude
+    network_mode: host
+    volumes:
+      - bamdude_data:/app/data
+      - bamdude_logs:/app/logs
+      # Drop your self-signed .crt file(s) into this host directory.
+      - /path/to/certs:/usr/local/share/ca-certificates
+    environment:
+      - TZ=${TZ:-Europe/Kyiv}
+      - USE_SYSTEM_TRUST_STORE=true
+    restart: unless-stopped
+
+volumes:
+  bamdude_data:
+  bamdude_logs:
+```
+
+!!! warning "Fails loudly when misconfigured"
+    The flag is **off by default**. When you set it but mount **no** `.crt` files, the container exits with an error rather than starting silently — an empty mount would otherwise look like the flag did nothing. It also requires a **root** container: if you've set a non-root `user:` / `PUID`/`PGID`, the entrypoint can't write to the system trust store and exits with an error. Run the trust-store update as root (the default) — the entrypoint still drops privileges afterwards for the app itself.
 
 ---
 

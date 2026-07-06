@@ -27,6 +27,9 @@ If the FTP fetch fails the row is still created — see [3MF download recovery](
 !!! warning "SD card required"
     The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
 
+!!! note "X2D / P2S firmware TLS quirk (handled automatically)"
+    Some firmware trips over Python 3.13's default TLS 1.3 on the FTPS channel — X2D fails the implicit-FTPS handshake outright, P2S hits a session-reuse bug — which left their archive cards empty (no filament / layers / MakerWorld link / thumbnail). BamDude now caps the FTPS session to TLS 1.2 for these models so the 3MF download at print start connects and the archive populates. No configuration needed.
+
 ---
 
 ## :material-database-outline: What Gets Archived
@@ -39,7 +42,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     |-------|-------------|
     | `file_path` | 3MF copy at `data/archive/<printer_id>/<timestamp>_<name>/<filename>.3mf`. Empty string means the 3MF couldn't be fetched (fallback row) or was cleaned by retention. |
     | `file_size` | Bytes on disk. |
-    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. |
+    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. For 3MFs sliced through the Docker slicer sidecar — which skips the desktop-only plate-PNG render — BamDude generates the missing plate thumbnails server-side (an isometric Bambu-green render of the embedded model, 512 px + 128 px) so the archive card isn't blank. |
     | `source_3mf_path` | Original project 3MF when uploaded from the slicer (separate from the dispatched copy). |
 
 === "Slicer metadata"
@@ -192,6 +195,9 @@ While the row is a fallback:
 - **MQTT-reported metadata still gets recorded** — filament use, layer counts, energy, timing all flow in even without the 3MF.
 
 When recovery succeeds, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag.
+
+!!! tip "Archives-page banner — \"prints archived without thumbnails\""
+    When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
 
 ---
 
@@ -356,7 +362,7 @@ The modal exposes the same options table as the new-print and queue modals — s
 
 Attach pictures to an archive — useful for documenting failures, showing finished parts, or pairing a print with a project photo.
 
-- **Auto camera snapshot on print complete** — toggle **Settings → General → Capture snapshot on print complete**. When on, BamDude grabs a frame from the printer's camera the moment the print finishes and attaches it to the archive.
+- **Auto camera snapshot on print complete** — toggle **Settings → General → Capture snapshot on print complete**. When on, BamDude grabs a frame from the printer's camera the moment the print finishes and attaches it to the archive. When a **timelapse was recording** for that print (because you enabled it in the send dialog — BamDude never forces timelapse on), the finish photo is pulled from the timelapse's last frame instead: it captures the moment after the toolhead parks but before the bed drops, which a live-camera grab would miss. External cameras keep their own framing.
 - **Manual upload** — drag-and-drop image files onto the archive detail page, or use the **+ Add Photo** button in the photo strip. Multiple photos per archive are supported.
 - **Failure documentation** — attaching a photo of a failed print pairs nicely with the archive's `failure_reason` + `error_message` fields, so the post-mortem is all in one place.
 
@@ -513,7 +519,7 @@ Organize archives with custom tags. Filter by printer, tags, material, color, fi
 | **Printer** | Single-select; defaults to "All printers". |
 | **Colour** | Multi-select. Default semantics is **OR** — pick *Red* + *Blue* to see archives that used Red **or** Blue. The chip strip exposes an **AND/OR toggle** — flip to AND when you need archives that used *Red* **and** *Blue* together (multi-colour prints). |
 | **Material** | Multi-select OR (PLA + PETG → either). |
-| **File type** | Single-select: GCODE / SOURCE / ALL. |
+| **Kind** | Single-select: **All prints** / **Calibration prints** / **Regular prints**. Keyed on the `is_calibration` flag the Filament Calibration wizard stamps on every test print it dispatches (since 0.4.5). The old GCODE / SOURCE / ALL split lost meaning once archive went print-history-only in 0.4.2. |
 | **Favourites** | Toggle: show only archives flagged with the heart. |
 | **Date range** | Two-input picker: shows archives whose `started_at` falls inside the range. Pairs with the calendar view. |
 | **Status** | Multi-select status filter — printing / completed / failed / cancelled / archived. |

@@ -23,8 +23,10 @@ BamDude supports all Bambu Lab 3D printers with Developer Mode capability.
 | **P1P** | P1 | Add-on | :material-check: |
 | **P1S** | P1 | :material-check: | :material-check: |
 | **P2S** | P2 | :material-check: | :material-check: |
+| **X2D** | X2 | :material-check: | :material-check: |
 | **A1** | A1 | :material-check: | AMS Lite |
 | **A1 Mini** | A1 | :material-check: | :material-close: |
+| **A2L** | A2 | :material-check:[^a2l] | :material-check:[^a2l] |
 
 ---
 
@@ -54,6 +56,18 @@ BamDude supports all Bambu Lab 3D printers with Developer Mode capability.
 - A1 Mini: External spool only, primary target for [swap mode](../features/swap-mode.md)
 - Camera limited to ~5 FPS
 
+### X2 Series
+
+- X2D: dual-nozzle with L/R nozzle status
+- Ethernet port + RTSP camera (port 322)
+- Steel-rod maintenance class
+
+### A2 Series
+
+- A2L: single FDM extruder — the second head is an integrated cutter/plotter, not a nozzle
+- Wi-Fi only (no Ethernet), low-rate chamber-image camera on port 6000
+- Linear-rail maintenance class
+
 ---
 
 ## :material-table-check: BamDude Capability Matrix
@@ -63,26 +77,26 @@ unchecked mean the hardware doesn't expose the data, the protocol bit is
 unverified, or the model class doesn't apply — BamDude won't show fake
 state in those cases.
 
-| Capability | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | H2D / H2D Pro | H2C | H2S |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Camera (built-in) | :material-check: | add-on | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| 30 FPS stream | :material-check: | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| Ethernet port | X1C/X1E only | — | :material-check: | :material-check: | — | — | :material-check: | :material-check: | :material-check: |
-| Chamber heating | :material-check: | — | passive | :material-check: | — | — | :material-check: | :material-check: | :material-check: |
-| Door-open sensor (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — [^bit23] | — [^bit23] | — [^bit23] |
-| Dual nozzle (L/R) | — | — | — | — | — | — | :material-check: | — | — |
-| 6-slot tool changer | — | — | — | — | — | — | — | :material-check: | — |
-| AMS Pro (4-slot) | up to 4 | up to 4 | up to 4 | up to 4 | — | — | up to 4 | up to 4 | up to 4 |
-| AMS Lite | — | — | — | — | :material-check: | — | — | — | — |
-| External spool | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | only | :material-check: | :material-check: | :material-check: |
-| AMS-HT (single-slot 128–135) | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| AMS humidity / temperature notifications | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: |
-| Maintenance — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — |
-| Maintenance — Steel Rods | — | — | — | :material-check: | — | — | — | — | — |
-| Maintenance — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| Swap mode (push-off) [^swap] | — | — | — | — | :material-check: | :material-check: | — | — | — |
-| Vibration-cali skip patcher | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| Print-by-object skip | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Capability | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | A2L | H2D / H2D Pro | H2C | H2S |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Camera (built-in) | :material-check: | add-on | :material-check: | :material-check: | :material-check: | :material-check: | :material-check:[^a2l] | :material-check: | :material-check: | :material-check: |
+| 30 FPS stream | :material-check: | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
+| Ethernet port | X1C/X1E only | — | :material-check: | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Chamber heating | :material-check: | — | passive | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Door-open sensor (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
+| Dual nozzle (L/R) | — | — | — | — | — | — | — | :material-check: | — | — |
+| 6-slot tool changer | — | — | — | — | — | — | — | — | :material-check: | — |
+| AMS Pro (4-slot) | up to 4 | up to 4 | up to 4 | up to 4 | — | — | :material-check:[^a2l] | up to 4 | up to 4 | up to 4 |
+| AMS Lite | — | — | — | — | :material-check: | — | — | — | — | — |
+| External spool | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | only | :material-check: | :material-check: | :material-check: | :material-check: |
+| AMS-HT (single-slot 128–135) | — | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
+| AMS humidity / temperature notifications | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: | :material-check: |
+| Maintenance — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — | — |
+| Maintenance — Steel Rods | — | — | — | :material-check: | — | — | — | — | — | — |
+| Maintenance — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Swap mode (push-off) [^swap] | — | — | — | — | :material-check: | :material-check: | — | — | — | — |
+| Vibration-cali skip patcher | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Print-by-object skip | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 
 [^door]: Door-state is parsed from `home_flag` bit 23 on MQTT. Only X1 family
 firmware has been reverse-engineered to publish a trustworthy value;
@@ -102,6 +116,14 @@ on speculation.
 [^swap]: Swap mode is officially supported on A1 series. Other models can
 opt in by writing custom swap-mode G-code macros, but no factory profiles
 ship for them.
+
+[^a2l]: A2L is an emerging **single-extruder** model — its second head is an
+integrated cutter/plotter, **not** a second nozzle. It is **Wi-Fi-only** (no
+Ethernet port), exposes a **low-rate chamber-image camera** on port 6000 (no
+RTSP / 30 FPS), and sits in the **linear-rail** maintenance class. Its AMS
+support is inferred from the firmware's "print-while-drying" capability (which
+requires a heated AMS); finer AMS details are still being confirmed against
+real hardware.
 
 ---
 

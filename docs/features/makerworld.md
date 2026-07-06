@@ -44,6 +44,9 @@ BamDude reuses your existing **Bambu Cloud** sign-in for downloads — there's n
 
 If no token is stored, **Settings → MakerWorld → Status** reports `can_download = false` and the Import button is disabled — go to **Settings → Bambu Cloud** to sign in first.
 
+!!! note "API-key callers use the key owner's token"
+    Requests authenticated with an **API key** (`X-API-Key` / `Bearer bb_…`) that carries the cloud-access scope now resolve the **key owner's** stored Bambu Cloud token, so `has_cloud_token` / `can_download` reflect that user instead of always reporting `false`. Extension and Home Assistant imports that previously failed with "requires Bambu Cloud login" now succeed, as long as the key's owner has signed into Bambu Cloud.
+
 ---
 
 ## :material-shield-key: Permissions

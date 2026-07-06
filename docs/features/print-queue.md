@@ -43,7 +43,7 @@ Every queue item carries one of these statuses (visible on the queue card chip):
 | `waiting_for_stagger` | Multi-printer batch — waiting for the staggered-start tick |
 | `waiting_for_dispatch` | Dispatcher is in flight (FTP upload + MQTT start_print) |
 | `failed` | Dispatch or print failed; verbose `error_message` on hover |
-| `cancelled` | Cancelled by user before completion |
+| `cancelled` | Cancelled before completion — by the user, or automatically with reason "Source archive deleted" when a still-pending item's source archive is moved to trash (it can no longer dispatch, so it's cancelled rather than left stuck pending) |
 | `skipped` | Auto-skipped after a previous failure on the same job |
 | `completed` | Print finished — auto-deletes once the matching archive lands (m019) |
 
@@ -86,6 +86,8 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 
 **Prefer lowest remaining filament** (Settings → Workflow): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1.
 
+This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
+
 ### Plate selection (multi-plate 3MF)
 
 Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:
@@ -95,6 +97,12 @@ Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal
 - The thumbnail + per-plate filament list comes from the m023 plate cache (no re-parse on each render).
 
 Plate index is preserved across restart-recovery + reprint flows. See [archiving](archiving.md) for chain-of-custody on multi-plate dispatches.
+
+### Build-plate type on queue items + print dialog
+
+On a farm with many plates it's easy to lose track of which physical plate a queued job actually needs. Every pending queue item now carries a **build-plate icon** (hover for the plate name) — the same bed icon the archive card shows — so you can see the target plate at a glance before it dispatches. The print dialog also shows the selected plate's type right next to the plate picker.
+
+Multi-plate 3MFs are resolved **per plate**: the value re-reads the file for the plate you actually picked rather than assuming every plate uses the first plate's bed, so a file mixing (say) Textured PEI and Engineering plates labels each one correctly.
 
 ### Print options
 
@@ -188,6 +196,16 @@ Select multiple queue items via the toolbar checkboxes to apply a bulk edit:
 | Bed levelling / Flow / Vibration / Layer inspect / Timelapse | ✓ | Same tri-state semantics. |
 | Scheduled-at | ✓ | Bulk-shift schedules forward by an offset, or pin a fixed clock. |
 | Cancel | — | Bulk-cancel marks all selected as `cancelled` (no force on currently `printing` rows — those need an explicit per-row Cancel). |
+
+### Group, collapse, and reorder batches
+
+Tame a long queue by grouping related pending jobs on a printer's queue card:
+
+- **Group as batch** — select **2 or more** pending items on the same card, then **Group as batch**. They share a `batch_id` and render as one block. **Ungroup** disbands it (completed / cancelled history keeps its grouping). Grouping needs `queue:update_all`.
+- **Collapse** — fold a batch down to a single summary row; the collapsed / expanded state is remembered per batch in the browser's local storage.
+- **Drag to reorder** — grab a row's **grip handle** and drag to reposition. This is available only when the card is fully **expanded** and has **no collapsed batch** on it, so a drag can never move a hidden row or split a batch; the up / down / bump buttons stay as the always-available fallback.
+
+Selection is scoped to a single card — a batch is per-queue, so a selection can't span printers.
 
 ---
 

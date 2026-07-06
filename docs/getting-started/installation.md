@@ -64,6 +64,48 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
+## :material-microsoft-windows: Windows (native installer)
+
+Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime and a static `ffmpeg`, lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
+
+1. Download the latest **`bamdude-<version>-windows-x64-setup.exe`** from the [Releases page](https://github.com/kainpl/bamdude/releases).
+2. Run it (it needs Administrator rights — it registers a service and writes to `ProgramData`).
+3. When it finishes, your browser opens [http://localhost:8000](http://localhost:8000).
+
+That's it — the service is already running.
+
+### :material-folder-cog: What the installer lays down
+
+| What | Where |
+|------|-------|
+| **Program files** (embedded Python 3.13, backend + pre-built frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Your data** (database, archives, plate calibration) | `C:\ProgramData\BamDude\data` |
+| **Logs** | `C:\ProgramData\BamDude\logs` |
+
+The installer also adds Start-Menu shortcuts (**Open BamDude Dashboard**, **BamDude Logs**, **Uninstall**), an optional desktop shortcut, and — if you leave the box ticked — a **Windows Firewall** rule opening port `8000`.
+
+!!! info "Your data survives uninstall + upgrade"
+    Everything under `C:\ProgramData\BamDude` is left untouched on uninstall. Re-installing (or installing a newer build on top) picks the same database and archives back up automatically.
+
+### :material-service-toggle: The BamDude service
+
+The installer registers a Windows Service named **BamDude** (supervised by [NSSM](https://nssm.cc/)) that runs as `LocalSystem`, starts automatically on boot, and serves the dashboard on `http://localhost:8000`. Manage it with the standard cmdlets:
+
+```powershell
+Get-Service BamDude          # Check status
+Start-Service BamDude        # Start
+Stop-Service BamDude         # Stop
+Restart-Service BamDude      # Restart
+```
+
+### :material-update: Updating
+
+Download a newer `bamdude-<version>-windows-x64-setup.exe` and run it — it stops the service, overwrites the program files in place, and restarts. Your database, archives, and logs under `C:\ProgramData\BamDude` are preserved.
+
+Then open [http://localhost:8000](http://localhost:8000).
+
+---
+
 ## :material-tune: Configuration
 
 Configure BamDude using environment variables or a `.env` file:

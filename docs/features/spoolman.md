@@ -151,7 +151,7 @@ Each completed print reports per-filament consumption to Spoolman as a usage eve
 1. BamDude extracts per-filament usage data from the archived 3MF file (slicer estimates).
 2. For partial prints (failures, cancellations), per-layer G-code analysis provides precise consumption up to the exact failure layer.
 3. On completion, each spool's usage is reported individually — multi-material prints update each linked spool separately.
-4. If no 3MF data is available (rare — fallback recovery hasn't filled the archive yet), AMS remain% delta is used as a fallback.
+4. **AMS remain-% fallback for slots the 3MF didn't cover.** When a slot has no 3MF estimate — a no-3MF "Untitled" print (the `.gcode.3mf` was never downloadable, so the archive is a fallback row) **or** partial 3MF coverage where a loaded slot wasn't in the slice info — BamDude falls back per-slot to the AMS remaining-percentage drop. At completion it writes `(remain% at start − remain% at end) × the spool's Spoolman filament reference weight` grams as the usage event. It uses the Spoolman reference weight (not the AMS's unreliable reported tray weight) and **skips any slot swapped mid-print** (tray UUID changed), since it can't split consumption across two spools. Before this, no-3MF "Untitled" prints reported zero weight change to Spoolman.
 
 This matches BamDude's per-spool tracking model — the same numbers feeding the Stats page also feed Spoolman, just routed through Spoolman's usage-history table on top of BamDude's local archive.
 

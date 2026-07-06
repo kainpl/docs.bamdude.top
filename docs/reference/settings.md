@@ -52,6 +52,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `queue_drying_enabled` | `false` | Allow auto-drying between queue items when the next print's filament needs it. |
 | `queue_drying_block` | `false` | Block the next print until drying completes (rather than running it in parallel with the current print). |
 | `ambient_drying_enabled` | `false` | Auto-dry AMS filament on idle printers when humidity exceeds threshold, regardless of queue state. |
+| `print_drying_enabled` | `false` | Allow auto-drying to also fire on a printer that's currently **printing**, when its model + firmware supports concurrent drying (H2D 01.03.00.00+, H2C/H2S/P2S/H2D Pro 01.02.00.00+, X2D/A2L 01.01.00.00+, X1C 01.11.02.00+). Mid-print drying temp is capped 5 °C below the idle preset (floor 40 °C). See [AMS & Humidity](../features/ams.md). |
 | `drying_presets` | empty | JSON object of per-filament drying presets. Empty = use built-in defaults. |
 | `stagger_enabled` | `false` | Enable [staggered start](../features/staggered-start.md) — limit concurrent bed heats across the farm to avoid power spikes. |
 | `stagger_concurrent` | `2` | Maximum concurrent printers heating. |
@@ -76,8 +77,10 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
 | `prefer_lowest_filament` | `false` | Auto-assignment prefers the spool with the lowest remaining percentage. |
 | `default_filament_cost` | `25.0` | Per-kg fallback cost when a spool's `cost` field is unset. |
+| `auto_add_unknown_rfid` | `true` | Auto-add a spool to inventory when an AMS reads an unknown RFID tag. Off → a confirmation card (material / colour pre-filled) is shown instead of silent creation. See [Spool Inventory](../features/inventory.md). |
 | `ams_humidity_good` | `40` | Green-zone humidity threshold (%) on AMS cards (≤ this value). |
 | `ams_humidity_fair` | `60` | Yellow-zone humidity threshold (≤ this value). Above is red. |
+| `ams_humidity_thresholds` | empty | JSON map of per-filament-type humidity trigger thresholds for auto-drying + alarms — `{"default": int, "PLA": int, "ASA": int, …}`. Empty = fall back to `ams_humidity_fair` for every type. A multi-material AMS resolves to the strictest (lowest) across its loaded spools. |
 | `ams_temp_good` | `28.0` | Green-zone temperature threshold (°C) on AMS cards. |
 | `ams_temp_fair` | `35.0` | Yellow-zone temperature threshold. Above is red. |
 | `ams_history_retention_days` | `30` | How many days of AMS history to keep before pruning. |
@@ -186,7 +189,14 @@ See [Obico AI Failure Detection](../features/obico.md) for context on each.
 
 ## :material-account-key: Auth (mostly env-driven)
 
-These are not editable from the UI — they're read-only env mirrors. See [Installation](../getting-started/installation.md) for the env-var details.
+A couple of auth settings *are* editable from the UI (**Settings → Users**):
+
+| Key | Default | Effect |
+|---|---|---|
+| `session_max_hours` | `720` | Admin ceiling on session lifetime (the refresh-token TTL), in hours. Range 1–720; default 720 h (30 days) preserves remember-me. Applied to existing sessions at their next refresh. Set via the Session Policy card. See [Authentication](../features/authentication.md). |
+| `local_login_enabled` | `true` | Allow username + password login on `/auth/login`. Turn off when only SSO should be usable (guarded: needs ≥ 1 enabled OIDC provider and your own account OIDC-linked). Env `BAMDUDE_LOCAL_LOGIN=true` bypasses this at the route level for recovery. |
+
+The rest are read-only env mirrors — set them via environment variables. See [Installation](../getting-started/installation.md) for the env-var details.
 
 | Setting | Source | Effect |
 |---|---|---|

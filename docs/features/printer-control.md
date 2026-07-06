@@ -34,6 +34,14 @@ The card also shows a red **"Printer busy"** overlay when you drop on a non-idle
 !!! note "Permission"
     `printers:control`. The library upload itself also checks `library:write`.
 
+### Nozzle Offset Calibration (dual-nozzle only)
+
+On the **H2D, H2D Pro, H2C and X2D**, the print dialog shows a **"Nozzle Offset Calibration"** toggle — **on by default**, matching Bambu Studio. It controls whether the printer runs its nozzle-offset calibration routine before the print starts.
+
+Previously this calibration was always skipped, with no way to enable it — and, just as importantly, no way to keep it *deliberately* off. That off case matters for diamond-nozzle setups, which must **not** run the routine.
+
+The toggle **only appears on dual-nozzle printers**. Single-nozzle machines always skip the calibration regardless of any setting. Your choice is remembered per queue item and applied on every dispatch path (queue, drag-and-drop, re-print).
+
 ### Pause / Resume
 
 | Button | When visible | Endpoint | What it sends |
@@ -82,6 +90,155 @@ Accepted printer states: `FINISH`, `FAILED`, **`IDLE`**. The IDLE case covers Au
 ### Clear HMS errors
 
 `POST /api/v1/printers/{id}/hms/clear` — sends `clean_print_error` via MQTT and clears the HMS list from the card immediately. Useful after a cancel that left stale `print_error` codes behind.
+
+---
+
+## :material-cog: Printer Settings Dialog
+
+A per-printer dialog that mirrors **Bambu Studio → Print Options + Printer Parts**. Open it from the kebab :material-dots-vertical: menu on a printer card → **Printer Settings**.
+
+Two tabs:
+
+- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery.
+- **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
+
+### Print Options — what's there
+
+| Group | Setting | Values | MQTT |
+|---|---|---|---|
+| AI detections | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
+| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
+| Sensors | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
+| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
+| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
+| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| Chamber | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
+| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
+| Misc | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
+| | Prompt sound | On/Off | `print_option` (`sound_enable`) |
+| | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
+| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+
+### Visibility — what shows up depends on the printer
+
+Per-model capability gating, same idea as the [AMS Settings dialog](ams.md#ams-settings-dialog). Rows whose capability is `false` are hidden entirely — no point showing **AI monitoring** on a P1S or **Purify air** on a non-H2D Pro.
+
+| Group | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
+|---|---|---|---|---|---|
+| AI detections (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | yes | — | — | yes | yes |
+| FOD + displacement | yes | — | — | yes | yes |
+| Open-door check | yes | yes | — | yes | yes |
+| Purify air | — | — | — | — | **yes** (only H2D Pro) |
+| Filament tangle | yes | yes | yes | yes | yes |
+| Nozzle blob | yes | yes | — | yes | yes |
+| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | all models | | | | |
+
+### State source of truth — the printer
+
+BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT `print.print_option` push echoes. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+
+If the printer drops a setting (factory reset, firmware-update wipe), BamDude reflects that — there's no reconciliation. Open the dialog again and re-toggle.
+
+### Permissions and audit
+
+The kebab item only appears for users with the `printers:update` permission. The same permission gates the `POST /api/v1/printers/{id}/settings` endpoint.
+
+Every applied change writes one row to the `printer_setting_audit` table (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. No in-UI viewer yet; query the table directly if you need to answer "who turned spaghetti-detection off last Thursday?"
+
+!!! info "Calibration stays separate"
+    Calibrate Belt / Nozzle Offset / Resonance Test still live under their own kebab entry **Calibration** — they're not toggles, they're long-running routines. Phase-2 may merge them; phase-1 keeps them distinct.
+
+---
+
+## :material-flask: Filament Calibration
+
+A wizard that mirrors **Bambu Studio → Calibrate → Pressure Advance / Flow Rate / Towers** without leaving BamDude. Open it from the kebab :material-dots-vertical: menu on a printer card → **Filament Calibration**. History review lives on a sibling kebab entry → **Calibration History**.
+
+### What's calibrated
+
+| Mode | Path | Output |
+|---|---|---|
+| **PA Line** | Manual: flat one-layer block of stepped-K rows (slow / fast / slow extrusion in each) + numbered side tab — pick the cleanest row, K = label next to it. Visually like PA Pattern but with straight lines instead of V-shaped walls | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Tower** | Manual: stepped vertical tower — measure the height (mm) where corners look cleanest, K = Start + (Step × height) | `pa_k_value` per (filament, nozzle, extruder) |
+| **PA Pattern** | Manual: comb of V-shaped walls at stepped K values + numbered digits in a glyph tab — pick the cleanest pattern column, read the K from its label | `pa_k_value` per (filament, nozzle, extruder) |
+| **Auto PA** | X1 / X1E / H2D Pro: lidar scans + reports K/N | same (pre-filled save dialog) |
+| **Flow Rate** | Manual: 9-block coarse (−20…+20 %) → 7-block fine refinement | `flow_ratio` per combo |
+| **Auto Flow Rate** | X1 lidar variant | same |
+| **Temp / VolSpeed / VFA / Retraction Tower** | Manual print only; read result with your eyes, enter in slicer | no DB row written |
+
+### Per-model capability gating
+
+Per-model rules — auto paths need lidar + firmware support flag; manual paths universally available.
+
+| Path | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D / H2D Pro |
+|---|---|---|---|---|
+| Manual PA / Flow Rate / Towers | yes | yes | yes | yes |
+| Auto PA (lidar) | yes | — | — | yes (Pro) |
+| Auto Flow Rate (lidar) | yes | — | — | yes (Pro) |
+| Dual-extruder (per-extruder cali) | — | — | — | yes |
+
+### Slicer-sidecar gating *(0.4.5)*
+
+Bambu Studio's calibration wizard always runs full slicing — even modes that look "pre-sliced" (PA Pattern, Flow Rate, Auto PA) load geometry from `resources/calib/` as scaffolds, then BS applies the active printer / process / filament preset plus per-mode g-code injection through `Plater::calib_*` / `CalibUtils::*`. BamDude mirrors the same 12 BS files under `backend/app/data/calib_assets/` but reaches the same slicing step through our **server-side slicing** sidecar (OrcaSlicer / Bambu Studio API).
+
+So every Filament Calibration mode needs a connected sidecar. To keep that visible:
+
+- The **Filament Calibration** and **Calibration History** kebab entries on the printer card are **hidden when "Server-side slicing" is off** in Settings (General → General).
+- If a direct API call slips through, `POST /printers/{id}/calibration/sessions` returns `409 {detail: "slicer_sidecar_required"}` for any manual mode.
+- Auto modes (Auto PA / Auto Flow Rate on lidar-equipped X1 / X1E / H2D Pro) are printer-side only — they go through MQTT `extrusion_cali_start` / `flow_rate_cali_start` without any local slicing. But since the rest of the wizard depends on the sidecar, the entry points are gated together.
+
+PA Tower (Phase 1), PA Pattern (Phase 2), and PA Line (Phase 9) are wired end-to-end as of 0.4.5 — pick any of them in the wizard, the slicer sidecar bakes the pattern, BamDude FTPs the gcode to the printer, runs it, and surfaces the manual-save dialog when finished. The remaining manual modes (Temp / Retraction / VFA / Volumetric Speed Towers, Flow Rate) cycle through `verification` (downloads a sliced 3MF for desktop comparison) before flipping to `production` — that staged rollout is **Wave 2** of the calibration roadmap.
+
+### Print options + swap macros *(0.4.5)*
+
+The wizard's preset page includes the same `PrintOptionsPanel` + `SwapMacrosPanel` you get on the regular print dialog. It reads your saved per-printer-model preferences (`PrintModal` and the calibration wizard share the storage key), so settings tuned once for a model — e.g. always-on swap macros on A1 plate-change, or layer inspection on X1E — apply automatically to calibration prints too. Saved preferences upsert on each successful start. Calibration-tuned defaults: `bed_levelling=true`, `flow_cali=false` (otherwise the printer's pre-print flow-cali would overwrite the gcode's M900 K sweep and mask the test), swap macros opt-in. MQTT-action macros (P1S chamber light on/off) fire automatically through the standard `print_started` / `print_finished` event hooks — no per-job toggle.
+
+### State + persistence
+
+- BamDude row written to `filament_calibration` keyed by `(printer_id, filament_id, nozzle_diameter, nozzle_volume_type, extruder_id)` since m063 — per-printer-instance, not per-model. Two X1Cs in the same farm carry independent K values for the same material.
+- The printer is the source of truth. BamDude's table is a cache. Whenever BamDude reads `extrusion_cali_get` it mirrors every visible profile into the cache by stable identity (`name` + `filament_id` + `pa_k_value`) — new rows arrive inactive; you promote one row per combo from the History modal.
+- Sync runs automatically on every MQTT (re)connect and whenever the printer's live K-profile list actually changes (hash-diff filtered so it doesn't fire on every push_status broadcast). The manage / history dialogs still trigger fresh pulls on demand.
+- Every cache row carries the printer-side `nozzle_id` (`HS00-0.4`, `HH00-0.6`, …) so you can see which physical nozzle each calibration was captured on. On P1S / A1 / A1 mini — where the per-profile id isn't shipped — BamDude derives it from the device-level nozzle hardware state.
+- `is_active=True` per combo is enforced by a partial unique index. Promoting a row flips its siblings to inactive.
+- Spool ↔ K-profile links (m064) are thin: a `spool_k_profile` row carries only `(spool, printer, extruder, filament_calibration_id)`. One hundred PETG spools sharing the same calibration collapse to one cache row + many links instead of duplicated K data.
+- Calibration assets are mirrored from BS `resources/calib/` (AGPL-3.0) under `backend/app/data/calib_assets/` — 12 files total (3MF / STL / STEP scaffolds; see *Slicer-sidecar gating* above for why all modes still need a sidecar). PA Line range: 0.0–0.1 step 0.002 (50 lines). Flow Rate coarse: `[-20, -15, -10, -5, 0, 5, 10, 15, 20]` %; fine: `[-5, -2, 0, 2, 5, 10, 15]` %.
+
+### Apply path on a real print
+
+`background_dispatch` calls the unified `apply_active_calibration_to_slot` helper for every AMS slot the job will use. Resolution order: explicit spool→calibration link → active `filament_calibration` row by combo. The helper then re-matches the cached row against `client.state.kprofiles` by **stable identity** (`name` + `filament_id` + `pa_k_value`) to find the LIVE `cali_idx` — the printer reorders slots when you delete a neighbour, so the stored number is a hint only — and fires `extrusion_cali_sel(ams_id, slot_id, cali_idx)` before the print starts.
+
+The same helper now runs from the post-RFID-refresh path, the tray-tag drift detect, the auto-spool tagger, and both inventory + Spoolman slot-assign endpoints — six call sites collapsed onto one. Closes the silent-drift gap where the firmware was falling back to the default profile after RFID re-taps, slot reassignments, or restarts even though your `SpoolAssignment` row was intact.
+
+External-source prints (BS, printer screen) still benefit: the slot binding persists on the printer until explicitly changed, so the last `extrusion_cali_sel` BamDude fired stays in effect.
+
+### History modal
+
+Two sections side by side:
+
+- **BamDude history** — `filament_calibration` rows grouped by nozzle. Per-row actions: **Set Active** (flips siblings + fires `extrusion_cali_sel`), **Delete**. Active row marked with green ring + checkmark.
+- **Printer-side history** — 16-slot view pulled via `extrusion_cali_get`. Refresh button forces a re-pull for a given nozzle diameter.
+
+!!! info "Resume banner"
+    If you close the wizard mid-flow (after the print finished but before you saved), reopening the wizard shows a yellow banner with **Resume / Discard** for the in-flight session.
+
+### Permissions and audit
+
+`printers:update` gates the wizard entry and all mutation routes. Every action writes a row to `calibration_audit` — `(printer_id, session_id, action, payload_json, sequence_id, result, error_message, created_at)`. Actions: `start_session / save_result / set_active / delete / cancel`, plus the legacy K-profiles UI page mutations from 0.4.5: `kprofile_add / kprofile_edit / kprofile_batch_add / kprofile_delete`. No in-UI viewer yet; query the table directly.
+
+!!! note "Edit-Save with no printer-relevant change skips the printer"
+    Since 0.4.5 the K-profiles edit dialog diffs `name` / `k_value` / `filament_id` / `nozzle_id` / `nozzle_diameter` against the loaded row before publishing. Identical → only the note (BamDude-local) is saved; no `extrusion_cali_set` fires. Stops the printer from regenerating `setting_id` on every Save click, which used to drift the cache row.
+
+### What's intentionally NOT in BamDude (yet)
+
+- **PA range customization** — start/end/step are fixed to BS defaults. If you need a different range, calibrate in BS itself and import the value.
+- **External spool calibration** — virtual tray `tray_id >= 0x10000` is disabled for the auto path; the manual path allows it but tray binding may not survive printer reboot.
+- **Tower-mode result entry in BamDude** — tower modes start the print and finish. Read the result with your eyes, enter it in your slicer's filament profile. (BS does the same.)
 
 ---
 
@@ -213,6 +370,30 @@ POST /api/v1/printers/{id}/refresh-status
 Asks the printer to re-broadcast its full status (MQTT `pushall`). Useful when a value on the card looks stale and you don't want to fully reconnect — full reconnect tears down the existing MQTT/FTP session and is slower. The endpoint is in the printer card's three-dot menu.
 
 For a heavier reset, the **stop / start** of `printer_manager.ensure_fresh_connection_for_printer` runs automatically before any control command — that re-establishes a stalled MQTT connection without operator intervention.
+
+---
+
+## :material-wrench: Maintenance Mode
+
+Take a printer **out of service** without deleting it — for a nozzle swap, a belt job, or parking a flaky machine. Toggle it from the printer card's :material-dots-vertical: kebab menu or the **Edit** dialog.
+
+While in maintenance, the printer:
+
+- **drops out of queue dispatch and the scheduler** — no new job is sent to it, and it's skipped by [Auto-Queue Routing](auto-queue.md) and model-based assignment;
+- **is skipped by auto-drying** — the drying scheduler ignores it;
+- **is excluded from metrics and sensor-history recording**;
+- **disconnects from MQTT** and stays disconnected until you turn maintenance off (turning it back on reconnects automatically).
+
+The card swaps its connection badge for an amber **Maintenance** pill (:material-wrench:) with an **Exit** button, so it's obvious at a glance which machines are parked.
+
+!!! note "Toggling on mid-print"
+    Entering maintenance on a printer that's **printing or paused** asks for confirmation first — the MQTT disconnect stops progress tracking and completion notifications for the in-flight job.
+
+!!! note "Permission"
+    Maintenance Mode rides on the printer's `is_active` flag (no separate column), so it needs `printers:update` — the same permission as editing the printer.
+
+!!! info "Not the Maintenance Tracker"
+    This is a *service state* for the whole printer. It's unrelated to the [Maintenance](maintenance.md) tracker, which logs rod / nozzle / belt jobs against usage hours: one parks the machine, the other reminds you when a part is due.
 
 ---
 

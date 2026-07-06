@@ -132,7 +132,7 @@ The `find_eligible_printer` helper considers a printer eligible when **all** of 
 
 | Check | Detail |
 |-------|--------|
-| **Idle** | Not currently `status='printing'`, `paused`, `error`, or otherwise busy. |
+| **Idle** | Not currently `status='printing'`, `paused`, `error`, or otherwise busy. A printer that is busy **only because it is auto-drying** is a *fallback* candidate — see [Drying takes lower priority than a print](#drying-takes-lower-priority-than-a-print) below. |
 | **Model match** | If `target_model` is set, the printer's model code must equal it. |
 | **Location match** | If `target_location` is set, the printer's location tag must equal it. |
 | **Filament types** | Every required filament type must appear in some loaded slot (AMS or external spool). |
@@ -143,6 +143,22 @@ Tie-breaker — when multiple printers are eligible:
 
 1. **Lowest filament use** (when `prefer_lowest_filament` setting is on, default off). Picks the printer whose AMS slots have the lowest total grams remaining for the required filaments — keeps "fresh" spools for harder jobs.
 2. Falls back to the lowest-id printer.
+
+---
+
+## :material-fire-off: Drying takes lower priority than a print
+
+[Queue Auto-Drying](ams.md#queue-auto-drying) keeps idle spools dry between prints. When **Settings → AMS Display Thresholds → Queue Auto-Drying** is in its default **non-blocking** mode (`queue_drying_block=false`, *"prints take priority over drying"*), a job queued **directly** to a printer already stops an in-progress dry cycle and starts printing.
+
+The auto-queue router now behaves the same way. A printer that is non-idle **only** because it is auto-drying is treated as a **fallback candidate**:
+
+- If any **truly-idle** printer of the same model is eligible, the job goes there — drying is never interrupted needlessly.
+- Only when no idle printer matches does the router route the job to a drying printer. The per-printer dispatch then stops the dry cycle and begins the print (the same `_stop_drying` step described in [AMS → Queue Auto-Drying flow](ams.md#queue-auto-drying)).
+
+When Queue Auto-Drying is set to **blocking** (`queue_drying_block=true`), drying still holds the queue — the auto-queue won't route to a drying printer, exactly as a direct queue item would wait.
+
+!!! note "Behaviour added in 0.4.5"
+    Before 0.4.5 the auto-queue treated a drying printer as plain "busy" and skipped it, so an auto-routed job could sit waiting behind a dry cycle even though a directly-queued job would have taken priority. This is most noticeable on P2S / H2 farms with AMS auto-drying enabled.
 
 ---
 

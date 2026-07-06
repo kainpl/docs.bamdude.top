@@ -64,6 +64,48 @@ description: Встановлення BamDude на вашу систему, вк
 
 ---
 
+## :material-microsoft-windows: Windows (нативний інсталятор)
+
+Для Windows 10/11 є самодостатній **`.exe`-інсталятор** — без Docker, без WSL і **без окремого встановлення Python чи Node**. Setup несе в собі embedded Python runtime і статичний `ffmpeg`, розкладає все по місцях і реєструє BamDude як **Windows Service**, що стартує при завантаженні системи.
+
+1. Завантаж останній **`bamdude-<version>-windows-x64-setup.exe`** зі [сторінки Releases](https://github.com/kainpl/bamdude/releases).
+2. Запусти його (потрібні права Administrator — він реєструє сервіс і пише в `ProgramData`).
+3. Коли завершиться, браузер відкриє [http://localhost:8000](http://localhost:8000).
+
+От і все — сервіс уже працює.
+
+### :material-folder-cog: Що розкладає інсталятор
+
+| Що | Куди |
+|----|------|
+| **Файли програми** (embedded Python 3.13, backend + зібраний frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Твої дані** (база, архіви, plate calibration) | `C:\ProgramData\BamDude\data` |
+| **Логи** | `C:\ProgramData\BamDude\logs` |
+
+Інсталятор також додає ярлики в Start-Menu (**Open BamDude Dashboard**, **BamDude Logs**, **Uninstall**), опціональний ярлик на робочому столі, і — якщо не знімати галочку — правило **Windows Firewall**, що відкриває порт `8000`.
+
+!!! info "Твої дані переживають uninstall + оновлення"
+    Усе під `C:\ProgramData\BamDude` лишається недоторканим при uninstall. Перевстановлення (чи встановлення новішого білда поверх) автоматично підхоплює ту саму базу й архіви.
+
+### :material-service-toggle: Сервіс BamDude
+
+Інсталятор реєструє Windows Service з іменем **BamDude** (під наглядом [NSSM](https://nssm.cc/)), що працює як `LocalSystem`, стартує автоматично при завантаженні й обслуговує дашборд на `http://localhost:8000`. Керуй ним стандартними cmdlet-ами:
+
+```powershell
+Get-Service BamDude          # Статус
+Start-Service BamDude        # Старт
+Stop-Service BamDude         # Стоп
+Restart-Service BamDude      # Рестарт
+```
+
+### :material-update: Оновлення
+
+Завантаж новіший `bamdude-<version>-windows-x64-setup.exe` і запусти — він зупиняє сервіс, перезаписує файли програми на місці й перезапускає. Твоя база, архіви та логи під `C:\ProgramData\BamDude` зберігаються.
+
+Далі відкрий [http://localhost:8000](http://localhost:8000).
+
+---
+
 ## :material-tune: Конфігурація
 
 Налаштуйте BamDude через змінні середовища або файл `.env`:

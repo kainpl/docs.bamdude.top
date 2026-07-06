@@ -88,7 +88,7 @@ Each VP uses these ports on its bind IP:
 | File transfer tunnel | 6000 | TCP/TLS | Verify-job + file upload (proxy mode + A1/P1 camera) |
 | RTSP camera | 322 | TCP/TLS | Camera streaming for X1 / H2 / P2 series — proxy mode **and** non-proxy modes when a target printer is set (slicer's live camera goes through this port) |
 | FTPS | 990 | TCP/TLS | File transfer control |
-| FTP PASV data | 50000–50100 | TCP | FTP passive data channel |
+| FTP PASV data | 10-port slice per VP within `50000–50999` | TCP | Passive data channel — each non-proxy VP gets its own slice (VP 1 → `50000–50009`, VP 2 → `50010–50019`, …); proxy mode forwards the target printer's range instead |
 | Slicer proprietary | 2024–2026 | TCP/TLS | A1 / P1S printer ↔ slicer protocol (proxy mode) |
 
 !!! note "Why two bind ports"
@@ -96,6 +96,9 @@ Each VP uses these ports on its bind IP:
 
 !!! note "Privileged port 990"
     Port 990 is privileged (<1024). The process needs `CAP_NET_BIND_SERVICE` or root to bind it. The shipped Docker image and the systemd unit already grant the capability — no manual action needed for either of those install paths.
+
+!!! note "FTP passive ports are sliced per VP"
+    Each **non-proxy** VP gets its own **10-port passive-data slice**, allocated from its database id: VP 1 → `50000–50009`, VP 2 → `50010–50019`, and so on (the slot wraps after 100 VPs, so every slice stays inside `50000–50999`). This replaced the old flat `50000–50100` pool — under Docker's default userland proxy that wide range spawned ~2000 host processes (~3.5 GB host RAM). Open only the slices your VPs actually use, and add 10 ports for each extra VP. To see a running VP's exact slice, check its startup log line `FTP passive data port range: <min>-<max>`. **Proxy-mode** VPs are the exception — they forward the *target printer's* full passive range (roughly `50000–50100`).
 
 ---
 
@@ -129,6 +132,9 @@ SSDP is **link-local** — broadcasts don't cross routers, VPN tun mode, or Dock
 In Bambu Studio / OrcaSlicer the **Send** button is right next to **Print** (or hidden behind the dropdown arrow on the Print button, depending on slicer version). What happens after Send depends on the VP's mode — see [Modes](#modes) above.
 
 For `proxy`-mode VPs, you click **Print** as normal — proxy mode is transparent and forwards to the real printer.
+
+!!! note "Multi-plate 'Send all plates'"
+    When you use the slicer's **Send all plates** on a multi-plate 3MF into a Queue-mode VP, BamDude enqueues **one queue item per plate** in plate order — not a single item for the whole file — so the scheduler runs each plate as its own job. A single-plate **Send** stays one item.
 
 ---
 
@@ -401,12 +407,14 @@ The VP impersonates a real Bambu model so the slicer's compatibility check passe
 | `BL-P002` | X1 | 00M |
 | `C13` | X1E | 03W |
 | `N6` | X2D | 20P9 |
+| `N9` | A2L | 26A19 |
 | `C11` | P1P | 01S |
 | `C12` | P1S | 01P |
 | `N7` | P2S | 22E |
 | `N2S` | A1 | 039 |
 | `N1` | A1 Mini | 030 |
 | `O1D` | H2D | 094 |
+| `O1E` / `O2D` | H2D Pro *(experimental — codes transcribed from the model reference, not yet confirmed against a live H2D Pro)* | 094 |
 | `O1C` / `O1C2` | H2C *(O1C2 = dual-nozzle variant)* | 094 |
 | `O1S` | H2S | 094 |
 
@@ -469,7 +477,7 @@ Open the [ports listed above](#required-ports) in your firewall.
     sudo ufw allow 6000/tcp
     sudo ufw allow 322/tcp
     sudo ufw allow 2024:2026/tcp
-    sudo ufw allow 50000:50100/tcp
+    sudo ufw allow 50000:50009/tcp   # one VP's passive slice; add 10 ports per extra VP (…:50019, …:50029, …)
     ```
 
     firewalld:
@@ -483,7 +491,7 @@ Open the [ports listed above](#required-ports) in your firewall.
     sudo firewall-cmd --permanent --add-port=6000/tcp
     sudo firewall-cmd --permanent --add-port=322/tcp
     sudo firewall-cmd --permanent --add-port=2024-2026/tcp
-    sudo firewall-cmd --permanent --add-port=50000-50100/tcp
+    sudo firewall-cmd --permanent --add-port=50000-50009/tcp   # one VP's passive slice; +10 ports per extra VP
     sudo firewall-cmd --reload
     ```
 
@@ -532,7 +540,7 @@ Open the [ports listed above](#required-ports) in your firewall.
           - "8883:8883"
           - "322:322"
           - "2024-2026:2024-2026"
-          - "50000-50100:50000-50100"
+          - "50000-50029:50000-50029"   # FTP passive data — covers 3 VPs (10-port slice each); widen to 50000-500N9 for N+1 VPs, or 50000-50100 for proxy mode
         volumes:
           - bamdude_data:/app/data
           - bamdude_logs:/app/logs
@@ -630,6 +638,51 @@ A VP in either Queue mode (`print_queue` or `auto_queue`) honours the `auto_disp
 
 !!! tip "Trusted upstream only"
     Auto-dispatch removes the human gate. Use it when the upstream source is yourself or a trusted automation (slicer plugin, CI job, MakerWorld webhook). For shared / multi-tenant uploads, prefer `file_manager` mode + the review modal.
+
+---
+
+## :material-code-tags: Per-VP G-code injection {#gcode-injection}
+
+Both Queue-mode VPs (`print_queue` and `auto_queue`) carry a **G-code injection** toggle on the VP card. Turn it on and every job this VP queues is flagged so the dispatcher splices the per-model **start / end snippets** into the gcode at dispatch time — the same [G-code injection](gcode-injection.md) engine the queue's per-item toggle uses, applied automatically to this VP's slicer-silent uploads.
+
+- **Off by default**, and a **no-op unless** start / end snippets actually exist for the target printer model.
+- **Flipping it restarts the VP** (the listeners re-initialise), so the slicer may briefly see the printer drop and reappear.
+
+Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / purge / swap-mode preamble, so you don't have to remember the per-item toggle on every send.
+
+---
+
+## :material-tune-variant: System default print options (slicer-silent dispatches) {#system-default-print-options}
+
+When a slicer sends a print to a Queue-mode VP, it normally carries the per-job print-option toggles — **bed levelling**, **flow calibration**, **layer inspection**, and **timelapse**. Some slicer builds and headless / scripted upload paths **omit** these flags. Previously a queue item with a missing flag fell straight back to the printer model's built-in column default.
+
+A queue item now resolves each of those four flags with this precedence:
+
+| Priority | Source | When it applies |
+|---|---|---|
+| 1 (highest) | **Slicer-sent value** | The slicer included an explicit choice for the flag. Always wins. |
+| 2 | **Per-model system default** | The slicer omitted the flag **and** a system default is configured for this printer model. |
+| 3 (fallback) | **Built-in column default** | Neither of the above — the model's hardcoded default. |
+
+!!! info "It only fills gaps — never overrides the slicer"
+    A flag the slicer **does** send always wins. The system default exists purely to fill the toggles a silent slicer leaves blank; it never overrides an explicit in-slicer choice.
+
+### Configuring a system default
+
+System defaults live alongside the per-user saved profiles under **Settings → Print → Saved Print Profiles**. The profiles table now offers a **"System (slicer fallback)"** pseudo-user in addition to the real users:
+
+1. Open the **Add / Edit** profile dialog.
+2. Pick **System (slicer fallback)** as the user.
+3. Choose the **printer model** the defaults apply to.
+4. Set the four toggles and save.
+
+There is **at most one system default per printer model** — picking the same model again edits the existing one rather than creating a duplicate.
+
+!!! note "`use_ams` is not a system default"
+    `use_ams` is **not** one of the saved-profile toggles, so it is intentionally excluded from the system default. AMS usage stays **slicer-sent-or-column-default** — set it in the slicer (or rely on the model's built-in default), not here.
+
+!!! tip "Example — always timelapse on a P1S fleet"
+    To force timelapse on every silent-slicer dispatch to your P1S printers — even from a slicer build that doesn't send the flag — add a **System (slicer fallback)** profile for the **P1S** model with timelapse on. Every queue item that lands on a P1S without an explicit timelapse choice now inherits it.
 
 ---
 
@@ -745,6 +798,14 @@ Multi-NIC host (Tailscale, Docker bridges, dual LAN) — auto-detection picks th
 3. **`CAP_NET_BIND_SERVICE` missing** — see the [Linux native tab](#platform-setup) above.
 4. **Bridge-mode Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` is mandatory; without it PASV advertises the container's internal IP and the data channel fails mid-handshake.
 
+### Slicer says "The printer is busy with another print job"
+
+The slicer refuses to send because it reads the VP as mid-print. This is the VP's *preparing* state — it flips there the moment you start a send, and clears once the upload completes.
+
+- **Fixed in 0.4.5.** Before 0.4.5 an interrupted or failed upload (or a file that didn't arrive as a `.3mf`) could leave the VP stuck *preparing* until BamDude restarted, so every later send saw it as busy. The VP now always returns to ready when an upload ends — success or failure, any file type — and only reports *preparing* while an upload is genuinely in flight. If you hit this on **0.4.5+**, it should clear on its own within a status cycle.
+- **Workaround on older builds**: toggle the VP off→on (or re-save its config) to reset its state; restarting BamDude does the same.
+- Applies to all non-proxy modes (File Manager, Queue, Auto-Queue) and to both Bambu Studio and OrcaSlicer.
+
 ### Proxy mode: printer offline in slicer
 
 - Target printer is online in BamDude? Card on Printers page should show `Online`.
@@ -781,7 +842,7 @@ Large 3MFs over slow uplinks. Either run a VPN (Tailscale / WireGuard) so the da
 - **RTSP camera** (322): end-to-end TLS, transparent proxy.
 - **A1 / P1S proprietary** (2024–2026): end-to-end TLS, transparent proxy.
 - **FTPS control** (990): end-to-end TLS, transparent proxy.
-- **FTP data** (50000–50100): in proxy mode it's a transparent proxy — actual encryption depends on slicer/printer negotiation. Bambu Studio sends file data **in cleartext** even when it negotiates `PROT P`. Use a VPN if you care about data-channel confidentiality.
+- **FTP data** (per-VP 10-port slice from `50000`; proxy mode forwards the target printer's range): in proxy mode it's a transparent proxy — actual encryption depends on slicer/printer negotiation. Bambu Studio sends file data **in cleartext** even when it negotiates `PROT P`. Use a VPN if you care about data-channel confidentiality.
 - All connections require the 8-char access code — slicer auth on every TLS handshake.
 - CA persists in `<DATA_DIR>/virtual_printer/certs/`; per-VP device certs in `<DATA_DIR>/virtual_printer/certs/{id}/` regenerate when serial changes.
 

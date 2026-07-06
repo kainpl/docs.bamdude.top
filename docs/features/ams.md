@@ -94,6 +94,67 @@ Editing labels requires the `printers:update` permission.
 
 ---
 
+## :material-cog: AMS Settings Dialog
+
+A per-printer dialog that mirrors **Bambu Studio → AMS Settings**. Click the :material-cog: gear icon in the **Filaments** section header on a printer card.
+
+Toggle the same AMS-level behaviours Bambu Studio exposes — without leaving BamDude.
+
+- **Insertion update** — read RFID automatically when you insert a new Bambu Lab spool (~20 s).
+- **Power on update** — re-read RFID at printer startup (~1 minute, rolls spools).
+- **Update remaining capacity** — let the AMS estimate how much filament is left on Bambu Lab spools.
+- **AMS filament backup** — auto-switch to another spool with the same properties when the active one runs out.
+- **Air printing detection** *(A1 / A1 Mini only)* — abort the print on clog / grind events to save time and material.
+- **Calibrate AMS** — issues `M620 C<ams_id>` to one of the connected AMS units. Same routine as the printer-screen calibrate.
+- **AMS Type** *(A1 only)* — switch the connected AMS between **FULL** and **LITE** firmware. Requires a printer-side firmware update (~30 s). Confirm dialog warns before sending.
+- **Arrange AMS Order** *(H2D family)* — sends an `ams_reset` to clear the connected-AMS ID sequence; the printer expects you to then physically disconnect and reconnect units in the desired order.
+
+### Visibility — what shows up depends on the printer
+
+Each row is gated by what the printer actually supports — there's no point showing **AMS firmware type** on an X1C, or **air-print detection** on a P1S. BamDude resolves the per-printer capability table from the printer model code; rows whose capability is `false` are hidden entirely.
+
+| Row | X1 family | P1 / P2 / X2D | A1 | A1 Mini | H2D family |
+|---|---|---|---|---|---|
+| Insertion update | yes | yes | yes | — | yes |
+| Power on update | yes | yes | yes | — | yes |
+| Update remaining capacity | yes | yes | yes | — | yes |
+| AMS filament backup | yes | yes | yes | — | yes |
+| Air printing detection | — | — | yes | yes | — |
+| AMS firmware type | — | — | yes | — | — |
+| Arrange AMS order | — | — | — | — | yes |
+| Calibrate AMS | when ≥1 AMS connected, all models |
+
+A1 Mini's AMS Lite has no RFID reader, so the four RFID-driven flags are not shown for it.
+
+### State source of truth — the printer
+
+BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT push (`print.cfg` hex bitfield for the four main flags + `print.ams.*` for older firmware fallback). When you toggle a checkbox, BamDude publishes the matching MQTT command (`ams_user_setting` for the first three, `print_option` for backup / air-print, `M620 C<id>` for calibrate, `mc_for_ams_firmware_upgrade` for firmware switch, `ams_reset` for reorder) and starts a 3-second hold so the row doesn't flicker between optimistic and confirmed values.
+
+If the printer drops a setting (factory reset, firmware update wipe), BamDude reflects that — there's no reconciliation. Open the dialog again and re-toggle.
+
+### Permissions and audit
+
+The gear icon only appears for users with the `printers:update` permission. The same permission gates the `POST /api/v1/printers/{id}/ams/settings` endpoint.
+
+Every applied change writes one row to the `ams_setting_audit` table — `(printer_id, user_id, action, payload_json, sequence_id, result, error_message, created_at)`. No in-UI viewer yet; query the table directly if you need to answer "who turned RFID auto-read off last Thursday?"
+
+!!! warning "Destructive actions"
+    **AMS firmware type** and **Arrange AMS order** carry confirm dialogs because they're not pure toggles — firmware switch forces a ~30 s AMS reboot, and reorder invalidates the current AMS ID sequence (you must physically reconnect units afterwards). Read the confirm text before clicking through.
+
+### AMS Filament Backup badge
+
+The **Filaments** section header on each printer card carries a small **AMS Filament Backup** badge (:material-repeat:) so you can see the auto-switch state without opening the dialog:
+
+| Badge | State |
+|---|---|
+| Green | Backup **on** — the AMS auto-switches to another matching spool on runout |
+| Grey | Backup **off** |
+| Faded grey | **Unknown** — the printer hasn't reported the flag yet |
+
+Click the badge to jump straight to the AMS Settings dialog where the toggle lives (needs `printers:update`; otherwise it's read-only).
+
+---
+
 ## :material-lan: AMS Discovery & Wiring
 
 BamDude auto-discovers AMS units when a printer connects — no manual configuration. Updates flow in whenever the AMS configuration changes (a unit added / removed / re-cabled).
@@ -143,6 +204,10 @@ BamDude detects the FTS via MQTT key `print.device.fila_switch` and **auto-suppr
 
 Configure custom warning thresholds in **Settings** > **General**.
 
+### Per-filament thresholds
+
+The single Fair / High band above is a global default. You can also set **per-filament-type** auto-dry / alarm humidity thresholds under **Settings → Filaments** (`ams_humidity_thresholds`) — PLA, PETG, TPU, ABS, ASA, PA, PC, PVA, plus a `default` catch-all. When one AMS holds several materials, BamDude resolves to the **strictest (lowest)** threshold across all loaded spools, so the most moisture-sensitive filament in the unit sets the trigger. Empty slots contribute no constraint; unknown types fall back to `default`, then to the global Fair threshold.
+
 ---
 
 ## :material-fire: Remote AMS Drying
@@ -166,10 +231,11 @@ Remote drying needs an AMS with an internal heater. The original AMS (no heater)
 | X1 / X1C | 01.09.00.00 | |
 | P1P / P1S | 01.08.00.00 | |
 | H2D | 01.02.30.00 | |
+| H2C | 01.02.00.00 | |
 | H2D Pro | any | No version gate |
 | X1E | any | No version gate |
 | P2S, A1, A1 mini | — | :material-close: not supported |
-| H2S, H2C | — | :material-close: not supported |
+| H2S | — | :material-close: not supported |
 
 For models not listed above (future hardware), BamDude lets the drying command through. If the printer's firmware doesn't support it, the call fails gracefully without side effects.
 
@@ -231,6 +297,9 @@ Power-related issues also surface as HMS (Health Management System) errors in th
 2. Select filament type, temperature, and duration
 3. Optionally enable spool rotation
 4. Click **Start**
+
+!!! tip "Drying badge"
+    While a cycle is active, the AMS card shows a **Drying** badge with the active filament and target temperature — e.g. *Drying · PETG @ 65°C* — alongside the time remaining, so you can see what's cooking at a glance. Bambu only echoes the drying time on later pushes, so BamDude caches the filament + target locally when it starts the cycle.
 
 ### Queue Auto-Drying
 
@@ -302,6 +371,24 @@ Defaults are based on BambuStudio's official filament drying profiles. Edit them
 ### Ambient Drying
 
 A separate path that doesn't depend on the queue. Enable under **Settings** > **Print Queue** > **Ambient Drying** (`ambient_drying_enabled`). On any idle printer where humidity is above the threshold, BamDude starts drying without setting a target temperature — useful as a 24/7 humidity-keeper for an idle farm.
+
+### Continue drying while printing
+
+By default, drying only runs on **idle** printers — starting a print stops any active cycle. Turn on **Continue drying while printing** (`print_drying_enabled`, **Settings → Print Queue**, default **off**) to let auto-drying also fire *while a print is running*, so a humid spool keeps drying without stalling the queue.
+
+This needs firmware that supports concurrent "Print While Drying". BamDude only offers it on:
+
+| Model | Min firmware |
+|---|:---:|
+| H2D | 01.03.00.00 |
+| H2C · H2S · P2S · H2D Pro | 01.02.00.00 |
+| X2D · A2L | 01.01.00.00 |
+| X1C | 01.11.02.00 |
+
+A1, A1 Mini, P1P / P1S, X1 (non-C) and X1E are excluded — their firmware rejects the command mid-print anyway (`dry_sf_reason=0`, TaskOccupied).
+
+!!! note "Temperature is capped mid-print"
+    While a print is running, the drying temperature is capped **5 °C below the idle preset**, with a floor of **40 °C** — Bambu warns the drying temperature must stay below the filament's softening point during a print. Example: a PETG preset of 65 °C dries at 60 °C mid-print.
 
 ---
 

@@ -9,6 +9,9 @@ Cloud Profiles is the bridge between your Bambu Cloud account and BamDude. Once 
 
 The integration is **per-user**. Each BamDude account holds its own Bambu Cloud token — your colleague signing into their own Bambu account doesn't kick you out, and your token doesn't leak into theirs.
 
+!!! tip "Also using OrcaSlicer's cloud?"
+    BamDude can sign into **[Orca Cloud](orca-cloud.md)** in parallel — OrcaSlicer 2.4.0-alpha's Supabase profile sync — and surface those profiles alongside your Bambu Cloud presets in the slice modal (ranked above Bambu Cloud). The two integrations are independent; connect either, both, or neither.
+
 ---
 
 ## :material-earth: Per-user region (BamDude addition)
@@ -59,9 +62,12 @@ The flow auto-detects which method your account uses — the dialog renders the 
 For headless setups, SSO accounts, or environments where the email/OTP round-trip won't work.
 
 1. Click **Use access token instead**
-2. Obtain a Bambu Cloud bearer via [`bambu-lab-cloud-api`](https://pypi.org/project/bambu-lab-cloud-api/) or by logging in via Bambu Studio and capturing the token
+2. Obtain a Bambu Cloud bearer via [`bambu-lab-cloud-api`](https://pypi.org/project/bambu-lab-cloud-api/), or from a browser logged into MakerWorld (DevTools → Application → Cookies → `token`). Bambu Studio no longer exposes the token in any UI, so the old "grab it from Studio" route no longer works. Treat the cookie value as a secret.
 3. Paste it into the **Access token** field, pick the region
 4. BamDude verifies the token by calling `/v1/user-service/user/profile`. On success the token is stored against your user row
+
+!!! note "China-region accounts must use token login"
+    China-region Bambu accounts are bound to a phone number rather than an email, so the email/password flow can't be used — the access-token path above is the only way in.
 
 !!! note "Cloud Access Token vs Printer Access Code"
     The Cloud Access Token is the bearer used for the Bambu API + MQTT — that's what this page wants. The Printer Access Code on the printer's screen (Network settings) is the per-printer LAN credential — different field, different page (the [Printers](printer-control.md) form).

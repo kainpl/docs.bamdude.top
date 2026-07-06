@@ -47,15 +47,31 @@ You can add a printer two ways: let BamDude **auto-discover** it on the LAN
 
     === "Docker (bridge network)"
 
-        SSDP multicast doesn't cross the bridge, so BamDude switches to
-        **subnet scan** instead. Enter your LAN's CIDR (e.g.
-        `192.168.1.0/24`) and click **Scan** — BamDude probes every host
-        for the Bambu MQTT/FTPS ports and lists every printer it finds.
-        On a `/24` this finishes in under a minute.
+        SSDP multicast doesn't cross the bridge, so the automatic list
+        may stay empty. Use the **subnet picker** (below) with a
+        **Custom subnet…** matching your LAN — BamDude actively probes
+        every host on that subnet instead of relying on multicast. On a
+        `/24` this finishes in under a minute.
 
-3. Click your printer in the result list. BamDude pre-fills **IP** and
+3. **Discovering across a router or VLAN?** The dialog always shows a
+   **subnet picker**. By default it scans your server's own subnet via
+   SSDP, but SSDP multicast can't cross routers or VLAN boundaries — so a
+   printer on a *different* network segment than the server never shows
+   up. Pick **Custom subnet…** to reveal a **CIDR** field, enter the
+   printer's subnet (e.g. `10.1.1.0/24`), and BamDude runs an active
+   **unicast scan** of that range instead of SSDP. The last custom subnet
+   you entered is remembered for next time.
+
+    !!! warning "Ports must be reachable across the boundary"
+        A cross-subnet scan only finds a printer if the **FTP (990)** and
+        **MQTT (8883)** ports are routable from the server to the printer's
+        segment. Open them on any firewall / router ACL between the two
+        networks first — otherwise the printer stays invisible even with
+        the correct CIDR.
+
+4. Click your printer in the result list. BamDude pre-fills **IP** and
    **Serial** for you — only the **Access Code** is left to type.
-4. Skip to *Step 3 — Save and Connect* below.
+5. Skip to *Step 3 — Save and Connect* below.
 
 !!! info "Discovery permission"
     The discovery routes require the `discovery:scan` permission. The
@@ -82,6 +98,13 @@ details.
 | **IP Address** | Your printer's local IP address (auto-discovery fills this) | `192.168.1.100` |
 | **Access Code** | 8-character code from Developer Mode | `12345678` |
 | **Serial Number** | Your printer's serial number (auto-discovery fills this) | `01P00A000000001` |
+
+!!! note "The connection is verified before the printer is saved"
+    When you click Add, BamDude probes the printer over MQTT first. If it
+    can't connect — wrong access code, wrong IP, or the printer is off /
+    not in LAN-Only Mode — the add is rejected with an explanatory message
+    and nothing is saved, so you never end up with a dead, empty printer
+    card. Make sure the printer is powered on and reachable before adding.
 
 !!! tip "Model selection matters"
     BamDude derives several capabilities from the model — door-state

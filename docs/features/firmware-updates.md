@@ -16,6 +16,7 @@ The same machinery also supports **rollback** — pick any version Bambu has eve
 - Per-printer **firmware status badge** on each printer card.
 - "Update available" notifications wired into the standard channels (see [Notifications](notifications.md)).
 - LAN-only **download → SD upload → trigger from printer screen** flow.
+- **Mass / bulk updates** across many printers at once, grouped per model, with a per-run **Update log** (see [below](#mass-bulk-updates)).
 - Rollback / reinstall to any **published** version.
 - Wiki-vs-download-page reconciliation — versions that Bambu *announced* but never *published* an offline file for are marked unavailable instead of pretending they're installable.
 - **Cloudflare bypass** so the EU/UA installs that get 403'd on plain HTTP can still talk to `bambulab.com`.
@@ -104,7 +105,7 @@ The minimum free-space buffer is **100 MB** on top of the firmware size. A typic
 
 `POST /firmware/updates/{printer_id}/upload?version=...` kicks off a background task that:
 
-1. Downloads the `.bin` from Bambu's CDN (or reuses the local cache — see [Cache](#firmware-cache) below).
+1. Downloads the `.bin` from Bambu's CDN (or reuses the local store — see [Store](#firmware-store) below).
 2. FTPs the file to the **root** of the printer's SD card. Filename matches Bambu's published naming.
 3. Broadcasts progress via WebSocket (`firmware_upload_progress`) and a polling-fallback endpoint (`GET /firmware/updates/{printer_id}/upload/status`).
 
@@ -120,6 +121,27 @@ BamDude doesn't push the install over MQTT — you finish the job from the print
 
 !!! warning "Don't power off mid-update"
     A half-applied firmware can brick the printer. Plug the printer into a UPS for the duration if you're somewhere with iffy power.
+
+---
+
+## :material-layers-triple: Mass (bulk) updates {#mass-bulk-updates}
+
+Updating one printer at a time gets old on a farm. The **Firmware** page (sidebar → :material-cpu-64-bit: **Firmware**) updates many printers in one pass.
+
+```
+Sidebar → Firmware → pick a version per model → Upgrade
+```
+
+- **Grouped by model.** Printers split into per-model tabs (`P1P/P1S (4)`, `A1 mini (2)`, …) — the firmware file and the on-screen apply step differ per model.
+- **One version per model, either direction.** Pick the version for each model — newer **or** older (rollback is first-class). The list shows every published version plus any you already hold in the store.
+- **Download once, push in parallel.** Each model's firmware is downloaded **once**, then FTP'd to every selected printer's SD card concurrently, capped by **Settings → General → File Manager → bulk concurrency** (default **2** — Bambu controllers don't love many simultaneous TLS handshakes).
+- **Mid-print printers are skipped**, flagged on their row, never touched. A failure on one printer **doesn't stop the rest** — every printer gets its own result.
+- **"Update all available"** preselects every printer with a pending update; you still confirm the per-model version before launching.
+- As with the single-printer flow, the final **apply** is a step on each printer's own screen — the run finishes by showing the model-specific instruction for the printers it uploaded to.
+
+### Update log
+
+The Firmware page's **Update log** tab records every run — timestamp, source (`bulk` vs `single`), per-printer `from → to` version and result. **Single-printer updates from the per-printer modal are logged here too**, so the journal is the one place to see all firmware activity across the farm.
 
 ---
 
@@ -178,21 +200,20 @@ If you see "0 versions detected" on a model right after a wiki layout change, th
 
 ---
 
-## :material-folder-arrow-down: Firmware cache
+## :material-folder-arrow-down: Firmware store {#firmware-store}
 
-Downloaded firmware files are cached locally for reuse across printers and re-uploads:
+Downloaded firmware is kept in a durable, **indexed** local store under `<DATA_DIR>/firmware/`, keyed by **model + version** (with a sha256 checksum). It's reused across printers and re-uploads — and, crucially, it's **keyed by model+version rather than the download URL**, so a version stays installable **even after Bambu removes it from their site**.
 
-```
-<DATA_DIR>/firmware/<MODEL>_<VERSION>.bin
-```
-
-| When the cache helps | Detail |
+| When the store helps | Detail |
 |---|---|
 | Same-model bulk update | Five A1 minis on the same firmware → one CDN download, five FTP uploads |
-| Failed upload retry | Re-running the upload reuses the already-downloaded file |
-| Rollback after a botched upgrade | The previous firmware is probably still in the cache |
+| Failed upload retry | Re-running the upload reuses the already-downloaded file (sha256-verified) |
+| Rollback after a botched upgrade | The previous firmware is probably still in the store |
+| Vendor pulled the version | A version Bambu has since removed is still installable from the store |
 
-The cache has no TTL — files live until you delete the folder by hand or clean it via the on-disk maintenance scripts. Each `.bin` is 50-150 MB; the cache grows ~1 GB over the lifetime of a busy install.
+- **Pre-download without touching a printer.** On the Firmware page you can download any version into the store ahead of time (so you have it before it's ever needed, or before the vendor drops it).
+- **In-store indicators.** The version picker shows at a glance which versions are already in the store vs. not.
+- The store has no TTL — files live until you delete them. Each `.bin` is 50-150 MB; the store grows ~1 GB over the lifetime of a busy install.
 
 ---
 

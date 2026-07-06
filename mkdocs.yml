@@ -72,6 +72,7 @@ plugins:
             Upgrading: Оновлення
             First Printer Setup: Перший принтер
             "Mobile & PWA": "Мобільний і PWA"
+            Appearance: Оформлення
             Features: Функції
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
@@ -94,6 +95,7 @@ plugins:
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
             "Cloud Profiles": "Cloud-профілі"
+            "Orca Cloud": "Orca Cloud"
             "Local Profiles": "Локальні профілі"
             Automation: Автоматизація
             Smart Plugs: Розумні розетки
@@ -106,6 +108,7 @@ plugins:
             "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
             "Spool Inventory": "Інвентар котушок"
             "Projects & Print Plan": "Проєкти та print plan"
+            "Filament Calibration": "Калібровка філаменту"
             "K-Profiles": "K-профілі"
             "Stats & Energy": "Статистика і енергія"
             "Energy Tracking": "Відстеження енергії"
@@ -133,6 +136,7 @@ plugins:
             API Reference: Довідка API
             "Keyboard Shortcuts": "Гарячі клавіші"
             Troubleshooting: Усунення неполадок
+            Privacy: Приватність
 
 markdown_extensions:
   # Python Markdown
@@ -206,6 +210,7 @@ nav:
     - First Printer Setup: getting-started/first-printer.md
     - Reverse Proxy & HTTPS: getting-started/reverse-proxy.md
     - Mobile & PWA: getting-started/mobile.md
+    - Appearance: getting-started/appearance.md
 
   - Features:
     - features/index.md
@@ -230,6 +235,7 @@ nav:
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
       - Cloud Profiles: features/cloud-profiles.md
+      - Orca Cloud: features/orca-cloud.md
       - Local Profiles: features/local-profiles.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md
@@ -242,6 +248,7 @@ nav:
     - Library, Inventory & Projects:
       - Spool Inventory: features/inventory.md
       - Projects & Print Plan: features/projects.md
+      - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
       - Stats & Energy: features/stats.md
       - Energy Tracking: features/energy.md
@@ -272,5 +279,7 @@ nav:
     - API Reference: reference/api.md
     - Keyboard Shortcuts: reference/shortcuts.md
     - Troubleshooting: reference/troubleshooting.md
+
+  - Privacy: privacy.md
 
 copyright: Copyright &copy; 2025-2026 BamDude Contributors

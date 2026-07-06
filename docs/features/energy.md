@@ -125,7 +125,10 @@ If you're on a dynamic electricity tariff (Tibber, Octopus, Nordpool, …), push
 
 ### 1. Create an API key
 
-**Settings → API Keys → Create** with `settings:write` permission. Copy the key.
+**Settings → API Keys → Create**, and flip the **Update electricity price** toggle on the key's row. This is a narrowly-scoped opt-in for `POST /settings/electricity-price` — it does **not** grant general settings-write capability (the wider `PATCH /settings` route is unchanged). Copy the key.
+
+!!! note "Older docs referenced `PATCH /settings`"
+    The general `PATCH /settings` endpoint still works for API keys, but it exposes the entire settings payload (SMTP / LDAP / MQTT credentials, HA token, every UI rendering knob) — a much wider surface than the dynamic-tariff use case needs. The new `POST /settings/electricity-price` endpoint accepts only `{energy_cost_per_kwh}`, returns the full settings response so HA can confirm the new value applied, and is gated by the per-key `Update electricity price` toggle so admins explicitly opt in. Configs pointing at the legacy URL keep working; switch to the narrow URL on your next config refresh.
 
 ### 2. Add a REST command in HA
 
@@ -134,8 +137,8 @@ Add to your `configuration.yaml`:
 ```yaml
 rest_command:
   bamdude_electricity_price:
-    url: "http://YOUR_BAMDUDE_IP:8000/api/v1/settings"
-    method: PATCH
+    url: "http://YOUR_BAMDUDE_IP:8000/api/v1/settings/electricity-price"
+    method: POST
     headers:
       X-API-Key: "YOUR_API_KEY"
     content_type: "application/json"

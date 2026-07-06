@@ -64,9 +64,9 @@ BamDude поставляється з завжди увімкненою авте
 Права мають формат `resource:action` -- наприклад, `printers:control`, `archives:read`. Ендпоінти оголошують потрібне право через `RequirePermission(...)`, тож матриця застосовується однаково на REST, WebSocket і Telegram-поверхнях.
 
 - **Printers** -- `printers:read`, `printers:create`, `printers:update`, `printers:delete`, `printers:control`, `printers:files`, `printers:ams_rfid`, `printers:clear_plate`
-- **Archives** -- `archives:read`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
-- **Queue** -- `queue:read`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
-- **Library** -- `library:read`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (минути trash, hard-delete одразу)
+- **Archives** -- `archives:read`, `archives:read_own` / `archives:read_all`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
+- **Queue** -- `queue:read`, `queue:read_own` / `queue:read_all`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
+- **Library** -- `library:read`, `library:read_own` / `library:read_all`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (минути trash, hard-delete одразу)
 - **Inventory** -- `inventory:read`, `inventory:create`, `inventory:update`, `inventory:delete`, `inventory:view_assignments`
 - **Cloud** -- `cloud:auth` (per-user логін у Bambu Cloud + CRUD cloud-профілів; `settings:read` НЕ потрібен)
 - **Settings** -- `settings:read`, `settings:update`, `settings:backup`, `settings:restore`
@@ -96,11 +96,14 @@ BamDude поставляється з завжди увімкненою авте
 
 Користувачі в кількох групах отримують **об'єднання** прав усіх своїх груп — призначення додаються, не мінімізуються.
 
+!!! info "Читання теж розділене за власністю"
+    Роути **читання** архівів / черги / бібліотеки застосовують розділ `read_own` / `read_all`, а не плаский прапор `*:read`. Вбудовані **Operators** і **Viewers** несуть варіант `*:read_all`, тож і далі бачать друки, чергу й бібліотеку всієї ферми — BamDude це спільна ферма. **Кастомна** група, що тримає лише legacy-прапор `*:read`, беклфілиться до `*:read_own` (fail-closed): щоб бачити рядки інших користувачів, їй треба явно видати `*:read_all`. Плаcкі прапори `archives:read` / `queue:read` / `library:read` лишаються суто як гейт download / preview на фронтенді — бекенд більше не зважає на них для видимості рядків.
+
 ---
 
 ## :material-account-multiple-plus: Управління користувачами
 
-**Settings -> Users -> вкладка Users.** Видно всім з `users:read`; модифікації потребують `users:create` / `users:update` / `users:delete`.
+**Settings -> Users -> вкладка Users.** Видно всім з `users:read`. Модифікації (create / update / delete) — **лише для адмінів**: самого лише права `users:create` / `users:update` / `users:delete` вже недостатньо. "Адмін" тут означає `User.is_admin`: або legacy `role == "admin"`, **або** членство в групі **Administrators**. Цей admin-гейт стоїть *поверх* права, тож non-admin оператор, якому просто видали `users:update`, не може само-ескалюватися, створивши admin-акаунт. API-ключі не несуть особистості користувача, тож ніколи не проходять admin-гейт — управління користувачами недосяжне через API-ключ.
 
 ### Створення користувача
 
@@ -141,7 +144,9 @@ BamDude поставляється з завжди увімкненою авте
 - Per-category **count badges** ("5/7") оновлюються по мірі тіку.
 - Description — звичайний текст; пиши що насправді планується від групи, майбутній-ти подякує.
 
-Системні групи (Administrators / Operators / Viewers) видалити не можна, але їхні permission-сети редаговані. Кастомні видаляються будь-коли; користувачі, що були лише в ній, лишаються без груп і втрачають усі права до перепризначення.
+Створення, редагування чи видалення групи — і додавання/видалення учасника групи — **лише для адмінів**: потрібне членство в групі Administrators (або legacy admin-роль) *поверх* відповідного права `groups:*`, тож оператор лише з `groups:update` не може ескалюватися через редактор груп.
+
+Системні групи (Administrators / Operators / Viewers) видалити не можна, а їхні **назву й permission-сет більше не можна редагувати** — API відхиляє будь-яку спробу перейменувати системну групу чи змінити її права (обрізання набору Administrators було б само-локаутом). Опис усе ще редагується вільно. Кастомні групи можна створювати, редагувати й видаляти будь-коли; користувачі, що лишились лише у видаленій групі, стають без груп і втрачають усі права до перепризначення.
 
 ---
 
@@ -237,10 +242,18 @@ BamDude підтримує LDAP-автентифікацію для оточен
 
 | Тоглер | Ефект |
 |---|---|
-| **Auto-provision** | On = перший успішний LDAP-логін авто-створює локальний рядок з `auth_source=ldap`. Off = адміни мають пре-створити користувача; невідомі LDAP-юзернейми відхиляються. |
+| **Auto-provision** | On = перший успішний LDAP-логін авто-створює локальний рядок з `auth_source=ldap`. Off = адміни мають пре-створити користувача через вкладку **LDAP** у Create User модалі (див. нижче); невідомі LDAP-юзернейми відхиляються при логіні. |
 | **Sync email on login** | Email юзера переписується з LDAP при кожному логіні (так AD-зміни доходять). |
 
 LDAP-provisioned юзери показують **LDAP** badge у списку Users. Кнопка **Change password** прихована — паролі живуть у directory, не в BamDude. Admin-triggered password reset і self-service forgot-password заблоковані для LDAP-акаунтів з ясним повідомленням "managed by LDAP".
+
+### Manual onboarding (вкладка LDAP)
+
+Коли LDAP увімкнено, **Create User** модал у Settings → Users отримує **Local / LDAP** перемикач вкладок. LDAP-вкладка — це debounced пошук у директорії (≥2 символи), повертає до 25 збігів через service-account bind. Кожен рядок показує `displayName` / email / DN з директорії і має позначку **Already provisioned** для імен, що вже існують як BamDude-користувачі (тож подвійний клік неможливий). Вибрати один + натиснути **Provision user** → BamDude перерезолвить ім'я через service bind і створить BamDude-рядок через ту саму гілку коду, що auto-provision при логіні — group mapping, default-group fallback і email sync застосовуються однаково.
+
+Використовуй це коли **Auto-provision** вимкнено, але треба все-таки пре-створити directory-користувачів вручну без редагування БД.
+
+Потрібний дозвіл: `users:create` (admin за замовчуванням).
 
 ### Local admin fallback
 
@@ -303,6 +316,17 @@ BamDude використовує модель sliding-сесії: коротко
 |-------|----------------|------------------|
 | За замовчуванням | 12 годин | Session cookie (зникає при закритті браузера) |
 | Remember me | 30 днів | `Max-Age=30d` -- переживає рестарт браузера |
+
+### Стеля часу життя сесії (Session Policy)
+
+**Settings -> Users -> Session Policy.** Адмінська стеля на те, як довго може жити будь-який логін. Справжнє життя сесії в BamDude — це TTL refresh-токена (access-токени на 1 годину й авто-оновлюються), тож це обмежує TTL refresh-а (та його cookie `Max-Age`) при логіні та на кожній ротації.
+
+- **Пресети:** 24 години / 7 днів / 30 днів, плюс поле власних годин.
+- **Діапазон:** мінімум 1 година, **максимум 720 годин (30 днів)** -- та сама жорстка стеля, що й remember-me.
+- **За замовчуванням:** 720 годин (30 днів), тож існуючі remember-me сесії переживають оновлення недоторканими.
+- Зниження діє на існуючі сесії при їх **наступному refresh** -- коротший TTL застосовується, коли refresh-cookie наступного разу ротується, не заднім числом.
+
+Картка read-only для користувачів без `settings:update`.
 
 ### Поведінка фронтенду
 
@@ -418,6 +442,16 @@ BamDude підтримує OpenID Connect single sign-on проти будь-я�
 - **State + nonce** -- обидва перевіряються в callback. State-токен атомарно споживається, тому replay-атаки фейляться.
 - **JWKS-перевірка** -- ID-токени верифікуються підписом проти JWKS, опублікованого провайдером.
 - **SSRF-захист** -- issuer URL має бути HTTPS і не повинен резолвитися на loopback, приватні (RFC 1918) чи link-local адреси.
+
+### Autologin і вимкнення локального входу
+
+Для команди, що живе повністю всередині свого IdP, BamDude може пропустити форму пароля:
+
+- **Autologin** -- per-provider тоглер (нести його може лише один провайдер -- увімкнення на одному скидає його на всіх інших), що перенаправляє неавтентифікованих відвідувачів одразу на authorize-URL цього IdP при завантаженні сторінки, поки той провайдер лишається enabled. Deep-link зберігається через SSO round-trip, тож збережений `/archives/42` повертається туди ж після входу. Запит authorize-URL змагається з 5-секундним таймаутом; при таймауті чи помилці BamDude відкочується на звичайну сторінку логіну й показує банер з поясненням, чому autologin не спрацював.
+- **Вимкнути локальний вхід за username/password** -- супутній перемикач (Settings -> Users), що повністю ховає форму пароля, лишаючи тільки OIDC. Він захищений від локауту: увімкнути не вдасться, поки **не увімкнено хоча б один OIDC-провайдер** *і* **твій власний акаунт не залінкований з OIDC** -- інакше ти замкнеш сам себе.
+
+!!! tip "Відновлення, коли SSO лежить"
+    Якщо IdP недосяжний і локальний вхід вимкнено, форму пароля повертають два запасні виходи: додай `?fallback=local` до URL логіну (`/login?fallback=local`), або встанови серверну env-змінну `BAMDUDE_LOCAL_LOGIN=true`, яка перекриває збережене налаштування, тож host-адмін завжди зможе зайти локально.
 
 ### Self-signed CA
 

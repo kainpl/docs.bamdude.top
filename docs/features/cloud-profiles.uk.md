@@ -9,6 +9,9 @@ Cloud Profiles — міст між твоїм Bambu Cloud аккаунтом і 
 
 Інтеграція **per-user**. Кожен BamDude-акк тримає свій Bambu Cloud token — твій колега, що логіниться у свій Bambu-акк, не вибиває тебе, і твій токен не тече до нього.
 
+!!! tip "Користуєшся ще й хмарою OrcaSlicer?"
+    BamDude може паралельно логінитись в **[Orca Cloud](orca-cloud.md)** — Supabase profile sync з OrcaSlicer 2.4.0-alpha — і показувати ті профілі поряд з Bambu Cloud presets у slice modal (вище за Bambu Cloud). Обидві інтеграції незалежні; підключай одну, обидві або жодну.
+
 ---
 
 ## :material-earth: Per-user регіон (BamDude розширення)
@@ -59,9 +62,12 @@ BamDude піднімає це обмеження міграцією **m011**: к
 Для headless-сетапів, SSO-акків або середовищ, де email/OTP round-trip не пройде.
 
 1. Натисни **Use access token instead**
-2. Дістань Bambu Cloud bearer через [`bambu-lab-cloud-api`](https://pypi.org/project/bambu-lab-cloud-api/) або через login у Bambu Studio з перехопленням токена
+2. Дістань Bambu Cloud bearer через [`bambu-lab-cloud-api`](https://pypi.org/project/bambu-lab-cloud-api/), або з браузера, авторизованого в MakerWorld (DevTools → Application → Cookies → `token`). Bambu Studio більше не показує токен у жодному UI, тож старий спосіб «взяти зі Studio» вже не працює. Стався до значення cookie як до секрету.
 3. Встав у поле **Access token**, обери регіон
 4. BamDude перевіряє токен дзвінком `/v1/user-service/user/profile`. На успіх — токен зберігається на твоєму user-рядку
+
+!!! note "Акаунти регіону Китай мусять входити через токен"
+    Китайські Bambu-акаунти прив'язані до номера телефону, а не email, тож email/пароль-флоу недоступний — шлях через access-токен вище єдиний.
 
 !!! note "Cloud Access Token vs Printer Access Code"
     Cloud Access Token — bearer для Bambu API + MQTT, ось що ця сторінка хоче. Printer Access Code на екрані принтера (Network settings) — per-printer LAN-кред, інше поле, інша сторінка ([Printers](printer-control.md)).

@@ -30,6 +30,38 @@ BamDude provides MJPEG video streaming from your printer's built-in camera, or f
 
 ---
 
+## :material-view-grid: Camera Wall
+
+The Printers page has two layouts, switched with the **Cards / Cam wall** toggle in the page header. **Cam wall** replaces the printer cards with a responsive grid of camera tiles — one glance at every camera in the farm.
+
+To conserve bandwidth and `ffmpeg` processes, the wall streams intelligently rather than opening every camera at once:
+
+- **Only on-screen tiles go live.** An `IntersectionObserver` marks a tile "visible" once ≥40% of it is on screen — the 40% floor stops a scroll-boundary sliver from spinning up a stream.
+- **Live is capped.** Up to **4** visible tiles stream live MJPEG at once (the *max live* setting, default 4 — the documented Raspberry Pi 4 ceiling), assigned in list order so the choice is stable. Visible tiles past the cap fall back to snapshots.
+- **Snapshots for the rest.** Over-cap tiles refresh a still frame every **8 seconds** by default (the *snapshot interval* setting).
+- **Off-screen tiles pause.** Scroll a tile out of view and it stops all network activity until it returns. Disconnected printers also render paused — no live slot is burned on a camera that has nothing to stream.
+
+### Per-tile
+
+Each tile shows:
+
+- an **offline chip** when the printer isn't connected;
+- an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
+- an **HMS-error badge** when the printer has active (non-noise) HMS errors;
+- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings.
+
+### Wall settings
+
+A gear button on the wall opens per-browser settings: **max live** (1–16), **snapshot interval** (2–60 s), and **status overlay** mode (*off* / *compact* / *full*). All three persist in the browser's local storage — they're per-device, not synced to the account, since a Pi 4 install caps the live count lower than a NUC.
+
+!!! note "Permission"
+    The Cam wall toggle needs the `camera:view` permission — the same one the camera viewer uses. Without it the toggle is disabled.
+
+!!! tip "Shared streams, no more frozen tiles"
+    Every viewer of a printer — a cam-wall tile, the embedded overlay, a popup window — subscribes to one shared fan-out stream. Closing one viewer no longer freezes another: the stream only tears down when the *last* viewer disconnects.
+
+---
+
 ## :material-webcam: External Cameras
 
 Connect external network cameras to replace the built-in printer camera. Useful for better angles, higher resolution, or printers in enclosures where the built-in camera is partially blocked.
@@ -297,6 +329,26 @@ When a stall is detected:
 
 !!! tip "Network blips"
     If your network briefly drops, the stream will automatically recover once the connection is restored — no manual intervention needed.
+
+---
+
+## :material-stethoscope: Camera diagnostics
+
+When a camera won't stream, BamDude can run a built-in diagnostic that tests the connection stage by stage and tells you *which* link in the chain is broken. A **Diagnose** button sits next to **Retry** on the viewer's error state, and a small stethoscope icon lives in the always-visible control bar (between :material-refresh: Refresh and :material-fullscreen: Fullscreen) for a pre-flight check before you even start streaming.
+
+It calls `POST /api/v1/printers/{id}/camera/diagnose` and shows the results inline in a modal: one row per stage with a pass / fail / skipped marker, the per-stage duration in milliseconds, and a translated remediation hint. A **Run again** button re-runs the whole check without closing the modal.
+
+### Stages
+
+| Stage | What it checks |
+|-------|----------------|
+| **`tcp_reachable`** | Opens a raw TCP socket to the camera port — `322` for RTSPS, `6000` for chamber-image — with a 3-second timeout. It distinguishes a **timeout** ("printer not reachable"), a **refused** connection ("camera port closed — check LAN-Only Mode + Developer Mode"), and a **host-unreachable** error. |
+| **`first_frame`** | Captures one JPEG end-to-end with a 15-second timeout, using the same pipeline that powers `/camera/snapshot`. Proves the full path actually delivers an image, not just an open port. |
+
+!!! note "Live-stream shortcut"
+    If a viewer is already watching the camera **and** the buffered last frame is fresher than 10 seconds, the diagnostic skips the real test and reports the stream as live / healthy. Opening a fresh socket would kick the live viewer off on firmwares that allow only a single camera connection — so when there's already proof the camera works, BamDude doesn't disturb it.
+
+The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), and a summary code.
 
 ---
 

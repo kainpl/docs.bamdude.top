@@ -49,6 +49,9 @@ Each printer card displays real-time information:
 | :material-radiator: **Bed** | Heated bed temperature |
 | :material-home-thermometer: **Chamber** | Enclosure temperature (if available) |
 
+!!! tip "Heater History"
+    Each temperature row carries a small chart icon — click it to open the **Heater History** window. It plots nozzle, bed, and chamber traces (plus a second-nozzle trace on dual-nozzle **H2D**) against their target overlays, with current / average / min / max readouts and **6h / 24h / 48h / 7d** ranges. Samples are recorded once a minute and retained for **30 days** (configurable via the `printer_sensor_history_retention_days` setting), then auto-pruned. Readable by Operators and Viewers.
+
 ### Print Progress
 
 When a print is active:
@@ -147,6 +150,10 @@ Sorting **by status** in flat mode follows the same priority — printers needin
 3. Idle
 4. Offline
 
+### Sort by ETA
+
+A fifth sort option — **ETA** — orders printers by how soon they finish: printing with a known time-remaining first (soonest on top, so you can stage the next job's filament), then prints that have just started without an ETA yet, then idle, then offline. It reads the same cached `remaining_time` the per-card ETA label already shows — no extra backend round-trip.
+
 ### Group printers by location
 
 Above the grid, group printers by **location** (the free-form string set on each printer card). Useful when the farm spans rooms / floors — collapse the room you're not watching.
@@ -181,6 +188,15 @@ The Health Management System monitors printer health in real-time.
 Click the HMS indicator to see error descriptions, codes, and recommended actions.
 
 A **Clear Errors** button sends a `clean_print_error` command to dismiss stale errors without power-cycling.
+
+### Remediation actions
+
+The HMS error dialog surfaces the same remediation buttons the printer's own screen offers — **Resume**, **Stop**, **Ignore & Resume**, "**Filament extruded, continue**", **Stop Drying**, **Turn off Fire Alarm**, and so on. Which buttons appear is driven per model and per error code from Bambu's catalog, so a filament-runout fault offers different choices than a chamber-temperature fault.
+
+Click a button and BamDude sends the matching MQTT command, then waits for the printer to actually act on it before confirming — a QoS-1 publish is acked by the broker even when the firmware silently drops a malformed HMS command, so BamDude samples the printer state after ~2.5 s and reports a failure if nothing changed. Needs `printers:control`; a Viewer sees the errors but not the buttons.
+
+!!! note "Refreshing the catalog"
+    The action catalog ships bundled as JSON (`data/hms_actions.json`). When Bambu adds codes in a firmware update, regenerate it with `python scripts/update_hms_actions.py`.
 
 ---
 

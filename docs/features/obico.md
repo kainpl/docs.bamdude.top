@@ -102,7 +102,7 @@ The loop polls each enabled, currently-printing printer at the configured interv
 
     | Action | What happens |
     |---|---|
-    | `notify` | Fires a notification via the standard `printer_error` channel (Telegram with snapshot, email, etc.) tagged with `error_type='ai_failure_detection'`. There is no separate `obico_failure` event — Obico alerts ride on the same providers and quiet hours as any other printer error. |
+    | `notify` | Fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the confidence score, and the action taken. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
     | `pause` | Sends a pause MQTT command to the printer. Your provider notification still fires. |
     | `pause_and_off` | Pauses the printer **and** turns off the bound smart plug after a short delay so the printer can write its end-state cleanly. Use this for overnight unattended workflows where you'd rather kill power than waste filament. |
 
