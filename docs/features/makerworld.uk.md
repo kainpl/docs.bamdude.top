@@ -44,6 +44,9 @@ BamDude перевикористовує вже збережений вхід у
 
 Якщо токена нема — **Settings → MakerWorld → Status** показує `can_download = false` і кнопка Import disabled. Зайди в **Settings → Bambu Cloud** і авторизуйся спершу.
 
+!!! note "API-ключі використовують токен власника ключа"
+    Запити, автентифіковані **API-ключем** (`X-API-Key` / `Bearer bb_…`) зі scope доступу до хмари, тепер резолвлять збережений Bambu Cloud токен **власника ключа**, тож `has_cloud_token` / `can_download` відображають того користувача, а не завжди повертають `false`. Імпорти з розширення й Home Assistant, які раніше падали з "requires Bambu Cloud login", тепер проходять — доки власник ключа увійшов у Bambu Cloud.
+
 ---
 
 ## :material-shield-key: Дозволи

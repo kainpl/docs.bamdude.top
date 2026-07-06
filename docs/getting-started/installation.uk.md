@@ -64,46 +64,32 @@ description: Встановлення BamDude на вашу систему, вк
 
 ---
 
-## :material-microsoft-windows: Windows (native)
+## :material-microsoft-windows: Windows (нативний інсталятор)
 
-Для Windows 10/11 є власний PowerShell-інсталятор — без Docker, без WSL. Він ставить Git і Python 3.10+ через `winget`, якщо їх немає, клонує репозиторій, будує Python virtual environment, встановлює залежності, за бажанням додає правило Windows Firewall і може зареєструвати BamDude як **Windows Service** (через [NSSM](https://nssm.cc/)), який стартує при завантаженні системи.
+Для Windows 10/11 є самодостатній **`.exe`-інсталятор** — без Docker, без WSL і **без окремого встановлення Python чи Node**. Setup несе в собі embedded Python runtime і статичний `ffmpeg`, розкладає все по місцях і реєструє BamDude як **Windows Service**, що стартує при завантаженні системи.
 
-Запусти цей один рядок у PowerShell — скрипт **сам піднімається до Administrator**, якщо ще не запущений з правами адміна:
+1. Завантаж останній **`bamdude-<version>-windows-x64-setup.exe`** зі [сторінки Releases](https://github.com/kainpl/bamdude/releases).
+2. Запусти його (потрібні права Administrator — він реєструє сервіс і пише в `ProgramData`).
+3. Коли завершиться, браузер відкриє [http://localhost:8000](http://localhost:8000).
 
-```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/kainpl/bamdude/main/install/windows-installer.ps1 -OutFile windows-installer.ps1; .\windows-installer.ps1"
-```
+От і все — сервіс уже працює.
 
-В інтерактивному режимі він питає **директорію встановлення**, **порт** і чи **виставляти BamDude у LAN** чи слухати лише localhost. Твої **дані та логи лежать поза папкою з кодом** (`<InstallDir>\data` і `<InstallDir>\logs`), тож in-app git-оновлення їх ніколи не чіпають.
+### :material-folder-cog: Що розкладає інсталятор
 
-### :material-tune-variant: Опції
+| Що | Куди |
+|----|------|
+| **Файли програми** (embedded Python 3.13, backend + зібраний frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Твої дані** (база, архіви, plate calibration) | `C:\ProgramData\BamDude\data` |
+| **Логи** | `C:\ProgramData\BamDude\logs` |
 
-| Прапорець | За замовчуванням | Опис |
-|-----------|------------------|------|
-| `-InstallDir PATH` | `C:\BamDude` | Директорія встановлення |
-| `-Port PORT` | `8000` | Порт, на якому слухати |
-| `-LocalOnly` | вимк. (bind `0.0.0.0`, доступ по LAN) | Bind лише на `127.0.0.1` |
-| `-NoService` | вимк. (service реєструється) | Пропустити реєстрацію Windows Service |
-| `-NoStart` | вимк. | Не запускати BamDude після встановлення |
-| `-Yes` | вимк. | Неінтерактивний режим, приймати дефолти |
-| `-Silent` | вимк. | Неінтерактивний з меншим виводом у консоль |
+Інсталятор також додає ярлики в Start-Menu (**Open BamDude Dashboard**, **BamDude Logs**, **Uninstall**), опціональний ярлик на робочому столі, і — якщо не знімати галочку — правило **Windows Firewall**, що відкриває порт `8000`.
 
-### :material-console: Приклади
+!!! info "Твої дані переживають uninstall + оновлення"
+    Усе під `C:\ProgramData\BamDude` лишається недоторканим при uninstall. Перевстановлення (чи встановлення новішого білда поверх) автоматично підхоплює ту саму базу й архіви.
 
-```powershell
-# Інтерактивне встановлення
-.\windows-installer.ps1
+### :material-service-toggle: Сервіс BamDude
 
-# Unattended, кастомний шлях + порт, local-only
-.\windows-installer.ps1 -InstallDir D:\BamDude -Port 3000 -LocalOnly -Yes
-
-# Встановлення без реєстрації service
-.\windows-installer.ps1 -NoService -Yes
-```
-
-### :material-cog-outline: Керування сервісом
-
-Встановлений як Windows Service — керуй стандартними cmdlet-ами:
+Інсталятор реєструє Windows Service з іменем **BamDude** (під наглядом [NSSM](https://nssm.cc/)), що працює як `LocalSystem`, стартує автоматично при завантаженні й обслуговує дашборд на `http://localhost:8000`. Керуй ним стандартними cmdlet-ами:
 
 ```powershell
 Get-Service BamDude          # Статус
@@ -112,13 +98,11 @@ Stop-Service BamDude         # Стоп
 Restart-Service BamDude      # Рестарт
 ```
 
-Встановлений з `-NoService` — запускай вручну:
+### :material-update: Оновлення
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "C:\BamDude\Start-BamDude.ps1"
-```
+Завантаж новіший `bamdude-<version>-windows-x64-setup.exe` і запусти — він зупиняє сервіс, перезаписує файли програми на місці й перезапускає. Твоя база, архіви та логи під `C:\ProgramData\BamDude` зберігаються.
 
-Далі відкрий [http://localhost:8000](http://localhost:8000) (або порт, який ти обрав).
+Далі відкрий [http://localhost:8000](http://localhost:8000).
 
 ---
 

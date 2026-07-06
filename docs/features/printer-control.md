@@ -373,6 +373,30 @@ For a heavier reset, the **stop / start** of `printer_manager.ensure_fresh_conne
 
 ---
 
+## :material-wrench: Maintenance Mode
+
+Take a printer **out of service** without deleting it — for a nozzle swap, a belt job, or parking a flaky machine. Toggle it from the printer card's :material-dots-vertical: kebab menu or the **Edit** dialog.
+
+While in maintenance, the printer:
+
+- **drops out of queue dispatch and the scheduler** — no new job is sent to it, and it's skipped by [Auto-Queue Routing](auto-queue.md) and model-based assignment;
+- **is skipped by auto-drying** — the drying scheduler ignores it;
+- **is excluded from metrics and sensor-history recording**;
+- **disconnects from MQTT** and stays disconnected until you turn maintenance off (turning it back on reconnects automatically).
+
+The card swaps its connection badge for an amber **Maintenance** pill (:material-wrench:) with an **Exit** button, so it's obvious at a glance which machines are parked.
+
+!!! note "Toggling on mid-print"
+    Entering maintenance on a printer that's **printing or paused** asks for confirmation first — the MQTT disconnect stops progress tracking and completion notifications for the in-flight job.
+
+!!! note "Permission"
+    Maintenance Mode rides on the printer's `is_active` flag (no separate column), so it needs `printers:update` — the same permission as editing the printer.
+
+!!! info "Not the Maintenance Tracker"
+    This is a *service state* for the whole printer. It's unrelated to the [Maintenance](maintenance.md) tracker, which logs rod / nozzle / belt jobs against usage hours: one parks the machine, the other reminds you when a part is due.
+
+---
+
 ## :material-checkbox-multiple-marked: Bulk Actions
 
 Select multiple printer cards (Select-mode toolbar at the top of the printer page) and apply the same action to all of them at once. Smart-enabled buttons — only active when at least one selected printer is in the right state for that action.

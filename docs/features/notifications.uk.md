@@ -243,6 +243,7 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 |-------|------------------|
 | `printer_offline` | MQTT-розрив |
 | `printer_error` | Спрацював HMS-код (BamDude додає переклад людською) |
+| `ai_failure_detection` | AI-детекція збою (Obico) позначила ймовірний провал друку — **opt-in, вимкнено за замовчуванням**. Виділено з `printer_error`, тож можна отримувати AI-алерти без кожного HMS-коду. Має власний шаблон, власний per-provider тоглер і власний per-chat Telegram-пункт; тіло несе принтер, назву роботи, оцінку впевненості та дію, яку виконав BamDude (notify / pause / pause + power off). |
 | `plate_not_empty` | Bed-occupancy gate зловив старт наступного друку (auto-pause) |
 | `maintenance_due` | Інтервал обслуговування досягнуто |
 
@@ -418,11 +419,14 @@ Digest-повідомлення поважає той самий вибір мо
 
 ### Finish Photo URL
 
-Плейсхолдер `{finish_photo_url}` вшиває посилання на camera-snapshot — корисно у WhatsApp / email / webhook-тілах, які не підтягуватимуть image-attachment-и inline. Потребує доступної external URL:
+Плейсхолдер `{finish_photo_url}` кладе camera-snapshot готової плити в сповіщення про завершення / провал. Потребує доступної external URL:
 
 1. **Settings** → **System** → **External URL** — постав адресу, до якої отримувачі мають доступ (напр. `https://bamdude.example.com` чи `http://192.168.1.100:8000`)
 2. Налаштування auto-detect-иться з браузера, коли вперше відкриваєш System settings
-3. Відредагуй шаблон і додай `{finish_photo_url}` куди хочеш
+3. Відредагуй шаблон і додай `{finish_photo_url}` куди хочеш фото
+
+!!! tip "Email вшиває фото inline, не лише посилання"
+    Для **email**-провайдерів, коли підставлений `{finish_photo_url}` присутній у тілі **і** finish-фото справді зроблено, BamDude шле лист як `multipart/related` зі вбудованим inline JPEG (через `Content-ID`, на який посилається HTML-частина) — фото видно прямо в тілі листа, а не як голе посилання. Plain-text альтернатива й далі несе клікабельний URL для text-only клієнтів. Коли шаблон не містить `{finish_photo_url}` (або фото немає), використовується звичайний single-part text-лист — без несподіваного attachment-а. Не-email канали (WhatsApp / webhook / …) й далі отримують посилання — тому External URL нижче має бути досяжним.
 
 !!! note "External URL — обов'язкова умова"
     Без сконфігурованого External URL плейсхолдер рендериться порожнім. Camera-snapshot-и також ходять через [stream-token camera flow](authentication.uk.md) — URL вшиває short-lived токен, тож отримувач забирає JPEG без Authorization-хедера.

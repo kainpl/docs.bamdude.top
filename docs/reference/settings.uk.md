@@ -52,6 +52,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `queue_drying_enabled` | `false` | Дозволити auto-drying між queue-items, коли пластик наступного друку це потребує. |
 | `queue_drying_block` | `false` | Блокувати наступний друк до завершення drying (замість паралельно з поточним). |
 | `ambient_drying_enabled` | `false` | Auto-сушити AMS-філамент на idle-принтерах, коли humidity вище порогу — незалежно від стану черги. |
+| `print_drying_enabled` | `false` | Дозволити auto-drying стріляти й на принтері, який зараз **друкує**, коли його модель + firmware підтримують concurrent drying (H2D 01.03.00.00+, H2C/H2S/P2S/H2D Pro 01.02.00.00+, X2D/A2L 01.01.00.00+, X1C 01.11.02.00+). Температура сушіння під час друку капається на 5 °C нижче idle-пресету (floor 40 °C). Див. [AMS та вологість](../features/ams.uk.md). |
 | `drying_presets` | пусто | JSON-об'єкт пресетів сушіння per-філамент. Пусто = вбудовані дефолти. |
 | `stagger_enabled` | `false` | Увімкнути [staggered start](../features/staggered-start.uk.md) — обмежити одночасне нагрівання столів на фермі, щоб уникнути просадок мережі. |
 | `stagger_concurrent` | `2` | Максимум одночасних принтерів, що нагріваються. |
@@ -76,8 +77,10 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `disable_filament_warnings` | `false` | Master mute для low / out-of-filament алертів. |
 | `prefer_lowest_filament` | `false` | Auto-присвоєння віддає перевагу котушці з найменшим залишком. |
 | `default_filament_cost` | `25.0` | Per-kg fallback-ціна, коли поле `cost` котушки не задано. |
+| `auto_add_unknown_rfid` | `true` | Авто-додавати котушку в інвентар, коли AMS читає невідомий RFID-тег. Off → замість тихого створення показується картка підтвердження (матеріал / колір префілені). Див. [Інвентар котушок](../features/inventory.uk.md). |
 | `ams_humidity_good` | `40` | Зелена-зона humidity-поріг (%) на AMS-картках (≤ це значення). |
 | `ams_humidity_fair` | `60` | Жовта-зона humidity (≤ це значення). Вище — червоне. |
+| `ams_humidity_thresholds` | пусто | JSON-мапа per-filament-type порогів вологості для auto-drying + алармів — `{"default": int, "PLA": int, "ASA": int, …}`. Пусто = fallback на `ams_humidity_fair` для всіх типів. Multi-material AMS резолвиться до найсуворішого (найнижчого) серед завантажених котушок. |
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
@@ -186,7 +189,14 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 
 ## :material-account-key: Auth (переважно env-driven)
 
-Ці не редагуються з UI — read-only mirror'и env-змінних. Деталі env — на [сторінці інсталяції](../getting-started/installation.uk.md).
+Кілька auth-налаштувань *редагуються* з UI (**Settings → Users**):
+
+| Key | Default | Ефект |
+|---|---|---|
+| `session_max_hours` | `720` | Адмін-стеля на час життя сесії (TTL refresh-токена), у годинах. Діапазон 1–720; дефолт 720 год (30 днів) зберігає remember-me. Застосовується до існуючих сесій при їх наступному refresh. Виставляється через картку Session Policy. Див. [Автентифікація](../features/authentication.uk.md). |
+| `local_login_enabled` | `true` | Дозволити логін username + password на `/auth/login`. Вимкни, коли має бути придатний лише SSO (guarded: потрібен ≥ 1 увімкнений OIDC-провайдер і твій власний акаунт, злінкований з OIDC). Env `BAMDUDE_LOCAL_LOGIN=true` обходить це на рівні route для recovery. |
+
+Решта — read-only mirror'и env-змінних; задавай їх через змінні середовища. Деталі env — на [сторінці інсталяції](../getting-started/installation.uk.md).
 
 | Setting | Source | Ефект |
 |---|---|---|

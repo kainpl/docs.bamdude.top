@@ -64,46 +64,32 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
-## :material-microsoft-windows: Windows (native)
+## :material-microsoft-windows: Windows (native installer)
 
-Windows 10/11 has its own PowerShell installer — no Docker, no WSL. It installs Git and Python 3.10+ via `winget` if they're missing, clones the repo, builds a Python virtual environment, installs dependencies, optionally adds a Windows Firewall rule, and can register BamDude as a **Windows Service** (via [NSSM](https://nssm.cc/)) that starts on boot.
+Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime and a static `ffmpeg`, lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
 
-Run this one line in PowerShell — the script **self-elevates to Administrator** if it isn't already:
+1. Download the latest **`bamdude-<version>-windows-x64-setup.exe`** from the [Releases page](https://github.com/kainpl/bamdude/releases).
+2. Run it (it needs Administrator rights — it registers a service and writes to `ProgramData`).
+3. When it finishes, your browser opens [http://localhost:8000](http://localhost:8000).
 
-```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/kainpl/bamdude/main/install/windows-installer.ps1 -OutFile windows-installer.ps1; .\windows-installer.ps1"
-```
+That's it — the service is already running.
 
-Run interactively it prompts for the **install directory**, **port**, and whether to **expose BamDude on your LAN** or bind to localhost only. Your **data and logs live outside the code folder** (`<InstallDir>\data` and `<InstallDir>\logs`), so in-app git updates never touch them.
+### :material-folder-cog: What the installer lays down
 
-### :material-tune-variant: Options
+| What | Where |
+|------|-------|
+| **Program files** (embedded Python 3.13, backend + pre-built frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Your data** (database, archives, plate calibration) | `C:\ProgramData\BamDude\data` |
+| **Logs** | `C:\ProgramData\BamDude\logs` |
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-InstallDir PATH` | `C:\BamDude` | Installation directory |
-| `-Port PORT` | `8000` | Port to listen on |
-| `-LocalOnly` | off (binds `0.0.0.0`, LAN-exposed) | Bind to `127.0.0.1` only |
-| `-NoService` | off (service is registered) | Skip Windows Service registration |
-| `-NoStart` | off | Don't start BamDude after install |
-| `-Yes` | off | Non-interactive mode, accept defaults |
-| `-Silent` | off | Non-interactive with reduced console output |
+The installer also adds Start-Menu shortcuts (**Open BamDude Dashboard**, **BamDude Logs**, **Uninstall**), an optional desktop shortcut, and — if you leave the box ticked — a **Windows Firewall** rule opening port `8000`.
 
-### :material-console: Examples
+!!! info "Your data survives uninstall + upgrade"
+    Everything under `C:\ProgramData\BamDude` is left untouched on uninstall. Re-installing (or installing a newer build on top) picks the same database and archives back up automatically.
 
-```powershell
-# Interactive installation
-.\windows-installer.ps1
+### :material-service-toggle: The BamDude service
 
-# Unattended, custom path + port, local-only
-.\windows-installer.ps1 -InstallDir D:\BamDude -Port 3000 -LocalOnly -Yes
-
-# Install without registering a service
-.\windows-installer.ps1 -NoService -Yes
-```
-
-### :material-cog-outline: Managing the service
-
-When installed as a Windows Service, manage it with the standard cmdlets:
+The installer registers a Windows Service named **BamDude** (supervised by [NSSM](https://nssm.cc/)) that runs as `LocalSystem`, starts automatically on boot, and serves the dashboard on `http://localhost:8000`. Manage it with the standard cmdlets:
 
 ```powershell
 Get-Service BamDude          # Check status
@@ -112,13 +98,11 @@ Stop-Service BamDude         # Stop
 Restart-Service BamDude      # Restart
 ```
 
-Installed with `-NoService`, run it on demand instead:
+### :material-update: Updating
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "C:\BamDude\Start-BamDude.ps1"
-```
+Download a newer `bamdude-<version>-windows-x64-setup.exe` and run it — it stops the service, overwrites the program files in place, and restarts. Your database, archives, and logs under `C:\ProgramData\BamDude` are preserved.
 
-Then open [http://localhost:8000](http://localhost:8000) (or the port you chose).
+Then open [http://localhost:8000](http://localhost:8000).
 
 ---
 

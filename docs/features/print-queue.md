@@ -86,6 +86,8 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 
 **Prefer lowest remaining filament** (Settings → Workflow): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1.
 
+This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
+
 ### Plate selection (multi-plate 3MF)
 
 Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:
@@ -194,6 +196,16 @@ Select multiple queue items via the toolbar checkboxes to apply a bulk edit:
 | Bed levelling / Flow / Vibration / Layer inspect / Timelapse | ✓ | Same tri-state semantics. |
 | Scheduled-at | ✓ | Bulk-shift schedules forward by an offset, or pin a fixed clock. |
 | Cancel | — | Bulk-cancel marks all selected as `cancelled` (no force on currently `printing` rows — those need an explicit per-row Cancel). |
+
+### Group, collapse, and reorder batches
+
+Tame a long queue by grouping related pending jobs on a printer's queue card:
+
+- **Group as batch** — select **2 or more** pending items on the same card, then **Group as batch**. They share a `batch_id` and render as one block. **Ungroup** disbands it (completed / cancelled history keeps its grouping). Grouping needs `queue:update_all`.
+- **Collapse** — fold a batch down to a single summary row; the collapsed / expanded state is remembered per batch in the browser's local storage.
+- **Drag to reorder** — grab a row's **grip handle** and drag to reposition. This is available only when the card is fully **expanded** and has **no collapsed batch** on it, so a drag can never move a hidden row or split a batch; the up / down / bump buttons stay as the always-available fallback.
+
+Selection is scoped to a single card — a batch is per-queue, so a selection can't span printers.
 
 ---
 

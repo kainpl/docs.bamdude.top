@@ -141,6 +141,18 @@ Every applied change writes one row to the `ams_setting_audit` table — `(print
 !!! warning "Destructive actions"
     **AMS firmware type** and **Arrange AMS order** carry confirm dialogs because they're not pure toggles — firmware switch forces a ~30 s AMS reboot, and reorder invalidates the current AMS ID sequence (you must physically reconnect units afterwards). Read the confirm text before clicking through.
 
+### AMS Filament Backup badge
+
+The **Filaments** section header on each printer card carries a small **AMS Filament Backup** badge (:material-repeat:) so you can see the auto-switch state without opening the dialog:
+
+| Badge | State |
+|---|---|
+| Green | Backup **on** — the AMS auto-switches to another matching spool on runout |
+| Grey | Backup **off** |
+| Faded grey | **Unknown** — the printer hasn't reported the flag yet |
+
+Click the badge to jump straight to the AMS Settings dialog where the toggle lives (needs `printers:update`; otherwise it's read-only).
+
 ---
 
 ## :material-lan: AMS Discovery & Wiring
@@ -191,6 +203,10 @@ BamDude detects the FTS via MQTT key `print.device.fila_switch` and **auto-suppr
 | > 60% | :material-alert-circle:{ style="color: #f44336" } High | Replace desiccant |
 
 Configure custom warning thresholds in **Settings** > **General**.
+
+### Per-filament thresholds
+
+The single Fair / High band above is a global default. You can also set **per-filament-type** auto-dry / alarm humidity thresholds under **Settings → Filaments** (`ams_humidity_thresholds`) — PLA, PETG, TPU, ABS, ASA, PA, PC, PVA, plus a `default` catch-all. When one AMS holds several materials, BamDude resolves to the **strictest (lowest)** threshold across all loaded spools, so the most moisture-sensitive filament in the unit sets the trigger. Empty slots contribute no constraint; unknown types fall back to `default`, then to the global Fair threshold.
 
 ---
 
@@ -282,6 +298,9 @@ Power-related issues also surface as HMS (Health Management System) errors in th
 3. Optionally enable spool rotation
 4. Click **Start**
 
+!!! tip "Drying badge"
+    While a cycle is active, the AMS card shows a **Drying** badge with the active filament and target temperature — e.g. *Drying · PETG @ 65°C* — alongside the time remaining, so you can see what's cooking at a glance. Bambu only echoes the drying time on later pushes, so BamDude caches the filament + target locally when it starts the cycle.
+
 ### Queue Auto-Drying
 
 Automatically dry filament between scheduled prints when humidity exceeds the threshold.
@@ -352,6 +371,24 @@ Defaults are based on BambuStudio's official filament drying profiles. Edit them
 ### Ambient Drying
 
 A separate path that doesn't depend on the queue. Enable under **Settings** > **Print Queue** > **Ambient Drying** (`ambient_drying_enabled`). On any idle printer where humidity is above the threshold, BamDude starts drying without setting a target temperature — useful as a 24/7 humidity-keeper for an idle farm.
+
+### Continue drying while printing
+
+By default, drying only runs on **idle** printers — starting a print stops any active cycle. Turn on **Continue drying while printing** (`print_drying_enabled`, **Settings → Print Queue**, default **off**) to let auto-drying also fire *while a print is running*, so a humid spool keeps drying without stalling the queue.
+
+This needs firmware that supports concurrent "Print While Drying". BamDude only offers it on:
+
+| Model | Min firmware |
+|---|:---:|
+| H2D | 01.03.00.00 |
+| H2C · H2S · P2S · H2D Pro | 01.02.00.00 |
+| X2D · A2L | 01.01.00.00 |
+| X1C | 01.11.02.00 |
+
+A1, A1 Mini, P1P / P1S, X1 (non-C) and X1E are excluded — their firmware rejects the command mid-print anyway (`dry_sf_reason=0`, TaskOccupied).
+
+!!! note "Temperature is capped mid-print"
+    While a print is running, the drying temperature is capped **5 °C below the idle preset**, with a floor of **40 °C** — Bambu warns the drying temperature must stay below the filament's softening point during a print. Example: a PETG preset of 65 °C dries at 60 °C mid-print.
 
 ---
 

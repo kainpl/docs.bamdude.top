@@ -243,6 +243,7 @@ The pause-state is also visualised on the Printers page in real time — a pause
 |-------|------------|
 | `printer_offline` | MQTT disconnect |
 | `printer_error` | HMS error code triggered (BamDude includes the human-readable translation) |
+| `ai_failure_detection` | AI failure detection (Obico) flags a likely print failure — **opt-in, off by default**. Split out of `printer_error` so you can be paged on AI alerts without every HMS hardware code. It has its own template, its own per-provider toggle, and its own per-chat Telegram item; the body carries the printer, job name, confidence score, and the action BamDude took (notify / pause / pause + power off). |
 | `plate_not_empty` | Bed-occupancy gate caught the next-print start (auto-pause) |
 | `maintenance_due` | Scheduled maintenance interval reached |
 
@@ -418,11 +419,14 @@ Click **Reset to default** in the editor to restore the original template from `
 
 ### Finish Photo URL
 
-The `{finish_photo_url}` placeholder embeds a camera snapshot link — useful in WhatsApp / email / webhook bodies that won't pull image attachments inline. It needs a reachable external URL to work:
+The `{finish_photo_url}` placeholder puts a camera snapshot of the finished plate into completion / failure notifications. It needs a reachable external URL to work:
 
 1. **Settings** → **System** → **External URL** — set it to the address recipients can reach (e.g. `https://bamdude.example.com` or `http://192.168.1.100:8000`)
 2. The setting auto-detects from your browser the first time you open System settings
-3. Edit your template and add `{finish_photo_url}` wherever you want the link
+3. Edit your template and add `{finish_photo_url}` wherever you want the photo
+
+!!! tip "Email inlines the photo, not just a link"
+    For **email** providers, when the rendered body contains the substituted `{finish_photo_url}` **and** a finish photo was actually captured, BamDude sends the message as a `multipart/related` email with the JPEG embedded inline (via a `Content-ID` referenced from the HTML part) — the photo shows in the mail body itself, not as a bare link. The plain-text alternative still carries the clickable URL for text-only clients. When the template doesn't reference `{finish_photo_url}` (or no photo exists), the original single-part text email is used — no surprise attachment. Non-email channels (WhatsApp / webhook / …) still receive the link, which is why the External URL below has to be reachable.
 
 !!! note "External URL prerequisite"
     Without a configured External URL the placeholder renders empty. Camera snapshots also gate on the [stream-token camera flow](authentication.md) — the URL embeds a short-lived token so recipients can fetch the JPEG without an Authorization header.

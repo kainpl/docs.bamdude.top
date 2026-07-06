@@ -28,7 +28,7 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **Search box** — matches on name, brand, material, or hex colour. Press `/` from anywhere on the page to focus it.
 - **Material dropdown** — single-select.
 - **Colour dropdown** — single-select. Options are the colours you actually have in stock — built from your existing (non-archived) spools — and grouped by the resolved colour-catalog name, so two near-identical hexes that both read as "Cobalt Blue" filter together regardless of brand. The dropdown only appears once at least one in-stock spool has a resolvable colour.
-- **Storage Location chip** — narrows the spool list to a single storage location, so you can see just the spools kept in one box / shelf / dry-box.
+- **Storage Location chip** — narrows the spool list to a single storage location from the [managed locations catalog](#storage-locations-catalog), so you can see just the spools kept in one box / shelf / dry-box.
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns) or **Cards** (visual swatches).
@@ -60,7 +60,7 @@ Every spool row (cards view + table view + grouped rows) has a **Copy** button n
 
 The toolbar's **Bulk edit** button (internal inventory only) opens a dialog to change a field across several spools at once. Pick which spools to edit (it starts with all the currently-filtered ones; deselect any you want to leave alone in the left-hand list) and **tick the fields to apply**: slicer preset, material, brand, subtype, label weight, colour, empty-spool weight, date of purchase, diameter, cost/kg, note, category, low-stock threshold, extra colour stops, visual effect, storage location.
 
-Each ticked field pre-fills only when the selection already shares one value (otherwise it shows *"— varies —"*); **only the fields you tick are written**, the rest are left exactly as they were, and **consumed weight and RFID tags are never touched**. Inputs mirror the single-spool form — preset / effect / diameter / empty-spool are dropdowns; material / brand / subtype autocomplete from everything the system knows (slicer presets + colour catalog + built-ins, not just the selected spools); the colour list comes from your colour catalog filtered by the brand + material being applied and refreshes when you change them.
+Each ticked field pre-fills only when the selection already shares one value (otherwise it shows *"— varies —"*); **only the fields you tick are written**, the rest are left exactly as they were, and **consumed weight and RFID tags are never touched**. Inputs mirror the single-spool form — preset / effect / diameter / empty-spool / storage location are dropdowns; material / brand / subtype autocomplete from everything the system knows (slicer presets + colour catalog + built-ins, not just the selected spools); the colour list comes from your colour catalog filtered by the brand + material being applied and refreshes when you change them.
 
 ### CSV import / export
 
@@ -72,6 +72,17 @@ Two buttons in the inventory header move whole spool lists in and out as CSV —
 CSV headers are case- and spacing-tolerant, so a column titled `Label Weight`, `label_weight`, or `LABELWEIGHT` all resolve the same way. Only `material` is required; every other column is optional, and the same validation as the manual add-spool form applies to each row.
 
 CSV import/export is **local-inventory only**. In **Spoolman mode** both buttons are disabled, with a hint pointing you at Spoolman's own CSV tools instead.
+
+### Storage locations catalog
+
+Where a spool physically lives — a shelf, drawer, or dry-box — is a **managed catalog**, not free text. A **Locations** button in the inventory header opens the catalog manager where you create, rename, and delete locations; the spool form's **Storage location** field is a dropdown drawn from that catalog, with an inline *create new* option so you never leave the form to add a shelf.
+
+- **Rename propagates** — renaming a location updates every spool assigned to it in one write, so there's no orphaned free-text drift.
+- **Delete is guarded** — a location with spools still assigned can't be deleted until you move those spools elsewhere.
+- **Legacy free-text migrates** — on first launch after upgrade, BamDude backfills the catalog from the distinct free-text storage values already on your spools and links each spool to its matching catalog row.
+- **Spoolman sync** — in Spoolman mode the catalog imports Spoolman's distinct locations, and a rename cascades to Spoolman's per-spool `location` field (rolled back locally if Spoolman rejects it, so the two never diverge).
+
+Viewing the catalog needs `inventory:read`; creating / renaming / deleting a location needs `inventory:update`.
 
 ### Slicer Preset dropdown shows every per-printer / per-nozzle variant
 
@@ -174,6 +185,12 @@ Two extra niceties:
 - **Auto-tracking new Bambu spools** — when an AMS RFID matches no existing tray UUID, BamDude first looks for an **untagged** spool with the same material + colour + brand (`Bambu` / `Bambu Lab` / unspecified) and attaches the RFID to it. So a Quick-Add stock entry you logged ahead of time gets reused (your weight, notes, cost data are preserved) instead of producing a duplicate. If no match is found, a fresh inventory row is created from the AMS data.
 - **Drying schedules + AMS humidity tracking** — see [AMS & Humidity](ams.md) — the inventory and AMS pages share state so a "drying" spool is visibly marked as in-progress in both places.
 
+!!! note "Turn off silent creation for unknown tags"
+    Auto-creation of a fresh row for an unrecognised RFID is governed by **Settings → Filament → Auto-add unknown RFID spools** (`auto_add_unknown_rfid`, default **on**). Switch it off and an unknown tag instead surfaces a **confirmation card** — material and colour pre-filled from the AMS read — so nothing is written to inventory until you approve it. Handy if you pre-create spools by hand and don't want duplicates.
+
+!!! tip "Look up a spool by its tag"
+    NFC integrations can resolve a single spool without listing the whole inventory: `GET /api/v1/inventory/spools/by-tag?tray_uuid=<uuid>` (or `&tag_uid=<uid>`). Matching is hex-normalised and case-insensitive; archived spools are excluded unless you pass `include_archived=true`. It's readable with either `inventory:read` or `inventory:update`, so a Manage-Inventory API key can dedupe a scan without the global read scope.
+
 ### Stable assignments on startup
 
 Spool assignments are preserved across BamDude restarts by **spool ID**, not slot ID. If the AMS reconnects in a different order at boot — slot 3's RFID lands in what was slot 1 last session, etc. — BamDude restores by RFID identifier so the right spool stays bound to the right physical tray, no manual fix-up. If the same spool is still in the same physical slot (verified by RFID), no reconfigure command is sent to the printer.
@@ -193,11 +210,12 @@ Assigning a spool is the simplest workflow — it handles tracking + printer con
 
 A third inventory tab next to **Table** / **Cards** that turns the raw `spool_usage_history` table into reorder intelligence:
 
-- **Daily-consumption rate** — exponentially-weighted moving average with a 30-day half-life, computed per SKU group (material / subtype / brand). One spool of recent prints weighs more than a year-old burst.
+- **Daily-consumption rate** — exponentially-weighted moving average with a 30-day half-life, computed per **colour group** (material / subtype / brand / colour name). Five colours of the same PLA Basic become five independent forecast rows, each with its own runway and reorder date — so running low on black doesn't hide behind a full spool of white. One spool of recent prints weighs more than a year-old burst.
 - **Days-left projection** — current stock divided by daily rate, with a 95%-service-level safety stock factored in (`σ × √lead_time × 1.65`).
 - **Reorder-by date** — when to place the order so the new spool arrives *before* you run out, given the configured lead time.
-- **Per-SKU expanded editors** — lead-time-days, safety-margin (dual-unit days|grams), alert-snooze toggle. Each setting persists across sessions in the `filament_sku_settings` table; SKUs with no settings yet fall back to the global lead-time floor (Settings → Inventory → **Forecast global lead time**).
-- **Top-5 chart** — stacked-area projection of the five fastest-burning SKUs with ROP reference lines. Timeframe toggle: 1W / 1M / 6M.
+- **Filter + count controls** — **Material** and **Brand** dropdowns narrow the table; a dedicated **Spools** column shows how many physical spools back each colour row. Every column is sortable.
+- **Per-colour expanded editors** — lead-time-days, safety-margin (dual-unit days|grams), alert-snooze toggle. Each setting persists across sessions in the `filament_sku_settings` table; colours with no settings yet fall back to the global lead-time floor (Settings → Inventory → **Forecast global lead time**). Overrides you saved before the colour split are carried onto the matching colour rows on first load, so no per-SKU tuning is lost in the migration.
+- **Top-5 chart** — stacked-area, multi-series projection of the five fastest-burning colours with ROP reference lines. Timeframe toggle: 1W / 1M / 6M.
 - **Shopping list (Logistics view)** — separate panel below the forecast table. Add SKUs to a `pending → purchased → received` queue. Marking an item *received* auto-creates `category='Stock'` spools via bulk-create (uses the average historical spool weight). CSV export + clear-all helpers.
 - **Notification toggles** — two new notification-provider events appear in **Settings → Notifications → Inventory Alerts**: *Reorder Alert* (SKU crossed reorder point) and *Stock Break Alert* (will run out before lead time). **These toggles are currently visual-only on the provider** — the forecast panel surfaces alerts in-app; a future scheduled aggregator can fire them via the existing templates without a schema change.
 

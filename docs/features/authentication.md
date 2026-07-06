@@ -64,9 +64,9 @@ Custom groups can mix and match permissions. Newly OIDC-linked users land in **V
 Permissions follow a `resource:action` pattern -- e.g. `printers:control`, `archives:read`. Endpoints declare the permission they need with `RequirePermission(...)` so the matrix is enforced consistently across REST, WebSocket, and Telegram surfaces.
 
 - **Printers** -- `printers:read`, `printers:create`, `printers:update`, `printers:delete`, `printers:control`, `printers:files`, `printers:ams_rfid`, `printers:clear_plate`
-- **Archives** -- `archives:read`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
-- **Queue** -- `queue:read`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
-- **Library** -- `library:read`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (skip trash, hard-delete immediately)
+- **Archives** -- `archives:read`, `archives:read_own` / `archives:read_all`, `archives:create`, `archives:update_own` / `archives:update_all`, `archives:delete_own` / `archives:delete_all`, `archives:reprint_own` / `archives:reprint_all`
+- **Queue** -- `queue:read`, `queue:read_own` / `queue:read_all`, `queue:create`, `queue:update_own` / `queue:update_all`, `queue:delete_own` / `queue:delete_all`, `queue:reorder`
+- **Library** -- `library:read`, `library:read_own` / `library:read_all`, `library:upload`, `library:update_own` / `library:update_all`, `library:delete_own` / `library:delete_all`, `library:purge` (skip trash, hard-delete immediately)
 - **Inventory** -- `inventory:read`, `inventory:create`, `inventory:update`, `inventory:delete`, `inventory:view_assignments`
 - **Cloud** -- `cloud:auth` (per-user Bambu Cloud sign-in + cloud-profile CRUD; no `settings:read` needed)
 - **Settings** -- `settings:read`, `settings:update`, `settings:backup`, `settings:restore`
@@ -96,11 +96,14 @@ Permissions follow a `resource:action` pattern -- e.g. `printers:control`, `arch
 
 Users in multiple groups inherit the **union** of all groups' permissions -- assignments are additive, not least-privilege-min.
 
+!!! info "Reads are ownership-split too"
+    The archive / queue / library **read** routes enforce a `read_own` / `read_all` split, not the flat `*:read` flag. Built-in **Operators** and **Viewers** carry the `*:read_all` variant, so they still see the whole farm's prints, queue, and library -- BamDude is a shared farm. A **custom** group that only holds the legacy flat `*:read` is backfilled to `*:read_own` (fail-closed): it has to be explicitly granted `*:read_all` to see other users' rows. The flat `archives:read` / `queue:read` / `library:read` flags are kept purely as the frontend's download / preview UI gate -- the API no longer honours them for row visibility.
+
 ---
 
 ## :material-account-multiple-plus: User Management
 
-**Settings -> Users -> Users tab.** Visible to anyone with `users:read`; mutating actions need `users:create` / `users:update` / `users:delete`.
+**Settings -> Users -> Users tab.** Visible to anyone with `users:read`. Mutating actions (create / update / delete) are **admin-only** -- holding the `users:create` / `users:update` / `users:delete` permission is no longer sufficient on its own. "Admin" here means `User.is_admin`: either the legacy `role == "admin"` **or** membership in the **Administrators** group. This admin gate stacks *on top of* the permission, so a non-admin operator who was merely granted `users:update` can't self-escalate by minting an admin account. API keys carry no user identity, so they never pass the admin gate -- user administration is unreachable via API key.
 
 ### Creating users
 
@@ -141,7 +144,9 @@ Click **Add Group** (or pencil on an existing group) to open the **full-page gro
 - Per-category **count badges** ("5/7") update as you tick boxes.
 - Description supports plain text -- write what you actually intend the group to do, future-you will be grateful.
 
-System groups (Administrators / Operators / Viewers) cannot be deleted, but their permission sets are editable. Custom groups can be deleted at any time; users in only that group end up group-less and lose all permissions until reassigned.
+Creating, editing, or deleting a group -- and adding or removing a group member -- is **admin-only**: it requires Administrators-group membership (or the legacy admin role) *on top of* the matching `groups:*` permission, so an operator with only `groups:update` can't privilege-escalate through the group editor.
+
+System groups (Administrators / Operators / Viewers) cannot be deleted, and their **name and permission set can no longer be edited** -- the API rejects any attempt to rename a system group or change its permissions (stripping the Administrators set would be a self-inflicted lockout). Their descriptions still edit freely. Custom groups can be created, edited, and deleted at any time; users left in only a deleted group end up group-less and lose all permissions until reassigned.
 
 ---
 
@@ -312,6 +317,17 @@ The login form has a **"Remember me for 30 days"** checkbox.
 | Default | 12 hours | Session cookie (cleared when browser closes) |
 | Remember me | 30 days | `Max-Age=30d` -- survives browser restarts |
 
+### Session lifetime ceiling (Session Policy)
+
+**Settings -> Users -> Session Policy.** An admin ceiling on how long any login can live. BamDude's real session lifetime is the refresh-token TTL -- access tokens are 1 hour and auto-refresh -- so this caps the refresh TTL (and its cookie `Max-Age`) at login and on every rotation.
+
+- **Presets:** 24 hours / 7 days / 30 days, plus a custom hours field.
+- **Range:** 1 hour minimum, **720 hours (30 days) maximum** -- the same hard ceiling as remember-me.
+- **Default:** 720 hours (30 days), so existing remember-me sessions survive the upgrade untouched.
+- Lowering it takes effect on existing sessions at their **next refresh** -- the shorter TTL is applied when the refresh cookie next rotates, not retroactively.
+
+The card is read-only for users without `settings:update`.
+
 ### Frontend behaviour
 
 The frontend `request()` helper transparently retries 401s through `/auth/refresh`, **promise-coalesced** so a wave of parallel queries spawns exactly one refresh call. If refresh also fails, a global `bamdude:auth-invalidated` event clears React state and hard-redirects to `/login`. A visibility-change listener proactively revalidates `/auth/me` when a hidden tab regains focus.
@@ -426,6 +442,16 @@ The login page renders an "Sign in with `<provider>`" button per configured prov
 - **State + nonce** -- both verified on callback. The state token is atomically consumed, so replays fail.
 - **JWKS verification** -- ID tokens are signature-verified against the provider's published JWKS.
 - **SSRF guards** -- the issuer URL must be HTTPS and must not resolve to loopback, private (RFC 1918), or link-local addresses.
+
+### Autologin & disabling local login
+
+For a team that lives entirely inside its IdP, BamDude can skip the password form:
+
+- **Autologin** -- a per-provider toggle (only one provider can carry it -- enabling it on one clears it on every other) that redirects unauthenticated visitors straight to that IdP's authorize URL on page load, as long as that provider stays enabled. A deep link is preserved across the SSO round-trip, so a bookmarked `/archives/42` lands back where it started after login. The authorize-URL fetch is raced against a 5-second timeout; on timeout or error BamDude falls back to the normal login page and shows a banner explaining why autologin didn't fire.
+- **Disable local username/password login** -- a companion switch (Settings -> Users) that hides the password form entirely so only OIDC works. It is lockout-guarded: you can't turn it on unless **at least one OIDC provider is enabled** *and* **your own account is OIDC-linked** -- otherwise you'd lock yourself out.
+
+!!! tip "Recovery when SSO is down"
+    If your IdP is unreachable and local login is disabled, two escape hatches restore the password form: append `?fallback=local` to the login URL (`/login?fallback=local`), or set the server-side env var `BAMDUDE_LOCAL_LOGIN=true`, which overrides the stored setting so a host admin can always sign in locally.
 
 ### Self-signed CAs
 

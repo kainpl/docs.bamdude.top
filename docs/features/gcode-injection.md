@@ -15,7 +15,7 @@ This is **not** the same as a [macro](macros.md). Macros are server-driven MQTT 
 
 1. **Configure** — drop start / end snippets per printer model in **Settings → Printing → G-code Injection**.
 2. **Toggle on the print** — when you start a print (PrintModal, queue item, dispatch), tick **Inject G-code**.
-3. **Dispatch path** — the dispatcher opens the 3MF, locates the marker `; MACHINE_START_GCODE_END` in each `plate_*.gcode`, splices the resolved start snippet immediately after it (and the end snippet at the file's tail), recomputes per-plate `.gcode.md5` sidecars, repacks the 3MF, and uploads to the printer via FTP.
+3. **Dispatch path** — the dispatcher opens the 3MF, locates the marker `; MACHINE_START_GCODE_END` in each `plate_*.gcode`, splices the resolved start snippet immediately after it (and the end snippet immediately **before** `; EXECUTABLE_BLOCK_END`), recomputes per-plate `.gcode.md5` sidecars, repacks the 3MF, and uploads to the printer via FTP.
 4. **Audit trail** — the resulting archive's `applied_patches` JSON records `{name: "gcode_injection", model, plate_id}` so you can see at a glance which prints had what injected.
 
 ```mermaid
@@ -39,9 +39,14 @@ Each model carries two textareas:
 | Snippet | Where it splices | Typical use |
 |---|---|---|
 | **Start G-code** | Right after `; MACHINE_START_GCODE_END` — i.e. once the firmware's heat-up + auto-home + bed-mesh phases finished, but before the slicer's own start sequence. | Park to a custom origin, set custom acceleration, log start-of-print to a serial probe. |
-| **End G-code** | At the file's tail, after the slicer's end sequence. | Park to back-left for easy retrieval, purge tower clean-cut, post-cool-down nozzle wipe, pause for a manual swap. |
+| **End G-code** | Immediately before `; EXECUTABLE_BLOCK_END` — after the printer's own machine-end sequence, but still inside the block the firmware executes. | Park to back-left for easy retrieval, purge tower clean-cut, post-cool-down nozzle wipe, pause for a manual swap. |
 
 Save on blur — the form auto-prunes empty entries. A "**Configured**" badge on the model summary row appears as soon as at least one of the two textareas has content.
+
+!!! note "Where the end snippet actually lands"
+    The end snippet is spliced **immediately before** the `; EXECUTABLE_BLOCK_END` marker, not at the physical end of the file. Bambu firmware (verified on a P1S) ignores any G-code that sits *after* that marker — appending to the file tail silently drops the snippet, so auto-eject / plate-clear moves never fire. Inserting before the marker keeps the snippet inside the block the firmware executes; slicers that don't emit the marker fall back to the old file-tail behaviour.
+
+    Two companion details keep the repacked 3MF valid on picky firmware: the per-plate `.gcode.md5` sidecar is recomputed from the exact patched bytes (a stale hash makes the P1S reject the file at load), and every ZIP member keeps its original compression — `STORE`d members such as the embedded preview PNG aren't re-DEFLATE'd, which the P1S preview parser rejects.
 
 ### Placeholder substitution
 
@@ -67,6 +72,9 @@ Off + no configured snippet = the dispatcher takes a fast path that doesn't even
 
 When both **Mesh-mode fast check** and **Inject G-code** are toggled on the same job, the dispatcher does **one** open / patch / repack cycle covering both transforms — large multi-plate 3MFs aren't unzipped twice.
 
+!!! tip "Virtual printers can opt in automatically"
+    Prints that arrive through a [virtual printer](virtual-printer.md) don't pass through PrintModal, so each Queue / Auto-queue VP card carries its own **G-code injection** toggle. Turn it on and every job that VP enqueues gets the per-model start/end snippets applied — off by default, a no-op unless snippets exist for the target model, and flipping it restarts the VP.
+
 ---
 
 ## :material-shield-key: Permissions
@@ -85,7 +93,7 @@ There's no separate `printers:edit_gcode_snippets` permission — admin gate via
 !!! warning "Test on a calibration print first"
     Bad start-gcode at the beginning of every print is a recipe for ruined builds. Validate a new snippet on a small calibration cube before letting it apply to your production farm.
 
-- **Marker missing** — if a 3MF doesn't carry `; MACHINE_START_GCODE_END` (rare; some old slicers, custom files), the start snippet falls through to the file head as a best-effort. End snippet always lands cleanly.
+- **Marker missing** — if a 3MF doesn't carry `; MACHINE_START_GCODE_END` (rare; some old slicers, custom files), the start snippet falls through to the file head as a best-effort. The end snippet likewise needs `; EXECUTABLE_BLOCK_END`; when that marker is absent it falls back to the file tail.
 - **Multi-plate** — every plate gets the same snippets applied independently. Per-plate snippets aren't supported (would need a UI per plate × model and clutters the editor for negligible gain).
 - **Reprint of an injected archive** — the archive stores the injected output, so reprinting from `Archives → Reprint` reuses the injected file as-is (no re-injection). To re-inject with a fresh snippet, dispatch from the source library file instead.
 
@@ -94,4 +102,5 @@ There's no separate `printers:edit_gcode_snippets` permission — admin gate via
 ## :material-link-variant: Related
 
 - [Macros](macros.md) — server-side MQTT counterpart with a comparison table.
+- [Virtual printer](virtual-printer.md) — per-VP toggle that auto-injects these snippets on slicer uploads.
 - [Settings reference](../reference/settings.md) — `gcode_snippets` setting JSON shape.

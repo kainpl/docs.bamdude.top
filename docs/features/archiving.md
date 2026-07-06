@@ -27,6 +27,9 @@ If the FTP fetch fails the row is still created — see [3MF download recovery](
 !!! warning "SD card required"
     The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
 
+!!! note "X2D / P2S firmware TLS quirk (handled automatically)"
+    Some firmware trips over Python 3.13's default TLS 1.3 on the FTPS channel — X2D fails the implicit-FTPS handshake outright, P2S hits a session-reuse bug — which left their archive cards empty (no filament / layers / MakerWorld link / thumbnail). BamDude now caps the FTPS session to TLS 1.2 for these models so the 3MF download at print start connects and the archive populates. No configuration needed.
+
 ---
 
 ## :material-database-outline: What Gets Archived
@@ -39,7 +42,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     |-------|-------------|
     | `file_path` | 3MF copy at `data/archive/<printer_id>/<timestamp>_<name>/<filename>.3mf`. Empty string means the 3MF couldn't be fetched (fallback row) or was cleaned by retention. |
     | `file_size` | Bytes on disk. |
-    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. |
+    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. For 3MFs sliced through the Docker slicer sidecar — which skips the desktop-only plate-PNG render — BamDude generates the missing plate thumbnails server-side (an isometric Bambu-green render of the embedded model, 512 px + 128 px) so the archive card isn't blank. |
     | `source_3mf_path` | Original project 3MF when uploaded from the slicer (separate from the dispatched copy). |
 
 === "Slicer metadata"
@@ -359,7 +362,7 @@ The modal exposes the same options table as the new-print and queue modals — s
 
 Attach pictures to an archive — useful for documenting failures, showing finished parts, or pairing a print with a project photo.
 
-- **Auto camera snapshot on print complete** — toggle **Settings → General → Capture snapshot on print complete**. When on, BamDude grabs a frame from the printer's camera the moment the print finishes and attaches it to the archive.
+- **Auto camera snapshot on print complete** — toggle **Settings → General → Capture snapshot on print complete**. When on, BamDude grabs a frame from the printer's camera the moment the print finishes and attaches it to the archive. When a **timelapse was recording** for that print (because you enabled it in the send dialog — BamDude never forces timelapse on), the finish photo is pulled from the timelapse's last frame instead: it captures the moment after the toolhead parks but before the bed drops, which a live-camera grab would miss. External cameras keep their own framing.
 - **Manual upload** — drag-and-drop image files onto the archive detail page, or use the **+ Add Photo** button in the photo strip. Multiple photos per archive are supported.
 - **Failure documentation** — attaching a photo of a failed print pairs nicely with the archive's `failure_reason` + `error_message` fields, so the post-mortem is all in one place.
 

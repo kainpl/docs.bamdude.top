@@ -42,7 +42,7 @@ prefix              random body
 | **Can queue** | Дозволити цьому ключу додавати завдання в чергу (`POST /queue`) |
 | **Can control printer** | Дозволити команди start / pause / stop / cancel |
 | **Can read status** | Дозволити live-стан принтера, списки архівів, статистику — read-поверхню |
-| **Manage Library** | Опціонально. Завантаження / перейменування / видалення **власних** файлів бібліотеки + імпорт з MakerWorld (`can_manage_library`). Read-only доступ до бібліотеки лишається під **Can read status** |
+| **Manage Library** | Опціонально. Завантаження / перейменування / переміщення / видалення файлів бібліотеки — **будь-якого власника**, не лише творця ключа — плюс нотатки й імпорт з MakerWorld (`can_manage_library`). Read-only доступ до бібліотеки лишається під **Can read status** |
 | **Manage Inventory** | Опціонально. Створення / редагування / видалення котушок, записів каталогу й налаштувань прогнозу (`can_manage_inventory`). Read-only інвентар лишається під **Can read status** |
 | **Use Bambu Cloud** | Опціонально. Коли ввімкнено, ключ резолвить per-user Bambu Cloud-токен юзера-творця для маршрутів `cloud:*` (slicer presets, MakerWorld imports). За замовчуванням вимкнено, щоб legacy-ключі не могли мовчки витрачати cloud-token власника. Відхиляється при збереженні на ownerless-ключах — див. примітку про значки нижче. |
 | **Printer scope** | Опціонально. Залиш порожнім для "усіх принтерів", або обери конкретні printer ID, щоб звузити ключ. Дзвінки до інших принтерів повертатимуть 403 |
@@ -84,7 +84,7 @@ curl -H "Authorization: Bearer bb_..." http://localhost:8000/api/v1/printers/
     - `can_queue` — потрібен для `POST /queue` і queue-mutation ендпоінтів (+ archive reprint, який енкʼюїть наявний архів)
     - `can_control_printer` — для start / pause / stop / cancel (+ smart-plug control)
     - `can_read_status` — для printer-state, archive, stats, monitoring (і read-only бібліотека / інвентар / settings-language)
-    - `can_manage_library` — для library upload / rename / delete-**own** + notes + імпорт з MakerWorld. Bulk / all-ownership library-операції лишаються admin-only
+    - `can_manage_library` — для library upload / rename / move / delete + notes + імпорт з MakerWorld. Ключ їде на **all-ownership** варіантах (`library:update_all` / `library:delete_all`): API-ключі не несуть per-row ідентичності власника, тож Manage-Library ключ може курувати **будь-який** файл незалежно від власника. Лише `library:purge` (hard-delete поза вікном trash) лишається admin-only
     - `can_manage_inventory` — для spool / catalog / forecast **writes** (read-only інвентар лишається під `can_read_status`)
     - `can_access_cloud` — для cloud-token-backed ендпоінтів (slicer presets, MakerWorld)
     - `can_update_energy_cost` — для `POST /settings/electricity-price` (вузько-обмежений Home-Assistant dynamic-tariff endpoint — див. [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.uk.md#tibber--octopus--dynamic-tariff-integration)). НЕ дає загальний `SETTINGS_UPDATE`.

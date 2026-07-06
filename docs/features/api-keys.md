@@ -42,7 +42,7 @@ prefix              random body
 | **Can queue** | Allow this key to add jobs to the print queue (`POST /queue`) |
 | **Can control printer** | Allow start / pause / stop / cancel commands |
 | **Can read status** | Allow live printer state, archive lists, statistics — the read surface |
-| **Manage Library** | Optional. Upload / rename / delete your **own** library files + MakerWorld import (`can_manage_library`). Read-only library access stays under **Can read status** |
+| **Manage Library** | Optional. Upload / rename / move / delete library files — **any owner**, not just the key creator's — plus notes and MakerWorld import (`can_manage_library`). Read-only library access stays under **Can read status** |
 | **Manage Inventory** | Optional. Create / edit / delete spools, catalogue entries, and forecast settings (`can_manage_inventory`). Read-only inventory stays under **Can read status** |
 | **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
 | **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. Calls against any other printer return 403 |
@@ -84,7 +84,7 @@ Two layers gate every API-keyed call:
     - `can_queue` — required for `POST /queue` and queue-mutation endpoints (+ archive reprint, which enqueues an existing archive)
     - `can_control_printer` — required for start / pause / stop / cancel (+ smart-plug control)
     - `can_read_status` — required for printer-state, archive, stats, monitoring reads (and read-only library / inventory / settings-language)
-    - `can_manage_library` — required for library upload / rename / delete-**own** + notes + MakerWorld import. Bulk / all-ownership library ops stay admin-only
+    - `can_manage_library` — required for library upload / rename / move / delete + notes + MakerWorld import. A key rides the **all-ownership** variants (`library:update_all` / `library:delete_all`): API keys carry no per-row ownership identity, so a Manage-Library key can curate **any** file regardless of owner. Only `library:purge` (hard-delete past the trash window) stays admin-only
     - `can_manage_inventory` — required for spool / catalogue / forecast **writes** (read-only inventory stays under `can_read_status`)
     - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
     - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber--octopus--dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.

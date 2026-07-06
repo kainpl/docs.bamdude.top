@@ -23,8 +23,10 @@ BamDude підтримує всі 3D-принтери Bambu Lab з можлив�
 | **P1P** | P1 | Додатково | :material-check: |
 | **P1S** | P1 | :material-check: | :material-check: |
 | **P2S** | P2 | :material-check: | :material-check: |
+| **X2D** | X2 | :material-check: | :material-check: |
 | **A1** | A1 | :material-check: | AMS Lite |
 | **A1 Mini** | A1 | :material-check: | :material-close: |
+| **A2L** | A2 | :material-check:[^a2l] | :material-check:[^a2l] |
 
 ---
 
@@ -54,6 +56,18 @@ BamDude підтримує всі 3D-принтери Bambu Lab з можлив�
 - A1 Mini: лише зовнішня котушка, основна ціль для [режиму заміни](../features/swap-mode.md)
 - Камера обмежена ~5 FPS
 
+### Серія X2
+
+- X2D: подвійне сопло зі статусом лівого/правого сопла
+- Ethernet-порт + RTSP-камера (порт 322)
+- Клас обслуговування Steel Rods
+
+### Серія A2
+
+- A2L: одне FDM-сопло — друга голова це інтегрований різак/плоттер, а не сопло
+- Лише Wi-Fi (без Ethernet), низькочастотна chamber-image камера на порту 6000
+- Клас обслуговування Linear Rails
+
 ---
 
 ## :material-table-check: Матриця можливостей BamDude { #bamdude-capability-matrix }
@@ -63,26 +77,26 @@ BamDude підтримує всі 3D-принтери Bambu Lab з можлив�
 або клас моделі не застосовний — BamDude не показує фейкового стану в таких
 випадках.
 
-| Можливість | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | H2D / H2D Pro | H2C | H2S |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Камера (вбудована) | :material-check: | додатково | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| 30 FPS-стрім | :material-check: | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| Ethernet-порт | лише X1C/X1E | — | :material-check: | :material-check: | — | — | :material-check: | :material-check: | :material-check: |
-| Обігрів камери | :material-check: | — | пасивна | :material-check: | — | — | :material-check: | :material-check: | :material-check: |
-| Сенсор дверей (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — [^bit23] | — [^bit23] | — [^bit23] |
-| Подвійне сопло (L/R) | — | — | — | — | — | — | :material-check: | — | — |
-| 6-слотовий tool changer | — | — | — | — | — | — | — | :material-check: | — |
-| AMS Pro (4-слотовий) | до 4 | до 4 | до 4 | до 4 | — | — | до 4 | до 4 | до 4 |
-| AMS Lite | — | — | — | — | :material-check: | — | — | — | — |
-| Зовнішня котушка | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | лише вона | :material-check: | :material-check: | :material-check: |
-| AMS-HT (single-slot 128–135) | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| AMS humidity / temperature alerts | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: |
-| Обслуговування — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — |
-| Обслуговування — Steel Rods | — | — | — | :material-check: | — | — | — | — | — |
-| Обслуговування — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| Swap mode (виштовхування) [^swap] | — | — | — | — | :material-check: | :material-check: | — | — | — |
-| Vibration-cali skip патчер | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
-| Skip-objects посеред друку | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Можливість | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | A2L | H2D / H2D Pro | H2C | H2S |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Камера (вбудована) | :material-check: | додатково | :material-check: | :material-check: | :material-check: | :material-check: | :material-check:[^a2l] | :material-check: | :material-check: | :material-check: |
+| 30 FPS-стрім | :material-check: | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
+| Ethernet-порт | лише X1C/X1E | — | :material-check: | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Обігрів камери | :material-check: | — | пасивна | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Сенсор дверей (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
+| Подвійне сопло (L/R) | — | — | — | — | — | — | — | :material-check: | — | — |
+| 6-слотовий tool changer | — | — | — | — | — | — | — | — | :material-check: | — |
+| AMS Pro (4-слотовий) | до 4 | до 4 | до 4 | до 4 | — | — | :material-check:[^a2l] | до 4 | до 4 | до 4 |
+| AMS Lite | — | — | — | — | :material-check: | — | — | — | — | — |
+| Зовнішня котушка | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | лише вона | :material-check: | :material-check: | :material-check: | :material-check: |
+| AMS-HT (single-slot 128–135) | — | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
+| AMS humidity / temperature alerts | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: | :material-check: |
+| Обслуговування — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — | — |
+| Обслуговування — Steel Rods | — | — | — | :material-check: | — | — | — | — | — | — |
+| Обслуговування — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Swap mode (виштовхування) [^swap] | — | — | — | — | :material-check: | :material-check: | — | — | — | — |
+| Vibration-cali skip патчер | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
+| Skip-objects посеред друку | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 
 [^door]: Стан дверей парситься з `home_flag` біт 23 у MQTT. Лише X1-сімейство
 прошивки реверс-енджинірно публікує надійне значення; не позначені у
@@ -102,6 +116,13 @@ flip-ається. Буде ввімкнено, як тільки звіримо
 [^swap]: Swap mode офіційно підтримується на серії A1. Інші моделі можуть
 опт-ін через власні swap-mode G-code макроси, але фабричних профілів для
 них не постачається.
+
+[^a2l]: A2L — це нова **single-extruder** модель: її друга голова це
+інтегрований різак/плоттер, **а не** друге сопло. Вона **лише Wi-Fi** (без
+Ethernet-порту), віддає **низькочастотну chamber-image камеру** на порту 6000
+(без RTSP / 30 FPS) і належить до класу обслуговування **Linear Rails**.
+Підтримка AMS виведена з firmware-можливості "print-while-drying" (яка
+потребує heated AMS); тонші деталі AMS ще звіряються на реальному залізі.
 
 ---
 

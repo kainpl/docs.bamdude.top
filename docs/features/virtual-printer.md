@@ -133,6 +133,9 @@ In Bambu Studio / OrcaSlicer the **Send** button is right next to **Print** (or 
 
 For `proxy`-mode VPs, you click **Print** as normal — proxy mode is transparent and forwards to the real printer.
 
+!!! note "Multi-plate 'Send all plates'"
+    When you use the slicer's **Send all plates** on a multi-plate 3MF into a Queue-mode VP, BamDude enqueues **one queue item per plate** in plate order — not a single item for the whole file — so the scheduler runs each plate as its own job. A single-plate **Send** stays one item.
+
 ---
 
 ## :material-certificate: Certificate Installation
@@ -404,6 +407,7 @@ The VP impersonates a real Bambu model so the slicer's compatibility check passe
 | `BL-P002` | X1 | 00M |
 | `C13` | X1E | 03W |
 | `N6` | X2D | 20P9 |
+| `N9` | A2L | 26A19 |
 | `C11` | P1P | 01S |
 | `C12` | P1S | 01P |
 | `N7` | P2S | 22E |
@@ -634,6 +638,17 @@ A VP in either Queue mode (`print_queue` or `auto_queue`) honours the `auto_disp
 
 !!! tip "Trusted upstream only"
     Auto-dispatch removes the human gate. Use it when the upstream source is yourself or a trusted automation (slicer plugin, CI job, MakerWorld webhook). For shared / multi-tenant uploads, prefer `file_manager` mode + the review modal.
+
+---
+
+## :material-code-tags: Per-VP G-code injection {#gcode-injection}
+
+Both Queue-mode VPs (`print_queue` and `auto_queue`) carry a **G-code injection** toggle on the VP card. Turn it on and every job this VP queues is flagged so the dispatcher splices the per-model **start / end snippets** into the gcode at dispatch time — the same [G-code injection](gcode-injection.md) engine the queue's per-item toggle uses, applied automatically to this VP's slicer-silent uploads.
+
+- **Off by default**, and a **no-op unless** start / end snippets actually exist for the target printer model.
+- **Flipping it restarts the VP** (the listeners re-initialise), so the slicer may briefly see the printer drop and reappear.
+
+Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / purge / swap-mode preamble, so you don't have to remember the per-item toggle on every send.
 
 ---
 
