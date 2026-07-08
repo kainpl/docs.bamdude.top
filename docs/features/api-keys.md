@@ -44,6 +44,9 @@ prefix              random body
 | **Can read status** | Allow live printer state, archive lists, statistics — the read surface |
 | **Manage Library** | Optional. Upload / rename / move / delete library files — **any owner**, not just the key creator's — plus notes and MakerWorld import (`can_manage_library`). Read-only library access stays under **Can read status** |
 | **Manage Inventory** | Optional. Create / edit / delete spools, catalogue entries, and forecast settings (`can_manage_inventory`). Read-only inventory stays under **Can read status** |
+| **Manage Projects** | Optional. Create / edit / delete projects and add archives to them (`can_manage_projects`). Read-only project access stays under **Can read status** |
+| **Manage Archives** | Optional. Create / edit / delete print archives (`can_manage_archives`) — **excluding** the destructive purge, which stays admin-only. Read-only archive access stays under **Can read status** |
+| **Manage Maintenance** | Optional. Log maintenance, reset counters, edit intervals, and manage the maintenance-type catalog (`can_manage_maintenance`). Read-only maintenance stays under **Can read status** |
 | **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
 | **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. Calls against any other printer return 403 |
 | **Expires at** | Optional ISO timestamp. After that, the key is rejected even if it isn't revoked |
@@ -86,15 +89,20 @@ Two layers gate every API-keyed call:
     - `can_read_status` — required for printer-state, archive, stats, monitoring reads (and read-only library / inventory / settings-language)
     - `can_manage_library` — required for library upload / rename / move / delete + notes + MakerWorld import. A key rides the **all-ownership** variants (`library:update_all` / `library:delete_all`): API keys carry no per-row ownership identity, so a Manage-Library key can curate **any** file regardless of owner. Only `library:purge` (hard-delete past the trash window) stays admin-only
     - `can_manage_inventory` — required for spool / catalogue / forecast **writes** (read-only inventory stays under `can_read_status`)
+    - `can_manage_projects` — required for project create / edit / delete and adding archives to a project (read-only project access stays under `can_read_status`)
+    - `can_manage_archives` — required for print-archive create / edit / delete. `archives:purge` — the destructive hard-delete that bypasses the recycle bin — **stays admin-only** and is never granted by this scope
+    - `can_manage_maintenance` — required for logging maintenance, resetting counters, editing intervals, and managing the maintenance-type catalog (read-only maintenance stays under `can_read_status`)
     - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
     - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber--octopus--dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** narrows printer-bound calls. A key with `printer_ids = [3, 7]` returns 403 on `/printers/5/status` even if `can_read_status` is on.
 
 !!! warning "Strict scope confinement"
-    A key now reaches **only** the endpoints its granted scopes cover. Anything outside them — settings writes, user / group / API-key administration, resource deletion (printers, archives, projects), and network discovery scans — is refused with `403`, even for an otherwise-valid, enabled key. Previously any valid key could reach almost every endpoint (start/stop prints, reorder the queue, reprint archives, delete another user's library files, read every resource) *regardless* of which scope checkboxes were ticked on it — upstream advisory **GHSA-r2qv-8222-hqg3** (CVSS 9.9 critical). The mapping is an allowlist: a permission with no scope entry is denied by default, so a newly-added admin endpoint is never silently reachable by a key.
+    A key now reaches **only** the endpoints its granted scopes cover. Anything outside them — settings writes, user / group / API-key administration, resource deletion that no manage-scope covers (printer deletion, archive **purge**), and network discovery scans — is refused with `403`, even for an otherwise-valid, enabled key. Previously any valid key could reach almost every endpoint (start/stop prints, reorder the queue, reprint archives, delete another user's library files, read every resource) *regardless* of which scope checkboxes were ticked on it — upstream advisory **GHSA-r2qv-8222-hqg3** (CVSS 9.9 critical). The mapping is an allowlist: a permission with no scope entry is denied by default, so a newly-added admin endpoint is never silently reachable by a key.
 
 !!! info "Upgrade inheritance"
-    The two scopes added in this cycle — `can_manage_library` and `can_manage_inventory` — are backfilled from each key's existing **Manage Queue** (`can_queue`) setting on upgrade. A queue-enabled key keeps its prior upload + inventory-write workflow, while a hardened read-only key (`can_queue = false`) gains nothing. Adjust either scope afterwards with `PATCH /api-keys/{id}`.
+    The two library / inventory scopes — `can_manage_library` and `can_manage_inventory` — are backfilled from each key's existing **Manage Queue** (`can_queue`) setting on upgrade. A queue-enabled key keeps its prior upload + inventory-write workflow, while a hardened read-only key (`can_queue = false`) gains nothing. Adjust either scope afterwards with `PATCH /api-keys/{id}`.
+
+    The three newer scopes — `can_manage_projects`, `can_manage_archives`, and `can_manage_maintenance` — were previously **denied for every API key**, so existing keys keep them **off** on upgrade (no silent scope widening). Grant them per key under **Settings → API Keys** (or `PATCH /api-keys/{id}`) when you want a key to drive projects, archive curation, or maintenance logging.
 
 The permissions that gate the **management** of the keys themselves (who can list / create / revoke) are normal user-group permissions:
 

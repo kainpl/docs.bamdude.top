@@ -22,6 +22,9 @@ The print queue lets you:
 - **Model-based assignment** -- queue to "any printer of matching model" (legacy single-tier router; for filament/color-aware routing see [Auto-Queue Routing](auto-queue.md))
 - **Smart plug automation** -- auto power-on/off
 
+!!! tip "Slice-and-queue in one click, and warm the bed first"
+    Two companion features build on the queue: [Slicer Pipelines](slicer-pipelines.md) save a slice setup once and then slice-and-queue any file — onto a specific printer or a whole model class — while [Preheat & heat-soak](preheat.md) holds the bed (and, where supported, the chamber) at temperature before an engineering-filament job starts.
+
 ---
 
 !!! warning "SD card required"
