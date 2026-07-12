@@ -77,6 +77,7 @@ plugins:
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
             "Printer Control": "Керування принтером"
+            "Archived Printers": "Архівовані принтери"
             "Firmware Updates": "Оновлення прошивки"
             Camera Streaming: Трансляція камери
             "AMS & Humidity": "AMS та вологість"
@@ -219,6 +220,7 @@ nav:
     - Printers & Monitoring:
       - Real-time Monitoring: features/monitoring.md
       - Printer Control: features/printer-control.md
+      - Archived Printers: features/archived-printers.md
       - Firmware Updates: features/firmware-updates.md
       - Camera Streaming: features/camera.md
       - AMS & Humidity: features/ams.md

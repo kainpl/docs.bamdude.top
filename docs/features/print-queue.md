@@ -25,6 +25,9 @@ The print queue lets you:
 !!! tip "Slice-and-queue in one click, and warm the bed first"
     Two companion features build on the queue: [Slicer Pipelines](slicer-pipelines.md) save a slice setup once and then slice-and-queue any file — onto a specific printer or a whole model class — while [Preheat & heat-soak](preheat.md) holds the bed (and, where supported, the chamber) at temperature before an engineering-filament job starts.
 
+!!! info "Archived printers drop out of the queue view"
+    [Archiving a printer](archived-printers.md) hides its queue card here and cancels its pending items — an archived printer is never a dispatch target.
+
 ---
 
 !!! warning "SD card required"

@@ -395,6 +395,9 @@ The card swaps its connection badge for an amber **Maintenance** pill (:material
 !!! info "Not the Maintenance Tracker"
     This is a *service state* for the whole printer. It's unrelated to the [Maintenance](maintenance.md) tracker, which logs rod / nozzle / belt jobs against usage hours: one parks the machine, the other reminds you when a part is due.
 
+!!! info "Retiring for good? Archive instead"
+    Maintenance Mode only parks a printer temporarily and keeps its card visible. To *retire* a printer — sold, decommissioned — [Archive](archived-printers.md) it instead: the card is hidden everywhere while its print history is kept.
+
 ---
 
 ## :material-checkbox-multiple-marked: Bulk Actions
