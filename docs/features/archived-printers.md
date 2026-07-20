@@ -16,6 +16,7 @@ Archiving is a one-click "put this machine away" action. An archived printer:
 - **vanishes from the Printers page**, every printer picker, and the print-queue view;
 - **is excluded from dispatch** — the scheduler, [Auto-Queue Routing](auto-queue.md), model-based assignment, and the virtual printer never route to it;
 - **is dropped from metrics** and sensor-history recording;
+- **is left out of PA-profile assignment** — the spool form's K-profile picker (and the count on its PA Profile tab) only offers non-archived printers, so a retired machine's old calibrations don't clutter new spools;
 - **disconnects from MQTT** and stays disconnected until you restore it;
 - **keeps every one of its [print archives](archiving.md)** — the history is preserved, not deleted.
 
@@ -74,6 +75,8 @@ The panel only appears for users with `printers:delete`.
 ## :material-history: History Is Preserved
 
 Archiving never touches `print_archives`. Everything the printer ever produced stays in the [Print Archive](archiving.md), and the **Archives page keeps archived printers in its printer filter** — so you can still filter history by a retired machine long after it's gone from the dashboard. That's the whole point of archiving over deleting: the record outlives the hardware.
+
+Wherever those past prints surface — the [Statistics](stats.md) per-printer breakdowns and bar chart, the Archives list / grid / calendar, and that printer filter — a retired printer is labelled **Printer N (Archived)** instead of its old name, so it reads unmistakably and is never mixed up with an active machine. In those same lists archived printers also sort to the **bottom**, below the active ones.
 
 ---
 

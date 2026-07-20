@@ -32,7 +32,7 @@ BamDude має власний інвентар фізичних котушок �
 - **Status tabs** — Active / Archived / All, плюс quick filters Used / New, плюс stock filter All / Stock (без slicer profile) / Configured (зі slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns) або **Cards** (visual swatches).
-- **Group similar** — toggle, що візуально колапсує ідентичні unused / unassigned котушки в один expandable рядок з count-бейджем (напр. *5 identical spools*). Grouping-key — `manufacturer + material + color name + label_weight + subtype`. Used або AMS-assigned котушки завжди видні окремо, тож знаєш, яка фізична котушка в якому слоті. Group-state persist-ить через сесії.
+- **Group similar** — toggle, що візуально колапсує ідентичні unused / unassigned котушки в один expandable рядок з count-бейджем (напр. *5 identical spools*). Grouping-key — `manufacturer + material + color name + label_weight + subtype + lot` — оскільки lot входить у ключ, batch, створений з **авто-нумерацією лотів** (див. нижче), лишається окремими картками, а не колапсує; зливаються лише копії з однаковим лотом (чи без лота). Used або AMS-assigned котушки завжди видні окремо, тож знаєш, яка фізична котушка в якому слоті. Group-state persist-ить через сесії.
 
 ## :material-package-variant: Додавання котушок
 
@@ -110,7 +110,7 @@ CSV-заголовки толерантні до регістру й пробі�
 | **Brand** | Виробник; auto-complete з previously-seen брендів. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
 | **Label Weight** | Чиста вага як надрукована на котушці (default 1000 г; AMS-HT cardboard core ~250 г). |
-| **Quantity (bulk)** | 1–100 котушок створюються в одній операції. Корисно для "купив 5-pack PLA" — кожна котушка створюється з ідентичним material / color / weight / cost. |
+| **Quantity (bulk)** | 1–100 котушок створюються в одній операції. Корисно для "купив 5-pack PLA" — усі копії з однаковим material / color / weight / cost (лоти можуть відрізнятися, див. **Lot** + авто-нумерацію нижче). |
 | **Color** | Visual picker з shade + opacity + finish picker-ами. Recent-colors-стрічка + brand-палітри. |
 | **Extra colours** | Опційно. Comma-separated list з 2–8 hex-стопів (напр. `EC984C,#6CD4BC,A66EB9,D87694`) для multi-colour котушок. Малює swatch по-різному залежно від значення **Effect** нижче — плавний blend, hard-split смуги або color-wheel pie. Формат як на 3dfilamentprofiles.com, тож paste-and-go працює. |
 | **Effect** | Накладається поверх color-swatch — **не** змінює slicer-profile. Surface-effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*) малюють CSS-overlay; sheen-варіанти (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*) дають м'який sheen; structural-варіанти задають форму color-layer — *Gradient* = плавний 135° blend, *Dual Color* / *Tri Color* = hard-split горизонтальні смуги (кожен стоп у власному сегменті, без діагонального blend), *Multicolor* = conic-gradient color-wheel. Форма має live-preview pane під dropdown'ом, тож ви бачите ефект до збереження. |
@@ -121,10 +121,13 @@ Toggle **Quick Add (Stock)** зверху форми перемикає на min
 
 Quick-Add котушки називаються **stock spools** — вони трекають вагу і витрату як будь-яка інша котушка, але не прив'язані до printer filament-profile. Можна редагувати stock-котушку пізніше, призначити slicer-preset (вона стане *configured* у той момент) або відфільтрувати лише stock-пілку через inventory's stock-фільтр.
 
-Поле **Quantity** показується лише в Quick Add і створює batch-и з auto-incremented lot-номерами при заповненні.
+Поле **Quantity** показується лише в Quick Add і створює вказану кількість котушок в одній транзакції. Quick Add також показує поле **Lot** разом з чекбоксом **Авто-нумерація лотів (+1 на копію)**:
+
+- **Авто-нумерація увімкнена** — копії нумеруються послідовно **від введеного значення Lot**: Lot `5` × Quantity `3` → три котушки з лотами **5, 6, 7**. Лишиш Lot порожнім — нумерація стартує з 1.
+- **Авто-нумерація вимкнена** — усі копії отримують одне введене значення Lot (або взагалі без лота).
 
 !!! tip "Bulk buying"
-    5-pack PLA → set Quantity = 5 → BamDude створює 5 ідентичних котушок в одній транзакції. Парується з **Group similar** toggle на inventory-списку, щоб колапсувати їх назад в один рядок з count-бейджем.
+    5-pack PLA з однієї партії → Quantity = 5, Lot = 1, **Авто-нумерація лотів** увімкнена → пʼять котушок з лотами 1–5, показані пʼятьма окремими картками (lot входить у grouping-key). Хочеш згорнути їх в один рядок *5 identical spools*? Лишай Lot порожнім (або вимкни авто-нумерацію), щоб копії були справді ідентичні, і скористайся toggle **Group similar**.
 
 #### Звідки беруться preset-и
 
