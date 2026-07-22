@@ -117,12 +117,15 @@ description: Незалежні черги друку для кожного пр
 | Опція | Default | Що робить |
 |-------|---------|-----------|
 | **Use AMS** | `on` | Філамент з AMS, не зовнішня бабіна. Off = принтер чекає вручну поданий філамент. |
-| **Bed levelling** | `on` | Auto-bed-level перед друком. Off — швидші рестарти на стабільному столі. |
-| **Flow calibration** | off | Cal екструзійного потоку на старті. Якість vs throughput. |
+| **Bed levelling** | `on` | Auto-bed-level перед друком. Off — швидші рестарти на стабільному столі. Трипозиційний (off / auto / on) на прошивках, що підтримують — див. нотатку нижче. |
+| **Flow calibration** | off | Cal екструзійного потоку на старті. Якість vs throughput. Трипозиційний на підтримуваних моделях. |
 | **Vibration calibration** | off | Cal вібро-резонансу. Off для швидкої ітерації по однакових завданнях. |
 | **Mesh-mode fast check** | off | Скіп M970 vibration-probe gcode через [3MF gcode-патчер](archiving.uk.md). На диску файл лишається unpatched; патчаться тільки байти, які летять у принтер. |
 | **Layer inspection** | `on` | Per-layer inspection AI (X1 + H2). |
 | **Timelapse** | off | Записати вбудований таймлапс на принтері. |
+
+!!! tip "Авто-калібрування (off / auto / on)"
+    На моделях, чия прошивка це підтримує — **X2D** і **H2**-сімейство (H2D, H2D Pro, H2C, H2S), плюс **P2S** та **A2L** для вирівнювання столу + калібрування потоку — Bed levelling, Flow calibration і (на дво-соплових) Nozzle-offset calibration стають **трипозиційними**: **Off**, **Auto** (принтер сам вирішує, чи потрібен крок для цього завдання) або **On** (завжди виконувати). Моделі без підтримки лишаються з простим **Off / On**. Вибір запам'ятовується per printer model, а Off/On поводяться точно як раніше — нова позиція Auto доходить лише до принтера, який її рекламує.
 
 Defaults — install-wide, налаштовуються у **Settings → Workflow → Default print options**. Per-printer overrides — на картці налаштувань кожного принтера. Per-job overrides у Add-to-Queue перебивають все.
 

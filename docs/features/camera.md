@@ -157,9 +157,18 @@ graph LR
 
 | Requirement | Details |
 |-------------|---------|
-| **ffmpeg** | Must be installed (included in Docker image) |
+| **ffmpeg** | Must be installed (included in Docker image). Needed for the RTSP camera on the X1 / X2 / H2 / P2 series; the A1 / P1 chamber-image protocol does not use it. |
 | **Camera enabled** | Must be enabled in printer settings |
 | **Developer Mode** | Required for camera access |
+
+!!! tip "Pointing at ffmpeg — `FFMPEG_PATH`"
+    If `ffmpeg` is installed but not on the running service's PATH — most often a fresh Windows install whose PATH change hasn't reached an already-open shell — an RTSP camera (X1 / X2 / H2 / P2) connects but shows **no frames**. Set **`FFMPEG_PATH`** in your `.env` (or the environment) to the full path of the ffmpeg binary and BamDude uses it directly, skipping the PATH search:
+
+    ```
+    FFMPEG_PATH=C:/Users/you/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_.../bin/ffmpeg.exe
+    ```
+
+    Left unset, behaviour is unchanged (PATH + common install locations are searched). The Docker image and native installers bundle ffmpeg, so this is typically only needed for local Windows development.
 
 ---
 

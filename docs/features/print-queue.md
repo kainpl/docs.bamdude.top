@@ -117,12 +117,15 @@ When adding to queue, expand **Print options**:
 | Option | Default | What it does |
 |--------|---------|--------------|
 | **Use AMS** | `on` | Route filament from AMS instead of external spool. Off = printer expects manually-fed filament. |
-| **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. |
-| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. |
+| **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. Three-position (off / auto / on) on firmware that supports it — see the note below. |
+| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. Three-position on supported models. |
 | **Vibration calibration** | off | Run vibration-resonance cal. Disabled for fast iteration on identical jobs. |
 | **Mesh-mode fast check** | off | Skip the M970 vibration-probe G-code via the [3MF gcode patcher](archiving.md). Disk file stays unpatched; only the bytes shipped to the printer are modified. |
 | **Layer inspection** | `on` | Per-layer first-layer inspection AI (X1 + H2 series). |
 | **Timelapse** | off | Record a built-in timelapse on the printer. |
+
+!!! tip "Auto calibration (off / auto / on)"
+    On models whose firmware supports it — the **X2D** and the **H2** family (H2D, H2D Pro, H2C, H2S), plus the **P2S** and **A2L** for bed levelling + flow calibration — Bed levelling, Flow calibration and (on dual-nozzle machines) Nozzle-offset calibration are **three-position**: **Off**, **Auto** (the printer itself decides whether the step is needed for the job), or **On** (always run). Models without firmware support keep the plain **Off / On** toggle. The choice is remembered per printer model, and Off/On behave exactly as before — the new Auto position only reaches a printer that advertises it.
 
 Defaults are install-wide and configurable in **Settings → Workflow → Default print options**. Per-printer overrides live on each printer's settings card. Per-job overrides on the Add-to-Queue modal trump everything.
 
