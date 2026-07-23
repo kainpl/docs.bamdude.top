@@ -151,8 +151,39 @@ The kebab item only appears for users with the `printers:update` permission. The
 
 Every applied change writes one row to the `printer_setting_audit` table (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. No in-UI viewer yet; query the table directly if you need to answer "who turned spaghetti-detection off last Thursday?"
 
-!!! info "Calibration stays separate"
-    Calibrate Belt / Nozzle Offset / Resonance Test still live under their own kebab entry **Calibration** — they're not toggles, they're long-running routines. Phase-2 may merge them; phase-1 keeps them distinct.
+!!! info "On-device calibration is separate"
+    Bed leveling, resonance, motor noise and the other machine self-calibration routines aren't print-option toggles — they're long-running on-device routines under their own kebab entry **Calibration**, documented next.
+
+---
+
+## :material-tune-variant: Device Calibration
+
+The printer's own **on-device** self-calibration routines — bed leveling, resonance/vibration, motor noise, and, on newer hardware, nozzle offset, high-temp bed leveling, micro-lidar and nozzle-clumping detection. This is the same set Bambu Studio exposes under **Device → Calibration**: not filament tuning (that's the wizard below), but the machine's own calibration steps that run on the printer with no sliced g-code involved.
+
+Open it from the kebab :material-dots-vertical: menu on a printer card → **Calibration**.
+
+### What's available depends on the model
+
+BamDude shows only the calibrations your specific printer model **and** firmware actually support — resolved exactly like Bambu Studio:
+
+| Calibration | Typically available on |
+|---|---|
+| Auto Bed Leveling | almost every model |
+| Vibration Compensation | every model |
+| Motor Noise Cancellation | read live from the printer (P1S, A1 series, X2D, …) |
+| Nozzle Offset | dual-nozzle / X2D / H2 series |
+| High-Temp Bed Leveling | X2D / H2 series / P2S / A2L |
+| Micro Lidar | X1 series |
+| Nozzle Clumping Detection | P2S / H2S |
+
+The availability isn't a hand-maintained table. BamDude merges two sources — **hybrid gating**, mirroring Bambu Studio:
+
+1. **Base defaults** — byte-for-byte copies of Bambu Studio's own per-model config files (`resources/printers/<model>.json`), shipped under `backend/app/data/printers/`. Re-syncing them is a folder re-copy + `git diff` against a fresh Bambu Studio checkout.
+2. **Live capability flags** — the printer's own MQTT status flags, which override the defaults. **Motor Noise Cancellation** in particular is a *live* signal, not a static per-model flag: some machines advertise it in the `home_flag` bitfield (P1 / X1 series), others in the `fun` bitfield (H2 / X2 series), so BamDude surfaces it wherever the printer reports it — exactly as Bambu Studio does.
+
+### Live progress
+
+Pick the steps you want and press **Start Calibration**. The dialog then stays open and shows the printer's own **stage-by-stage progress** live — the same stage list Bambu Studio renders — each step ticking from pending → running → done until the routine completes.
 
 ---
 
