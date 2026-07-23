@@ -108,16 +108,18 @@ Per-printer діалог, який віддзеркалює **Bambu Studio → P
 
 | Група | Налаштування | Значення | MQTT |
 |---|---|---|---|
-| AI-детекції | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
-| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
-| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
-| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| AI-детекції | AI monitoring (legacy тогл) | On/Off + Low/Medium/High | `xcam_control_set` (`printing_monitor`) |
+| | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`pileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`clump_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprint_detector`) |
 | | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
-| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
 | Сенсори | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
-| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`model_movement_check`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
-| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-blob detect (legacy) | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-clumping (smart, 3-mode) | Auto / On / Off | `print_option` (`nozzle_blob_detect_v2`) |
+| | Air-print detection (sensor) | On/Off | `print_option` (`air_print_detect`) |
 | Plate | Виявлення позиції платформи (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
 | | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
 | | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
@@ -127,7 +129,7 @@ Per-printer діалог, який віддзеркалює **Bambu Studio → P
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
 | | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
 
-Legacy-тогл **позиції платформи** і новіша пара **marker + alignment** взаємовиключні (як у BS): принтер, що рапортує групу marker/alignment, показує її; старіші (A1 / A1 mini) показують один тогл позиції. **Open Door Detection** раніше був тут; тепер він у вкладці **Safety** на X2D / P2S (і лишається в Print Options для X1-родини) — див. нижче.
+Кілька опцій взаємовиключні (як у BS), тож із кожної пари бачиш лише одну: legacy-тогл **позиції платформи** проти новішої групи **marker + alignment**; legacy **nozzle-blob** on/off проти smart **3-режимного nozzle-clumping**; і legacy **AI monitoring** тогл проти новіших per-type AI-детекцій (spaghetti / pile-up / clumping / air-print). Module-імена в колонці `xcam_control_set` — це власні wire-імена прошивки; кілька відрізняються від внутрішніх ключів BamDude і мапляться на виході, щоб тогли реально застосовувались. **Open Door Detection** раніше був тут; тепер він у вкладці **Safety** на X2D / P2S (і лишається в Print Options для X1-родини) — див. нижче.
 
 ### Видимість — що відображається залежно від принтера
 

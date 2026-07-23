@@ -108,16 +108,18 @@ Four tabs:
 
 | Group | Setting | Values | MQTT |
 |---|---|---|---|
-| AI detections | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
-| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
-| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
-| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| AI detections | AI monitoring (legacy toggle) | On/Off + Low/Medium/High | `xcam_control_set` (`printing_monitor`) |
+| | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`pileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`clump_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprint_detector`) |
 | | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
-| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
 | Sensors | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
-| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`model_movement_check`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
-| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-blob detect (legacy) | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-clumping (smart, 3-mode) | Auto / On / Off | `print_option` (`nozzle_blob_detect_v2`) |
+| | Air-print detection (sensor) | On/Off | `print_option` (`air_print_detect`) |
 | Plate | Build-plate position detection (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
 | | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
 | | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
@@ -127,7 +129,7 @@ Four tabs:
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
 | | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
 
-The legacy **build-plate position** toggle and the newer **marker + alignment** pair are mutually exclusive (BS parity): a printer that reports the marker/alignment group shows those; older ones (A1 / A1 mini) show the single position toggle. **Open Door Detection** used to live here; it now sits in the **Safety** tab on X2D / P2S (and stays in Print Options for the X1 family) — see below.
+A few options are mutually exclusive (BS parity), so you only ever see one of each pair: the legacy **build-plate position** toggle vs the newer **marker + alignment** group; the legacy **nozzle-blob** on/off vs the smart **3-mode nozzle-clumping** switch; and the legacy **AI monitoring** toggle vs the newer per-type AI detections (spaghetti / pile-up / clumping / air-print). The `xcam_control_set` module names above are the firmware's own wire names — several differ from BamDude's internal keys, and are mapped on the way out so the toggles actually apply. **Open Door Detection** used to live here; it now sits in the **Safety** tab on X2D / P2S (and stays in Print Options for the X1 family) — see below.
 
 ### Visibility — what shows up depends on the printer
 
