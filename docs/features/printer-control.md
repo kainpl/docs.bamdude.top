@@ -97,10 +97,12 @@ Accepted printer states: `FINISH`, `FAILED`, **`IDLE`**. The IDLE case covers Au
 
 A per-printer dialog that mirrors **Bambu Studio → Print Options + Printer Parts**. Open it from the kebab :material-dots-vertical: menu on a printer card → **Printer Settings**.
 
-Two tabs:
+Four tabs:
 
-- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery.
+- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery. Gated to exactly what the printer reports it supports (see [Visibility](#visibility-what-shows-up-depends-on-the-printer)).
+- **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, mirroring BS's Safety Options dialog. Only appears on models that expose safety options.
 - **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
+- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view. See the [Add-ons tab](#add-ons) section below.
 
 ### Print Options — what's there
 
@@ -116,34 +118,45 @@ Two tabs:
 | | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
 | | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
-| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
-| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| Plate | Build-plate position detection (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
 | Chamber | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
-| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
 | Misc | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
 | | Prompt sound | On/Off | `print_option` (`sound_enable`) |
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
-| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+| | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
+
+The legacy **build-plate position** toggle and the newer **marker + alignment** pair are mutually exclusive (BS parity): a printer that reports the marker/alignment group shows those; older ones (A1 / A1 mini) show the single position toggle. **Open Door Detection** used to live here; it now sits in the **Safety** tab on X2D / P2S (and stays in Print Options for the X1 family) — see below.
 
 ### Visibility — what shows up depends on the printer
 
-Per-model capability gating, same idea as the [AMS Settings dialog](ams.md#ams-settings-dialog). Rows whose capability is `false` are hidden entirely — no point showing **AI monitoring** on a P1S or **Purify air** on a non-H2D Pro.
+Each row shows **only if the printer reports it supports that option** — resolved the same way Bambu Studio does, from the live capability flags in the MQTT push (`fun` / `fun2` / `cfg` / `home_flag` bitfields, the `xcam` message, and the `support_*` booleans), not from a hardcoded per-model table. So the list matches the printer — and BS — on every model, and stays correct as firmware evolves.
 
-| Group | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
-|---|---|---|---|---|---|
-| AI detections (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | yes | — | — | yes | yes |
-| FOD + displacement | yes | — | — | yes | yes |
-| Open-door check | yes | yes | — | yes | yes |
-| Purify air | — | — | — | — | **yes** (only H2D Pro) |
-| Filament tangle | yes | yes | yes | yes | yes |
-| Nozzle blob | yes | yes | — | yes | yes |
-| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | all models | | | | |
+In practice this means, for example:
+
+- The **AI detections** (spaghetti, pile-up, nozzle-clumping, air-printing) appear on camera-AI machines that advertise them via the `fun` bits — the X2D and H2 family — and are correctly absent on the P1 / A1 series (which report no `xcam.cfg`, so they have no AI at all).
+- **Foreign-object** and **displacement** detection follow the same `fun2` support bits.
+- **Filament tangle**, **nozzle blob** and **notification sounds** come from `home_flag` bits, so they show on whichever models actually expose them (e.g. the A1 mini reports tangle + blob; the P1S doesn't).
+- **Store sent files on external storage** shows only where the firmware advertises the feature (X2D), and is hidden on printers that have storage but don't expose it (P1S).
+- **Purify air** follows its `fun2` bit; **Open Door Detection** follows `fun` bit 12 and the model's `support_safety_options` config (Print Options for the X1 family, the Safety tab for X2D / P2S).
+
+If a printer hasn't sent its full status yet (the first moment after connecting), BamDude falls back to a conservative per-family guess until the real flags arrive.
 
 ### State source of truth — the printer
 
-BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT `print.print_option` push echoes. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT status push. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+
+Because that MQTT round-trip takes a moment, the control you touched **freezes and shows a small "waiting for confirmation" spinner** until the printer confirms, then the value refreshes **in the open dialog** — it never closes and reopens. You can't fire the same toggle repeatedly while it's still applying.
 
 If the printer drops a setting (factory reset, firmware-update wipe), BamDude reflects that — there's no reconciliation. Open the dialog again and re-toggle.
+
+### Safety tab (X2D / P2S)
+
+Printers that advertise `support_safety_options` (currently the X2D and P2S) get a **Safety** tab next to Print Options, mirroring BS's Safety Options dialog:
+
+- **Open Door Detection** — what the printer does when the enclosure door opens mid-print: **Off** / **Notification** / **Pause printing**. Read from `cfg` bits 20-21, written via the `system` `set_door_stat` command. On these models the control lives here instead of in Print Options.
+- **Idle Heating Protection** — automatically stops heating after 5 minutes of idle. Read from `cfg` bits 32-33 (a third "unavailable" state greys the toggle while the printer's heating-maintenance function is active), written via `set_against_continued_heating_mode`.
 
 ### Permissions and audit
 

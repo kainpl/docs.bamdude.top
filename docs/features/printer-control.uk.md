@@ -97,10 +97,12 @@ POST /api/v1/printers/{id}/clear-plate
 
 Per-printer діалог, який віддзеркалює **Bambu Studio → Print Options + Printer Parts**. Відкрий його з kebab :material-dots-vertical: меню на картці принтера → **Printer Settings**.
 
-Дві вкладки:
+Чотири вкладки:
 
-- **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery.
+- **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery. Показуються рівно ті, що принтер реально підтримує (див. [Видимість](#видимість-що-відображається-залежно-від-принтера)).
+- **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, віддзеркалює діалог Safety Options у BS. З'являється лише на моделях із safety-опціями.
 - **Printer Parts** — read-only вид встановлених сопел (тип, діаметр, тип потоку). Редагування parts на принтері залишене на наступну фазу; зараз API повертає `409 parts_not_editable` на спроби запису.
+- **Add-ons** — сам принтер + усі під'єднані аксесуари (AMS, filament buffer, exhaust fan, …), віддзеркалює вид Update Device у BS. Див. секцію [Add-ons](#add-ons) нижче.
 
 ### Print Options — що там є
 
@@ -116,34 +118,45 @@ Per-printer діалог, який віддзеркалює **Bambu Studio → P
 | | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
 | | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
-| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
-| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| Plate | Виявлення позиції платформи (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
 | Камера | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
-| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
 | Інше | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
 | | Prompt sound | On/Off | `print_option` (`sound_enable`) |
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
-| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+| | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
+
+Legacy-тогл **позиції платформи** і новіша пара **marker + alignment** взаємовиключні (як у BS): принтер, що рапортує групу marker/alignment, показує її; старіші (A1 / A1 mini) показують один тогл позиції. **Open Door Detection** раніше був тут; тепер він у вкладці **Safety** на X2D / P2S (і лишається в Print Options для X1-родини) — див. нижче.
 
 ### Видимість — що відображається залежно від принтера
 
-Per-model capability gating, та сама ідея, що й у [діалозі налаштувань AMS](ams.md#діалог-налаштувань-ams). Рядки з `false`-capability приховуються повністю — нема сенсу показувати **AI monitoring** на P1S чи **Purify air** на non-H2D Pro.
+Кожен рядок показується **лише якщо принтер рапортує, що підтримує цю опцію** — визначається так само, як у Bambu Studio, з живих capability-флагів у MQTT-push (бітфілди `fun` / `fun2` / `cfg` / `home_flag`, повідомлення `xcam`, та `support_*`-булки), а не з хардкод-таблиці по моделях. Тож список збігається з принтером — і з BS — на кожній моделі, і лишається коректним із розвитком прошивок.
 
-| Група | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
-|---|---|---|---|---|---|
-| AI-детекції (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | так | — | — | так | так |
-| FOD + displacement | так | — | — | так | так |
-| Open-door check | так | так | — | так | так |
-| Purify air | — | — | — | — | **так** (тільки H2D Pro) |
-| Filament tangle | так | так | так | так | так |
-| Nozzle blob | так | так | — | так | так |
-| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | усі моделі | | | | |
+На практиці, наприклад:
+
+- **AI-детекції** (spaghetti, pile-up, nozzle-clumping, air-printing) з'являються на camera-AI машинах, що рапортують їх через `fun`-біти — X2D і H2-родина — і коректно відсутні на P1 / A1 серіях (вони не шлють `xcam.cfg`, тож AI в них немає взагалі).
+- **Foreign-object** і **displacement** йдуть за тими ж `fun2`-support-бітами.
+- **Filament tangle**, **nozzle blob** і **notification sounds** беруться з `home_flag`-бітів, тож показуються там, де моделі їх реально мають (напр. A1 mini рапортує tangle + blob; P1S — ні).
+- **Store sent files on external storage** показується лише де прошивка оголошує фічу (X2D), і сховане на принтерах, що мають сховище, але фічу не оголошують (P1S).
+- **Purify air** йде за своїм `fun2`-бітом; **Open Door Detection** — за `fun` біт 12 та конфігом `support_safety_options` (Print Options для X1-родини, вкладка Safety для X2D / P2S).
+
+Якщо принтер ще не надіслав повний статус (перша мить після підключення) — BamDude падає на консервативний per-family здогад, поки не прийдуть реальні флаги.
 
 ### Джерело правди — принтер
 
-BamDude **не** зберігає "desired state" на своєму боці. Стан у діалозі читається з MQTT-push принтера (`print.print_option` echoes). При тогл-у — BamDude публікує відповідну MQTT-команду і починає 3-секундний hold (`printer_settings_hold` per-key), щоб рядок не миготів між optimistic і підтвердженим значенням — той самий патерн, що й у AMS Settings dialog.
+BamDude **не** зберігає "desired state" на своєму боці. Стан у діалозі читається з MQTT-push принтера. При тогл-у — BamDude публікує відповідну MQTT-команду і починає 3-секундний hold (`printer_settings_hold` per-key), щоб рядок не миготів між optimistic і підтвердженим значенням — той самий патерн, що й у AMS Settings dialog.
+
+Оскільки цей MQTT round-trip займає мить, контрол, який ти торкнувся, **замерзає і показує маленьку крутілочку «очікуємо підтвердження»**, доки принтер не підтвердить, а тоді значення оновлюється **у відкритому діалозі** — він не закривається й не відкривається заново. Повторно клацати той самий тогл, поки він застосовується, не можна.
 
 Якщо принтер втратив налаштування (factory reset, firmware-update wipe) — BamDude це відобразить. Reconciliation немає. Відкрий діалог знову і перетогль.
+
+### Вкладка Safety (X2D / P2S)
+
+Принтери, що оголошують `support_safety_options` (наразі X2D і P2S), отримують вкладку **Safety** поруч із Print Options, віддзеркалюючи діалог Safety Options у BS:
+
+- **Open Door Detection** — що робить принтер, коли дверцята корпусу відкривають під час друку: **Off** / **Notification** / **Pause printing**. Читається з `cfg` бітів 20-21, пишеться командою `system` `set_door_stat`. На цих моделях контрол тут, а не в Print Options.
+- **Idle Heating Protection** — автоматично припиняє нагрів після 5 хв простою. Читається з `cfg` бітів 32-33 (третій стан «недоступно» робить тогл сірим, поки активна функція обслуговування нагріву принтера), пишеться через `set_against_continued_heating_mode`.
 
 ### Дозволи й аудит
 
