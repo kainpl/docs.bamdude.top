@@ -54,7 +54,8 @@ graph LR
     | `filament_used_grams` | Загальна кількість грамів за оцінкою слайсера. |
     | `layer_height`, `total_layers` | Геометрія шарів. |
     | `nozzle_diameter`, `nozzle_temperature`, `bed_temperature` | Уставки хотенду / столу. |
-    | `print_time_seconds` | Оцінка слайсера; реальна тривалість живе у `started_at` / `completed_at`. |
+    | `print_time_seconds` | Оцінка слайсера. |
+    | `actual_time_seconds`, `time_accuracy` | Реальна тривалість (`completed_at − started_at`) і точність оцінки (%), записуються для завершених друків і бекфіляться по історії. |
     | `sliced_for_model` | Модель принтера, під яку було нарізано 3MF, витягається з метаданих проєкту. |
     | `makerworld_url`, `designer` | Авто-витягуються з 3MF, коли присутні. |
 

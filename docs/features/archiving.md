@@ -54,7 +54,8 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     | `filament_used_grams` | Total grams the slicer estimated. |
     | `layer_height`, `total_layers` | Layer geometry. |
     | `nozzle_diameter`, `nozzle_temperature`, `bed_temperature` | Hotend / bed setpoints. |
-    | `print_time_seconds` | Slicer's estimate; the actual duration lives in `started_at` / `completed_at`. |
+    | `print_time_seconds` | Slicer's estimate. |
+    | `actual_time_seconds`, `time_accuracy` | Real duration (`completed_at − started_at`) and the estimate-vs-actual accuracy %, recorded on completed prints and backfilled for history. |
     | `sliced_for_model` | Printer model the 3MF was sliced for, extracted from project metadata. |
     | `makerworld_url`, `designer` | Auto-extracted from the 3MF when present. |
 
