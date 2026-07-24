@@ -50,7 +50,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     | Field | Description |
     |-------|-------------|
     | `print_name` | Slicer-set print name. |
-    | `filament_type`, `filament_color` | Primary filament for the print. |
+    | `filament_type`, `filament_color` | Primary filament(s) for the print. **Colour** prefers the inventory spool loaded on each AMS slot (per slot), falling back to the sliced colour for any slot without an assigned spool. |
     | `filament_used_grams` | Total grams the slicer estimated. |
     | `layer_height`, `total_layers` | Layer geometry. |
     | `nozzle_diameter`, `nozzle_temperature`, `bed_temperature` | Hotend / bed setpoints. |
