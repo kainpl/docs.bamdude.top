@@ -431,6 +431,15 @@ BamDude can automatically capture a camera snapshot when prints complete:
 
 This creates a visual record of every completed print — paired with the timelapse and finish photo, you've got a full visual log of farm output.
 
+!!! note "How BamDude picks the moment"
+    The ideal moment is the last object layer, while the print is still on the bed and before the End G-code parks the toolhead, swaps the plate or clears it. BamDude tries three sources in order of quality:
+
+    1. the printer's internal "end" stage, if the firmware reports it;
+    2. the crossing into the final layer, caught from the printer's status updates;
+    3. a rolling snapshot taken **while the print was still running** — the fallback for firmware that reports neither (the A1 Mini is the known case).
+
+    That third source is why a photo of an auto-swapped plate no longer comes back empty. The rolling snapshot refreshes at most every 25 seconds and stops updating the instant printing ends, so what it holds is the finished print rather than the aftermath. It's only taken when finish photos are enabled, never carries over between prints, and is skipped while you're watching the live camera so the stream isn't interrupted.
+
 ---
 
 ## :material-scan-helper: Build Plate Empty Detection
