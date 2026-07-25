@@ -94,6 +94,36 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 
+
+!!! warning "Several plates at once get one mapping each"
+    Ticking more than one plate used to hide the Filament Mapping panel — but the
+    dialog still sent a mapping, built from the *union* of every selected plate's
+    filaments. Tray assignment is stateful, so where plate 1 prints red on slot 1
+    and plate 2 prints red on slot 2, slot 1 claimed the only red spool and slot 2
+    fell through to whatever else was loaded. That single mapping then went out
+    with **every** plate, and the queue uses a stored mapping verbatim.
+
+    Each selected plate now gets its own panel (named after the plate), its own
+    tray overrides, and its own mapping on its own queue item. Fanning several
+    plates across several printers ships no mapping at all, so the scheduler maps
+    each plate against the printer it actually picks.
+
+    A manual tray pick no longer survives a change of printer (a tray number means
+    a different spool on a different machine), the "not enough filament" check
+    follows what each plate actually dispatches and sums demand per spool (60 g
+    left doesn't cover two plates of 40 g even though it covers either one), and a
+    plate whose filaments can't be read is named and blocks **Print** instead of
+    being queued unmapped.
+
+!!! tip "Nozzle mismatch is caught before upload"
+    A file sliced for one nozzle size sent to a printer with a different nozzle
+    fitted used to fail *on the printer*, after the whole upload, with a cryptic
+    HMS error. The queue now checks before uploading and fails the item with an
+    actionable message. It only ever blocks on a positive mismatch: a file with no
+    recorded nozzle size, or a printer that hasn't reported its nozzles, dispatches
+    exactly as before, and on a dual-nozzle printer a match against either hotend
+    passes.
+
 ### Plate selection (multi-plate 3MF)
 
 Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:

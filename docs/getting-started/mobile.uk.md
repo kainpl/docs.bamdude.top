@@ -67,7 +67,7 @@ description: Використання BamDude на телефонах і пла�
 Для розгортання в LAN є два чисті варіанти:
 
 - **Reverse proxy з TLS** — поставте nginx, Caddy або Traefik перед BamDude і нехай він термінує HTTPS. Див. [Reverse proxy і HTTPS](reverse-proxy.md).
-- **Tailscale MagicDNS + HTTPS** — Tailscale видає справжні Let's Encrypt сертифікати для `<machine>.<tailnet>.ts.net`, і BamDude підтримує ці сертифікати навіть на рівні віртуальних принтерів. Див. [Tailscale](../features/tailscale.md).
+- **Tailscale** — діставайся BamDude (і його віртуальних принтерів) через свій tailnet без port-forward. BamDude може показати tailnet-адресу VP, щоб вставити її у слайсер; імпорт CA в сам слайсер усе одно потрібен. Див. [Tailscale](../features/tailscale.md).
 
 Обидва шляхи дають справжню `https://…` адресу, що задовольняє вимогу встановлення PWA та розблоковує усі сучасні функції браузера.
 

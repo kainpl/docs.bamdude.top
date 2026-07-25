@@ -76,7 +76,31 @@ For headless setups, SSO accounts, or environments where the email/OTP round-tri
 
 ## :material-clock-end: Token lifetime
 
-Bambu Cloud bearers are valid for ~90 days. BamDude does **not** silently refresh them — when the token expires, the next call returns 401 and the route handler clears your stored token (`clear_token()` in `cloud.py`). Your status flips back to **Disconnected** and you re-run the sign-in flow.
+Bambu Cloud bearers are not permanent, and Bambu provides no way to renew one
+without signing in again.
+
+BamDude checks the stored token **against Bambu Lab** rather than assuming it
+still works, so **Connected** means Bambu accepted it — not merely that one is
+saved. The answer is cached for a few minutes so the several places that poll it
+don't each pay a round-trip.
+
+### When the sign-in expires
+
+When the token lapses, **every** Bambu Cloud feature stops at once — cloud
+profiles, MakerWorld, slicer presets and printer firmware checks — because they
+all carry the same token. The first genuine rejection is recorded once and shared,
+so they all agree at the same moment rather than each rediscovering it.
+
+The Profiles page shows the login form again **with an explicit "sign-in expired"
+notice**, so you know why it reappeared. Sign in again there and everything
+resumes; nothing else needs reconfiguring.
+
+!!! info "An outage is not an expiry"
+    Only Bambu's documented expiry answer counts as expired. A stray 401 — a
+    region- or endpoint-specific refusal, a Cloudflare interstitial, a brief blip
+    — is treated as transient and leaves you signed in. If Bambu Lab is
+    unreachable altogether, the last known status is kept, so an outage on their
+    side can never sign you out of a working session.
 
 The same token also gates [MakerWorld import](makerworld.md) downloads — if your MakerWorld page suddenly shows `can_download=false`, an expired Bambu Cloud token is the most common cause.
 

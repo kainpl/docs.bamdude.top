@@ -29,12 +29,57 @@ Manually configure slots for third-party filaments:
 
 1. Hover over a slot, click the menu
 2. Select **Configure Slot**
-3. Choose a filament preset (filtered by printer model)
+3. Choose a filament preset (filtered by printer model **and by the nozzle
+   actually installed**)
 4. Select a matching K profile
 5. Optionally set a custom color
 
+The picker filters by the **nozzle diameter actually fitted**, not a fixed
+0.4 mm. With a 0.6 mm nozzle you get the 0.6 mm profiles for your trays; on a
+dual-nozzle H2D each AMS shows the profiles for the nozzle that feeds it.
+Configuring a slot with a profile that doesn't match the installed nozzle is what
+makes the printer reject a print with the cryptic *"Failed to get AMS mapping
+table"* — the queue now catches that mismatch before uploading and fails the item
+with an actionable message instead.
+
+!!! success "Assignments are confirmed, not assumed"
+    Assigning a spool from Inventory, or configuring a slot here, used to report
+    success the moment the command was sent — whether or not the tray accepted
+    it. A silently-dropped assignment never surfaced anywhere, and because a
+    print only deducts from the spool on the exact tray it pulls from, it also
+    recorded no filament usage.
+
+    BamDude now reads the AMS telemetry back and tells you the outcome:
+    **loaded** when the tray echoes the filament you assigned, a **warning** when
+    the filament landed but its flow calibration (K-profile) didn't, and **not
+    confirmed** if the tray hasn't reported it after about 30 seconds. If the
+    printer goes quiet it stays silent rather than inventing a failure.
+
 !!! tip "AMS-HT preset stickiness fixed (#1053)"
     Earlier builds keyed AMS-HT slot presets at `ams_id * 4 + tray_id = 512`, but the frontend looks them up by `ams_id` directly for HT (single-slot units share their global tray id with the unit id). The slot fell through to the generic preset (`Generic PLA`) on every poll even after a custom preset was saved — so operators had to re-select it after every spool change. Backend now keys via the same helper the frontend uses, and the saved preset stays put.
+
+### Slots showing "?" instead of "Empty"
+
+A spool with no readable RFID is reported by a standard AMS with no filament type
+at all — structurally identical to a genuinely empty slot. BamDude uses the same
+authoritative "a spool is physically here" signal Bambu Studio does, so:
+
+- **"?"** — a spool is present but unidentified. Click **Configure Slot** to tell
+  BamDude what's loaded.
+- **Empty** — the slot really is empty.
+
+### When a print pauses on a filament runout
+
+The printer's own message says to reload *"the same AMS slot"*, which is wrong
+whenever **AMS Filament Backup** is on: the firmware won't re-accept the depleted
+slot and has already moved to the next compatible one.
+
+BamDude reads the printer's target and previous slot during the pause and
+highlights both on the AMS graphic — amber (with a small ↓ marker) on the slot
+that needs filament, red on the slot that ran out — while the HMS error dialog
+spells both out in words. Where the slot genuinely can't be pinned down (an
+ambiguous multi-AMS layout) it says so and points you at the printer screen
+rather than naming the wrong slot.
 
 ### Pre-population for configured slots
 

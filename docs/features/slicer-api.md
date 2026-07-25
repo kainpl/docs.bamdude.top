@@ -129,7 +129,7 @@ The Slice modal opens with three preset dropdowns:
 
 The modal caches the cloud and standard preset listings for a few minutes, so if you delete or rename a preset in Bambu Studio / Bambu Handy it can take a while to disappear from the dropdowns. A **Refresh** control on the preset list fetches the latest listings immediately. Importing or deleting a local profile in **Settings** also refreshes the slice dialog's presets right away.
 
-Compatibility is decided by the profile's own `compatible_printers` list when present, then by BambuStudio's `@BBL <model> <nozzle>` naming convention — and it is **nozzle-aware**, so a 0.6-nozzle process won't show as compatible for a 0.4-nozzle printer (0.4 is the implicit default that drops the suffix). The same matcher drives the **filament-calibration** wizard's profile picker; there incompatible profiles are hidden outright rather than grouped, since a calibration print sent to the wrong printer just wastes a bed.
+Compatibility is decided by the profile's own `compatible_printers` list when present, then by the `@<printer>` naming convention — in all three shapes the slicer writes: `@BBL <model>`, the full `@Bambu Lab <model> <size> nozzle` form a user-saved preset gets, and a bare `@<size>` tag. A bare size can rule a printer *out* but is never taken as proof of a match, and sizes are compared numerically so `0.20` and `0.2` are the same. Orca Cloud profiles carry their own compatible-printer list, and a copy of a profile that knows its printers shares that list with copies that don't — which is what stops a profile whose name carries no model (`Overture PLA Matte @0.2`) being auto-picked for a printer it was never built for. It is **nozzle-aware**, so a 0.6-nozzle process won't show as compatible for a 0.4-nozzle printer (0.4 is the implicit default that drops the suffix). The same matcher drives the **filament-calibration** wizard's profile picker; there incompatible profiles are hidden outright rather than grouped, since a calibration print sent to the wrong printer just wastes a bed.
 
 A **slicer picker** sits at the top of the Slice modal — two card-buttons (mirroring the "Filament Tracking" pattern in Settings) with their own live health badges. Auto-locks to the only-healthy sidecar when one is down; you pick freely when both are reachable; offline cards are disabled. First-time default is the global *Preferred slicer* setting; subsequent opens of the same source file default to your last pick (per-file localStorage).
 
@@ -140,6 +140,61 @@ A **preset-source control** above the preset dropdowns is a 3-state segmented ow
 For multi-plate 3MFs the modal embeds an **inline plate selector** at the top of its body, mirroring the Print modal's plate picker — a vertical paginator + details card. Plate 1 auto-selects on load so the filament-requirements + presets queries flow without blocking on user interaction; clicking a different plate re-keys those queries. A **Slice all plates** checkbox sits above the picker: tick it to slice every plate into one multi-plate output (sends `plate=0`) instead of a single picked plate.
 
 **Re-slicing for a different printer** — you can slice a 3MF that was built for another printer model. Pick any printer profile and the slicer re-slices for that target (bed, kinematics, nozzle count and start-gcode all come from the chosen profile). When the target crosses a nozzle class (single-nozzle ↔ dual-nozzle H2D/H2C/X2D), BamDude forwards the slicer's `--arrange` so BambuStudio repositions objects for the target bed and reconciles the embedded project settings; a cross-class "slice all plates" run slices each plate independently and merges them. If the slicer still can't produce a valid result, its reason is shown in a dismissible dialog rather than a vanishing toast.
+
+
+### Slice as designed (keep the file's embedded settings)
+
+Normally the slice applies your picked **Printer / Process / Filament** presets,
+which *override* whatever the file's author baked into its embedded
+`project_settings.config`. That override is what makes re-slicing for a different
+printer work — but it also means a [MakerWorld](makerworld.md) model set up for,
+say, five walls comes out at your process preset's default of two.
+
+When the source 3MF carries embedded settings **and** the printer you've picked
+matches the printer the file was designed for, the modal shows a **Use the file's
+built-in settings** checkbox. Tick it and BamDude slices with no preset override,
+so the designer's own wall count, infill, filament and other process settings
+drive the result.
+
+- **The preset dropdowns and the bed-type picker grey out** — printer, process,
+  filament and bed type. They're bypassed on this path, so they're locked to make
+  that obvious (and so changing the printer can't silently pull you off the
+  design and hide the checkbox).
+- **Filament comes from the file too**, not your AMS picks. If the file's
+  filaments don't match what's loaded, map them on the printer, or leave the
+  checkbox off and pick your own.
+- **It's offered only when your printer matches the design's target model.**
+  Honouring embedded settings for a *different* model would place the object on
+  the wrong bed — that's exactly what the preset path is for — so the checkbox
+  simply isn't shown when the printer differs.
+
+!!! note "This is not a settings merge"
+    It's all-or-nothing: you get the designer's complete profile, or you get
+    yours. Keeping the author's walls while swapping in *your* filament isn't
+    supported — leave the checkbox off and re-create the tweak in your own
+    process preset if you need that combination.
+
+#### Filament slots your plate doesn't use
+
+In a multi-plate project each plate usually paints with only some of the
+project's filament slots. The slice dialog labels the others **"— not used by
+this plate"** and greys out their dropdowns — but the slicer still wants a
+profile for every slot, and it validates all of them.
+
+So before slicing a single plate, BamDude replaces every unused slot's profile
+with the one from the plate's **lowest used slot**. That keeps the slot count
+(and the file's per-slot references) intact while making the loaded set both
+materially homogeneous and scoped to the target printer, so neither validator
+fires on a slot the G-code never touches:
+
+- *"the temperature difference of the filaments used is too large"* — an ABS
+  default sitting next to the PLA the plate actually prints with.
+- *"filament preset (slot N) is not compatible with printer …"* — a profile saved
+  for another printer (e.g. an `@Bambu Lab H2D` filament baked into the source
+  file) sitting in a slot your plate ignores.
+
+Slicing **all plates** skips this: across the whole project every defined slot is
+used by some plate, so each one's profile is honoured as picked.
 
 ### Reachability indicators
 
