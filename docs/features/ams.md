@@ -274,7 +274,7 @@ Remote drying needs an AMS with an internal heater. The original AMS (no heater)
 | Printer | Min firmware | Notes |
 |---|:---:|---|
 | X1 / X1C | 01.09.00.00 | |
-| P1P / P1S | 01.08.00.00 | |
+| P1P / P1S | — | :material-close: **screen-only** — see below |
 | H2D | 01.02.30.00 | |
 | H2C | 01.02.00.00 | |
 | H2D Pro | any | No version gate |
@@ -283,6 +283,11 @@ Remote drying needs an AMS with an internal heater. The original AMS (no heater)
 | H2S | — | :material-close: not supported |
 
 For models not listed above (future hardware), BamDude lets the drying command through. If the printer's firmware doesn't support it, the call fails gracefully without side effects.
+
+!!! warning "P1P / P1S: drying can only be started at the printer"
+    Bambu's own P1 manual is explicit — *"P1S connected AMS drying functions may only be controlled from the P1S screen."* The firmware accepts the drying command, answers **success**, and then discards it, which is why a P1S with an AMS 2 Pro would sit at zero dry status no matter how many times Start Drying was pressed.
+
+    Since 0.4.7b4 BamDude no longer sends a command it can't fulfil. **The flame button stays on the card**, disabled, with a tooltip explaining that drying here is screen-only — the point is to learn *where* to dry, not to watch the control quietly disappear. A cycle you start at the printer still shows in BamDude with its live countdown, because reading the state was never the problem; only the Stop button is hidden, since a P1 ignores stop exactly as it ignores start. Queue auto-drying and ambient drying skip P1 printers for the same reason.
 
 ### Power supply requirements
 
@@ -342,6 +347,11 @@ Power-related issues also surface as HMS (Health Management System) errors in th
 2. Select filament type, temperature, and duration
 3. Optionally enable spool rotation
 4. Click **Start**
+
+!!! note "You're told whether it actually started"
+    A printer's acknowledgement only means the command was *taken*, not that the AMS began drying. You get a **"Drying command sent"** confirmation immediately, and if the unit hasn't actually started within 30 seconds — or reports an error — a warning says the printer accepted the command but the AMS never started drying.
+
+    Each AMS is watched separately, so starting a cycle on a second unit doesn't lose the first one's result, and a unit still cooling down from a previous cycle isn't mistaken for one that just started.
 
 !!! tip "Drying badge"
     While a cycle is active, the AMS card shows a **Drying** badge with the active filament and target temperature — e.g. *Drying · PETG @ 65°C* — alongside the time remaining, so you can see what's cooking at a glance. Bambu only echoes the drying time on later pushes, so BamDude caches the filament + target locally when it starts the cycle.
