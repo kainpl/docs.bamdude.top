@@ -57,6 +57,31 @@ The settings page shows last-run timestamp + outcome (`success` / `failed`), the
 
 Legacy `bambuddy-backup-*.zip` files (from upstream installs) are still listed and restorable so an upgrade doesn't strand pre-existing snapshots.
 
+### When the output folder is not writable
+
+BamDude probes the folder with a real write when you save the path and when the backup card opens, so an unusable path is caught there rather than at 03:00 for a week. The card then names the cause and gives you the fix with your own path already filled in.
+
+The one that catches people out is the **systemd sandbox**. The service unit ships `ProtectSystem=strict`, which mounts everything outside `ReadWritePaths=<install> <data> <logs>` read-only *inside the service's own mount namespace*. A NAS share you mounted yourself and can write to from your shell is not one of those three, so the write fails with `EROFS` ("Read-only file system") — which looks like a permission problem and is not one. Reads are unaffected, so the UI happily lists existing backups from the share while being unable to write a new one.
+
+Grant the service access with a drop-in, which also survives a reinstall:
+
+```bash
+sudo systemctl edit bamdude
+```
+
+```ini
+[Service]
+ReadWritePaths=/mnt/your-nas-share
+```
+
+```bash
+sudo systemctl restart bamdude
+```
+
+Reinstalling backs the old unit up as `bamdude.service.bak-<timestamp>` and carries any extra `ReadWritePaths` forward, so a carve-out you added by hand no longer disappears on the next update.
+
+In Docker the failure is quieter: a host path that was never bind-mounted is still *writable* — the write lands in the container's ephemeral layer and vanishes on the next `docker compose up`. BamDude compares the folder's device against the container root and warns, with the compose snippet that mounts it properly.
+
 ---
 
 ## :material-source-branch: Git Backup (Profiles to GitHub / GitLab)

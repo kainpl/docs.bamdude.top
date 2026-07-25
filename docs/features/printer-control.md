@@ -293,13 +293,14 @@ Two sections side by side:
 Move the build plate up or down by a fixed step.
 
 ```
-POST /api/v1/printers/{id}/bed-jog?distance=N[&force=true]
+POST /api/v1/printers/{id}/bed-jog?distance=N
 ```
 
 | Param | Validation |
 |-------|------------|
 | `distance` | Non-zero, `|distance| <= 200` mm |
-| `force` | If `true`, wraps the move in `M211 S0` … `M211 S1` to bypass soft endstops |
+
+The `force` parameter was removed in 0.4.7. It wrapped the move in `M211 S0` … `M211 S1` — a command form that does not exist in Bambu's firmware dialect (there, bare `M211 S` means *push* the endstop state and `M211 R` means *pop* it), and the UI sent it on every jog, so every manual move ran without the soft endstops being explicitly enabled. A stray `?force=true` from an old client is ignored.
 
 Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is **not** running a print.
 
@@ -310,18 +311,35 @@ Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is
 | Normal | `G91` → `G1 ZN F600` → `G90` |
 | Force | `M211 S0` → `G91` → `G1 ZN F600` → `G90` → `M211 S1` |
 
+### G-code sent
+
+Byte-for-byte what Bambu Studio's own jog sends over the same MQTT `gcode_line` channel (`DevAxis::Ctrl_Axis`):
+
+```
+M211 S              ; remember the current soft-endstop state
+M211 X1 Y1 Z1       ; explicitly ENABLE all three
+M1002 push_ref_mode
+G91
+G1 ZN F600
+M1002 pop_ref_mode
+M211 R              ; restore the remembered state
+```
+
+Enabling the endstops is the point: Bambu's own sliced start G-code turns them **off** (the A1 machine template ends with `M211 X0 Y0 Z0` and never restores it; H2D re-enables only `M211 Z1`), so a printer sitting idle after a print usually has them disabled. Bambu Studio re-enables them before every manual move for exactly this reason.
+
 ### Not-homed warning
 
 After a print completes, the Z axis usually isn't referenced. The first jog click in a session shows a Bambu-Studio-style modal:
 
 | Choice | Action |
 |--------|--------|
-| **Home Z** | Sends `G28 Z` and dismisses the dialog — re-click jog after homing |
-| **Move anyway** | Calls `bed-jog` with `force=true` (single-move soft-endstop bypass) and remembers the choice for the rest of the browser session |
+| **Auto Home** | Runs the printer's full auto-home sequence and dismisses the dialog. On success, jogging works for the rest of the browser session |
 | **Cancel** | Closes the dialog, no command sent |
 
-!!! warning "Soft-endstop bypass"
-    `force=true` disables soft limits for one move only. Keep distances small (≤10 mm) until the plate is in a known-safe position — the firmware still enforces hard physical limits, but it's on you to make sure the commanded move is sane.
+The **Move anyway** button was removed in 0.4.7 — it was the path that drove the plate with the soft endstops bypassed. Bambu Studio refuses a manual move outright while the axis is not homed (`check_axis_z_at_home`), and BamDude now does the same: home first, then jog.
+
+!!! warning "Travel limits are not guaranteed"
+    BamDude enables the soft endstops before every jog, but Bambu firmware has been observed running a move past the limit anyway, and it reports no axis position — so the move cannot be clamped client-side either. Keep distances small (≤10 mm) until the plate is in a known-safe position and watch the printer.
 
 ---
 
