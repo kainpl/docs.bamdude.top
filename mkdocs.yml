@@ -84,7 +84,7 @@ plugins:
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
             Auto-Queue Routing: Авто-черга
-            "Slicer Pipelines": "Slicer Pipelines"
+            "Slice settings": "Налаштування слайсингу"
             "Preheat & Heat Soak": "Прогрів і heat-soak"
             Staggered Start: Поетапний запуск
             Swap Mode: Режим заміни пластин
@@ -227,7 +227,7 @@ nav:
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
       - Auto-Queue Routing: features/auto-queue.md
-      - Slicer Pipelines: features/slicer-pipelines.md
+      - Slice settings: features/slicer-pipelines.md
       - Preheat & Heat Soak: features/preheat.md
       - Staggered Start: features/staggered-start.md
       - Swap Mode: features/swap-mode.md

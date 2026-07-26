@@ -23,7 +23,7 @@ The print queue lets you:
 - **Smart plug automation** -- auto power-on/off
 
 !!! tip "Slice-and-queue in one click, and warm the bed first"
-    Two companion features sit next to the queue: [Slicer Pipelines](slicer-pipelines.md) save a slice setup so you can load all four preset picks back into the Slice dialog at once, while [Preheat & heat-soak](preheat.md) holds the bed (and, where supported, the chamber) at temperature before an engineering-filament job starts.
+    Two companion features sit next to the queue: [Slice settings](slicer-pipelines.md) save a slice setup so you can load all four preset picks back into the Slice dialog at once, while [Preheat & heat-soak](preheat.md) holds the bed (and, where supported, the chamber) at temperature before an engineering-filament job starts.
 
 !!! info "Archived printers drop out of the queue view"
     [Archiving a printer](archived-printers.md) hides its queue card here and cancels its pending items — an archived printer is never a dispatch target.
