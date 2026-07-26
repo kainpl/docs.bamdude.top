@@ -176,6 +176,28 @@ The second tab links pressure-advance (K-factor) calibration profiles to the spo
 
 See [K-Profiles](kprofiles.md) for the calibration workflow that produces these profiles.
 
+## :material-checkbox-multiple-marked: Mass actions
+
+Every row on the Filament tab has a checkbox. Tick one, and a toolbar appears above the list with **Edit · Print labels · Reset usage · Archive** (or **Restore**, on the Archived tab) **· Delete**.
+
+Four ways to select:
+
+| Control | Selects |
+|---|---|
+| Row checkbox | That spool |
+| Group checkbox | Every spool in that group (shows a dash when only some are ticked) |
+| Header checkbox | Every spool **on the current page** |
+| **Select all N matching the filter** | Every spool the current filter returns, including rows on other pages |
+
+The last one is deliberately a separate, explicit action rather than the default. Editing "everything the filter shows" is convenient; *deleting* it is not something that should happen because of a checkbox you could not see. For the same reason the selection clears itself whenever you change the filter, the search box, the tab or the grouping — a toolbar that says "12 selected" over a list which no longer contains those spools is how a bulk delete lands on the wrong rows.
+
+Archive, Restore and Delete ask for confirmation first.
+
+All of this works in **Spoolman mode** as well as with the built-in inventory. Because Spoolman is a separate service that can be briefly unreachable, individual rows can fail: when that happens you get an honest **"7 done, 2 failed"** rather than a success message, and the selection is kept so you can retry the rest.
+
+!!! tip "The Edit dialog shows what it is about to change"
+    The bulk-edit dialog lists the exact spools in the selection. It is read-only — the choosing happens on the page — but it is worth reading before you apply a field to forty spools.
+
 ## :material-format-list-checkbox: AMS slot assignments
 
 Once a spool exists, you can park it in a specific AMS slot on a specific printer. The right-side AMS panel on each printer card shows the four slots (or eight, on AMS-HT) and lets you drop a spool into each slot.
