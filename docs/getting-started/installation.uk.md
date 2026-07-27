@@ -13,7 +13,7 @@ description: Встановлення BamDude на вашу систему, вк
 
 | Вимога | Деталі |
 |--------|--------|
-| **Python** | 3.10+ (рекомендується 3.11 або 3.12) |
+| **Python** | 3.12+ (лише для нативної інсталяції — Docker і Windows-інсталятор везуть власний) |
 | **Мережа** | Та сама локальна мережа, що й принтер Bambu Lab |
 | **Принтер** | Увімкнений Developer Mode ([інструкція](index.uk.md#developer-mode)) |
 | **SD-карта** | Вставлена в принтер (потрібна для передачі файлів) |
@@ -78,7 +78,7 @@ description: Встановлення BamDude на вашу систему, вк
 
 | Що | Куди |
 |----|------|
-| **Файли програми** (embedded Python 3.13, backend + зібраний frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Файли програми** (embedded Python 3.12, backend + зібраний frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
 | **Твої дані** (база, архіви, plate calibration) | `C:\ProgramData\BamDude\data` |
 | **Логи** | `C:\ProgramData\BamDude\logs` |
 
