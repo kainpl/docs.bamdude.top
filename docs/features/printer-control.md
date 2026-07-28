@@ -64,7 +64,7 @@ GET  /api/v1/printers/{id}/print/objects     → list objects with skip status
 POST /api/v1/printers/{id}/print/skip-objects → skip selected IDs
 ```
 
-The list comes from the active 3MF (`subtask_name`). If the in-memory object list is empty (e.g. after a backend restart), pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
+The list comes from the active 3MF (`subtask_name`), read from the G-code's own `; model label id:` header where present — that is the list the firmware works from, and it names every copy on the plate. `slice_info.config` is only the last fallback: newer OrcaSlicer records just the original there when a plate holds several copies of one model. If the in-memory object list is empty (e.g. after a backend restart), pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
 
 !!! warning "Wait for layer 2"
     The printer firmware refuses skip commands until the first layer is laid down. The skip modal shows a yellow banner on layer 0/1.

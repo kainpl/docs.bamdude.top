@@ -64,7 +64,7 @@ GET  /api/v1/printers/{id}/print/objects     → список об'єктів з
 POST /api/v1/printers/{id}/print/skip-objects → скіпнути обрані ID
 ```
 
-Список береться з активного 3MF (`subtask_name`). Якщо in-memory object list порожній (наприклад, після backend restart), передайте `?reload=true` — і BamDude витягне 3MF з принтерного FTP та переспасить його. Підтримує кілька варіантів імен (`{name}.3mf`, `{name}.gcode.3mf`, з пробілами і underscored).
+Список береться з активного 3MF (`subtask_name`) — із заголовка `; model label id:` у самому G-code, де він є: це той перелік, яким користується прошивка, і він називає кожну копію на плиті. `slice_info.config` лишається останнім запасним варіантом: новіший OrcaSlicer записує туди лише оригінал, коли на плиті кілька копій однієї моделі. Якщо in-memory object list порожній (наприклад, після backend restart), передайте `?reload=true` — і BamDude витягне 3MF з принтерного FTP та переспасить його. Підтримує кілька варіантів імен (`{name}.3mf`, `{name}.gcode.3mf`, з пробілами і underscored).
 
 !!! warning "Зачекайте до layer 2"
     Прошивка принтера відмовляє у skip-командах, поки не покладено перший шар. Skip-modal показує жовтий банер на layer 0/1.
