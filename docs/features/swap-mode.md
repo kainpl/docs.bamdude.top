@@ -113,6 +113,41 @@ When swap mode is active for a printer:
 
 This is the **unattended batch production** mode for compatible printers.
 
+!!! warning "Start prints from BamDude, not from the printer's screen"
+
+    Swap macros only run for prints **BamDude dispatched** — from a queue, from
+    Auto-Queue, from an archive re-print or from Send-to-Printer. A print you
+    start on the printer's own touchscreen (or from a slicer straight to the
+    machine) never passes through BamDude's dispatcher, so:
+
+    - the `swap_mode_change_table` macro **does not run** — the table is not
+      swapped, and the finished part stays where it is;
+    - because nothing swapped the plate, BamDude asks for the manual
+      **Clear Plate** confirmation before the next queued print, exactly as it
+      would for a non-swap printer.
+
+    The result is a printer that looks idle while its queue does not advance.
+    Press **Clear Plate** on the printer card once the bed is actually empty and
+    the queue resumes.
+
+    The one exception is a file whose name carries `.swap.` or `.swaps.` (what
+    swaplist.app exports): those have the table changes baked into the G-code, so
+    they swap correctly even when started from the printer, and no confirmation
+    is asked for.
+
+!!! note "A cancelled or failed print always asks for confirmation"
+
+    Swap macros are deliberately skipped when a print does not end successfully —
+    the part (or its remains) is still attached to the bed, and swapping then
+    would either jam the rig or rotate a fouled plate into the next print. That
+    is why the queue stops and waits for you after a failure: it is the safe
+    outcome, not a fault.
+
+    If a print was marked failed because BamDude **lost contact with the printer
+    while a swap macro was running**, the message says so explicitly — that is a
+    network problem, not a macro problem. Short connection drops are ridden out
+    for 30 seconds before the print is given up on.
+
 ---
 
 ## :material-lightbulb-on: Pair with `print_started` / `print_finished` Macros
