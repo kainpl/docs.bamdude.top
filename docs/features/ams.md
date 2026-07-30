@@ -29,12 +29,57 @@ Manually configure slots for third-party filaments:
 
 1. Hover over a slot, click the menu
 2. Select **Configure Slot**
-3. Choose a filament preset (filtered by printer model)
+3. Choose a filament preset (filtered by printer model **and by the nozzle
+   actually installed**)
 4. Select a matching K profile
 5. Optionally set a custom color
 
+The picker filters by the **nozzle diameter actually fitted**, not a fixed
+0.4 mm. With a 0.6 mm nozzle you get the 0.6 mm profiles for your trays; on a
+dual-nozzle H2D each AMS shows the profiles for the nozzle that feeds it.
+Configuring a slot with a profile that doesn't match the installed nozzle is what
+makes the printer reject a print with the cryptic *"Failed to get AMS mapping
+table"* — the queue now catches that mismatch before uploading and fails the item
+with an actionable message instead.
+
+!!! success "Assignments are confirmed, not assumed"
+    Assigning a spool from Inventory, or configuring a slot here, used to report
+    success the moment the command was sent — whether or not the tray accepted
+    it. A silently-dropped assignment never surfaced anywhere, and because a
+    print only deducts from the spool on the exact tray it pulls from, it also
+    recorded no filament usage.
+
+    BamDude now reads the AMS telemetry back and tells you the outcome:
+    **loaded** when the tray echoes the filament you assigned, a **warning** when
+    the filament landed but its flow calibration (K-profile) didn't, and **not
+    confirmed** if the tray hasn't reported it after about 30 seconds. If the
+    printer goes quiet it stays silent rather than inventing a failure.
+
 !!! tip "AMS-HT preset stickiness fixed (#1053)"
     Earlier builds keyed AMS-HT slot presets at `ams_id * 4 + tray_id = 512`, but the frontend looks them up by `ams_id` directly for HT (single-slot units share their global tray id with the unit id). The slot fell through to the generic preset (`Generic PLA`) on every poll even after a custom preset was saved — so operators had to re-select it after every spool change. Backend now keys via the same helper the frontend uses, and the saved preset stays put.
+
+### Slots showing "?" instead of "Empty"
+
+A spool with no readable RFID is reported by a standard AMS with no filament type
+at all — structurally identical to a genuinely empty slot. BamDude uses the same
+authoritative "a spool is physically here" signal Bambu Studio does, so:
+
+- **"?"** — a spool is present but unidentified. Click **Configure Slot** to tell
+  BamDude what's loaded.
+- **Empty** — the slot really is empty.
+
+### When a print pauses on a filament runout
+
+The printer's own message says to reload *"the same AMS slot"*, which is wrong
+whenever **AMS Filament Backup** is on: the firmware won't re-accept the depleted
+slot and has already moved to the next compatible one.
+
+BamDude reads the printer's target and previous slot during the pause and
+highlights both on the AMS graphic — amber (with a small ↓ marker) on the slot
+that needs filament, red on the slot that ran out — while the HMS error dialog
+spells both out in words. Where the slot genuinely can't be pinned down (an
+ambiguous multi-AMS layout) it says so and points you at the printer screen
+rather than naming the wrong slot.
 
 ### Pre-population for configured slots
 
@@ -229,7 +274,7 @@ Remote drying needs an AMS with an internal heater. The original AMS (no heater)
 | Printer | Min firmware | Notes |
 |---|:---:|---|
 | X1 / X1C | 01.09.00.00 | |
-| P1P / P1S | 01.08.00.00 | |
+| P1P / P1S | — | :material-close: **screen-only** — see below |
 | H2D | 01.02.30.00 | |
 | H2C | 01.02.00.00 | |
 | H2D Pro | any | No version gate |
@@ -238,6 +283,11 @@ Remote drying needs an AMS with an internal heater. The original AMS (no heater)
 | H2S | — | :material-close: not supported |
 
 For models not listed above (future hardware), BamDude lets the drying command through. If the printer's firmware doesn't support it, the call fails gracefully without side effects.
+
+!!! warning "P1P / P1S: drying can only be started at the printer"
+    Bambu's own P1 manual is explicit — *"P1S connected AMS drying functions may only be controlled from the P1S screen."* The firmware accepts the drying command, answers **success**, and then discards it, which is why a P1S with an AMS 2 Pro would sit at zero dry status no matter how many times Start Drying was pressed.
+
+    Since 0.4.7b4 BamDude no longer sends a command it can't fulfil. **The flame button stays on the card**, disabled, with a tooltip explaining that drying here is screen-only — the point is to learn *where* to dry, not to watch the control quietly disappear. A cycle you start at the printer still shows in BamDude with its live countdown, because reading the state was never the problem; only the Stop button is hidden, since a P1 ignores stop exactly as it ignores start. Queue auto-drying and ambient drying skip P1 printers for the same reason.
 
 ### Power supply requirements
 
@@ -297,6 +347,11 @@ Power-related issues also surface as HMS (Health Management System) errors in th
 2. Select filament type, temperature, and duration
 3. Optionally enable spool rotation
 4. Click **Start**
+
+!!! note "You're told whether it actually started"
+    A printer's acknowledgement only means the command was *taken*, not that the AMS began drying. You get a **"Drying command sent"** confirmation immediately, and if the unit hasn't actually started within 30 seconds — or reports an error — a warning says the printer accepted the command but the AMS never started drying.
+
+    Each AMS is watched separately, so starting a cycle on a second unit doesn't lose the first one's result, and a unit still cooling down from a previous cycle isn't mistaken for one that just started.
 
 !!! tip "Drying badge"
     While a cycle is active, the AMS card shows a **Drying** badge with the active filament and target temperature — e.g. *Drying · PETG @ 65°C* — alongside the time remaining, so you can see what's cooking at a glance. Bambu only echoes the drying time on later pushes, so BamDude caches the filament + target locally when it starts the cycle.

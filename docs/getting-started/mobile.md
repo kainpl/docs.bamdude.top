@@ -67,7 +67,7 @@ PWA features (install prompt on Chromium, service worker, offline cache) require
 For LAN deployments you have two clean options:
 
 - **Reverse proxy with TLS** — put nginx, Caddy, or Traefik in front of BamDude and let it terminate HTTPS. See [Reverse proxy & HTTPS](reverse-proxy.md).
-- **Tailscale MagicDNS + HTTPS** — Tailscale issues real Let's Encrypt certs for `<machine>.<tailnet>.ts.net` and BamDude includes per-virtual-printer support for these certs as well. See [Tailscale](../features/tailscale.md).
+- **Tailscale** — reach BamDude (and its virtual printers) over your tailnet with no port-forward. BamDude can show a VP's tailnet address to paste into a slicer; the slicer's own CA import is still required. See [Tailscale](../features/tailscale.md).
 
 Both paths give you a real `https://…` URL that satisfies the PWA install requirement and unlocks every modern browser feature.
 

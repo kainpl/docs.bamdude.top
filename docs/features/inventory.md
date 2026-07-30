@@ -32,7 +32,7 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns) or **Cards** (visual swatches).
-- **Group similar** — toggle that visually collapses identical unused / unassigned spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label_weight + subtype`. Used or AMS-assigned spools always appear individually so you can tell which physical spool is in which slot. Group state persists across sessions.
+- **Group similar** — toggle that visually collapses identical unused / unassigned spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label_weight + subtype + lot` — because lot is part of the key, a batch created with **auto-numbered lots** (see below) stays as distinct cards rather than collapsing; only same-lot (or lot-less) copies merge. Used or AMS-assigned spools always appear individually so you can tell which physical spool is in which slot. Group state persists across sessions.
 
 ## :material-package-variant: Adding spools
 
@@ -110,7 +110,7 @@ The "+ Add Spool" form has two tabs. The first one — Filament Info — covers 
 | **Brand** | Filament manufacturer; auto-completes from previously-seen brands. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
 | **Label Weight** | Net weight as printed on the spool (default 1000 g; AMS-HT cardboard core ~250 g). |
-| **Quantity (bulk)** | 1–100 spools created in one operation. Useful for "I bought a 5-pack of PLA" scenarios — every spool is created with identical material / colour / weight / cost. |
+| **Quantity (bulk)** | 1–100 spools created in one operation. Useful for "I bought a 5-pack of PLA" scenarios — every spool shares the same material / colour / weight / cost (lots can differ, see **Lot** + auto-numbering below). |
 | **Colour** | Visual picker with shade + opacity + finish pickers. Recent-colours strip + brand palettes. |
 | **Extra colours** | Optional. Comma-separated list of 2–8 hex stops (e.g. `EC984C,#6CD4BC,A66EB9,D87694`) for multi-colour spools. Renders the swatch differently based on the **Effect** value below — gradient blend, hard-split bars, or colour-wheel pie. Format matches 3dfilamentprofiles.com so paste-and-go works. |
 | **Effect** | Layered on top of the colour swatch — does **not** change the slicer profile. Full enumeration: surface effects (*Sparkle*, *Wood*, *Marble*, *Glow*, *Matte*) paint a CSS overlay; sheen variants (*Silk*, *Galaxy*, *Rainbow*, *Metal*, *Translucent*) carry a soft sheen; structural variants drive the colour-layer shape — *Gradient* = smooth 135° blend, *Dual Color* / *Tri Color* = hard-split horizontal bars (each stop occupies its own contiguous segment, no diagonal blend), *Multicolor* = conic-gradient colour-wheel pie. The form has a live preview pane below the dropdown so you see the effect before save. |
@@ -121,10 +121,13 @@ Toggle **Quick Add (Stock)** at the top of the form to switch to a minimal mode 
 
 Quick-Add spools are called **stock spools** — they track weight and usage like any other spool, but they aren't linked to a printer filament profile. You can edit a stock spool later to assign a slicer preset (it becomes a *configured* spool at that point) or filter to just the stock pile via the inventory's stock filter.
 
-The **Quantity** field is only shown in Quick Add and creates batches with auto-incremented lot-number suffixes when filled.
+The **Quantity** field is only shown in Quick Add and creates that many spools in a single transaction. Quick Add also shows the **Lot** field together with an **Auto-number lots (+1 per copy)** checkbox:
+
+- **Auto-number ticked** — the copies are numbered sequentially **starting from the Lot value you entered**: Lot `5` × Quantity `3` → three spools with lots **5, 6, 7**. Leave Lot empty and numbering starts at 1.
+- **Auto-number unticked** — every copy shares the single Lot value you typed (or no lot at all).
 
 !!! tip "Bulk buying"
-    A 5-pack of PLA → set Quantity = 5 → BamDude creates 5 identical spools in a single transaction. Pair with the **Group similar** toggle on the inventory list to collapse them back to one row with a count badge.
+    A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, shown as five distinct cards (lot is part of the grouping key). Want them collapsed into one *5 identical spools* row instead? Leave the lot empty (or auto-number off) so the copies are truly identical, then use the **Group similar** toggle.
 
 #### Where presets come from
 
@@ -172,6 +175,28 @@ The second tab links pressure-advance (K-factor) calibration profiles to the spo
 - **Per-printer override** — pick a different profile for one printer if you have brand-specific calibration values that differ between machines.
 
 See [K-Profiles](kprofiles.md) for the calibration workflow that produces these profiles.
+
+## :material-checkbox-multiple-marked: Mass actions
+
+Every row on the Filament tab has a checkbox. Tick one, and a toolbar appears above the list with **Edit · Print labels · Reset usage · Archive** (or **Restore**, on the Archived tab) **· Delete**.
+
+Four ways to select:
+
+| Control | Selects |
+|---|---|
+| Row checkbox | That spool |
+| Group checkbox | Every spool in that group (shows a dash when only some are ticked) |
+| Header checkbox | Every spool **on the current page** |
+| **Select all N matching the filter** | Every spool the current filter returns, including rows on other pages |
+
+The last one is deliberately a separate, explicit action rather than the default. Editing "everything the filter shows" is convenient; *deleting* it is not something that should happen because of a checkbox you could not see. For the same reason the selection clears itself whenever you change the filter, the search box, the tab or the grouping — a toolbar that says "12 selected" over a list which no longer contains those spools is how a bulk delete lands on the wrong rows.
+
+Archive, Restore and Delete ask for confirmation first.
+
+All of this works in **Spoolman mode** as well as with the built-in inventory. Because Spoolman is a separate service that can be briefly unreachable, individual rows can fail: when that happens you get an honest **"7 done, 2 failed"** rather than a success message, and the selection is kept so you can retry the rest.
+
+!!! tip "The Edit dialog shows what it is about to change"
+    The bulk-edit dialog lists the exact spools in the selection. It is read-only — the choosing happens on the page — but it is worth reading before you apply a field to forty spools.
 
 ## :material-format-list-checkbox: AMS slot assignments
 

@@ -157,9 +157,18 @@ graph LR
 
 | Requirement | Details |
 |-------------|---------|
-| **ffmpeg** | Must be installed (included in Docker image) |
+| **ffmpeg** | Must be installed (included in Docker image). Needed for the RTSP camera on the X1 / X2 / H2 / P2 series; the A1 / P1 chamber-image protocol does not use it. |
 | **Camera enabled** | Must be enabled in printer settings |
 | **Developer Mode** | Required for camera access |
+
+!!! tip "Pointing at ffmpeg — `FFMPEG_PATH`"
+    If `ffmpeg` is installed but not on the running service's PATH — most often a fresh Windows install whose PATH change hasn't reached an already-open shell — an RTSP camera (X1 / X2 / H2 / P2) connects but shows **no frames**. Set **`FFMPEG_PATH`** in your `.env` (or the environment) to the full path of the ffmpeg binary and BamDude uses it directly, skipping the PATH search:
+
+    ```
+    FFMPEG_PATH=C:/Users/you/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_.../bin/ffmpeg.exe
+    ```
+
+    Left unset, behaviour is unchanged (PATH + common install locations are searched). The Docker image and native installers bundle ffmpeg, so this is typically only needed for local Windows development.
 
 ---
 
@@ -182,56 +191,116 @@ Camera endpoints (live stream, snapshot, cover thumbnail, plate-detection refere
 
 Tokens are stored in `auth_ephemeral_tokens` so they survive backend restarts and work behind multi-worker deploys. Operators don't need to do anything -- this is invisible plumbing -- but the implication is that copying a camera URL out of the browser only works for the lifetime of the embedded token.
 
-### Long-lived tokens for Home Assistant / Frigate / kiosks
+### Long-lived tokens for Home Assistant / Frigate / kiosks / OBS
 
-The 60-min UI-side token is wrong shape for a wall-mounted kiosk dashboard, a Home Assistant camera entity, or a Frigate front-end that re-fetches the same URL for months. BamDude can mint **long-lived stream tokens** for those use cases:
+The 60-min UI-side token is the wrong shape for a wall-mounted dashboard, a Home
+Assistant camera entity, or a Frigate front-end that re-fetches the same URL for
+months. BamDude mints **long-lived tokens** for those cases.
 
-1. **Settings → Camera → Long-lived tokens → + New token**.
-2. Pick the printer(s) it covers (one token can authorise multiple cameras), an expiry (months / years / never), and an optional label (e.g. `frigate-living-room`).
-3. The page shows the token **once** — copy it into your HA / Frigate / kiosk config. It won't be shown again.
-4. The token grants only the camera endpoints (`/stream`, `/snapshot`, `/cover`) for the chosen printers — no other API surface.
+**Settings → API Keys → Camera API Tokens → Create new token.** Give it a name,
+pick a **scope** (below) and a lifetime (1–365 days, default 90), and click
+Create. The token is shown **exactly once**.
+
+!!! danger "Shown once only"
+    BamDude stores only a pbkdf2 hash, so the plaintext can never be retrieved
+    again — and a stolen database dump can't be replayed against the camera
+    endpoints. If you lose the token, revoke the row and create a new one.
+
+#### Scopes
+
+Each scope is a **separate grant**. They never widen one another, and creating
+one never changes what an existing token can do.
+
+| Scope | Reaches |
+|---|---|
+| **Camera stream only** | The camera stream and snapshot endpoints, nothing else. The right choice for Home Assistant, Frigate, or anything embedding a single camera. |
+| **Cam Wall** | Those same streams **plus** the read-only [Cam Wall feed](#cam-wall-on-a-tv-or-kiosk): every printer's name, connection state and print progress — but **never the print filename**. |
+| **Streaming Overlay** | One printer's camera stream **plus** the live print status the [OBS overlay](#obs-streaming-overlay) draws — which *does* include the filename shown on screen. |
+
+The boundaries are deliberate and enforced in both directions: a Camera-stream
+token is refused by both the Cam Wall and overlay feeds; a Cam Wall token is
+refused by the overlay feed (the wall is trusted never to name the part on the
+bed, so folding the two together would silently widen every wall token already
+handed out) and vice versa. **None** of them exposes a printer's IP address,
+serial number or access code, or reaches any other BamDude API.
+
+#### Token properties
 
 | Property | Detail |
 |---|---|
-| Storage | Same `auth_ephemeral_tokens` table, with `token_type='camera_longlived'` so the regular 60-min sweeper leaves them alone. |
-| Revocation | Delete the row from the long-lived tokens table — effective on the next request. There's no caching layer to wait out. |
-| Audit | Each token records last-used-at + last-used-IP so you can see whether a kiosk is actually consuming it. Stale tokens (no use in 30 days) get a yellow warning chip. |
-| Limit | Soft cap of 50 active tokens per install — bumping past this is admin-only via direct DB access (`auth_ephemeral_tokens` is intentionally low-friction by design). |
+| Format | `bblt_<prefix>_<secret>`. The 8-character `prefix` is indexed so a lookup doesn't scan the table; it's also how you tell rows apart in the UI when you've forgotten which device holds which token. |
+| Storage | The `long_lived_tokens` table, separate from the 60-minute browser tokens — the ephemeral sweeper never touches these. |
+| Hashing | pbkdf2_sha256 over the full token, same as the rest of the codebase's password hashing. |
+| Maximum lifetime | **365 days.** "Never expires" is rejected by design: a leaked permanent token would be an irrevocable footgun. Rotate annually as part of normal credential hygiene. |
+| Audit | `last_used_at` is stamped on each successful use (rate-limited to once a minute, so an MJPEG keep-alive doesn't hammer the DB). Tokens idle for 30+ days get a warning chip. |
+| Revocation | Effective on the next request — there is no caching layer to wait out. |
+| Scope of a token | **All printers.** These tokens are not narrowed per printer; a Camera-stream token can pull any printer's stream. Use the per-printer [API keys](api-keys.md) if you need that narrowing. |
 
-URL shape: `/api/v1/printers/{id}/stream?token={long_lived_token}` — same query-param contract as the short-lived flow, so HA's generic camera platform / Frigate's `mjpeg_streams` / a `<img src>` in a kiosk dashboard all work without further plumbing.
+Administrators see an extra **All users** section listing every active token in
+the install — useful for triage if one is suspected of being leaked, or to
+enforce farm-wide hygiene.
 
-### Creation flow detail
+Creating and managing these tokens needs the `camera:view` permission — the same
+one already required for the ordinary browser-side stream tokens. Default Viewers
+and Operators groups have it. To delegate management to a non-admin, put them in
+a group with both `camera:view` and `settings:read` (so they can reach Settings).
 
-1. **Settings → Long-lived Tokens** (under Security / API Keys).
-2. Enter a descriptive name (e.g. `Home Assistant`, `Kitchen Kiosk`, `Frigate`).
-3. Pick a lifetime (1–365 days, default 90 days).
-4. Click **Create**.
-5. The plaintext token is displayed **exactly once** in a copy-to-clipboard modal.
+URL shape: `/api/v1/printers/{id}/camera/stream?token=<token>` — the same
+query-param contract as the short-lived flow, so Home Assistant's generic camera
+platform, Frigate's `mjpeg_streams`, or a plain `<img src>` all work with no
+further plumbing.
 
-!!! danger "Token shown once only"
-    Save the token now. BamDude stores only a hash (SHA-256) — once the modal closes, the plaintext can never be retrieved again. If you lose it, revoke the row and create a new token.
+### Cam Wall on a TV or kiosk
 
-### `lookup_prefix` and audit fields
+The Cam Wall has its own URL, so you can bookmark it or point a wall-mounted
+screen at it:
 
-Each long-lived token row carries:
+```
+http://your-bamdude:8000/camwall
+```
 
-- **lookup_prefix** — first 4 characters of the token's hash, used to identify a specific row when you've forgotten which device has which token. Safe to display alongside the row label.
-- **last_used_at** — timestamp of the most recent successful authenticated request with this token. Stale tokens (no activity in 30+ days) get a yellow warning chip so you can clean up dead config.
-- **last_used_ip** — most recent client IP, useful for spotting unexpected use.
+Opened in a browser you're signed in to, that's the same wall the Printers page
+shows — tiles stay clickable and the settings popover works as usual.
 
-### Admin "All users" view
+A TV or a Raspberry Pi in kiosk mode has no login, so it authenticates with a
+**Cam Wall**-scoped token in the URL instead:
 
-Administrators see an additional section titled **All users (admin view)** below their own tokens — it lists every active long-lived token across all users in the install. Useful for triage if a token is suspected of being leaked, or to enforce farm-wide hygiene (revoke ancient tokens that haven't been used in months).
+```
+http://your-bamdude:8000/camwall?token=bblt_<prefix>_<secret>
+```
 
-### Maximum lifetime: 365 days (m028)
+A token wall is deliberately reduced to what a passive display needs:
 
-BamDude rejects "never expires" by design — a leaked permanent token would be irrevocable footgun. Maximum TTL is **365 days**, enforced server-side via the `m028` migration that adds the `long_lived_tokens` table. If you want longer-lived access, rotate tokens annually as part of your normal credential-hygiene cycle.
+- **No settings popover, no click-through.** Nobody is standing at a TV.
+- **Compact status overlay only.** The state badge is shown; the print filename
+  is not. The feed behind the page doesn't serve filenames *at all*, so the part
+  on the bed is never named to a room anyone can walk into.
+- **No printer addresses or serial numbers**, for the same reason.
+- **Archived printers don't appear.** Printers in maintenance mode still do —
+  they're still on the farm.
 
-### Permission requirements
+Because a kiosk browser is awkward to configure (you can't open devtools on a
+wall-mounted TV), the wall's settings can come from the URL:
 
-Creating and managing long-lived camera tokens requires the `camera:view` permission — same permission already needed for the regular 60-minute browser-side stream tokens. Default Viewers and Operators groups have it.
+| Parameter | Meaning | Range |
+|---|---|---|
+| `maxLive` | How many tiles stream live at once; the rest poll snapshots | 1–16 |
+| `interval` | Seconds between snapshot refreshes on non-live tiles | 2–60 |
+| `status` | Status overlay: `off` or `compact` (a token wall cannot select `full`) | — |
 
-To delegate token management to a non-admin user, ensure they're in a group with both `camera:view` and `settings:read` (so they can reach the Settings page where tokens are managed).
+```
+http://your-bamdude:8000/camwall?token=bblt_…&maxLive=9&interval=10
+```
+
+Out-of-range or unreadable values fall back to the defaults rather than producing
+a wall you can't fix from the same URL. A kiosk never writes these back to the
+browser, so opening a kiosk link once won't overwrite your own wall preferences.
+
+!!! warning "The URL is the credential"
+    Anyone who can read that URL — off the screen, out of the browser history,
+    out of the kiosk's config file — can watch the wall. Treat it like a key. If
+    a display is retired or compromised, revoke the token and the wall goes dark
+    on its next request.
 
 ### Revoking a token
 
@@ -361,6 +430,15 @@ BamDude can automatically capture a camera snapshot when prints complete:
 3. Snapshots are saved to the print's archive folder and surface in the archive's photo gallery.
 
 This creates a visual record of every completed print — paired with the timelapse and finish photo, you've got a full visual log of farm output.
+
+!!! note "How BamDude picks the moment"
+    The ideal moment is the last object layer, while the print is still on the bed and before the End G-code parks the toolhead, swaps the plate or clears it. BamDude tries three sources in order of quality:
+
+    1. the printer's internal "end" stage, if the firmware reports it;
+    2. the crossing into the final layer, caught from the printer's status updates;
+    3. a rolling snapshot taken **while the print was still running** — the fallback for firmware that reports neither (the A1 Mini is the known case).
+
+    That third source is why a photo of an auto-swapped plate no longer comes back empty. The rolling snapshot refreshes at most every 25 seconds and stops updating the instant printing ends, so what it holds is the finished print rather than the aftermath. It's only taken when finish photos are enabled, never carries over between prints, and is skipped while you're watching the live camera so the stream isn't interrupted.
 
 ---
 
@@ -531,8 +609,36 @@ The dedicated overlay page combines the camera feed with real-time print status 
 http://your-bamdude:8000/overlay/{printer_id}
 ```
 
-!!! note "No login required"
-    The overlay is designed for embedding and does not require authentication. Don't expose this URL publicly without thinking it through.
+!!! warning "OBS needs a token"
+    Everything the overlay draws — print status, printer name, the camera feed —
+    is behind authentication. It works in a browser where you are **already
+    signed in**, but OBS is a fresh browser with no session, so the plain URL
+    above renders a blank overlay.
+
+    This has nothing to do with *how* you reach the server: a reverse proxy,
+    Cloudflare Tunnel or remote domain changes nothing, and an incognito window
+    fails identically. What OBS needs is a token.
+
+### Streaming Overlay token
+
+1. **Settings → API Keys → Camera API Tokens.**
+2. Create a token with the **Streaming Overlay** scope and copy it.
+3. Append it to the overlay URL, with the printer number matching the printer's
+   own URL on the Printers page (`/overlay/1` is printer 1, and so on):
+
+```
+http://your-bamdude:8000/overlay/1?token=bblt_<prefix>_<secret>
+```
+
+In token mode the overlay skips the WebSocket entirely and refreshes on a 2-second
+poll — the token can't open a WebSocket, and the poll is the feed.
+
+!!! warning "Treat the URL like a key"
+    Anyone who can read that URL can watch the printer's stream and see the print
+    filename. It cannot reach the printer's address, serial number or access
+    code, and it cannot enumerate your other printers — a Streaming Overlay token
+    opens one printer's overlay and nothing else. Revoke it from the same
+    Settings page to cut the overlay off.
 
 ### What's included
 
@@ -575,9 +681,15 @@ When no print is running, the overlay still works — it shows the camera feed p
 
 ### Troubleshooting overlay
 
-**Overlay not loading in OBS**
+**Overlay blank in OBS but fine in your browser**
 
-- Verify the URL works in a regular browser first.
+- This is almost always a **missing token**. Your browser is signed in; OBS is
+  not. Add `?token=…` with a **Streaming Overlay** token — see above.
+- Verify the URL in a **private / incognito** window, not your normal one. If it
+  fails there, it will fail in OBS for the same reason.
+
+**Overlay not loading at all**
+
 - Check that OBS can reach your BamDude server (same network, no VPN restrictions).
 - Right-click the source in OBS → **Refresh cache of current page**.
 
@@ -585,7 +697,8 @@ When no print is running, the overlay still works — it shows the camera feed p
 
 - Confirm the printer is connected.
 - Confirm camera streaming works in BamDude directly first — the overlay uses the same stream.
-- Status updates over WebSocket; if the WS handshake fails, status falls back to polling every 2 seconds.
+- Signed in, status updates over WebSocket; in token mode it always polls every
+  2 seconds instead (a token can't open a WebSocket).
 
 ---
 

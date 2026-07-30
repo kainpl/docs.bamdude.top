@@ -22,6 +22,12 @@ The print queue lets you:
 - **Model-based assignment** -- queue to "any printer of matching model" (legacy single-tier router; for filament/color-aware routing see [Auto-Queue Routing](auto-queue.md))
 - **Smart plug automation** -- auto power-on/off
 
+!!! tip "Slice-and-queue in one click, and warm the bed first"
+    Two companion features sit next to the queue: [Slice settings](slicer-pipelines.md) save a slice setup so you can load all four preset picks back into the Slice dialog at once, while [Preheat & heat-soak](preheat.md) holds the bed (and, where supported, the chamber) at temperature before an engineering-filament job starts.
+
+!!! info "Archived printers drop out of the queue view"
+    [Archiving a printer](archived-printers.md) hides its queue card here and cancels its pending items — an archived printer is never a dispatch target.
+
 ---
 
 !!! warning "SD card required"
@@ -88,6 +94,36 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 
+
+!!! warning "Several plates at once get one mapping each"
+    Ticking more than one plate used to hide the Filament Mapping panel — but the
+    dialog still sent a mapping, built from the *union* of every selected plate's
+    filaments. Tray assignment is stateful, so where plate 1 prints red on slot 1
+    and plate 2 prints red on slot 2, slot 1 claimed the only red spool and slot 2
+    fell through to whatever else was loaded. That single mapping then went out
+    with **every** plate, and the queue uses a stored mapping verbatim.
+
+    Each selected plate now gets its own panel (named after the plate), its own
+    tray overrides, and its own mapping on its own queue item. Fanning several
+    plates across several printers ships no mapping at all, so the scheduler maps
+    each plate against the printer it actually picks.
+
+    A manual tray pick no longer survives a change of printer (a tray number means
+    a different spool on a different machine), the "not enough filament" check
+    follows what each plate actually dispatches and sums demand per spool (60 g
+    left doesn't cover two plates of 40 g even though it covers either one), and a
+    plate whose filaments can't be read is named and blocks **Print** instead of
+    being queued unmapped.
+
+!!! tip "Nozzle mismatch is caught before upload"
+    A file sliced for one nozzle size sent to a printer with a different nozzle
+    fitted used to fail *on the printer*, after the whole upload, with a cryptic
+    HMS error. The queue now checks before uploading and fails the item with an
+    actionable message. It only ever blocks on a positive mismatch: a file with no
+    recorded nozzle size, or a printer that hasn't reported its nozzles, dispatches
+    exactly as before, and on a dual-nozzle printer a match against either hotend
+    passes.
+
 ### Plate selection (multi-plate 3MF)
 
 Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:
@@ -111,12 +147,15 @@ When adding to queue, expand **Print options**:
 | Option | Default | What it does |
 |--------|---------|--------------|
 | **Use AMS** | `on` | Route filament from AMS instead of external spool. Off = printer expects manually-fed filament. |
-| **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. |
-| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. |
+| **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. Three-position (off / auto / on) on firmware that supports it — see the note below. |
+| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. Three-position on supported models. |
 | **Vibration calibration** | off | Run vibration-resonance cal. Disabled for fast iteration on identical jobs. |
 | **Mesh-mode fast check** | off | Skip the M970 vibration-probe G-code via the [3MF gcode patcher](archiving.md). Disk file stays unpatched; only the bytes shipped to the printer are modified. |
 | **Layer inspection** | `on` | Per-layer first-layer inspection AI (X1 + H2 series). |
 | **Timelapse** | off | Record a built-in timelapse on the printer. |
+
+!!! tip "Auto calibration (off / auto / on)"
+    On models whose firmware supports it — the **X2D** and the **H2** family (H2D, H2D Pro, H2C, H2S), plus the **P2S** and **A2L** for bed levelling + flow calibration — Bed levelling, Flow calibration and (on dual-nozzle machines) Nozzle-offset calibration are **three-position**: **Off**, **Auto** (the printer itself decides whether the step is needed for the job), or **On** (always run). Models without firmware support keep the plain **Off / On** toggle. The choice is remembered per printer model, and Off/On behave exactly as before — the new Auto position only reaches a printer that advertises it.
 
 Defaults are install-wide and configurable in **Settings → Workflow → Default print options**. Per-printer overrides live on each printer's settings card. Per-job overrides on the Add-to-Queue modal trump everything.
 

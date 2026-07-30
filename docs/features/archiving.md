@@ -28,7 +28,7 @@ If the FTP fetch fails the row is still created — see [3MF download recovery](
     The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
 
 !!! note "X2D / P2S firmware TLS quirk (handled automatically)"
-    Some firmware trips over Python 3.13's default TLS 1.3 on the FTPS channel — X2D fails the implicit-FTPS handshake outright, P2S hits a session-reuse bug — which left their archive cards empty (no filament / layers / MakerWorld link / thumbnail). BamDude now caps the FTPS session to TLS 1.2 for these models so the 3MF download at print start connects and the archive populates. No configuration needed.
+    Some firmware trips over modern Python's default TLS 1.3 on the FTPS channel — X2D fails the implicit-FTPS handshake outright, P2S hits a session-reuse bug — which left their archive cards empty (no filament / layers / MakerWorld link / thumbnail). BamDude now caps the FTPS session to TLS 1.2 for these models so the 3MF download at print start connects and the archive populates. No configuration needed.
 
 ---
 
@@ -50,11 +50,12 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     | Field | Description |
     |-------|-------------|
     | `print_name` | Slicer-set print name. |
-    | `filament_type`, `filament_color` | Primary filament for the print. |
+    | `filament_type`, `filament_color` | Primary filament(s) for the print. **Colour** prefers the inventory spool loaded on each AMS slot (per slot), falling back to the sliced colour for any slot without an assigned spool. |
     | `filament_used_grams` | Total grams the slicer estimated. |
     | `layer_height`, `total_layers` | Layer geometry. |
     | `nozzle_diameter`, `nozzle_temperature`, `bed_temperature` | Hotend / bed setpoints. |
-    | `print_time_seconds` | Slicer's estimate; the actual duration lives in `started_at` / `completed_at`. |
+    | `print_time_seconds` | Slicer's estimate. |
+    | `actual_time_seconds`, `time_accuracy` | Real duration (`completed_at − started_at`) and the estimate-vs-actual accuracy %, recorded on completed prints and backfilled for history. |
     | `sliced_for_model` | Printer model the 3MF was sliced for, extracted from project metadata. |
     | `makerworld_url`, `designer` | Auto-extracted from the 3MF when present. |
 

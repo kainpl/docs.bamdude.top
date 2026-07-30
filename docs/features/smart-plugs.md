@@ -201,9 +201,19 @@ When power / energy live on a separate URL or path:
 | **Power URL** | URL returning current watts (omit to share Status URL) |
 | **Power path** | JSON path to power value (e.g. `data.power_w`) |
 | **Power multiplier** | Unit fix (e.g. `0.001` if API returns mW) |
-| **Energy URL** | URL returning lifetime kWh |
-| **Energy path** | JSON path to energy value |
+| **Energy URL** | URL returning the energy figures |
+| **Energy path** | JSON path to the **daily** ("today") kWh value |
 | **Energy multiplier** | Unit fix |
+| **Lifetime Energy path** | JSON path to the **cumulative** kWh counter, if the plug reports one |
+| **Lifetime multiplier** | Unit fix for the cumulative counter |
+
+!!! important "Fill in the Lifetime Energy path if your plug has one"
+    The two energy paths are separate because a given endpoint may expose either, both, or neither — and they are **not interchangeable**. Anything that spans time needs a counter that only goes up:
+
+    - **Energy per print** (and its cost, on the archive card) is the difference between the counter at print start and at print end.
+    - **Date-range energy** on the Stats page is the difference between hourly snapshots of that counter.
+
+    A daily figure resets at midnight, so it can't answer either. Before 0.4.7b4 BamDude filed whatever a REST plug returned under "today" and never had a cumulative value at all — which is why REST plugs showed no per-print energy and a blank figure for any date range. Fill in the Lifetime Energy path and both start working; the daily path is optional and only feeds the live "today" reading.
 
 ### Examples
 
@@ -334,9 +344,20 @@ Click the plug icon in the **sidebar footer** to open the global switchbar — e
 
 ## :material-robot: Automation
 
+### Which plug powers the printer
+
+A printer can have several plugs linked to it: its own mains feed plus accessories — a chamber filter, enclosure lights, a filament dryer. The **"This plug powers the printer"** switch (under Link to Printer) tells BamDude which is which.
+
+It's **on by default**, so nothing changes for a setup that has one plug per printer. Turn it off on accessories, because only the plug that's marked as the power source:
+
+- **marks the printer offline** when it's switched off. An accessory doing that used to blank the printer's state and stop the queue from sending it work, even though the printer was running fine.
+- **gets switched on** to wake the printer for a queued print. Powering up a filter fan would never bring the printer online, and the queue would sit waiting for a connection that can't happen.
+
+Accessory plugs still switch on and off normally, and still report power and energy — they just don't speak for the printer's state.
+
 ### Auto Power On
 
-When a queued print is ready, BamDude turns on the plug, waits for the printer to boot, then starts the print.
+When a queued print is ready, BamDude turns on the plug that powers the printer, waits for it to boot, then starts the print.
 
 ### Auto Power Off
 

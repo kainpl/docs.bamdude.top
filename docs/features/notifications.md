@@ -94,6 +94,16 @@ Per-user push service with native iOS/Android apps and on-device priority escala
 
 Pushover priority maps to numeric levels `-2…+2` per event in BamDude — same idea as ntfy but with the Pushover scale.
 
+!!! info "Priority 2 (Emergency) needs two extra fields"
+    Pushover *mandates* a retry interval and an expiry for Emergency alerts — they re-alert until you acknowledge them, so it refuses any priority-2 message that doesn't say how often and for how long. Set **Priority** to `2` and two fields appear:
+
+    | Field | Meaning | Default |
+    |---|---|---|
+    | **Emergency Retry (s)** | How often Pushover re-alerts | 60 s (min 30 s) |
+    | **Emergency Expire (s)** | When it gives up | 3600 s (max 10800 s) |
+
+    They're only sent at priority 2 — Pushover ignores them at every other level. Before 0.4.7b4 BamDude never sent them at all, so setting a provider to Emergency made every notification fail.
+
 ### SMTP / Gmail
 
 Plain SMTP — works with any provider that exposes username + password auth.

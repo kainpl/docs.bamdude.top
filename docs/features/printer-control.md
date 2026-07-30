@@ -64,7 +64,7 @@ GET  /api/v1/printers/{id}/print/objects     → list objects with skip status
 POST /api/v1/printers/{id}/print/skip-objects → skip selected IDs
 ```
 
-The list comes from the active 3MF (`subtask_name`). If the in-memory object list is empty (e.g. after a backend restart), pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
+The list comes from the active 3MF (`subtask_name`), read from the G-code's own `; model label id:` header where present — that is the list the firmware works from, and it names every copy on the plate. `slice_info.config` is only the last fallback: newer OrcaSlicer records just the original there when a plate holds several copies of one model. If the in-memory object list is empty (e.g. after a backend restart), pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
 
 !!! warning "Wait for layer 2"
     The printer firmware refuses skip commands until the first layer is laid down. The skip modal shows a yellow banner on layer 0/1.
@@ -97,53 +97,68 @@ Accepted printer states: `FINISH`, `FAILED`, **`IDLE`**. The IDLE case covers Au
 
 A per-printer dialog that mirrors **Bambu Studio → Print Options + Printer Parts**. Open it from the kebab :material-dots-vertical: menu on a printer card → **Printer Settings**.
 
-Two tabs:
+Four tabs:
 
-- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery.
+- **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery. Gated to exactly what the printer reports it supports (see [Visibility](#visibility-what-shows-up-depends-on-the-printer)).
+- **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, mirroring BS's Safety Options dialog. Only appears on models that expose safety options.
 - **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
+- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view. See the [Add-ons tab](#add-ons) section below.
 
 ### Print Options — what's there
 
 | Group | Setting | Values | MQTT |
 |---|---|---|---|
-| AI detections | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
-| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
-| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
-| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| AI detections | AI monitoring (legacy toggle) | On/Off + Low/Medium/High | `xcam_control_set` (`printing_monitor`) |
+| | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`pileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`clump_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprint_detector`) |
 | | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
-| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
 | Sensors | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
-| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`model_movement_check`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
-| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
-| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
-| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| | Nozzle-blob detect (legacy) | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-clumping (smart, 3-mode) | Auto / On / Off | `print_option` (`nozzle_blob_detect_v2`) |
+| | Air-print detection (sensor) | On/Off | `print_option` (`air_print_detect`) |
+| Plate | Build-plate position detection (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
 | Chamber | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
-| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
 | Misc | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
 | | Prompt sound | On/Off | `print_option` (`sound_enable`) |
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
-| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+| | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
+
+A few options are mutually exclusive (BS parity), so you only ever see one of each pair: the legacy **build-plate position** toggle vs the newer **marker + alignment** group; the legacy **nozzle-blob** on/off vs the smart **3-mode nozzle-clumping** switch; and the legacy **AI monitoring** toggle vs the newer per-type AI detections (spaghetti / pile-up / clumping / air-print). The `xcam_control_set` module names above are the firmware's own wire names — several differ from BamDude's internal keys, and are mapped on the way out so the toggles actually apply. **Open Door Detection** used to live here; it now sits in the **Safety** tab on X2D / P2S (and stays in Print Options for the X1 family) — see below.
 
 ### Visibility — what shows up depends on the printer
 
-Per-model capability gating, same idea as the [AMS Settings dialog](ams.md#ams-settings-dialog). Rows whose capability is `false` are hidden entirely — no point showing **AI monitoring** on a P1S or **Purify air** on a non-H2D Pro.
+Each row shows **only if the printer reports it supports that option** — resolved the same way Bambu Studio does, from the live capability flags in the MQTT push (`fun` / `fun2` / `cfg` / `home_flag` bitfields, the `xcam` message, and the `support_*` booleans), not from a hardcoded per-model table. So the list matches the printer — and BS — on every model, and stays correct as firmware evolves.
 
-| Group | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
-|---|---|---|---|---|---|
-| AI detections (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | yes | — | — | yes | yes |
-| FOD + displacement | yes | — | — | yes | yes |
-| Open-door check | yes | yes | — | yes | yes |
-| Purify air | — | — | — | — | **yes** (only H2D Pro) |
-| Filament tangle | yes | yes | yes | yes | yes |
-| Nozzle blob | yes | yes | — | yes | yes |
-| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | all models | | | | |
+In practice this means, for example:
+
+- The **AI detections** (spaghetti, pile-up, nozzle-clumping, air-printing) appear on camera-AI machines that advertise them via the `fun` bits — the X2D and H2 family — and are correctly absent on the P1 / A1 series (which report no `xcam.cfg`, so they have no AI at all).
+- **Foreign-object** and **displacement** detection follow the same `fun2` support bits.
+- **Filament tangle**, **nozzle blob** and **notification sounds** come from `home_flag` bits, so they show on whichever models actually expose them (e.g. the A1 mini reports tangle + blob; the P1S doesn't).
+- **Store sent files on external storage** shows only where the firmware advertises the feature (X2D), and is hidden on printers that have storage but don't expose it (P1S).
+- **Purify air** follows its `fun2` bit; **Open Door Detection** follows `fun` bit 12 and the model's `support_safety_options` config (Print Options for the X1 family, the Safety tab for X2D / P2S).
+
+If a printer hasn't sent its full status yet (the first moment after connecting), BamDude falls back to a conservative per-family guess until the real flags arrive.
 
 ### State source of truth — the printer
 
-BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT `print.print_option` push echoes. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+BamDude does **not** persist a "desired state" on its side. The state shown in the dialog comes from the printer's MQTT status push. When you toggle a row, BamDude publishes the matching MQTT command and starts a 3-second hold (`printer_settings_hold` per-key) so the row doesn't flicker between optimistic and confirmed values — same pattern as the AMS Settings dialog.
+
+Because that MQTT round-trip takes a moment, the control you touched **freezes and shows a small "waiting for confirmation" spinner** until the printer confirms, then the value refreshes **in the open dialog** — it never closes and reopens. You can't fire the same toggle repeatedly while it's still applying.
 
 If the printer drops a setting (factory reset, firmware-update wipe), BamDude reflects that — there's no reconciliation. Open the dialog again and re-toggle.
+
+### Safety tab (X2D / P2S)
+
+Printers that advertise `support_safety_options` (currently the X2D and P2S) get a **Safety** tab next to Print Options, mirroring BS's Safety Options dialog:
+
+- **Open Door Detection** — what the printer does when the enclosure door opens mid-print: **Off** / **Notification** / **Pause printing**. Read from `cfg` bits 20-21, written via the `system` `set_door_stat` command. On these models the control lives here instead of in Print Options.
+- **Idle Heating Protection** — automatically stops heating after 5 minutes of idle. Read from `cfg` bits 32-33 (a third "unavailable" state greys the toggle while the printer's heating-maintenance function is active), written via `set_against_continued_heating_mode`.
 
 ### Permissions and audit
 
@@ -151,8 +166,39 @@ The kebab item only appears for users with the `printers:update` permission. The
 
 Every applied change writes one row to the `printer_setting_audit` table (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. No in-UI viewer yet; query the table directly if you need to answer "who turned spaghetti-detection off last Thursday?"
 
-!!! info "Calibration stays separate"
-    Calibrate Belt / Nozzle Offset / Resonance Test still live under their own kebab entry **Calibration** — they're not toggles, they're long-running routines. Phase-2 may merge them; phase-1 keeps them distinct.
+!!! info "On-device calibration is separate"
+    Bed leveling, resonance, motor noise and the other machine self-calibration routines aren't print-option toggles — they're long-running on-device routines under their own kebab entry **Calibration**, documented next.
+
+---
+
+## :material-tune-variant: Device Calibration
+
+The printer's own **on-device** self-calibration routines — bed leveling, resonance/vibration, motor noise, and, on newer hardware, nozzle offset, high-temp bed leveling, micro-lidar and nozzle-clumping detection. This is the same set Bambu Studio exposes under **Device → Calibration**: not filament tuning (that's the wizard below), but the machine's own calibration steps that run on the printer with no sliced g-code involved.
+
+Open it from the kebab :material-dots-vertical: menu on a printer card → **Calibration**.
+
+### What's available depends on the model
+
+BamDude shows only the calibrations your specific printer model **and** firmware actually support — resolved exactly like Bambu Studio:
+
+| Calibration | Typically available on |
+|---|---|
+| Auto Bed Leveling | almost every model |
+| Vibration Compensation | every model |
+| Motor Noise Cancellation | read live from the printer (P1S, A1 series, X2D, …) |
+| Nozzle Offset | dual-nozzle / X2D / H2 series |
+| High-Temp Bed Leveling | X2D / H2 series / P2S / A2L |
+| Micro Lidar | X1 series |
+| Nozzle Clumping Detection | P2S / H2S |
+
+The availability isn't a hand-maintained table. BamDude merges two sources — **hybrid gating**, mirroring Bambu Studio:
+
+1. **Base defaults** — byte-for-byte copies of Bambu Studio's own per-model config files (`resources/printers/<model>.json`), shipped under `backend/app/data/printers/`. Re-syncing them is a folder re-copy + `git diff` against a fresh Bambu Studio checkout.
+2. **Live capability flags** — the printer's own MQTT status flags, which override the defaults. **Motor Noise Cancellation** in particular is a *live* signal, not a static per-model flag: some machines advertise it in the `home_flag` bitfield (P1 / X1 series), others in the `fun` bitfield (H2 / X2 series), so BamDude surfaces it wherever the printer reports it — exactly as Bambu Studio does.
+
+### Live progress
+
+Pick the steps you want and press **Start Calibration**. The dialog then stays open and shows the printer's own **stage-by-stage progress** live — the same stage list Bambu Studio renders — each step ticking from pending → running → done until the routine completes.
 
 ---
 
@@ -247,13 +293,14 @@ Two sections side by side:
 Move the build plate up or down by a fixed step.
 
 ```
-POST /api/v1/printers/{id}/bed-jog?distance=N[&force=true]
+POST /api/v1/printers/{id}/bed-jog?distance=N
 ```
 
 | Param | Validation |
 |-------|------------|
 | `distance` | Non-zero, `|distance| <= 200` mm |
-| `force` | If `true`, wraps the move in `M211 S0` … `M211 S1` to bypass soft endstops |
+
+The `force` parameter was removed in 0.4.7. It wrapped the move in `M211 S0` … `M211 S1` — a command form that does not exist in Bambu's firmware dialect (there, bare `M211 S` means *push* the endstop state and `M211 R` means *pop* it), and the UI sent it on every jog, so every manual move ran without the soft endstops being explicitly enabled. A stray `?force=true` from an old client is ignored.
 
 Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is **not** running a print.
 
@@ -264,18 +311,35 @@ Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is
 | Normal | `G91` → `G1 ZN F600` → `G90` |
 | Force | `M211 S0` → `G91` → `G1 ZN F600` → `G90` → `M211 S1` |
 
+### G-code sent
+
+Byte-for-byte what Bambu Studio's own jog sends over the same MQTT `gcode_line` channel (`DevAxis::Ctrl_Axis`):
+
+```
+M211 S              ; remember the current soft-endstop state
+M211 X1 Y1 Z1       ; explicitly ENABLE all three
+M1002 push_ref_mode
+G91
+G1 ZN F600
+M1002 pop_ref_mode
+M211 R              ; restore the remembered state
+```
+
+Enabling the endstops is the point: Bambu's own sliced start G-code turns them **off** (the A1 machine template ends with `M211 X0 Y0 Z0` and never restores it; H2D re-enables only `M211 Z1`), so a printer sitting idle after a print usually has them disabled. Bambu Studio re-enables them before every manual move for exactly this reason.
+
 ### Not-homed warning
 
 After a print completes, the Z axis usually isn't referenced. The first jog click in a session shows a Bambu-Studio-style modal:
 
 | Choice | Action |
 |--------|--------|
-| **Home Z** | Sends `G28 Z` and dismisses the dialog — re-click jog after homing |
-| **Move anyway** | Calls `bed-jog` with `force=true` (single-move soft-endstop bypass) and remembers the choice for the rest of the browser session |
+| **Auto Home** | Runs the printer's full auto-home sequence and dismisses the dialog. On success, jogging works for the rest of the browser session |
 | **Cancel** | Closes the dialog, no command sent |
 
-!!! warning "Soft-endstop bypass"
-    `force=true` disables soft limits for one move only. Keep distances small (≤10 mm) until the plate is in a known-safe position — the firmware still enforces hard physical limits, but it's on you to make sure the commanded move is sane.
+The **Move anyway** button was removed in 0.4.7 — it was the path that drove the plate with the soft endstops bypassed. Bambu Studio refuses a manual move outright while the axis is not homed (`check_axis_z_at_home`), and BamDude now does the same: home first, then jog.
+
+!!! warning "Travel limits are not guaranteed"
+    BamDude enables the soft endstops before every jog, but Bambu firmware has been observed running a move past the limit anyway, and it reports no axis position — so the move cannot be clamped client-side either. Keep distances small (≤10 mm) until the plate is in a known-safe position and watch the printer.
 
 ---
 
@@ -394,6 +458,9 @@ The card swaps its connection badge for an amber **Maintenance** pill (:material
 
 !!! info "Not the Maintenance Tracker"
     This is a *service state* for the whole printer. It's unrelated to the [Maintenance](maintenance.md) tracker, which logs rod / nozzle / belt jobs against usage hours: one parks the machine, the other reminds you when a part is due.
+
+!!! info "Retiring for good? Archive instead"
+    Maintenance Mode only parks a printer temporarily and keeps its card visible. To *retire* a printer — sold, decommissioned — [Archive](archived-printers.md) it instead: the card is hidden everywhere while its print history is kept.
 
 ---
 

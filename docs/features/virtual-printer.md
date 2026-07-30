@@ -44,11 +44,19 @@ How it works (operator-relevant subset):
 
 - BamDude's existing per-printer MQTT subscription is reused — no second session on the printer, so firmware in-flight budget is unaffected.
 - The VP caches the printer's last `push_status` and `info.get_version` and serves a near-byte-identical copy to the slicer. Only the upload-state fields BamDude owns (`gcode_state`, `gcode_file`, `prepare_percent`, `subtask_name`) are overridden.
+- **The slicer's Device tab shows the target printer's live print progress** — current stage, percentage, layer count and time remaining — so you can watch a running job from the slicer you sent it from. The **Send button stays enabled the whole time**, so you can queue the next job while the current one prints. See the note below for why that combination needs a small deception.
 - Slicer-issued commands (AMS load / unload, xcam toggles, `extrusion_cali_get` k-profile fetches, …) are forwarded to the real printer. `project_file` / `gcode_file` still terminate locally — the file lives on BamDude.
 - Camera streaming uses a raw TCP passthrough on `<bind_ip>:322` → `printer:322` (same approach proxy mode uses).
 
 !!! warning "Same access code on the VP and its target"
     BambuStudio authenticates RTSPS with whatever access code is in its slicer profile — the VP and its target printer must share the same access code, or the camera button will hit "LAN connection failed". MQTT and FTPS work either way. Set both via **Settings → Virtual Printer → Edit** and **Settings → Printers → Edit**.
+
+!!! note "Why the slicer says ‘Finished’ while showing progress"
+    Bambu Studio and OrcaSlicer gate **both** the Device-tab progress panel **and** the Send button on the same internal check — "is this printer printing?". Reporting the target printer's real state verbatim would show you the progress at the cost of a greyed-out Send button for the entire print, which defeats the point of a non-proxy VP.
+
+    `Finished` is the one state that renders the progress panel while leaving Send enabled, so the VP reports that and fills in the real numbers underneath it. The status word in the slicer is therefore not meaningful while a mirrored print runs — read the percentage, layer and time instead, or BamDude's own printer card.
+
+    Two things pause the mirror by design: while your own upload is being handed over (and for a few seconds after, so the send handshake isn't disturbed), and whenever the target printer isn't actually printing. Printer errors are never mirrored either — a fault raises a pop-up dialog in the slicer, and the VP isn't the machine that threw it, so BamDude reports it on the printer card instead.
 
 !!! info "Proxy mode unaffected"
     Proxy mode owns its own RTSP / FTP / MQTT proxies and routes everything end-to-end at the TCP layer — there's no caching layer to mirror. The behaviour described above is opt-in for the three non-proxy modes only.

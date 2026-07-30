@@ -15,7 +15,7 @@ The header bar shows four lifetime counters:
 |---|---|
 | **Prints completed** | `print_archives` rows with `status='completed'`. |
 | **Filament consumed** | Sum of `filament_used_grams` across all archives in range (not just completed), grouped by material/colour. Failed / cancelled prints contribute the filament **actually** extruded, not the full slicer estimate, so the total matches what inventory was deducted. |
-| **Print time** | Sum of `print_time_seconds`. |
+| **Print time** | Measured, not estimated: for each archive with both a start and an end timestamp it's the elapsed time between them, and only archives missing one falls back to the slicer's `print_time_seconds`. A print BamDude had to recover after a disconnect is credited with its *expected* duration rather than the whole offline gap — otherwise a weekend outage would add days of phantom print time. |
 | **Energy used** | Sum of `energy_kwh` (the per-print delta the dispatcher computed at completion) over completed archives that had a smart-plug bound at print start. Falls back to a ranged sum from `smart_plug_energy_snapshots` when individual-print captures are missing. |
 
 Each KPI also shows the matching cost when `default_filament_cost` and `energy_cost_per_kwh` are configured under Settings → System.
@@ -105,7 +105,7 @@ Layout is **persisted per-user** in the backend, so the same login on a differen
 | **Filament by Type** | Pie chart of material distribution (PLA / PETG / ABS / ...). Click segments to filter. |
 | **Print Activity Calendar** | GitHub-style heatmap, daily print count, click any day to drill into that day's archives. |
 | **Print Duration Distribution** | Bucket bar chart: `<30m`, `30m–1h`, `1–2h`, `2–4h`, `4–8h`, `8–12h`, `12–24h`, `24h+`. Surfaces your typical print length. |
-| **Time Accuracy** | Predicted-vs-actual print times. Per-printer averages and trend — answers "is calibration drifting?" |
+| **Time Accuracy** | Predicted-vs-actual print times. Per-printer averages and trend — answers "is calibration drifting?" Prints that BamDude had to recover after a disconnect are excluded: their end time is reconstructed from the estimate, so they'd score a perfect 100% nobody measured. |
 | **Printer Utilization** | Hours of active printing per printer; idle-time percentage. |
 | **Recent Activity** | Feed of the last 10 completed prints; click to open the archive card. |
 | **Quick Stats** | KPI tiles (prints, filament, time, cost, energy) for the active range. |

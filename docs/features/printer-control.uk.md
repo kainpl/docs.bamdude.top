@@ -64,7 +64,7 @@ GET  /api/v1/printers/{id}/print/objects     → список об'єктів з
 POST /api/v1/printers/{id}/print/skip-objects → скіпнути обрані ID
 ```
 
-Список береться з активного 3MF (`subtask_name`). Якщо in-memory object list порожній (наприклад, після backend restart), передайте `?reload=true` — і BamDude витягне 3MF з принтерного FTP та переспасить його. Підтримує кілька варіантів імен (`{name}.3mf`, `{name}.gcode.3mf`, з пробілами і underscored).
+Список береться з активного 3MF (`subtask_name`) — із заголовка `; model label id:` у самому G-code, де він є: це той перелік, яким користується прошивка, і він називає кожну копію на плиті. `slice_info.config` лишається останнім запасним варіантом: новіший OrcaSlicer записує туди лише оригінал, коли на плиті кілька копій однієї моделі. Якщо in-memory object list порожній (наприклад, після backend restart), передайте `?reload=true` — і BamDude витягне 3MF з принтерного FTP та переспасить його. Підтримує кілька варіантів імен (`{name}.3mf`, `{name}.gcode.3mf`, з пробілами і underscored).
 
 !!! warning "Зачекайте до layer 2"
     Прошивка принтера відмовляє у skip-командах, поки не покладено перший шар. Skip-modal показує жовтий банер на layer 0/1.
@@ -97,53 +97,68 @@ POST /api/v1/printers/{id}/clear-plate
 
 Per-printer діалог, який віддзеркалює **Bambu Studio → Print Options + Printer Parts**. Відкрий його з kebab :material-dots-vertical: меню на картці принтера → **Printer Settings**.
 
-Дві вкладки:
+Чотири вкладки:
 
-- **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery.
+- **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery. Показуються рівно ті, що принтер реально підтримує (див. [Видимість](#видимість-що-відображається-залежно-від-принтера)).
+- **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, віддзеркалює діалог Safety Options у BS. З'являється лише на моделях із safety-опціями.
 - **Printer Parts** — read-only вид встановлених сопел (тип, діаметр, тип потоку). Редагування parts на принтері залишене на наступну фазу; зараз API повертає `409 parts_not_editable` на спроби запису.
+- **Add-ons** — сам принтер + усі під'єднані аксесуари (AMS, filament buffer, exhaust fan, …), віддзеркалює вид Update Device у BS. Див. секцію [Add-ons](#add-ons) нижче.
 
 ### Print Options — що там є
 
 | Група | Налаштування | Значення | MQTT |
 |---|---|---|---|
-| AI-детекції | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
-| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`purgechutepileup_detector`) |
-| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`nozzleclumping_detector`) |
-| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprinting_detector`) |
+| AI-детекції | AI monitoring (legacy тогл) | On/Off + Low/Medium/High | `xcam_control_set` (`printing_monitor`) |
+| | Spaghetti detector | On/Off + Low/Medium/High | `xcam_control_set` (`spaghetti_detector`) |
+| | Pile-up at purge chute | On/Off + Low/Medium/High | `xcam_control_set` (`pileup_detector`) |
+| | Nozzle-clumping | On/Off + Low/Medium/High | `xcam_control_set` (`clump_detector`) |
+| | Air-printing | On/Off + Low/Medium/High | `xcam_control_set` (`airprint_detector`) |
 | | First-layer inspector | On/Off | `xcam_control_set` (`first_layer_inspector`) |
-| | AI monitoring (general) | On/Off | `xcam_control_set` (`ai_monitoring`) |
 | Сенсори | FOD check (foreign-object) | On/Off | `xcam_control_set` (`fod_check`) |
-| | Displacement detection | On/Off | `xcam_control_set` (`displacement_detection`) |
+| | Displacement detection | On/Off | `xcam_control_set` (`model_movement_check`) |
 | | Filament tangle detect | On/Off | `print_option` (`filament_tangle_detect`) |
-| | Nozzle-blob detect | On/Off | `print_option` (`nozzle_blob_detect`) |
-| Plate | Build-plate marker detect | On/Off | `print_option` (`build_plate_marker_detect`) |
-| | Plate alignment check | On/Off | `print_option` (`plate_align_check`) |
+| | Nozzle-blob detect (legacy) | On/Off | `print_option` (`nozzle_blob_detect`) |
+| | Nozzle-clumping (smart, 3-mode) | Auto / On / Off | `print_option` (`nozzle_blob_detect_v2`) |
+| | Air-print detection (sensor) | On/Off | `print_option` (`air_print_detect`) |
+| Plate | Виявлення позиції платформи (legacy) | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Build-plate marker/type detect | On/Off | `xcam_control_set` (`buildplate_marker_detector`) |
+| | Plate alignment check | On/Off | `xcam_control_set` (`plate_offset_switch`) |
 | Камера | Purify air at print end | Off / Inside / Outside | `print_option` (`air_purification`) |
-| | Open-door check | Off / Pause / Halt | `print_option` (`xcam_door_open_check`) |
 | Інше | Auto recovery on step loss | On/Off | `print_option` (`auto_recovery`) |
 | | Prompt sound | On/Off | `print_option` (`sound_enable`) |
 | | Camera snapshot enable | On/Off | `ipcam_cap_pic_set` |
-| | Save remote print to storage | On/Off | `print_option` (`xcam__save_remote_print_file_to_storage`) |
+| | Store sent files on external storage | On/Off | `system` (`print_cache_set`) |
+
+Кілька опцій взаємовиключні (як у BS), тож із кожної пари бачиш лише одну: legacy-тогл **позиції платформи** проти новішої групи **marker + alignment**; legacy **nozzle-blob** on/off проти smart **3-режимного nozzle-clumping**; і legacy **AI monitoring** тогл проти новіших per-type AI-детекцій (spaghetti / pile-up / clumping / air-print). Module-імена в колонці `xcam_control_set` — це власні wire-імена прошивки; кілька відрізняються від внутрішніх ключів BamDude і мапляться на виході, щоб тогли реально застосовувались. **Open Door Detection** раніше був тут; тепер він у вкладці **Safety** на X2D / P2S (і лишається в Print Options для X1-родини) — див. нижче.
 
 ### Видимість — що відображається залежно від принтера
 
-Per-model capability gating, та сама ідея, що й у [діалозі налаштувань AMS](ams.md#діалог-налаштувань-ams). Рядки з `false`-capability приховуються повністю — нема сенсу показувати **AI monitoring** на P1S чи **Purify air** на non-H2D Pro.
+Кожен рядок показується **лише якщо принтер рапортує, що підтримує цю опцію** — визначається так само, як у Bambu Studio, з живих capability-флагів у MQTT-push (бітфілди `fun` / `fun2` / `cfg` / `home_flag`, повідомлення `xcam`, та `support_*`-булки), а не з хардкод-таблиці по моделях. Тож список збігається з принтером — і з BS — на кожній моделі, і лишається коректним із розвитком прошивок.
 
-| Група | X1 family | P1 / P2 / X2D | A1 / A1 Mini | H2D family | H2D Pro |
-|---|---|---|---|---|---|
-| AI-детекції (spaghetti / pile-up / clumping / air-print / first-layer / monitoring) | так | — | — | так | так |
-| FOD + displacement | так | — | — | так | так |
-| Open-door check | так | так | — | так | так |
-| Purify air | — | — | — | — | **так** (тільки H2D Pro) |
-| Filament tangle | так | так | так | так | так |
-| Nozzle blob | так | так | — | так | так |
-| Plate marker / alignment, sound, auto-recovery, snapshot, save-remote | усі моделі | | | | |
+На практиці, наприклад:
+
+- **AI-детекції** (spaghetti, pile-up, nozzle-clumping, air-printing) з'являються на camera-AI машинах, що рапортують їх через `fun`-біти — X2D і H2-родина — і коректно відсутні на P1 / A1 серіях (вони не шлють `xcam.cfg`, тож AI в них немає взагалі).
+- **Foreign-object** і **displacement** йдуть за тими ж `fun2`-support-бітами.
+- **Filament tangle**, **nozzle blob** і **notification sounds** беруться з `home_flag`-бітів, тож показуються там, де моделі їх реально мають (напр. A1 mini рапортує tangle + blob; P1S — ні).
+- **Store sent files on external storage** показується лише де прошивка оголошує фічу (X2D), і сховане на принтерах, що мають сховище, але фічу не оголошують (P1S).
+- **Purify air** йде за своїм `fun2`-бітом; **Open Door Detection** — за `fun` біт 12 та конфігом `support_safety_options` (Print Options для X1-родини, вкладка Safety для X2D / P2S).
+
+Якщо принтер ще не надіслав повний статус (перша мить після підключення) — BamDude падає на консервативний per-family здогад, поки не прийдуть реальні флаги.
 
 ### Джерело правди — принтер
 
-BamDude **не** зберігає "desired state" на своєму боці. Стан у діалозі читається з MQTT-push принтера (`print.print_option` echoes). При тогл-у — BamDude публікує відповідну MQTT-команду і починає 3-секундний hold (`printer_settings_hold` per-key), щоб рядок не миготів між optimistic і підтвердженим значенням — той самий патерн, що й у AMS Settings dialog.
+BamDude **не** зберігає "desired state" на своєму боці. Стан у діалозі читається з MQTT-push принтера. При тогл-у — BamDude публікує відповідну MQTT-команду і починає 3-секундний hold (`printer_settings_hold` per-key), щоб рядок не миготів між optimistic і підтвердженим значенням — той самий патерн, що й у AMS Settings dialog.
+
+Оскільки цей MQTT round-trip займає мить, контрол, який ти торкнувся, **замерзає і показує маленьку крутілочку «очікуємо підтвердження»**, доки принтер не підтвердить, а тоді значення оновлюється **у відкритому діалозі** — він не закривається й не відкривається заново. Повторно клацати той самий тогл, поки він застосовується, не можна.
 
 Якщо принтер втратив налаштування (factory reset, firmware-update wipe) — BamDude це відобразить. Reconciliation немає. Відкрий діалог знову і перетогль.
+
+### Вкладка Safety (X2D / P2S)
+
+Принтери, що оголошують `support_safety_options` (наразі X2D і P2S), отримують вкладку **Safety** поруч із Print Options, віддзеркалюючи діалог Safety Options у BS:
+
+- **Open Door Detection** — що робить принтер, коли дверцята корпусу відкривають під час друку: **Off** / **Notification** / **Pause printing**. Читається з `cfg` бітів 20-21, пишеться командою `system` `set_door_stat`. На цих моделях контрол тут, а не в Print Options.
+- **Idle Heating Protection** — автоматично припиняє нагрів після 5 хв простою. Читається з `cfg` бітів 32-33 (третій стан «недоступно» робить тогл сірим, поки активна функція обслуговування нагріву принтера), пишеться через `set_against_continued_heating_mode`.
 
 ### Дозволи й аудит
 
@@ -151,8 +166,39 @@ Kebab-пункт з'являється тільки для користувач�
 
 Кожна застосована зміна пише рядок у таблицю `printer_setting_audit` (m061) — `(printer_id, user_id, tab, action, payload_json, sequence_id, result, error_message, created_at)`. UI-viewer-а поки немає; query напряму, якщо треба відповісти "хто вимкнув spaghetti-детекцію минулого четверга?"
 
-!!! info "Calibration залишається окремо"
-    Calibrate Belt / Nozzle Offset / Resonance Test досі живуть у власному kebab-пункті **Calibration** — це не тогли, а довгі рутини. Фаза-2 може їх злити; фаза-1 тримає окремо.
+!!! info "Калібровка пристрою — окремо"
+    Калібрування столу, резонансу, шуму моторів та інші самокалібровки машини — це не тогли print-опцій, а довгі on-device рутини у власному kebab-пункті **Calibration**, описані нижче.
+
+---
+
+## :material-tune-variant: Калібровка пристрою
+
+Власні **on-device** самокалібровки принтера — калібрування столу, резонанс/вібрація, шум моторів, а на новішому залізі ще й зміщення сопел, високотемпературне калібрування столу, мікро-лідар і детекція налипання на сопло. Це той самий набір, що Bambu Studio показує в **Device → Calibration**: не підлаштування філаменту (це майстер нижче), а власні калібровочні кроки машини, що виконуються на принтері без жодного нарізаного g-code.
+
+Відкривається через kebab :material-dots-vertical: на картці принтера → **Calibration**.
+
+### Що доступно — залежить від моделі
+
+BamDude показує лише ті калібровки, які реально підтримує саме твоя модель принтера **та** прошивка — резолвиться точно як у Bambu Studio:
+
+| Калібровка | Зазвичай доступна на |
+|---|---|
+| Калібрування столу (Auto Bed Leveling) | майже кожна модель |
+| Компенсація вібрацій | кожна модель |
+| Шумозаглушення моторів | читається наживо з принтера (P1S, серія A1, X2D, …) |
+| Зміщення сопел | двосоплові / X2D / серія H2 |
+| Високотемпературне калібрування столу | X2D / серія H2 / P2S / A2L |
+| Мікро-лідар | серія X1 |
+| Детекція налипання на сопло | P2S / H2S |
+
+Доступність — не хардкодена таблиця. BamDude зливає два джерела — **гібридне гейтування**, як у Bambu Studio:
+
+1. **Базові дефолти** — байт-у-байт копії власних per-model конфіг-файлів Bambu Studio (`resources/printers/<model>.json`), що поставляються в `backend/app/data/printers/`. Ре-синк — це ре-копія папки + `git diff` проти свіжого чекауту Bambu Studio.
+2. **Живі прапори можливостей** — власні MQTT-статус-прапори принтера, що перекривають дефолти. Зокрема **Шумозаглушення моторів** — це *живий* сигнал, а не статичний per-model прапор: одні машини оголошують його в бітфілді `home_flag` (серії P1 / X1), інші — в бітфілді `fun` (серії H2 / X2), тож BamDude показує його там, де його рапортує принтер — точно як Bambu Studio.
+
+### Живий прогрес
+
+Обери потрібні кроки й натисни **Start Calibration**. Діалог лишається відкритим і показує власний **покроковий прогрес** принтера наживо — той самий список стадій, що рендерить Bambu Studio — кожен крок тікає pending → running → done, доки рутина не завершиться.
 
 ---
 
@@ -247,22 +293,32 @@ PA Tower (Phase 1), PA Pattern (Phase 2) і PA Line (Phase 9) зведені end
 Рухати plate вгору/вниз на фіксований step.
 
 ```
-POST /api/v1/printers/{id}/bed-jog?distance=N[&force=true]
+POST /api/v1/printers/{id}/bed-jog?distance=N
 ```
 
 | Param | Валідація |
 |-------|-----------|
 | `distance` | Non-zero, `|distance| <= 200` мм |
-| `force` | Якщо `true`, обгортає рух у `M211 S0` … `M211 S1`, щоб обійти soft endstops |
+
+Параметр `force` прибрано в 0.4.7. Він обгортав рух у `M211 S0` … `M211 S1` — форму команди, якої в діалекті прошивки Bambu не існує (там голе `M211 S` означає *push* стану ендстопів, а `M211 R` — *pop*), і UI слав його на **кожен** jog, тож усі ручні рухи йшли без явно увімкнених soft endstops. Випадковий `?force=true` від старого клієнта ігнорується.
 
 Step-селектор у поповері: `1 / 10 / 50 мм`. Активний лише коли принтер **не** друкує.
 
 ### G-code, що шле
 
-| Mode | Послідовність |
-|------|---------------|
-| Normal | `G91` → `G1 ZN F600` → `G90` |
-| Force | `M211 S0` → `G91` → `G1 ZN F600` → `G90` → `M211 S1` |
+Байт-у-байт те, що шле власний jog Bambu Studio тим самим MQTT-каналом `gcode_line` (`DevAxis::Ctrl_Axis`):
+
+```
+M211 S              ; запам'ятати поточний стан soft endstops
+M211 X1 Y1 Z1       ; ЯВНО увімкнути всі три
+M1002 push_ref_mode
+G91
+G1 ZN F600
+M1002 pop_ref_mode
+M211 R              ; відновити запам'ятований стан
+```
+
+Увімкнення ендстопів — це й є суть: власний нарізаний стартовий G-code Bambu їх **вимикає** (шаблон A1 закінчується `M211 X0 Y0 Z0` і назад не вмикає; H2D вмикає лише `M211 Z1`), тож принтер, який стоїть після друку, зазвичай має їх вимкненими. Саме тому Bambu Studio вмикає їх перед кожним ручним рухом.
 
 ### Not-homed warning
 
@@ -270,12 +326,13 @@ Step-селектор у поповері: `1 / 10 / 50 мм`. Активний 
 
 | Вибір | Дія |
 |-------|-----|
-| **Home Z** | Шле `G28 Z` і закриває діалог — клікніть jog знову після homing |
-| **Move anyway** | Викликає `bed-jog` з `force=true` (single-move soft-endstop bypass) і запам'ятовує вибір на решту browser-сесії |
+| **Auto Home** | Запускає повну послідовність авто-відгомлення принтера і закриває діалог. Після успіху jog працює решту browser-сесії |
 | **Cancel** | Закриває діалог, нічого не шле |
 
-!!! warning "Soft-endstop bypass"
-    `force=true` вимикає soft-limits лише на один рух. Тримайте дистанції малими (≤10 мм), доки plate не у відомо-безпечній позиції — прошивка все ще тримає hard physical limits, але це на вас слідкувати, щоб commanded-move був осмислений.
+Кнопку **Move anyway** прибрано в 0.4.7 — саме вона рухала стіл із обійденими soft endstops. Bambu Studio взагалі відмовляє в ручному русі, поки вісь не відгомлена (`check_axis_z_at_home`), і BamDude тепер робить так само: спершу homing, потім jog.
+
+!!! warning "Обмежувачі ходу не гарантовані"
+    BamDude вмикає soft endstops перед кожним jog'ом, але прошивку Bambu спостерігали за тим, як вона все одно проходить повз ліміт, і позиції осі вона не повідомляє — тож обмежити рух на боці клієнта теж неможливо. Тримайте дистанції малими (≤10 мм), доки стіл не у відомо-безпечній позиції, і стежте за принтером.
 
 ---
 
@@ -394,6 +451,9 @@ POST /api/v1/printers/{id}/refresh-status
 
 !!! info "Це не Maintenance Tracker"
     Це *сервісний стан* усього принтера. Він не пов'язаний із трекером [Maintenance](maintenance.md), що логує роботи по rod / nozzle / belt проти годин напрацювання: один паркує машину, інший нагадує, коли деталь на черзі.
+
+!!! info "Виводиш назавжди? Краще архівуй"
+    Режим обслуговування лише тимчасово паркує принтер і лишає його картку видимою. Щоб *вивести* принтер у відставку — продано, списано — [Архівуй](archived-printers.md) його: картка ховається всюди, а історія друку зберігається.
 
 ---
 

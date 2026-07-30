@@ -1,116 +1,119 @@
 ---
 title: Tailscale (private tailnet) integration
-description: Advertise virtual printers on your Tailnet with auto-rotated Let's Encrypt certs and tailnet-FQDN SSDP, so remote slicers reach BamDude securely without VPN gymnastics
+description: Show a virtual printer's tailnet address so a slicer off your LAN can reach it — no port-forward, no VPN gymnastics
 ---
 
 # Tailscale integration
 
-BamDude can advertise its [virtual printers](virtual-printer.md) over a private [Tailscale](https://tailscale.com/) network instead of (or alongside) the LAN. Every VP gets a real Let's Encrypt cert tied to its `*.tailnet-name.ts.net` FQDN, the SSDP advertisement uses that FQDN, and remote slicers — Bambu Studio / OrcaSlicer running on a phone or laptop somewhere on the Tailnet — discover the VP exactly like they would on the local network. No port-forward, no extra VPN client, no manual cert juggling.
+BamDude can surface a [virtual printer](virtual-printer.md)'s **tailnet address** — its `100.x.x.x` IP and MagicDNS name — so a slicer running somewhere else on your [Tailscale](https://tailscale.com/) network can connect to it. No port-forward, no extra VPN client, no exposing anything to the public internet.
 
-This is **opt-in per VP**: existing setups keep advertising on LAN by default, and the tailnet flow is enabled only for VPs you explicitly mark.
+This is **opt-in per VP**, and it is purely a display of the address to paste into your slicer. It does not change how the VP is secured.
 
 ---
 
 ## :material-lan-disconnect: When this matters
 
-The shipped alternative — [VP `proxy` mode](virtual-printer.md#modes) — works for remote printing too, but funnels every byte through BamDude's own TCP relay. Tailscale's wire-level mesh is faster (direct peer-to-peer when possible, DERP-relayed otherwise), zero-config from the slicer side, and lets the slicer think it's talking to a regular Bambu printer.
+The shipped alternative — [VP `proxy` mode](virtual-printer.md#modes) — works for remote printing too, but funnels every byte through BamDude's own TCP relay. Tailscale's wire-level mesh is faster (direct peer-to-peer when possible, DERP-relayed otherwise) and lets the slicer talk to the VP as if it were on the same LAN.
 
 | Scenario | Recommended path |
 |---|---|
 | Slicing on a laptop on the same LAN as BamDude | Plain VP, no Tailscale needed. |
-| Slicing on a laptop / phone *off-network* (cafe, on holiday) | Tailscale per-VP. |
+| Slicing on a laptop / phone *off-network* (cafe, on holiday) | Tailscale. |
 | Slicing from a CI / GitHub Actions runner | VP `proxy` mode (Tailscale on a VM is overkill). |
 | Multi-tenant cloud → BamDude bridge | VP `proxy` mode + your existing TLS. |
 
-Tailscale shines specifically when **the slicer-running machine is already on Tailscale anyway** and you want it to "just see" the printer.
+Tailscale shines specifically when **the slicer-running machine is already on Tailscale anyway** and you want it to reach the printer directly.
 
 ---
 
 ## :material-package-variant: Prerequisites
 
-1. **Tailscale daemon on the BamDude host.** Native installs: install [tailscaled](https://tailscale.com/kb/1031/install-linux) and `tailscale up`. Docker installs need **two** bind-mounts (the BamDude image bundles neither — see Caveats below):
+1. **Tailscale daemon on the BamDude host.** BamDude never runs `tailscaled` itself — it reads the host's. Install [tailscaled](https://tailscale.com/kb/1031/install-linux) and run `tailscale up`.
+
+2. **Docker only: mount the daemon socket.** The BamDude image **bundles the `tailscale` CLI**, but the CLI can only talk to a daemon through its socket, which lives on the host:
 
     ```yaml
     services:
       bamdude:
         volumes:
           - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
-          - /usr/bin/tailscale:/usr/bin/tailscale:ro
     ```
 
-    The socket lets BamDude talk to the host daemon; the binary is the CLI client BamDude shells out to (`shutil.which("tailscale")` returns `None` without it, and the integration self-disables). Daemon stays on the host, BamDude just consumes it.
-2. **MagicDNS + HTTPS certificates enabled** on your tailnet — both are toggles on the [Tailscale admin DNS page](https://login.tailscale.com/admin/dns). Without them you don't get the `*.ts.net` FQDN BamDude needs to mint a cert against.
-3. **A virtual printer.** Tailscale flips a flag *per VP*; you need at least one VP to flip it on.
+    You may also need to let the container's user talk to the daemon:
+
+    ```bash
+    sudo tailscale set --operator=$(id -un)
+    ```
+
+    The mount is present but commented out in the shipped `docker-compose.yml` — uncomment it. Native installs need nothing extra: they use the host's own CLI and socket directly.
+
+3. **MagicDNS** enabled on your tailnet (a toggle on the [Tailscale admin DNS page](https://login.tailscale.com/admin/dns)), if you want the friendly `*.ts.net` hostname alongside the raw IP. The IP works without it.
+
+4. **A virtual printer.** The toggle is *per VP*.
 
 ---
 
 ## :material-cog-outline: Enabling per VP
 
-**Settings → Virtual Printer → edit a VP** — there's a toggle near the bottom:
+On the virtual printer's card, switch on **Show Tailscale endpoint**. When the host's daemon is reachable, the card then lists the tailnet IPs and the MagicDNS name, each with a copy button.
 
-| Field | Default | Effect |
-|---|---|---|
-| **Tailscale enabled** | off | When on, BamDude calls `tailscale cert <vp-name>.<tailnet>.ts.net` at startup, swaps in the resulting cert atomically before the FTPS / MQTT TLS listeners come up, and uses the tailnet FQDN as the SSDP `Location:` URL. |
-| **Tailscale FQDN** | auto | Read-only display of the resolved FQDN. Auto-derived from the host's `tailscale status` + the VP name; override only if you have multiple VPs on the same machine that need explicit names. |
+Paste the **IP** into your slicer's *Add Printer* dialog.
 
-The toggle is per-VP because some installs want VP-A on the LAN (factory floor) and VP-B on the tailnet (remote slicer for the engineering team) **simultaneously** — no global switch would do.
+!!! tip "Use the IP, not the hostname"
+    Bambu Studio and OrcaSlicer's Add Printer dialog accepts an IP address, not a hostname. The MagicDNS name is shown because it's useful elsewhere (bookmarks, SSH, your own notes), but the field the slicer wants is the `100.x.x.x` address.
 
----
-
-## :material-certificate: Cert lifecycle
-
-- **First mint** — on VP startup with Tailscale enabled, BamDude shells out to `tailscale cert <fqdn>` (which calls Let's Encrypt via Tailscale's broker) and writes the resulting `.crt + .key` next to the existing self-signed pair.
-- **Atomic swap** — the FTPS + MQTT TLS listeners are restarted with the new cert before the SSDP advert goes out, so a slicer that pings the FQDN never sees a self-signed fallback.
-- **Daily renewal** — a 24h background loop calls `tailscale cert` again well before expiry. Self-cancelling on shutdown so the loop doesn't outlive the asyncio event loop.
-- **Failure mode** — if `tailscale cert` returns an error (daemon offline, FQDN typo, rate limit), BamDude logs it and falls back to the existing self-signed cert. The VP keeps running; remote slicers see a cert error until you fix the upstream and retry.
+The toggle is per-VP because some installs want VP-A on the LAN (factory floor) and VP-B reachable over the tailnet (remote slicer for the engineering team) **simultaneously**.
 
 ---
 
-## :material-lan-connect: SSDP advertise
+## :material-certificate: Certificates: unchanged by Tailscale
 
-Standard VP SSDP advertises the LAN IP of the host, which is unreachable from the tailnet. With Tailscale enabled, the SSDP `Location:` URL points at the tailnet FQDN — Bambu Studio / OrcaSlicer running on any other tailnet device sees the VP exactly as if it were a real printer on the same network.
+**Tailscale changes network reach only. It does not change the VP's TLS trust.**
 
-LAN advertising still happens too — local slicers pick up the LAN IP, remote slicers (only reachable via tailnet) pick up the tailnet FQDN. They don't compete.
+You still import BamDude's CA certificate (`bbl_ca.crt`) into your slicer once, exactly as you would for a LAN VP — see [Virtual Printer](virtual-printer.md).
+
+!!! info "Why there's no Let's Encrypt path"
+    An earlier version of this integration provisioned real Let's Encrypt certificates via `tailscale cert` and advertised the tailnet FQDN over SSDP, so the slicer would trust the VP without importing anything. **That was removed**, because it cannot work: Bambu Studio and OrcaSlicer validate a printer's MQTT connection **only against their own bundled Bambu CA store**, not the system trust store. A publicly-signed chain is rejected at the issuer check, before any hostname logic runs — and their Add Printer dialog takes an IP anyway, which a `*.ts.net` certificate would never match.
+
+    So the one-time CA import is unavoidable, and Tailscale's role is strictly network reach: the same trust burden as plain LAN.
 
 ---
 
 ## :material-shield-key: Permissions & security
 
-- **No new BamDude permissions.** Tailscale config is part of the existing `virtual_printer:update` permission gate.
-- **No Tailscale auth surface in BamDude.** All auth (who's on the tailnet) is Tailscale's job. BamDude reads the daemon, doesn't impersonate it.
-- **Same VP access code** still required to authenticate the slicer to the VP. Tailscale brings the network to the printer; the access code still gates the printer.
+- **No new BamDude permissions.** The per-VP toggle is part of the existing virtual-printer update permission; reading the tailnet status needs `settings:read`.
+- **No Tailscale auth surface in BamDude.** Who is on the tailnet is entirely Tailscale's business. BamDude runs `tailscale status --json` and reads the answer; it never authenticates, joins, or modifies anything.
+- **The VP access code still applies.** Tailscale brings the network to the printer; the access code still gates the printer.
+- **The subprocess environment is stripped.** BamDude invokes the CLI with only the OS/shell variables it needs to find its socket and config — application secrets (JWT keys, database URL, SMTP password) are not passed through.
 
 ---
 
 ## :material-alert-circle-outline: Caveats
 
-!!! info "Docker variant deferred"
-    The Docker image deliberately doesn't bundle `tailscaled`. Reasons: tailscaled wants raw netlink + a state directory + an auth flow that don't compose well with stateless containers. The runtime path is "host has tailscaled → mount its socket into BamDude's container" — that's both lower-blast-radius and respects the user's existing Tailscale setup.
-
-- **`tailscaled` must be on the host (or mounted from a sidecar) — BamDude can't bring it up.** This is a deliberate split: Tailscale's auth + state model is a host concern.
-- **Private tailnets only** — there's no path to advertise a VP to the public internet through this. That's by design (and what `proxy` mode is for).
-- **Cert renewal needs daemon access at runtime** — if the host's tailscaled goes offline, the daily renewal will start failing 30+ days before the cert expires; check the alerts.
+- **`tailscaled` must run on the host.** The BamDude image ships the CLI but deliberately not the daemon: tailscaled wants raw netlink, a state directory, and an auth flow that don't compose well with a stateless container. Mounting the host's socket is both lower-blast-radius and respects the Tailscale setup you already have.
+- **Private tailnets only.** There is no path here to advertise a VP to the public internet — that is what `proxy` mode is for.
+- **Display only.** Turning the toggle off doesn't disconnect anything; it just stops showing the address. Nothing about the VP's certificates, SSDP advertisement, or lifecycle depends on it, and flipping it never restarts the VP.
 
 ---
 
 ## :material-bug-outline: Troubleshooting
 
-When VP startup falls back to the self-signed cert, the reason is in the BamDude logs at WARNING level. Match the message to the fix:
+The card shows Tailscale as unavailable, or the toggle reveals nothing:
 
-| Log message | Cause | Fix |
+| Symptom / log message | Cause | Fix |
 |---|---|---|
-| `tailscale binary not found` | CLI not on `PATH`. Bare-metal: not installed. Docker: binary not bind-mounted. | Bare-metal: install [tailscaled](https://tailscale.com/kb/1031/install-linux). Docker: add `- /usr/bin/tailscale:/usr/bin/tailscale:ro` (in addition to the socket mount). |
-| `Running in Docker but /var/run/tailscale/tailscaled.sock is not mounted` | One-time hint at startup when the binary's there but the socket isn't. | Add `- /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock` to `volumes:`. |
-| `Tailscale not connected (no DNSName)` | Daemon up but the host hasn't joined a tailnet. | `tailscale up` on the host and authenticate. |
-| `https cert ... disabled` / `not enabled tailnet` / `cert ... not enabled` | HTTPS Certificates toggle off in the admin console. | Enable MagicDNS + HTTPS Certificates at [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns). On a corporate / school tailnet you may need an admin to flip it. |
-| `Tailscale cert files at ... are not readable by this process` | Bare-metal install where `tailscale cert` ran as root and left files root-owned. | `sudo chown $(whoami):$(whoami) <data>/certs/<vp_id>/*` — message includes the exact path and command. |
-| `tailscale cert failed (exit N): ...` | Anything else from the CLI (rate limit, FQDN typo, daemon mid-restart). | Read the stderr in the log line; rate-limits self-resolve in an hour, FQDN issues mean the VP name has characters Tailscale won't accept. |
+| `tailscale binary not found` | Native install without the CLI. (Docker images ship it.) | Install [tailscale](https://tailscale.com/kb/1031/install-linux) on the host. |
+| `Running in Docker but /var/run/tailscale/tailscaled.sock is not mounted` | One-time hint at startup: the CLI is present but has no daemon to talk to. | Add the socket mount shown in [Prerequisites](#prerequisites). |
+| The socket is mounted but the CLI still can't reach the daemon | The container's user isn't permitted to use it. | `sudo tailscale set --operator=<container-user>` on the host. |
+| `Tailscale not connected (no DNSName)` | Daemon is up but the host hasn't joined a tailnet. | `tailscale up` on the host and authenticate. |
+| No MagicDNS name, only IPs | MagicDNS off on the tailnet. | Enable it at [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns). The IP still works. |
+| Card reports unavailable, logs show a timeout | A wedged `tailscaled` — the CLI call is bounded at 5 seconds. | Restart the daemon on the host. |
 
-In every case the VP keeps running on the self-signed cert — fix the upstream and either restart the VP or wait for the next 24h renewal pass to retry.
+The status call never raises: whatever goes wrong, the card degrades to "unavailable" and the VP keeps working on its LAN address.
 
 ---
 
 ## :material-link-variant: Related
 
-- [Virtual Printer](virtual-printer.md) — the VP modes that benefit from this.
+- [Virtual Printer](virtual-printer.md) — the VP modes, and the CA import you still need.
 - [Reverse proxy & HTTPS](../getting-started/reverse-proxy.md) — for the BamDude UI itself, not the VP.

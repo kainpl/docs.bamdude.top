@@ -13,7 +13,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 
 | Requirement | Details |
 |------------|---------|
-| **Python** | 3.10+ (3.11 or 3.12 recommended) |
+| **Python** | 3.12+ (native install only — Docker and the Windows installer bring their own) |
 | **Network** | Same LAN as your Bambu Lab printer |
 | **Printer** | Developer Mode enabled ([see guide](index.md#enabling-developer-mode)) |
 | **SD Card** | Inserted in the printer (required for file transfers) |
@@ -78,7 +78,7 @@ That's it — the service is already running.
 
 | What | Where |
 |------|-------|
-| **Program files** (embedded Python 3.13, backend + pre-built frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
+| **Program files** (embedded Python 3.12, backend + pre-built frontend, NSSM, ffmpeg) | `C:\Program Files\BamDude` |
 | **Your data** (database, archives, plate calibration) | `C:\ProgramData\BamDude\data` |
 | **Logs** | `C:\ProgramData\BamDude\logs` |
 
