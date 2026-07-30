@@ -5,7 +5,7 @@ description: Router queue layer that distributes prints to any eligible idle pri
 
 # Auto-Queue Routing
 
-The auto-queue is a **router layer above the per-printer queues**. Drop a print into it without naming a target — the scheduler picks an eligible idle printer (by model + filament + color match), copies the item into that printer's queue, and lets the existing per-printer dispatch handle the rest.
+The auto-queue is a **router layer above the per-printer queues**. Drop a print into it without naming a target — the scheduler picks a suitable printer (by model + filament + color match), copies the item into that printer's queue, and lets the existing per-printer dispatch handle the rest.
 
 Introduced in **0.4.2**.
 
@@ -28,7 +28,7 @@ A background loop (`AutoQueueScheduler`, started from `main.py` lifespan) wakes 
 
 1. **Snapshots busy printers** — anything currently `status='printing'` in `print_queue` is excluded from this round.
 2. **Reads pending auto-queue rows** ordered by SJF (Shortest Job First) + `been_jumped` if the **Queue Shortest First** setting is on, else by `position`.
-3. **For each item, calls `find_eligible_printer`** — picks an idle printer that matches:
+3. **For each item, calls `find_eligible_printer`** — picks a printer that matches:
     - the item's `target_model` (e.g. `X1C`, `P1S`, `A1MINI`, `H2D`)
     - all `required_filament_types` (extracted from the 3MF, user-overridable)
     - color requirements (when `force_color_match=true`)
@@ -132,7 +132,7 @@ The `find_eligible_printer` helper considers a printer eligible when **all** of 
 
 | Check | Detail |
 |-------|--------|
-| **Idle** | Not currently `status='printing'`, `paused`, `error`, or otherwise busy. A printer that is busy **only because it is auto-drying** is a *fallback* candidate — see [Drying takes lower priority than a print](#drying-takes-lower-priority-than-a-print) below. |
+| **Free to take work** | Not currently printing and not already holding a queued job. Whether the printer can *start* right now — plate-clear confirmation, drying, staggered start — is deliberately **not** checked here; see [Routing is not dispatching](#routing-is-not-dispatching) below. |
 | **Model match** | If `target_model` is set, the printer's model code must equal it. |
 | **Location match** | If `target_location` is set, the printer's location tag must equal it. |
 | **Filament types** | Every required filament type must appear in some loaded slot (AMS or external spool). |
@@ -146,16 +146,25 @@ Tie-breaker — when multiple printers are eligible:
 
 ---
 
+## :material-directions-fork: Routing is not dispatching
+
+Choosing which printer a job belongs to and deciding when it may start are two different questions, answered in two different places.
+
+The router only answers the first. It will hand a job to a printer that cannot start right now — one waiting for a **Clear Plate** confirmation, mid plate-change, drying, or held by staggered start. The job then sits **visibly** in that printer's queue until the printer is ready, and every safety check still applies at the moment it actually matters.
+
+Before **0.5.1.2** the router refused to route to such a printer at all. That sounded safer and was not: the printer's queue stayed empty, so nothing on screen explained the hold-up, and the **Clear Plate** prompt — which appears on a printer's queue — never had a chance to show. Operators saw idle machines reported as busy and a farm that looked dead. Placing the work is what makes the reason visible.
+
+A printer that *is* ready still wins when there's a choice.
+
+---
+
 ## :material-fire-off: Drying takes lower priority than a print
 
 [Queue Auto-Drying](ams.md#queue-auto-drying) keeps idle spools dry between prints. When **Settings → AMS Display Thresholds → Queue Auto-Drying** is in its default **non-blocking** mode (`queue_drying_block=false`, *"prints take priority over drying"*), a job queued **directly** to a printer already stops an in-progress dry cycle and starts printing.
 
-The auto-queue router now behaves the same way. A printer that is non-idle **only** because it is auto-drying is treated as a **fallback candidate**:
+The auto-queue router behaves the same way, and since **0.5.1.2** it does so by *ranking* rather than excluding: a printer that is free to take work but currently drying still receives jobs, it simply loses to one that can start immediately. The per-printer dispatch then stops the dry cycle and begins the print (the same `_stop_drying` step described in [AMS → Queue Auto-Drying flow](ams.md#queue-auto-drying)).
 
-- If any **truly-idle** printer of the same model is eligible, the job goes there — drying is never interrupted needlessly.
-- Only when no idle printer matches does the router route the job to a drying printer. The per-printer dispatch then stops the dry cycle and begins the print (the same `_stop_drying` step described in [AMS → Queue Auto-Drying flow](ams.md#queue-auto-drying)).
-
-When Queue Auto-Drying is set to **blocking** (`queue_drying_block=true`), drying still holds the queue — the auto-queue won't route to a drying printer, exactly as a direct queue item would wait.
+When Queue Auto-Drying is set to **blocking** (`queue_drying_block=true`), drying still holds the queue — the job waits in that printer's queue until the dry cycle ends, exactly as a directly-queued item would.
 
 !!! note "Behaviour added in 0.4.5"
     Before 0.4.5 the auto-queue treated a drying printer as plain "busy" and skipped it, so an auto-routed job could sit waiting behind a dry cycle even though a directly-queued job would have taken priority. This is most noticeable on P2S / H2 farms with AMS auto-drying enabled.
