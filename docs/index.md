@@ -119,6 +119,8 @@ OrcaSlicer + BambuStudio sidecar containers, per-job slicer picker with reachabi
 | **H2 Series** | H2D, H2D Pro, H2C, H2S |
 | **P1 Series** | P1P, P1S |
 | **P2 Series** | P2S |
+| **X2 Series** | X2D |
+| **A2 Series** | A2L |
 | **A1 Series** | A1, A1 Mini |
 
 ---
