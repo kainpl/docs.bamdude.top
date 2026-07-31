@@ -1,11 +1,11 @@
 ---
 title: Smart Plugs
-description: Tasmota, Home Assistant, MQTT, and REST/Webhook power control with per-print energy tracking
+description: Zigbee, Tasmota, Home Assistant, MQTT, and REST/Webhook power control with per-print energy tracking
 ---
 
 # Smart Plugs
 
-Control your printers with Tasmota, Home Assistant, REST/Webhook, or MQTT smart plugs for power monitoring, automation, and per-print energy tracking.
+Control your printers with Zigbee, Tasmota, Home Assistant, REST/Webhook, or MQTT smart plugs for power monitoring, automation, and per-print energy tracking.
 
 ---
 
@@ -28,6 +28,7 @@ Smart plug integration enables:
 | **Home Assistant** | :material-check: | :material-check: | Any HA `switch.*` / `light.*` / `input_boolean.*` entity |
 | **REST / Webhook** | :material-check: | :material-check: | Custom HTTP — openHAB, ioBroker, FHEM, Node-RED, Shelly Cloud, Tapo Cloud |
 | **MQTT** | :material-check: | :material-check: | Zigbee2MQTT, Shelly Gen2 native MQTT, ESPHome, custom MQTT broker plugs |
+| **Zigbee** | :material-check: | :material-check: | Zigbee plugs driven by BamDude itself through a dongle — no Home Assistant, no Zigbee2MQTT, no extra service |
 
 !!! info "Plug picks for Bambu printers"
     A1 / A1 mini draw ~140 W peak; X1 / P1 series peak ~350 W; H2 series peak ~500 W. Any 10A / 16A plug fits, but **for energy reporting** the popular options are:
@@ -41,7 +42,7 @@ Smart plug integration enables:
 
 ## :material-flash: Choosing an integration path
 
-Each plug usually supports more than one of the four types. Pick by:
+Each plug usually supports more than one type. Pick by:
 
 | You already run | Best path | Why |
 |-----------------|-----------|-----|
@@ -49,7 +50,81 @@ Each plug usually supports more than one of the four types. Pick by:
 | Bare Tasmota plug | **Tasmota** | Native Tasmota commands, no broker needed |
 | Zigbee2MQTT / ESPHome | **MQTT** | Subscribe direct, no extra hop |
 | openHAB / FHEM / ioBroker | **REST / Webhook** | Their REST APIs map cleanly to ON/OFF + status URLs |
+| Nothing yet, and you bought Zigbee plugs | **Zigbee** | BamDude runs the radio itself — nothing else to install or keep running |
 | Just-bought stock plug | **Tasmota** (after flashing) | Best long-term reliability + open source |
+
+!!! tip "Zigbee vs Zigbee2MQTT"
+    Both drive the same plugs. The difference is what has to be running: the **MQTT** path needs Zigbee2MQTT (or Home Assistant) alive alongside BamDude, and the **Zigbee** path needs only a dongle plugged in. If you already run Zigbee2MQTT and it works, keep it — there is nothing to gain by moving. If you are starting from nothing, the Zigbee path is one service instead of three.
+
+    Only one program can own a dongle. If Zigbee2MQTT or Home Assistant already has it, BamDude cannot take it as well — see [Troubleshooting](#per-type-troubleshooting).
+
+---
+
+## :material-zigbee: Zigbee setup
+
+BamDude talks to Zigbee plugs itself. You plug a dongle into the machine running BamDude, pair the plugs from Settings, and that is the whole stack — no Home Assistant, no Zigbee2MQTT, no broker.
+
+Verified end to end on a **SONOFF Zigbee Dongle-M** over Ethernet with a **SONOFF S60ZBTPF** plug. Other plugs should work if they expose a standard On/Off cluster; BamDude refuses to pair anything that does not, because it could not switch it anyway.
+
+### 1. Connect the dongle
+
+**Settings → Smart Plugs → Zigbee coordinator**:
+
+| Field | What to enter |
+|-------|---------------|
+| **Transport** | `Ethernet` for a network dongle, `USB` for one plugged into the host |
+| **Path** (Ethernet) | `host:port` — for example `192.168.1.50:6638` |
+| **Path** (USB) | Chosen from the list of detected ports — no typing |
+
+Press **Connect**. It takes effect immediately; BamDude does not need restarting.
+
+!!! warning "The port is not optional on Ethernet"
+    A bare address with no port is rejected on purpose. Left to itself the radio library would simply wait forever, and you would see "Zigbee is broken" with nothing to act on.
+
+!!! tip "Ethernet survives more than USB"
+    Ethernet is the default because it keeps working through things USB does not — a Docker container, a NAS, or a Windows host that renumbers COM ports across reboots. The dongle behaves identically either way; only the transport differs.
+
+On Linux, prefer the `/dev/serial/by-id/...` form for USB — it survives replugging, while `/dev/ttyUSB0` can move.
+
+### 2. Pair a plug
+
+Press **Pair**, then walk to the plug and hold its pairing button. The card reports what the radio sees as it happens, so you are not guessing.
+
+The pairing window is **60 seconds**. It closes on its own — an unattended window is not left open.
+
+A device that BamDude cannot switch is **refused and removed from the network**, and the card says so rather than leaving you wondering where it went. That is the project's scope showing in the code: this is a plug feature, not a general Zigbee hub.
+
+### 3. Add it as a plug
+
+**Settings → Smart Plugs → Add → Zigbee**, then pick the device from the paired list. There is no address to type, and devices already used by another plug are left out of the list.
+
+From here it behaves exactly like any other smart plug — printer binding, schedules, auto power-on/off, and per-print energy where the plug reports it.
+
+### Power readings
+
+BamDude loads the same per-model workaround library Home Assistant uses, so plugs with known firmware faults are handled rather than believed. On top of that it applies one rule of its own: **a socket that is switched off reports zero watts.** An open relay carries no load, whatever the plug claims — and cheap plugs do claim otherwise, which is how an empty socket once read 33 W.
+
+Between switching a socket and the plug producing a fresh measurement, no wattage is shown at all rather than the previous one. Readings refresh every 30–45 seconds.
+
+### Disconnecting and starting over
+
+Two separate actions, because they cost very different amounts to undo:
+
+| Action | What it does | Reversible |
+|--------|--------------|:----------:|
+| **Disconnect** | Stops the radio. Network, paired devices and plugs all kept | :material-check: Press Connect |
+| **Forget network** | Erases the network key | :material-close: Re-pair every plug by hand |
+
+**Forget network** is worth understanding before you press it. Your plugs go on believing they belong to a network BamDude can no longer speak to, so each one has to be paired again in person, wherever it is installed. Your plug entries and their settings are kept either way — they show as unreachable and come back on their own once re-paired, so a printer keeps its power automation and its recorded energy history.
+
+!!! tip "Backups include the Zigbee network"
+    A [backup](backup.md) taken beforehand can restore the network, so this is survivable. It is the only way back short of walking to every plug.
+
+### Swapping the dongle
+
+A dongle carries its network with it. Point BamDude at a different physical stick and it comes up perfectly healthy with **none** of your devices on it — they were never on that one's network.
+
+BamDude recognises this and says so, naming the previous dongle, instead of leaving you with a green radio and every plug unreachable. Two ways back: plug the original dongle in again, or restore a backup taken while it was in use.
 
 ---
 
@@ -490,6 +565,35 @@ The startup-restore code path, the create route, and the update route all funnel
     **Power reading is 1000× off**
 
     Wrong **multiplier**. Some integrations report watts, others report milliwatts. Run `mosquitto_sub` once, eyeball the value, set the multiplier so the result is in watts.
+
+=== "Zigbee"
+    **The coordinator will not start**
+
+    The card shows the reason the radio itself gave — read it, it usually says what to do. The common ones:
+
+    1. **Something else owns the dongle.** Only one program can. Stop Zigbee2MQTT or Home Assistant's ZHA, or use a second dongle. This is the most likely cause by far, and it applies across machines too — a Z2M instance elsewhere that opened the same `socket://` address holds it just as firmly.
+    2. **No port on an Ethernet address.** `192.168.1.50` is refused; `192.168.1.50:6638` is what it wants.
+    3. **Wrong USB port.** Pick from the detected list rather than typing.
+
+    **Pairing finds nothing**
+
+    Hold the plug's button until *it* signals pairing mode — most need several seconds, and a short press does nothing. Stay near the dongle for the first pairing. If the card reports a device and then refuses it, that device has no On/Off cluster: BamDude does not pair things it cannot switch.
+
+    **The plug pairs but shows unreachable**
+
+    Zigbee is a mesh with real range limits. A plug behind a wall or a floor from the dongle may pair at close range and then drop when installed. Mains-powered Zigbee devices repeat the signal, so a plug in between helps.
+
+    **Every plug went unreachable at once**
+
+    Look at the coordinator card first, not the plugs. Either the radio is down — the card says why — or you are on a different dongle, which BamDude reports explicitly. A dongle carries its network with it, so a swapped stick has none of your devices on it.
+
+    **Power reads zero on a switched-off plug**
+
+    That is deliberate, and correct: an open relay carries no load. Some plugs keep reporting the last measured value after switching off, which is a firmware fault, not a measurement — BamDude does not pass it on. Lifetime energy, which per-print cost is calculated from, is never zero-filled.
+
+    **Wattage is blank right after switching**
+
+    Also deliberate. The plug updates its own register in its own time, so any value in that moment describes a load that is no longer there. It fills in within 30–45 seconds.
 
 ---
 

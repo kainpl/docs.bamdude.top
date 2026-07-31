@@ -79,7 +79,7 @@ Browse, upload, and manage your local library of print files. Print directly or 
 
 <div class="feature-card" markdown>
 ### [:material-power-plug: Smart Plugs](smart-plugs.md)
-Tasmota, Home Assistant, REST/Webhook, and MQTT integration for auto power-on/off and energy monitoring.
+Zigbee, Tasmota, Home Assistant, REST/Webhook, and MQTT integration for auto power-on/off and energy monitoring.
 </div>
 
 <div class="feature-card" markdown>
