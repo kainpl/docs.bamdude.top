@@ -595,6 +595,14 @@ The startup-restore code path, the create route, and the update route all funnel
 
     Also deliberate. The plug updates its own register in its own time, so any value in that moment describes a load that is no longer there. It fills in within 30–45 seconds.
 
+    **A plug I unplugged still showed online for a while**
+
+    Two different cases, answered at two different speeds on purpose. If the *dongle* goes down, every plug on it reads unreachable at once — that is the case people notice, and it needs no waiting. A *single* plug going quiet on an otherwise healthy mesh takes about two minutes to be called offline. That delay is deliberate: a plug wrongly marked offline is worse than one marked late, because that is the reading you act on.
+
+    **Energy used today is blank on a new plug**
+
+    Zigbee has no "today" figure in the protocol — the meter reports only a lifetime counter. BamDude works the day's use out from its own history since your local midnight, so until there is a reading to measure from, it shows nothing rather than a zero. A zero would read as "this plug used nothing", which is a different claim.
+
 ---
 
 ## :material-lightbulb: Tips
