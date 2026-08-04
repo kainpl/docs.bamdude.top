@@ -245,6 +245,7 @@ nav:
       - Local Profiles: features/local-profiles.md
     - Automation:
       - Smart Plugs: features/smart-plugs.md
+      - Environment Sensors: features/sensors.md
       - Virtual Printer: features/virtual-printer.md
       - Tailscale integration: features/tailscale.md
       - Macros: features/macros.md

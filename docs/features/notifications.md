@@ -246,6 +246,9 @@ The pause-state is also visualised on the Printers page in real time — a pause
 | `print_missing_spool_assignment` | Print started without complete spool→AMS mapping |
 | `filament_low` | Spool remaining below `low_stock_threshold` |
 | `ams_humidity_high` / `ams_temperature_high` | AMS exceeds its threshold |
+| `sensor_above_max` / `sensor_below_min` | A [sensor](sensors.md) reading left the limits set for it |
+| `sensor_back_in_range` | …and came back |
+| `sensor_silent` / `sensor_speaking_again` | A sensor stopped reporting, and started again |
 
 **Printer:**
 
@@ -341,6 +344,7 @@ The Templates tab groups the default templates by purpose so a glance tells you 
 | **Print events** | 9 | `print_start/complete/failed/stopped/progress`, `plate_not_empty`, `bed_cooled`, `first_layer_complete`, `print_missing_spool_assignment` |
 | **Printer status** | 4 | `printer_offline`, `printer_error`, `filament_low`, `maintenance_due` |
 | **AMS environmental** | 2 | `ams_humidity_high`, `ams_temperature_high` (also reused at runtime for the AMS-HT events) |
+| **Sensor alerts** | 5 | `sensor_above_max`, `sensor_below_min`, `sensor_back_in_range`, `sensor_silent`, `sensor_speaking_again` — see [Environment Sensors](sensors.md) |
 | **Print queue** | 7 | `queue_job_added/started/waiting/skipped/failed`, `queue_completed`, `printer_queue_completed` |
 | **Job owner emails** | 4 | `user_print_start/complete/failed/stopped` — SMTP-only, sent to the print job owner |
 | **System emails** | 2 | `user_created` (welcome), `password_reset` |

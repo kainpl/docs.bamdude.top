@@ -7,6 +7,9 @@ description: Zigbee, Tasmota, Home Assistant, MQTT, and REST/Webhook power contr
 
 Control your printers with Zigbee, Tasmota, Home Assistant, REST/Webhook, or MQTT smart plugs for power monitoring, automation, and per-print energy tracking.
 
+!!! tip "The same radio also reads sensors"
+    A Zigbee dongle set up here drives temperature and humidity sensors too — see [Environment Sensors](sensors.md).
+
 ---
 
 ## :material-power-plug: Overview
