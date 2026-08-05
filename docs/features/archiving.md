@@ -511,7 +511,25 @@ Hover an archive in the **List** or **Calendar** view and the matching cell / ro
 
 ## :material-tag: Tags & Filtering
 
-Organize archives with custom tags. Filter by printer, tags, material, color, file type, favorites, and the duplicates view (which uses `COALESCE(source_content_hash, content_hash)`). Sort by date, name, or size. Tag management is under the gear icon next to the tag filter.
+Organize archives with custom tags. Filter by printer, tags, material, color, file type, favorites, and the duplicates view (which uses `COALESCE(source_content_hash, content_hash)`). Tag management is under the gear icon next to the tag filter.
+
+### Sorting
+
+In **List** view, click a column header — **Name**, **Printer**, **Date** or **Size**. Click it again to reverse. Each column opens at the end worth looking at first: the newest print, the biggest file, names A-Z.
+
+Sorting by printer uses the name shown in the column, so a print from a printer you have since deleted keeps its place in the order rather than disappearing or collecting at one end.
+
+**Print time has no sorting.** The archive has never been able to order by it, and a header that looked clickable but did nothing would be worse than a plain one.
+
+**Grid** view has no headers to click, so it keeps the sort dropdown beside the colour filter.
+
+### Paging
+
+How many archives per page, which page you are on, and how many there are in total are one control at the **end of the list** — the same bar the spool table uses.
+
+It stays put when everything fits on one page: the arrows go, the size selector remains. Otherwise "24 of 24" would be a dead end, with no control left to ask for more.
+
+Changing the page size returns you to the first page — staying on page 3 of a re-sized list lands somewhere you did not ask for, and past the end when the list gets shorter.
 
 ### Filter chips
 

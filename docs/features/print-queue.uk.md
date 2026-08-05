@@ -171,7 +171,7 @@ Defaults — install-wide, налаштовуються у **Settings → Workfl
 
 ### Аудит `created_by_id`
 
-Додавання до черги фіксує, *хто* додав елемент. Telegram-бот, масове додавання з бібліотеки, кнопка "Друкувати" на картці принтера та друки з файлового менеджера -- усі вони пробрасують користувача, який ініціював дію. Видно по рядку на архіві, який згенерує елемент черги. Шляхи через VP auto-queue та webhook-тригер легітимно лишають його `NULL` (немає автентифікованого користувача, якого можна було б приписати).
+Додавання до черги фіксує, *хто* додав елемент. Telegram-бот, діалог планування з бібліотеки, кнопка "Друкувати" на картці принтера та друки з файлового менеджера -- усі вони пробрасують користувача, який ініціював дію. Видно по рядку на архіві, який згенерує елемент черги. Шляхи через VP auto-queue та webhook-тригер легітимно лишають його `NULL` (немає автентифікованого користувача, якого можна було б приписати).
 
 ---
 
@@ -323,13 +323,13 @@ ETA chaining — це планувальний інструмент, не вра
 
 | Endpoint | Призначення |
 |----------|-------------|
-| `GET /api/v1/print-queue/` | Список елементів черги (фільтр по printer, status) |
-| `POST /api/v1/print-queue/` | Додати з архіва або library file |
-| `PATCH /api/v1/print-queue/{id}` | Редагувати position, schedule, AMS, options |
-| `DELETE /api/v1/print-queue/{id}` | Cancel + remove |
-| `POST /api/v1/print-queue/{id}/start` | Force-start `manual_start` або `pending` |
-| `POST /api/v1/print-queue/bulk` | Bulk submit / edit / cancel |
-| `POST /api/v1/print-queue/reorder` | Drag-and-drop reorder через API |
+| `GET /api/v1/queue/` | Список елементів черги (фільтр по printer, status) |
+| `POST /api/v1/queue/` | Додати з архіва або library file |
+| `PATCH /api/v1/queue/{id}` | Редагувати position, schedule, AMS, options |
+| `DELETE /api/v1/queue/{id}` | Cancel + remove |
+| `POST /api/v1/queue/{id}/start` | Force-start `manual_start` або `pending` |
+| `PATCH /api/v1/queue/bulk` | Bulk submit / edit / cancel |
+| `POST /api/v1/queue/reorder` | Drag-and-drop reorder через API |
 
 Повна schema + auth: [API reference](../reference/api.uk.md).
 
@@ -393,7 +393,7 @@ Cancel **поки диспатчер ще заливає 3MF або відпра
 - Дописує елемент у **кінець** черги (щоб він не стрибнув поперед того, що ти зачергував між тим).
 - Лишає історію архівів недоторканою — старий cancelled-архів живе для forensics; свіжий `printing` архів створюється коли елемент справді диспатчиться.
 
-Той самий endpoint `POST /api/v1/print-queue/{id}/retry`, що відповідає за Retry на failed-елементах, обробляє і cancelled — він тепер приймає і `failed`, і `cancelled` як source-стани. Bulk-restart з секції Issues використовує `POST /api/v1/print-queue/bulk` з тим же retry-дієсловом.
+Той самий endpoint `POST /api/v1/queue/{id}/retry`, що відповідає за Retry на failed-елементах, обробляє і cancelled — він тепер приймає і `failed`, і `cancelled` як source-стани. Bulk-restart з секції Issues використовує `PATCH /api/v1/queue/bulk` з тим же retry-дієсловом.
 
 ---
 

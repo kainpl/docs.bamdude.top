@@ -116,23 +116,17 @@ Queue sliced files for later printing without creating archives upfront. Archive
 
 ### Queueing several files at once
 
-Tick the files you want and press **Queue**. The button only appears when the selection contains something sliced — an STL cannot be printed, so there is nothing to offer.
+Tick the files you want and press **Schedule**. The button only appears when the selection contains something sliced — an STL cannot be printed, so there is nothing to offer.
 
-The dialog lists what you picked. Multi-plate files expand into their plates, all ticked; untick the ones you do not want. Unsliced files are listed greyed with the reason and take no part.
+There is no separate bulk dialog. The ordinary scheduling window opens for the first file, marked **1/3** beside its title, then for the next one, and so on. Every file keeps the full set of choices: a printer or several, or the auto-queue; which plates; filament mapping; print options; quantity; and when to start. Two files in one selection rarely want the same answers — different plates, different colours loaded on different machines — which is why the file, not the batch, is the unit.
 
-Then choose where it goes:
+Close the window at any point (**Cancel**, the ✕, or Escape) and the run stops there. Whatever you did not get to **stays selected**, so the ticks show what is left to distribute. Everything queued clears the selection.
 
-| Destination | What happens |
-|---|---|
-| **Printers → on each** | A copy of every file on every printer you picked. Five files on three printers is fifteen prints. |
-| **Printers → spread** | The files distributed round-robin across the printers you picked. Five files on three printers is five prints. |
-| **Auto-queue** | The batch goes to the router, which picks a printer later — when one is actually free and its loaded filament is known. |
+A submit that fails does not move on: the window stays on that file with its error, which is where the fix is made.
 
-Spread and the auto-queue are easy to confuse. Spread pins each print to a specific printer **now**; the auto-queue decides later. Use spread when you want a predictable distribution, the auto-queue when you want the best one.
+Selecting one file works exactly as it always did — one dialog, no counter.
 
-**The button says how many prints it will create**, not how many files you picked — three files can be fifteen prints. Check that number before you press it.
-
-A file sliced for a printer model that cannot run it is reported rather than queued. When the batch is being spread, that printer is skipped and the next one used instead, so you still get the number of prints you asked for.
+A file sliced for a printer model that cannot run it is refused rather than quietly queued to fail later. So is a file that was never sliced.
 
 
 ---
@@ -487,7 +481,7 @@ The library is fully accessible via the REST API — useful for scripted ingesti
 | `/api/v1/library/files/extract-zip` | `POST` | Upload + extract ZIP with options |
 | `/api/v1/library/files/{id}` | `DELETE` | Soft-delete (move to trash) |
 | `/api/v1/library/bulk-delete` | `POST` | Soft-delete many files at once |
-| `/api/v1/library/files/add-to-queue` | `POST` | Queue one or more files for printing |
+| `/api/v1/queue/` | `POST` | Queue a library file (`library_file_id`) onto a printer's queue — needs `queue:create`, not a library permission |
 | `/api/v1/library/folders` | `POST` | Create folder |
 | `/api/v1/library/folders/external` | `POST` | Link an external folder |
 | `/api/v1/library/folders/{id}/scan` | `POST` | Re-scan an external folder |
