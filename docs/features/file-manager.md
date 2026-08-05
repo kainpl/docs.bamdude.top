@@ -75,6 +75,14 @@ Above the grid is a chip row that filters by file extension:
 
 Chips are AND-combined with the [tag chip filter](#tag-chip-filter) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
 
+### Clearing filters
+
+When nothing matches, the empty view offers **Clear filters**, and it clears all five: search, file type, **Not printed**, the tag chip row and the "filter by user" box — plus the cross-cutting [tag filter](#tag-chip-filter), which is applied by the server.
+
+That last one matters. Because the server applies it, a tag filter matching nothing makes the library itself come back empty, and the reset is shown for that case too rather than an upload prompt.
+
+The tag chip row is remembered between visits, so clearing it here also clears what was stored — it will not come back on the next reload.
+
 ---
 
 ## :material-printer: Print Directly
