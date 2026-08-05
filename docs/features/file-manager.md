@@ -114,6 +114,27 @@ Each selected plate becomes its own queue item / archive with the plate index re
 
 Queue sliced files for later printing without creating archives upfront. Archives are created automatically when the print actually starts (see [Archives](archiving.md) — deferred archive creation keeps the archive list clean of "queued but never printed" entries).
 
+### Queueing several files at once
+
+Tick the files you want and press **Queue**. The button only appears when the selection contains something sliced — an STL cannot be printed, so there is nothing to offer.
+
+The dialog lists what you picked. Multi-plate files expand into their plates, all ticked; untick the ones you do not want. Unsliced files are listed greyed with the reason and take no part.
+
+Then choose where it goes:
+
+| Destination | What happens |
+|---|---|
+| **Printers → on each** | A copy of every file on every printer you picked. Five files on three printers is fifteen prints. |
+| **Printers → spread** | The files distributed round-robin across the printers you picked. Five files on three printers is five prints. |
+| **Auto-queue** | The batch goes to the router, which picks a printer later — when one is actually free and its loaded filament is known. |
+
+Spread and the auto-queue are easy to confuse. Spread pins each print to a specific printer **now**; the auto-queue decides later. Use spread when you want a predictable distribution, the auto-queue when you want the best one.
+
+**The button says how many prints it will create**, not how many files you picked — three files can be fifteen prints. Check that number before you press it.
+
+A file sliced for a printer model that cannot run it is reported rather than queued. When the batch is being spread, that printer is skipped and the next one used instead, so you still get the number of prints you asked for.
+
+
 ---
 
 ## :material-download: Downloading files
