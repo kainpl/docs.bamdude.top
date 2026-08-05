@@ -73,15 +73,13 @@ Above the grid is a chip row that filters by file extension:
 - `.stl`, `.obj`, `.step` — raw geometry
 - `.gcode` — bare gcode (no embedded metadata)
 
-Chips are AND-combined with the [tag chip filter](#tag-chip-filter) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
+Chips are AND-combined with the [tags](#tags) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
 
 ### Clearing filters
 
-When nothing matches, the empty view offers **Clear filters**, and it clears all five: search, file type, **Not printed**, the tag chip row and the "filter by user" box — plus the cross-cutting [tag filter](#tag-chip-filter), which is applied by the server.
+When nothing matches, the empty view offers **Clear filters**, and it clears all of them: search, file type, **Not printed**, the "filter by user" box, and the [tag filter](#tags).
 
-That last one matters. Because the server applies it, a tag filter matching nothing makes the library itself come back empty, and the reset is shown for that case too rather than an upload prompt.
-
-The tag chip row is remembered between visits, so clearing it here also clears what was stored — it will not come back on the next reload.
+The tag filter matters here for a reason that is easy to miss. It is applied by the **server**, so a tag combination matching nothing makes the library itself come back empty — and the reset is offered for that case too, rather than a prompt to upload files, which used to be a dead end.
 
 ---
 
@@ -222,11 +220,34 @@ Every file in the library is a row in the `library_files` table. The row carries
 - **`file_metadata` JSON column** — stores parsed slicer metadata: filament weights per spool, object count, sliced-for printer model, plus the `gcode_label_objects` / `exclude_object` flags from the source 3MF's `Metadata/project_settings.config` (extracted in 0.4.1, backfilled by migration `m022`). The label-object flags gate the **skip-objects** button on the printer page during a print — both must be `true` for the button to light up. Bambu Studio has no *Label objects* setting at all and enables *Exclude objects* by default; OrcaSlicer exposes both, with *Label objects* on and ***Exclude objects* off** — so on an OrcaSlicer file that one switch is usually what needs turning on (see [Troubleshooting](../reference/troubleshooting.md) for the slicer-side checklist).
 - **`is_multi_plate` + `plates[]` per-plate cache (m023)** — for multi-plate sliced 3MFs (a single `.gcode.3mf` with several `Metadata/plate_N.gcode` entries) BamDude pre-extracts the full per-plate breakdown — thumbnail, print time, filament weight, object count, filament stack, label-object flags — into the same `file_metadata` JSON. The file list returns this without re-opening the 3MF on every query.
 - **`swap_compatible` flag** — detected from a `.swap.` or `.swaps.` marker in the filename, e.g. `MyPart.swap.gcode.3mf` or `Tray.swaps.3mf`. The marker must be **dot-delimited**, not underscore-delimited — `MyPart_swap.gcode.3mf` will not be flagged. Swap-compatible files are surfaced separately in the swap-mode picker.
-- **Composite `file_tags` column (m036 / m037)** — an unordered JSON list of identity tags drives both the badge row and the chip-row filter on the toolbar. Four semantic groups: **format** (`gcode` / `3mf` / `stl` / `obj` / `step` — sliced `.gcode.3mf` keeps the composite `gcode + 3mf` pair so the visual distinction survives `file_type` collapse), **readiness** (mutually exclusive: `sliced` for slicer-output, `project` for unsliced `.3mf` packages, `geometry` for raw mesh / CAD source — one toggle for "what still needs slicing?"), **modifiers** (`swap` / `multiplate`), **provenance** (`makerworld`). Frontend `sortTagsForDisplay` projects onto an explicit precedence so the row reads right-to-left format → readiness → modifiers → provenance.
+- **Composite `file_tags` column (m036 / m037)** — an unordered JSON list of identity tags drives the badge row on each file. Since m128 the same vocabulary also exists as `is_system` rows in `library_tags`, which is what the tag filter and the tag catalog query; the column stays as a derived cache so the badges and the preview-tab logic read a column on the row they already have. Both are written by one function, `sync_system_tags`. Four semantic groups: **format** (`gcode` / `3mf` / `stl` / `obj` / `step` — sliced `.gcode.3mf` keeps the composite `gcode + 3mf` pair so the visual distinction survives `file_type` collapse), **readiness** (mutually exclusive: `sliced` for slicer-output, `project` for unsliced `.3mf` packages, `geometry` for raw mesh / CAD source — one toggle for "what still needs slicing?"), **modifiers** (`swap` / `multiplate`), **provenance** (`makerworld`). Frontend `sortTagsForDisplay` projects onto an explicit precedence so the row reads right-to-left format → readiness → modifiers → provenance.
 
-## :material-tag-multiple: Tag chip filter
+## :material-tag-multiple: Tags
 
-The toolbar carries a chip row above the file list. Each chip is a tag from `file_tags`; clicking toggles it. Selected chips AND-filter the list so e.g. `multiplate + sliced` returns only multi-plate sliced files. Selection persists in localStorage so the filter survives reloads. Only chips for tags actually present in the loaded list render — installs that don't use every provenance source see a tighter row.
+There are two kinds of tag and one row of them.
+
+**Automatic tags** — `3MF`, `SLICED`, `MULTI-PLATE`, `MAKERWORLD` and the rest — are worked out from the file itself. They are shown but locked: they cannot be renamed, deleted, or taken off a file, and they are not offered where you apply tags by hand.
+
+**Your own tags** are anything you like — `kid-safe`, `petg-only`, `toys`. Create, rename and delete them from the **Tags** button in the toolbar.
+
+Both sit in one filter row above the file list, automatic ones first. Clicking toggles, and selections AND together, so `SLICED` + `kid-safe` returns only the sliced files you have labelled that way. The filtering is done by the server, not over whatever is currently on screen, so it reaches the whole library rather than the loaded page.
+
+An automatic tag appears in the row only when at least one file in the library carries it. Your own tags always appear, including empty ones — an unused tag is precisely the one you want to see in order to start using it.
+
+The selection is not remembered between visits. A library that comes back narrowed with nothing on screen explaining why costs more than one click.
+
+### Managing tags
+
+The **Tags** dialog lists both kinds, automatic ones in a locked section with their file counts.
+
+- Rename in place — click the name, type, press Enter. Escape abandons it.
+- Delete asks first and says how many files it will affect.
+- Tick several to delete them together.
+- Clicking a row does nothing else. It does not filter, and it does not close the dialog.
+
+### Tagging one file
+
+**⋮ → Tag** on any file opens a short list of your tags with the file's current ones ticked. A tick applies immediately; there is no confirm step. **+ new tag** at the bottom creates one and applies it in the same move.
 
 ## :material-eye-outline: 3D / G-code viewer
 
