@@ -593,7 +593,7 @@ Embed the live stream in OBS as a Browser Source:
 
 1. In OBS, click **+** under Sources.
 2. Select **Browser**.
-3. URL: `http://your-bamdude:8000/api/v1/printers/{id}/stream?token=<long-lived-token>` (use a **long-lived camera token** — short-lived ones expire mid-stream).
+3. URL: `http://your-bamdude:8000/api/v1/printers/{id}/camera/stream?token=<long-lived-token>` (use a **long-lived camera token** — short-lived ones expire mid-stream).
 4. Width / height to match your scene (e.g. 1920×1080).
 5. **OK**.
 

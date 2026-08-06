@@ -165,7 +165,7 @@ The 43 route modules under `backend/app/api/routes/` are registered under the `/
 | `/printers/*`, `/printer-queues/*`, `/cloud/*`, `/discovery/*` | Printer + AMS + Bambu Cloud | status, control, AMS RFID, snapshot, stream-token, network discovery |
 | `/archives/*` | Print history | list, get, reprint, delete, **`retry-download`**, **`cleanup/preview`**, **`cleanup/run`**, **`cleanup/status`** |
 | `/queue/*`, `/background-dispatch/*` | Queue management + dispatch | add, reorder, cancel, set-status, dispatch state |
-| `/library/*`, `/library-notes/*`, `/pending-uploads/*` | File manager | upload, list, delete, tags, slicer-uploads inbox |
+| `/library/*`, `/library-notes/*` | File manager | upload, list, delete, tags — also the inbox for virtual-printer uploads |
 | `/projects/*` | Project grouping | CRUD, print plan, archives by project |
 | `/macros/*` | G-code + MQTT-action macros | CRUD, execute |
 | `/notifications/*`, `/notification-templates/*`, `/user-notifications/*`, `/telegram/*` | Outbound channels | provider CRUD, template overrides, test send, Telegram bot config |

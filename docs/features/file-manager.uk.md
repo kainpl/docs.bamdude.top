@@ -370,6 +370,12 @@ Auto-purge все одно поважає retention-вікно — файли й
 3. Введи нове ім'я
 4. Press Enter або клік **Rename** для збереження
 
+### Переміщення одного файла
+
+**Move** стоїть у тому ж трикрапковому меню, що й **Rename**, у grid- і list-вигляді, і одразу відкриває вибір теки. Тікати файл перед цим не треба — мультиселект-тулбар і далі вміє переміщати кілька файлів, але одному файлу не потрібно проходити через виділення.
+
+Гейт такий самий, як у Rename: користувач лише з `*_own`-дозволами бачить його на своїх файлах і більше ніде.
+
 ### Перейменування папки
 
 1. Hover на папку у sidebar-і
@@ -476,7 +482,7 @@ Linked-папки показують кольоровий бейдж у sidebar 
 | `/api/v1/library/files` | `GET` | Список файлів (paginated; query-params на folder, sort, filter) |
 | `/api/v1/library/files/{id}` | `GET` | Детальна інформація файла (metadata, plates, file_tags) |
 | `/api/v1/library/files/{id}/capabilities` | `GET` | Які viewer-вкладки показувати (3D / G-code / per-plate) |
-| `/api/v1/library/upload` | `POST` | Multipart upload (один або кілька файлів) |
+| `/api/v1/library/files` | `POST` | Multipart upload (один або кілька файлів) — потрібен `library:upload` |
 | `/api/v1/library/files/extract-zip` | `POST` | Upload + extract ZIP з опціями |
 | `/api/v1/library/files/{id}` | `DELETE` | Soft-delete (move to trash) |
 | `/api/v1/library/bulk-delete` | `POST` | Soft-delete багато файлів одночасно |

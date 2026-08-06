@@ -376,7 +376,10 @@ DB пошкоджена, видалена, не recoverable:
 
 ## :material-docker: Docker volume bind-mount приклад
 
-Для Docker-користувачів — змонтуй output-директорію бекапу як volume, щоб бекапи переживали контейнер, а ідеально — на NAS-share для off-site:
+Для Docker-користувачів — змонтуй output-директорію бекапу як volume, щоб бекапи переживали контейнер, а ідеально — на NAS-share для off-site.
+
+!!! warning "Шлях фіксований — ручка це монтування"
+    Бекапи завжди пишуться в `backups/` усередині директорії даних. Змінної оточення, яка їх переносить, не існує: наводь volume на `/app/data/backups`, а з боку хоста монтуй що завгодно.
 
 ```yaml
 services:
@@ -392,7 +395,6 @@ services:
       - /mnt/nas/bamdude-backups:/app/data/backups   # NAS / network share
     environment:
       - TZ=Europe/Kyiv
-      - BACKUP_DIR=/app/data/backups
     restart: unless-stopped
 
 volumes:
@@ -409,13 +411,10 @@ docker run -d \
   -v bamdude_logs:/app/logs \
   -v /mnt/nas/bamdude-backups:/app/data/backups \
   -e TZ=Europe/Kyiv \
-  -e BACKUP_DIR=/app/data/backups \
   --name bamdude \
   --restart unless-stopped \
   ghcr.io/kainpl/bamdude:latest
 ```
-
-`BACKUP_DIR` перевизначає дефолтний `data/backups/` всередині контейнера — використовуй коли bind-mount лягає не на `/app/data/backups`.
 
 !!! tip "NAS / Samba / NFS"
     Направ bind-mount на NAS-share, Samba-mount чи NFS-шлях для автоматичних off-site бекапів без додаткових скриптів. У парі з retention-rotation — hands-off off-site backup pipeline.

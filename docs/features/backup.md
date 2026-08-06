@@ -376,7 +376,10 @@ If you have many timelapse videos, large profile is the right model — periodic
 
 ## :material-docker: Docker volume bind-mount example
 
-For Docker users, mount the backup output directory as a volume so backups persist outside the container — and ideally onto a NAS share for off-site coverage:
+For Docker users, mount the backup output directory as a volume so backups persist outside the container — and ideally onto a NAS share for off-site coverage.
+
+!!! warning "The path is fixed — the mount is the knob"
+    Backups are always written to `backups/` inside the data directory. There is no environment variable that moves them: point the volume at `/app/data/backups` and mount whatever host path you like on the other side.
 
 ```yaml
 services:
@@ -392,7 +395,6 @@ services:
       - /mnt/nas/bamdude-backups:/app/data/backups   # NAS / network share
     environment:
       - TZ=Europe/Kyiv
-      - BACKUP_DIR=/app/data/backups
     restart: unless-stopped
 
 volumes:
@@ -409,7 +411,6 @@ docker run -d \
   -v bamdude_logs:/app/logs \
   -v /mnt/nas/bamdude-backups:/app/data/backups \
   -e TZ=Europe/Kyiv \
-  -e BACKUP_DIR=/app/data/backups \
   --name bamdude \
   --restart unless-stopped \
   ghcr.io/kainpl/bamdude:latest

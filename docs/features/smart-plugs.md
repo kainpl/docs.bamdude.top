@@ -409,8 +409,15 @@ When state / energy / power live on **the same topic** (Zigbee2MQTT default), us
     ON value:     ON
     ```
 
-!!! warning "Control via MQTT"
-    The native MQTT plug type was monitor-only in early 0.4.x. Power control (`mqtt_command_topic` / `mqtt_command_on` / `mqtt_command_off` fields) was added in m020+; if your install was upgraded from <0.4.0 and the fields are blank, the plug is read-only until you fill them.
+!!! warning "Switching an MQTT plug needs the Control block filled in"
+    The MQTT plug type was monitor-only from the day it was added until migration `m113`. The **Control** block — command topic plus **Payload to turn ON** / **Payload to turn OFF** — is what gives it a command channel. Leave the topic empty and the plug stays monitor-only, which is also what an existing plug does after the upgrade, since the columns arrive empty.
+
+    The payloads are free text on purpose, because they belong to the device: Zigbee2MQTT expects `{"state": "ON"}` on `<name>/set`, Tasmota a bare `ON` on `cmnd/<name>/POWER`.
+
+    Before `m113` a switch attempt did not fail — it silently did nothing, because the plug fell through to the Tasmota driver and got an HTTP call aimed at an `ip_address` an MQTT plug has no reason to have. Auto-on at print start, auto-off afterwards, schedules, the manual buttons and Obico's pause-and-power-off were all affected alike.
+
+!!! tip "Per-print energy needs the Lifetime Energy block"
+    **Lifetime JSON path** is separate from the ordinary energy path because a plug may publish either a counter that resets at midnight (Tasmota's `ENERGY.Today`) or a running total that never resets (Zigbee2MQTT's `energy`), and only you know which yours points at. Per-print energy and cost need the running total: a print that crosses midnight would otherwise measure as **negative**.
 
 ---
 

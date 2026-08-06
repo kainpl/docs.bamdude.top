@@ -371,6 +371,12 @@ You can rename files and folders directly in the File Manager without an externa
 3. Enter the new name
 4. Press Enter or click **Rename** to save
 
+### Moving one file
+
+**Move** sits in the same three-dot menu as **Rename**, in both grid and list view, and opens the folder picker directly. There is no need to tick the file first — the multi-select toolbar still offers Move for several files at once, but a single file does not have to go through a selection to be moved.
+
+It is gated exactly like Rename: a user holding only the `*_own` library permissions sees it on their own files and nowhere else.
+
 ### Renaming a folder
 
 1. Hover over the folder in the sidebar
@@ -477,7 +483,7 @@ The library is fully accessible via the REST API — useful for scripted ingesti
 | `/api/v1/library/files` | `GET` | List files (paginated; query params for folder, sort, filter) |
 | `/api/v1/library/files/{id}` | `GET` | Single file detail (metadata, plates, file_tags) |
 | `/api/v1/library/files/{id}/capabilities` | `GET` | Which viewer tabs to show (3D / G-code / per-plate) |
-| `/api/v1/library/upload` | `POST` | Multipart upload (one or more files) |
+| `/api/v1/library/files` | `POST` | Multipart upload (one or more files) — needs `library:upload` |
 | `/api/v1/library/files/extract-zip` | `POST` | Upload + extract ZIP with options |
 | `/api/v1/library/files/{id}` | `DELETE` | Soft-delete (move to trash) |
 | `/api/v1/library/bulk-delete` | `POST` | Soft-delete many files at once |

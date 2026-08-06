@@ -156,7 +156,9 @@ A fifth sort option — **ETA** — orders printers by how soon they finish: pri
 
 ### Group printers by location
 
-Above the grid, group printers by **location** (the free-form string set on each printer card). Useful when the farm spans rooms / floors — collapse the room you're not watching.
+Above the grid, group printers by **location** — the place picked on each printer card. Useful when the farm spans rooms / floors — collapse the room you're not watching.
+
+A location is a real entity, not text typed per printer: you pick it from a list, and printers, sensors and auto-queue targets all point at the same row. That is what stops `Shelf 2` and `shelf 2` from becoming two different places — which used to send auto-queue items to a location no printer had, silently and permanently.
 
 ### Search + filters
 
@@ -164,7 +166,7 @@ The toolbar on the Printers page has:
 
 - **Search** — substring match on name, model, location, and serial number. Live (no Enter required).
 - **Status filter** — `All`, `Online`, `Printing`, `Idle`, `Offline`, `Error`.
-- **Location filter** — dropdown of all distinct location strings currently in use.
+- **Location filter** — dropdown of the locations currently in use.
 
 Filters AND together; an empty result-set shows a "No printers match" placeholder instead of an empty grid.
 

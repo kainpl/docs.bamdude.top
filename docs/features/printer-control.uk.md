@@ -32,7 +32,7 @@ description: Усі runtime-дії на картці принтера у BamDude
 Картка також показує червоний overlay **"Printer busy"**, коли ви кидаєте файл на non-idle принтер — щоб не перебити running-job. Що відбувається після dispatch — у [Print Queue](print-queue.md).
 
 !!! note "Дозвіл"
-    `printers:control`. Сам upload у бібліотеку також перевіряє `library:write`.
+    `printers:control`. Сам upload у бібліотеку також перевіряє `library:upload`.
 
 ### Nozzle Offset Calibration (лише dual-nozzle)
 
@@ -500,8 +500,10 @@ Door state декодується з відповідного MQTT-поля per 
 | Start / pause / resume / stop print | `printers:control` |
 | Bed jog, home, chamber light, print speed, airduct, skip-object, clear-HMS | `printers:control` |
 | Clear plate (ack наступного job) | `printers:clear_plate` |
-| Прив'язати/відв'язати smart plug | `printers:control` + `smart_plugs:write` |
-| Додати/видалити принтери, factory-reset, firmware push | `printers:admin` |
+| Прив'язати/відв'язати smart plug | `smart_plugs:update` (прив'язка — поле самої розетки, ставиться через `PATCH /smart-plugs/{id}`) |
+| Додати принтер | `printers:create` |
+| Заархівувати / відновити / видалити принтер | `printers:delete` |
+| Firmware push | `firmware:update` |
 
 ---
 

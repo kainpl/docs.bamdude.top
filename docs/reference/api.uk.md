@@ -165,7 +165,7 @@ BamDude обмежує частоту запитів на endpoint-ах авте
 | `/printers/*`, `/printer-queues/*`, `/cloud/*`, `/discovery/*` | Принтер + AMS + Bambu Cloud | статус, керування, RFID AMS, snapshot, stream-токен, мережеве виявлення |
 | `/archives/*` | Історія друку | список, отримання, передрук, видалення, **`retry-download`**, **`cleanup/preview`**, **`cleanup/run`**, **`cleanup/status`** |
 | `/queue/*`, `/background-dispatch/*` | Керування чергою + dispatch | додавання, перевпорядкування, скасування, set-status, стан dispatch-у |
-| `/library/*`, `/library-notes/*`, `/pending-uploads/*` | Файловий менеджер | завантаження, список, видалення, додавання в чергу, інбокс slicer-uploads |
+| `/library/*`, `/library-notes/*` | Файловий менеджер | завантаження, список, видалення, теги — і водночас інбокс для аплоадів з віртуального принтера |
 | `/projects/*` | Групування за проєктами | CRUD, план друку, архіви проєкту |
 | `/macros/*` | G-code- та MQTT-action-макроси | CRUD, виконання |
 | `/notifications/*`, `/notification-templates/*`, `/user-notifications/*`, `/telegram/*` | Вихідні канали | CRUD провайдерів, перевизначення шаблонів, тестове надсилання, конфіг Telegram-бота |

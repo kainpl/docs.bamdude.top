@@ -32,7 +32,7 @@ Drag a sliced `.gcode` or `.gcode.3mf` file onto a printer card or click the gre
 The card also shows a red **"Printer busy"** overlay when you drop on a non-idle printer, so you don't accidentally interrupt a running job. See [Print Queue](print-queue.md) for what happens after the dispatch.
 
 !!! note "Permission"
-    `printers:control`. The library upload itself also checks `library:write`.
+    `printers:control`. The library upload itself also checks `library:upload`.
 
 ### Nozzle Offset Calibration (dual-nozzle only)
 
@@ -304,13 +304,6 @@ The `force` parameter was removed in 0.4.7. It wrapped the move in `M211 S0` …
 
 Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is **not** running a print.
 
-### G-code emitted
-
-| Mode | Sequence |
-|------|----------|
-| Normal | `G91` → `G1 ZN F600` → `G90` |
-| Force | `M211 S0` → `G91` → `G1 ZN F600` → `G90` → `M211 S1` |
-
 ### G-code sent
 
 Byte-for-byte what Bambu Studio's own jog sends over the same MQTT `gcode_line` channel (`DevAxis::Ctrl_Axis`):
@@ -507,8 +500,10 @@ Door state is decoded from the right MQTT field per printer family (X1: `home_fl
 | Start / pause / resume / stop print | `printers:control` |
 | Bed jog, home, chamber light, print speed, airduct, skip-object, clear-HMS | `printers:control` |
 | Clear plate (acknowledge next job) | `printers:clear_plate` |
-| Bind / unbind a smart plug | `printers:control` + `smart_plugs:write` |
-| Add / remove printers, factory-reset, firmware push | `printers:admin` |
+| Bind / unbind a smart plug | `smart_plugs:update` (binding is a field on the plug, set via `PATCH /smart-plugs/{id}`) |
+| Add a printer | `printers:create` |
+| Archive / restore / delete a printer | `printers:delete` |
+| Firmware push | `firmware:update` |
 
 ---
 

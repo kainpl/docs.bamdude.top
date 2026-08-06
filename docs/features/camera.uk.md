@@ -595,7 +595,7 @@ Embed live-стрім в OBS як Browser Source:
 
 1. В OBS клацни **+** під Sources.
 2. Обери **Browser**.
-3. URL: `http://your-bamdude:8000/api/v1/printers/{id}/stream?token=<long-lived-token>` (юзай **long-lived camera token** — короткоживучі експайряться mid-stream).
+3. URL: `http://your-bamdude:8000/api/v1/printers/{id}/camera/stream?token=<long-lived-token>` (юзай **long-lived camera token** — короткоживучі експайряться mid-stream).
 4. Width / height під сцену (наприклад, 1920×1080).
 5. **OK**.
 
