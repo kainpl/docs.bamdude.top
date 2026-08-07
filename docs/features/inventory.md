@@ -172,6 +172,7 @@ The second tab links pressure-advance (K-factor) calibration profiles to the spo
 - **Auto-select** — fills the matrix from your existing K-profiles automatically.
 - **Grouped view** — collapsible printer headings, each with per-nozzle (L / R) sub-rows.
 - **K-factor values** displayed inline so you can sanity-check before saving.
+- **Nozzle diameter badge** on each row. Profiles are fetched for *every* nozzle size a printer reports, so on a multi-nozzle machine one filament can contribute two rows that share a name — the diameter is what tells them apart. A printer that has not yet reported its hardware is queried for 0.4 mm, as before.
 - **Per-printer override** — pick a different profile for one printer if you have brand-specific calibration values that differ between machines.
 
 See [K-Profiles](kprofiles.md) for the calibration workflow that produces these profiles.

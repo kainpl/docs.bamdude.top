@@ -121,6 +121,7 @@ The bundle requires **debug logging to be currently enabled** — the endpoint r
 
 - Printer names → `[PRINTER]`, serial numbers → `[SERIAL]`, IP addresses → `[IP]`, access codes → `[ACCESS_CODE]`, usernames → `[USER]`, emails → `[EMAIL]`.
 - URL credentials (`http://user:pass@host`, `rtsps://bblp:code@host`) → `[CREDENTIALS]@`.
+- LDAP Distinguished Names → `[DN]`. A DN's leading `CN=` is the user's real name, so it is treated like an email address. Unlike everything else on this list it cannot be looked up in the database — a DN is per-user and comes from your directory — so it is matched by shape instead: two or more comma-joined `attr=value` components. `CN=Joe Schmoe,OU=Staff,DC=example,DC=com` is therefore removed wherever it appears, including inside an error message raised by the directory library. A lone `key=value` in an unrelated line is left alone.
 - Path components like `/home/<user>/`, `/Users/<user>/`, `/opt/<user>/` collapsed to `/home/[user]/` etc.
 - MQTT relay broker → masked: bare IP becomes `[IP]`, hostname becomes `*.tld`.
 - Subnets in network info → first two octets become `x.x` (so `192.168.1.0/24` → `x.x.1.0/24`).

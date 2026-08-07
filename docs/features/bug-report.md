@@ -84,6 +84,8 @@ The `support_info` payload is built server-side by `_collect_support_info()` and
 
 Sensitive strings are pulled from the live database at sanitization time and replaced with placeholders like `[PRINTER]`, `[SERIAL]`, `[IP]`, `[ACCESS_CODE]`, `[USER]`, `[EMAIL]` in the logs. The replacement happens in BamDude before the payload leaves your install — neither the relay nor GitHub ever sees the originals.
 
+One redaction does not work that way: if you sign in through LDAP, Distinguished Names become `[DN]`. A DN is per-user and comes from your directory, so there is nothing in the database to look it up by — it is recognised by its shape instead, and removed wherever it turns up. That matters because the leading `CN=` is the user's real name. The same rule applies to the [support bundle](system-info.md#sanitisation).
+
 ## :material-counter: Rate limiting
 
 Two layers:

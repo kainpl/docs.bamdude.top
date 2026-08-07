@@ -172,6 +172,7 @@ Custom-матеріали працюють як built-in для inventory-tracki
 - **Auto-select** — заповнює матрицю з твоїх існуючих K-profile автоматично.
 - **Grouped view** — collapsible printer-headings, кожен з per-nozzle (L / R) sub-row.
 - **K-factor values** показані inline, тож можна sanity-check перед save.
+- **Бейдж діаметра сопла** на кожному рядку. Profiles тягнуться для **кожного** розміру сопла, який звітує принтер, тож на багатосопловій машині один філамент може дати два рядки з однаковою назвою — саме діаметр їх і розрізняє. Принтер, який ще не відзвітував своє залізо, опитується на 0.4 мм, як раніше.
 - **Per-printer override** — пікни інший profile для одного принтера, якщо маєш brand-specific calibration values, що відрізняються між машинами.
 
 Див. [K-Profiles](kprofiles.uk.md) для calibration-workflow, що породжує ці profiles.

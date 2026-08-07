@@ -121,6 +121,7 @@ Bundle вимагає, щоб **debug logging був наразі ввімкне
 
 - Printer names → `[PRINTER]`, serial numbers → `[SERIAL]`, IP addresses → `[IP]`, access codes → `[ACCESS_CODE]`, usernames → `[USER]`, email-и → `[EMAIL]`.
 - URL credentials (`http://user:pass@host`, `rtsps://bblp:code@host`) → `[CREDENTIALS]@`.
+- LDAP Distinguished Name-и → `[DN]`. Провідний `CN=` у DN — це справжнє ім'я користувача, тож поводимось із ним як з email. На відміну від решти списку, DN не візьмеш із БД — він per-user і приходить із твого каталогу — тому ловиться **за формою**: два або більше `attr=value`-компонентів через кому. Тобто `CN=Joe Schmoe,OU=Staff,DC=example,DC=com` прибирається всюди, де трапиться, включно з текстом помилки від бібліотеки каталогу. Одинокий `key=value` у сторонньому рядку не чіпається.
 - Path-компоненти типу `/home/<user>/`, `/Users/<user>/`, `/opt/<user>/` колапсуються в `/home/[user]/` тощо.
 - MQTT relay broker → masked: bare IP стає `[IP]`, hostname стає `*.tld`.
 - Subnets в network info → перші два октети стають `x.x` (тож `192.168.1.0/24` → `x.x.1.0/24`).
