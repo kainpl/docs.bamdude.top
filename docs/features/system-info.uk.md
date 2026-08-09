@@ -105,7 +105,7 @@ Multi-line entry-ї (особливо stack traces) пересобираютьс
 
 | Файл | Вміст |
 |---|---|
-| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymized settings, dependency versions, log-file size, network interfaces з masked subnets, WebSocket connection count, Docker memory limit (якщо containerised). |
+| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymized settings, dependency versions, log-file size, network interfaces з masked subnets, WebSocket connection count, Docker memory limit (якщо containerised) — **і сам процес BamDude**, див. нижче. |
 | `bamdude.log` | Tail `bamdude.log`, sanitised. |
 
 Bundle вимагає, щоб **debug logging був наразі ввімкнений** — endpoint відмовляється генерувати інакше (`400 Debug logging must be enabled before generating a support bundle`). Workflow:
@@ -114,6 +114,29 @@ Bundle вимагає, щоб **debug logging був наразі ввімкне
 2. Відтвори issue.
 3. Згенеруй bundle.
 4. Перемкни DEBUG logging back off (інакше залишається on — стан персистить у `Settings`-таблиці і re-apply при рестарті).
+
+### Сам процес BamDude
+
+Раніше бандл описував машину, базу, принтери й налаштування — усе, крім процесу, який власне працює. Тож звіт «пам'ять росте днями, поки його не вб'ють» приходив без нічого, з чим можна працювати: числа, які вказують на причину, існують лише **поки це відбувається**, а на момент запитання контейнер уже перезапущено.
+
+Тепер бандли несуть:
+
+| Поле | Чому важливо |
+|---|---|
+| **Пам'ять у користуванні проти зарезервованої** | Різниця між цими двома й відрізняє справжній витік від нешкідливого адресного простору |
+| **Кількість потоків і дочірніх процесів** | Зростання кількості потоків — це інший баг, ніж зростання купи |
+| **Відкриті файли й сокети** | Витік дескрипторів ззовні виглядає як витік пам'яті |
+| **Uptime** | Дає масштаб усім іншим числам |
+| **Розбивка того, чим заповнена пам'ять** | Вказує, *яке саме* виділення росте |
+
+!!! note "На вже дуже великому процесі розбивка пропускається — і про це сказано"
+    Генерація бандла для діагностики некерованого росту пам'яті не має стати тим,
+    що добиває машину.
+
+    **Дочірні процеси записуються лише за іменем, ніколи за командним рядком** —
+    у командному рядку `ffmpeg` лежить пароль камери.
+
+Це потрапляє і в бандл, який ти завантажуєш, і в пакет, доданий до [звіту про баг](bug-report.md).
 
 ### Sanitisation
 

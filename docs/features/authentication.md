@@ -451,6 +451,48 @@ BamDude supports OpenID Connect single sign-on against any standards-compliant p
 
 The login page renders an "Sign in with `<provider>`" button per configured provider, below the password form.
 
+### Declaring a provider in environment variables
+
+For installs managed by a compose file, Helm or GitOps, where clicking through Settings once is not part of the deployment. Set these and the provider is created on startup and **reapplied on every restart**:
+
+```bash
+# Required — all four, or nothing is applied
+BAMDUDE_OIDC_NAME=Authentik
+BAMDUDE_OIDC_ISSUER_URL=https://id.example.com
+BAMDUDE_OIDC_CLIENT_ID=bamdude
+BAMDUDE_OIDC_CLIENT_SECRET=change-me
+```
+
+The optional variables carry the same defaults they have in the UI:
+
+| Variable | Default |
+|---|---|
+| `BAMDUDE_OIDC_ENABLED` | `true` |
+| `BAMDUDE_OIDC_SCOPES` | `openid email profile` |
+| `BAMDUDE_OIDC_AUTO_CREATE_USERS` | `false` |
+| `BAMDUDE_OIDC_AUTO_LINK_EXISTING` | `false` |
+| `BAMDUDE_OIDC_EMAIL_CLAIM` | `email` |
+| `BAMDUDE_OIDC_REQUIRE_EMAIL_VERIFIED` | `true` |
+| `BAMDUDE_OIDC_ICON_URL` | *(empty)* |
+| `BAMDUDE_OIDC_AUTOLOGIN` | `false` |
+| `BAMDUDE_OIDC_DEFAULT_GROUP` | *(unset — falls back to the UI default)* |
+
+Booleans accept `true/1/yes/on` and `false/0/no/off`.
+
+!!! warning "An env-declared provider is read-only in Settings"
+    Because the variables are reapplied on every boot, the provider is shown as read-only and the app refuses to change it there. An edit would be accepted and then silently undone at the next restart, which is worse than being told no.
+
+    **Removing the variables disables the provider rather than deleting it.** Accounts already linked to it keep their link and get it back if the variables return.
+
+!!! info "The failure modes are all quiet ones, so they are all loud here"
+    - A required variable left **empty** counts as unset, not as an empty secret.
+    - Values are **trimmed** — a secret mounted from a file or written as a Kubernetes block scalar does not smuggle in a trailing newline that would only fail on the first sign-in attempt.
+    - An **unrecognised** true/false value is refused with a log line instead of being guessed at, and the whole config is skipped: whatever was already running stays running.
+    - `BAMDUDE_OIDC_DEFAULT_GROUP` is a group **name**, not an ID — IDs differ on every install. A name matching no group refuses the config rather than quietly falling back to Viewers.
+    - A bad configuration **never stops the app from starting**.
+
+Everything above is also documented in `.env.example`.
+
 ### Hardening
 
 - **PKCE S256** -- mandatory, non-negotiable.

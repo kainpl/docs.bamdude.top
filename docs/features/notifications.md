@@ -5,7 +5,7 @@ description: Multi-provider push notifications for print events
 
 # Notifications
 
-Eight delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language.
+Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language.
 
 ---
 
@@ -18,6 +18,7 @@ Eight delivery channels, one editor, one routing config. Subscribe each provider
 | **Email (SMTP)** | Medium | STARTTLS / SSL / plain. Per-provider `to_email` so different users see different bodies. |
 | **Pushover** | Easy | Priority levels, image attachment up to 2.5 MB. |
 | **ntfy** | Easy | Topic-based, optional bearer token, image attachments. |
+| **Bark** | Easy | iOS-only, no account. Interruption levels — **Critical** delivers through Silent mode and Focus. Public relay or your own `bark-server`. |
 | **CallMeBot** | Easy | WhatsApp / Signal bridge — phone + API key, URL-encoded message. |
 | **Home Assistant** | Easy | `persistent_notification.create` or any `notify.*` service. Single global HA URL/token from Settings (or `HA_URL` / `HA_TOKEN` env). |
 | **Webhook** | Flexible | Generic JSON or Slack-format POST, custom field names, base64 image, optional bearer token. |
@@ -104,6 +105,33 @@ Pushover priority maps to numeric levels `-2…+2` per event in BamDude — same
 
     They're only sent at priority 2 — Pushover ignores them at every other level. Before 0.4.7b4 BamDude never sent them at all, so setting a provider to Emergency made every notification fail.
 
+### Bark (iOS)
+
+[Bark](https://bark.day.app/) is a free iOS push app with no account at all — install it, copy the device key it shows you, paste it here. Nothing else is required.
+
+| Field | Value |
+|---|---|
+| **Device Key** | The key the Bark app shows on its first screen — **required** |
+| **Server** | `https://api.day.app` (default) or your own `bark-server` |
+| **Group** | Optional — puts BamDude's notifications in their own group in the app |
+| **Sound** | Optional — one of the sound names the Bark app lists |
+| **Interruption Level** | `Default` / `Active` / `Time Sensitive` / `Critical` |
+
+!!! tip "Critical is the reason to have Bark next to ntfy and Pushover"
+    | Level | What iOS does with it |
+    |---|---|
+    | **Critical** | Delivered **through Silent mode and through Focus** — the print that stopped at 03:00 gets through |
+    | **Time Sensitive** | Breaks through scheduled summaries, without going that far |
+    | **Active** | A normal notification |
+    | **Passive** | Arrives with no sound — recorded, not announced |
+
+    Wire *print failed* and *filament runout* to a Critical Bark provider and leave everything else on a Default one, rather than making every event wake you.
+
+A self-hosted `bark-server` is subject to the same address rules as a self-hosted ntfy: on your own network is fine, anything that is not a real HTTP service is refused. If it sits behind a Cloudflare challenge, BamDude says so instead of dumping the challenge page at you.
+
+!!! info "An 'OK' that isn't one"
+    `bark-server` reports some failures *inside* an HTTP 200 body. BamDude reads the body rather than trusting the status, so a wrong device key is reported as a failure in **Send Test** instead of showing as sent and never arriving.
+
 ### SMTP / Gmail
 
 Plain SMTP — works with any provider that exposes username + password auth.
@@ -122,7 +150,25 @@ For Gmail: enable 2FA, then generate an [App Password](https://myaccount.google.
 
 ### Home Assistant
 
-Zero-config when HA is already wired up under **Settings** → **Network** → **Home Assistant** (or the `HA_URL` / `HA_TOKEN` env vars). The provider has no extra fields — events become `persistent_notification.create` calls in your HA dashboard.
+Zero-config when HA is already wired up under **Settings** → **Network** → **Home Assistant** (or the `HA_URL` / `HA_TOKEN` env vars). Left empty, events become `persistent_notification.create` calls in your HA dashboard.
+
+| Field | Value |
+|---|---|
+| **Service** | Optional — any HA service, e.g. `notify.mobile_app_myphone`. Accepted as `notify.x`, `notify/x` or `api/services/notify/x`. Empty = `persistent_notification.create` |
+| **Data (JSON)** | Optional — a JSON **object** forwarded as HA's nested `data`, the same place an automation puts it |
+
+The **Data** field is what makes an Android push behave. HA's mobile-app integration takes its options there, not in the title and message:
+
+```json
+{ "priority": "high", "ttl": 0, "channel": "BamDude" }
+```
+
+`priority: high` + `ttl: 0` are what make a notification arrive *immediately* rather than whenever the phone next wakes; `channel` gives printer alerts their own sound instead of burying them among everything else HA sends.
+
+!!! info "Why JSON and not `key=value` lines"
+    So `ttl: 0` stays the number HA expects, and so nested options are possible at all. It is validated when you save it **and** again when it is sent — a malformed field is refused in front of you rather than becoming a notification that quietly never arrives.
+
+    Leave it empty and nothing changes: it is only sent when filled in, because `persistent_notification.create` rejects extra keys.
 
 !!! tip "Forward HA notifications to other channels"
     Use HA automations to mirror these persistent notifications to the HA Companion app, Telegram, ntfy, etc. — gives you a single audit log in HA plus your usual mobile push.
@@ -490,14 +536,20 @@ The user can opt in/out of each event individually under their personal **Notifi
 
 ---
 
-## :material-bed: Bed-Cooled / Plate-Not-Empty quiet-hours bypass
+## :material-bed: Getting an action-required event through the night
 
-Two events bypass quiet hours by default because they're action-required:
+Some events stall the farm until somebody acts on them:
 
-- **`plate_not_empty`** — caught a non-empty plate before a queue job started (auto-pauses dispatch). Sleeping through this means the queue stalls until you wake.
-- **`bed_cooled`** — the bed dropped below your configured threshold (default 35 °C) after a print, signalling the part is safe to remove. Useful at any hour for high-volume operators.
+- **`plate_not_empty`** — a non-empty plate was caught before a queue job started, and dispatch is now paused. Sleeping through this means the queue stalls until you wake.
+- **`bed_cooled`** — the bed dropped below your configured threshold (default 35 °C) after a print, so the part is safe to remove.
+- The **sensor threshold alarms** — a room too cold or too damp for the filament that is printing in it.
 
-The bypass is configurable per provider — open the provider's edit form and toggle **Bypass quiet hours** on the relevant event row if you'd rather have everything respect the window.
+!!! warning "Quiet hours are per provider, not per event"
+    There is no per-event bypass. A provider inside its quiet window drops **everything**, including the three above — so a provider that is quiet from 22:00 will not tell you the queue stalled at 01:00.
+
+    Route it instead: give the action-required events **their own provider** with quiet hours off, and leave the chatty ones (progress, print started) on the provider that does sleep. On iOS a [Bark](#bark-ios) provider at **Critical** is the strongest version of this — it comes through Silent mode and Focus as well.
+
+The **daily digest** is a separate opt-in channel and never delays anything: every notification is sent when it happens, and the digest is an extra summary on top.
 
 ---
 

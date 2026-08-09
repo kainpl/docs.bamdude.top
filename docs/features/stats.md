@@ -59,13 +59,40 @@ Per-print capture relies on the plug being responsive at exactly the right two m
 
 The snapshot table is bounded — old rows are pruned after a configurable retention window so it doesn't grow forever.
 
+## :material-trophy: Records
+
+A **Records** panel picks out the extremes of the selected range: **Longest Print**, **Heaviest Print**, **Most Expensive**, **Busiest Day** and the current **Success Streak**.
+
+**Most Expensive counts the electricity, not just the filament.** It ranks prints on filament **plus** the power the print actually drew, and shows the split (`filament` / `power`) so the figure can be checked against the print's own page. A long print that ran a printer for ten hours no longer loses the podium to a short one on pricier filament while having cost more to run.
+
+!!! info "A print with no smart plug is ranked on its filament, as before"
+    Its power was never measured, and putting a made-up number on the podium would
+    be worse than leaving it out. Prints measured at **zero** and prints **never
+    measured** stay distinguishable.
+
+---
+
 ## :material-bullseye-arrow: Cost calculations
 
 | Cost | Formula |
 |---|---|
-| **Per-print filament cost** | Sum of each tracked spool's share (`grams_from_spool × spool.cost / spool.weight`). Any grams **not** covered by an assigned spool are topped up at `default_filament_cost / 1000` per gram. So a multi-colour print with only some AMS slots mapped to inventory still reflects the whole print, not just the tracked slots; a fully-untracked print falls back entirely to the default rate. |
+| **Per-print filament cost** | Sum of each tracked spool's share (`grams_from_spool × spool.cost / spool.weight`). Any grams **not** covered by an assigned spool are topped up at `default_filament_cost / 1000` per gram, **when a default is set**. So a multi-colour print with only some AMS slots mapped to inventory still reflects the whole print, not just the tracked slots. |
 | **Per-print energy cost** | `energy_kwh × energy_cost_per_kwh`. Zero when no plug capture (`energy_kwh IS NULL`). |
 | **Total** | Filament + energy. |
+
+!!! warning "A rate you have not set is no rate"
+    With no `default_filament_cost` configured, untracked filament is **not**
+    costed — a print with no rate carries **no cost** at all, rather than a cost of
+    zero, which reads as free.
+
+    BamDude used to quietly assume **25 per kg** here, in the initial archive
+    estimate, in the cost recalculation and in project print plans — pricing prints
+    with a number nobody had entered, and disagreeing with itself between paths, so
+    one print could carry two different totals depending on which wrote last.
+
+    Nothing changes if you *have* set a price: a spool's own cost per kg still wins
+    over the default, and the default still covers filament from spools that are
+    not in your inventory.
 
 These feed the per-archive cost line in the archive detail card and the project / print-plan totals.
 

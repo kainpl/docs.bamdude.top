@@ -69,6 +69,27 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `virtual_printer_mode` | `file_manager` | Default mode for new VP rows: `file_manager`, `print_queue`, or `proxy`. See [Virtual printer modes](../features/virtual-printer.md#modes). |
 | `preferred_slicer` | `bambu_studio` | `bambu_studio` or `orcaslicer`. Which slicer to suggest in workflows that link out. |
 
+## :material-content-cut: Slicer API
+
+| Key | Default | Effect |
+|---|---|---|
+| `use_slicer_api` | `false` | Master toggle for [server-side slicing](../features/slicer-api.md). Off = the Slice button is replaced by "open in your desktop slicer". |
+| `orcaslicer_api_url` | empty | URL of the OrcaSlicer sidecar. Empty falls back to the `SLICER_API_URL` env var (`http://localhost:3003`). Validated on save — see the note below. |
+| `bambu_studio_api_url` | empty | URL of the BambuStudio sidecar. Empty falls back to `BAMBU_STUDIO_API_URL` (`http://localhost:3001`). Validated on save. |
+| `slicer_stall_timeout_minutes` | `15` | Minutes to keep waiting **with no progress** from the sidecar (range 1–240). The clock resets on every progress update, so a heavy model that keeps reporting runs to completion. On a sidecar too old to report progress it bounds total slicing time instead. |
+
+!!! warning "Addresses you type in are validated"
+    The two slicer URLs, the Home Assistant URL and the Obico detection endpoint
+    are all checked before they are saved. A mistyped or hostile value could point
+    BamDude at somewhere it should never fetch — most notably the **cloud metadata
+    address**, which is the standard way credentials get read out of a server.
+
+    Addresses on your own machine or home network stay allowed, because that is
+    where these services normally live. What is refused: a non-web address, an
+    address written as a plain number, a multicast address, and the cloud metadata
+    endpoints. The single-sign-on issuer address, which must be reachable on the
+    public internet, is checked by the stricter rule it always should have used.
+
 ## :material-package-variant: Inventory & filament
 
 | Key | Default | Effect |

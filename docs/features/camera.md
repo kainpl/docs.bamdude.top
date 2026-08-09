@@ -136,6 +136,45 @@ This produces dramatically higher-quality timelapses than fixed-interval capture
 
 ---
 
+## :material-rotate-right: Camera rotation
+
+A per-printer **Rotation** setting (`0` / `90` / `180` / `270`, on the printer's camera settings) for a camera that is physically mounted turned.
+
+It applies to **everything BamDude produces from that camera**:
+
+| Output | Rotated |
+|---|:---:|
+| Notification snapshot | :material-check: |
+| Layer-timelapse frames — rotated **as captured**, before the video is assembled | :material-check: |
+| Finish photo, from any of its five sources: pre-captured frame, external camera, an already-open live view, a fresh grab, or the still recovered from the printer's own timelapse | :material-check: |
+| The printer's own timelapse **video** | :material-close: |
+
+!!! info "Why the printer's timelapse video is left alone"
+    It is left exactly as the printer recorded it — turning a finished video means
+    re-encoding it. Only the **still extracted from it** is straightened, so the
+    finish photo matches every other image while the video stays untouched.
+
+    A frame that was already rotated on capture is never rotated a second time.
+
+---
+
+## :material-numeric-1-circle: One camera, one reader
+
+A Bambu printer's firmware permits exactly **one** camera connection, and a USB camera permits exactly **one** V4L2 handle. A capture that races another reader does not degrade — it **fails**.
+
+BamDude enforces that on two axes:
+
+- **Background capture vs a viewer.** While anyone is watching the live view, every background consumer — layer timelapse, finish photo, AI failure detection, the plate check, notification snapshots — **reuses the live view's frame** instead of opening its own connection. This has always been true for the built-in printer camera; **external cameras now publish their frames the same way**. Before that, watching an external camera during a print meant the layer timelapse recorded almost nothing and the finish photo arrived empty.
+- **Background capture vs background capture.** With nobody watching, each consumer correctly concluded it was competing with no one — and then opened its own connection at the same moment as the next one. Two captures 207 ms apart were enough to knock over a running camera-wall stream. **Simultaneous captures now share one connection:** the first opens it, the rest wait for the same frame.
+
+!!! note "It coalesces; it does not cache"
+    A capture that arrives *after* the shared one finished still takes a fresh
+    frame. Plate detection and the finish photo decide things about a running
+    print from these images, and a stale frame is worse than a slow one — a finish
+    photo showing the bed already lowered is the failure this avoids.
+
+---
+
 ## :material-magnify: Zoom & Pan
 
 | Method | Action |

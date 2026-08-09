@@ -82,6 +82,36 @@ Use this after manual on-printer calibration — it pulls the freshly-tuned valu
 !!! warning "Push overwrites the printer's current K"
     Pushing profiles overwrites the printer's stored K values for the matching filament. If you've been tuning on-printer, **fetch first** to avoid clobbering uncommitted tuning work.
 
+**Saving and deleting wait for the printer's verdict.** They used to be fire-and-forget — BamDude reported success the moment the bytes left the process, and the printer's actual answer was thrown away in a debug log. If the printer says no, you now see **its own reason**.
+
+!!! note "A printer that stays silent is still treated as success"
+    No answer is not evidence of refusal.
+
+### Nozzle size on a profile
+
+The printer reports the nozzle size **once**, on the envelope of its reply. On single-nozzle models the individual profile entries carry no size at all, so a profile's size is read from that envelope.
+
+If you run a **0.6 or 0.8 mm nozzle** on a printer older than this release, every profile was listed as 0.4 mm — and it was not only a wrong label:
+
+- Editing a profile is delete-and-re-add on single-nozzle printers, and the dialog rebuilds the nozzle fields from what it was shown — so **saving an untouched 0.6 mm profile stored it back as 0.4**.
+- Deleting one aimed the command at the wrong nozzle the same way.
+- Assigning a spool's saved calibration to an AMS slot matches on nozzle size, so on a 0.6 or 0.8 nozzle it never found the printer's own entry and **the assignment silently failed to stick**.
+
+The H2D was never affected — its firmware does repeat the size per entry.
+
+### Flow Type (Standard / High Flow)
+
+A K-profile can be **Standard** or **High Flow**, but only some firmware stores the choice; the rest accept it and keep Standard whatever you pick. BamDude follows the same rule Bambu Studio uses for its own calibration window, read from the printer definitions it ships:
+
+| Flow Type field | Models |
+|---|---|
+| **Shown** | H2 series, X2D, P2S |
+| **Hidden** | X1, X1 Carbon, X1E, P1P, P1S |
+
+This is **not** the single- versus dual-nozzle split — the P2S is single-nozzle and does offer both flows.
+
+A profile carrying no flow type at all reads as **Standard**, the way the slicer reads it, rather than the High Flow that used to be assumed on import.
+
 ### Sync status indicators
 
 Each profile shows one of three sync states:

@@ -661,6 +661,30 @@ Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / p
 
 ---
 
+## :material-swap-vertical-variant: Use the slicer's AMS slots {#save-ams-mapping}
+
+**Off by default, per Virtual Printer**, on the VP card next to the other Queue-mode toggles.
+
+When a slicer sends a job through a Queue-mode VP, BamDude normally ignores the slot numbers the slicer resolved and picks the trays itself, by filament type and colour. That is the right default almost always — but **two spools of the same red PLA are identical as far as the file is concerned**, so matching by type and colour cannot tell them apart. Whichever one you chose in Bambu Studio, BamDude might load the other.
+
+Turn this on and the slots the slicer resolved are used exactly as sent.
+
+!!! warning "It is a trade — understand it before turning it on"
+    For jobs from this VP, BamDude stops choosing slots, which also switches off:
+
+    | What you lose | Normally does |
+    |---|---|
+    | **Lowest spool first** | Burns down a partly-used spool before opening a fresh one |
+    | **The AMS-Backup gate** | Stops "lowest first" stranding a print when AMS filament backup is off |
+    | **Inventory remaining-weight** | Skips a tray your inventory says can't finish the job |
+    | **Flow-Through-System routing** | Routes an FTS-bound slot to the external spool holder |
+
+    With the setting **off**, all of that works exactly as it does today. A mapping the slicer left entirely unresolved is ignored, so an empty answer never becomes a wrong one.
+
+Turn it on for a VP that feeds one printer whose trays you load deliberately; leave it off for a VP feeding a farm, where BamDude choosing is the point.
+
+---
+
 ## :material-tune-variant: System default print options (slicer-silent dispatches) {#system-default-print-options}
 
 When a slicer sends a print to a Queue-mode VP, it normally carries the per-job print-option toggles — **bed levelling**, **flow calibration**, **layer inspection**, and **timelapse**. Some slicer builds and headless / scripted upload paths **omit** these flags. Previously a queue item with a missing flag fell straight back to the printer model's built-in column default.

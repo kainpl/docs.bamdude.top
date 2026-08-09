@@ -393,12 +393,23 @@ The badge in the controls row shows the current speed percentage and is dimmed w
 
 ---
 
-## :material-fan: Fan Status (display only)
+## :material-fan: Fan Status
 
-Three live fan badges in the controls row: **Part Cooling**, **Auxiliary**, **Chamber**. They show real-time speeds (0–100%) reported by the printer.
+Live fan badges in the controls row — **Part Cooling**, **Auxiliary**, **Chamber** — showing real-time speeds (0–100 %) reported by the printer.
 
-!!! info "Read-only"
-    Fan speeds are determined by the slicer profile and the printer firmware — BamDude shows them but doesn't expose a control.
+!!! info "The three standard badges are read-only"
+    Their speeds are determined by the slicer profile and the printer firmware.
+    BamDude shows them but doesn't expose a control.
+
+### Air-duct fans (P2S / X2D) — controllable
+
+Machines with an **air-duct** carry fans that are never reported as a plain speed field. Those appear as their own badges, **with a speed control on the badge**: `POST /printers/{id}/fan-speed?part_id=<n>&percent=<0-100>`, gated by `printers:control`.
+
+The most visible one is the **second auxiliary fan** — an add-on kit on the **P2S**, fitted from the factory on the **X2D**.
+
+- **Only what is fitted appears.** The printer lists the parts it actually has, so a badge is driven by the hardware rather than by a list of model names. An id the printer never reported is refused (**400**) rather than sent, since the command would be accepted and do nothing.
+- **The fans are named the way your printer names them.** The same part id is a different fan on different models — part 10 is the *left* auxiliary on a P2S and the *right* one on an X2D, and on the X2D it is even called something different in cooling and in heating mode. The names come from the Bambu Studio printer definitions BamDude ships, so a P2S says **Right Auxiliary Fan**, not just "Auxiliary".
+- **A fan the current air-duct mode holds off is shown but not offered as a control** (**409** if you try) — the printer accepts the command and ignores it.
 
 ---
 

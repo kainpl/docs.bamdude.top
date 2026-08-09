@@ -133,6 +133,17 @@ The detection panel under **Settings → Integrations → Obico AI** is split in
 
 **Recent detections** — a chronological list of the last events with timestamp, printer, classification, score, and a thumbnail of the frame that crossed the threshold. Useful for tuning sensitivity without waiting for a real failure.
 
+### The AI badge on the printer cards
+
+You no longer have to be on this page to watch detection track a print. Each card on the **Printers** page carries an **AI** badge next to the other health badges — grey while nothing is being watched, then green / amber / red as a monitored print is classified. The tooltip carries the current score; clicking it comes back here for the full status and history.
+
+A printer detection is **not** watching shows no badge at all, rather than one implying it is covered.
+
+!!! info "The badge needs no settings permission"
+    It is readable by anyone who can see printers. It deliberately carries no
+    configuration — the ML server address and the detection history stay behind
+    `settings:read`, where they were.
+
 ---
 
 ## :material-alert-circle: Requirements & Gotchas

@@ -41,5 +41,15 @@ Your dark and light selections are remembered separately and re-applied whenever
 
 ---
 
+## :material-tab: Print progress in the browser tab
+
+**Off by default.** Turn on **Show print progress in the browser tab** and the tab title carries the percentage of the print finishing soonest, while the tab icon becomes a matching progress ring in your accent colour.
+
+A browser window parked on another screen then tells you how the farm is doing without switching to it — useful on a wall display, less so on the laptop you actually work in. That is why it is a **per-browser** preference rather than a per-account one, like everything else on this page.
+
+Turning it off hands the tab back exactly as it was.
+
+---
+
 !!! note "Per-device, not per-account"
     Appearance lives in the browser, not on your BamDude user. Signing in on a new device starts from the defaults (Dark, Classic, Neutral, Green) until you customise it there. Clearing the browser's site data resets it.

@@ -58,6 +58,18 @@ Sort dropdown above the file grid:
 - **Size** — largest / smallest first
 - **Type** — grouped by file extension
 
+!!! info "Dates on a mapped (external) folder are the file's own"
+    Files on a NAS or USB folder are dated by their **modification time on disk**,
+    read on every scan — not by the moment BamDude discovered them. A scan
+    discovers a whole folder in the same instant, so the discovery time gave every
+    file in it the same timestamp and the order came down to chance. Edit a file on
+    the share and it moves to the top the next time you scan.
+
+    **A folder's date is the newest thing anywhere inside it**, however deep — not
+    just one level down, which used to make a folder whose models all sit in
+    sub-folders look untouched for months. Hover a folder name to see the date it
+    is sorted by.
+
 ### Not printed
 
 A toggle beside the type dropdown narrows the list to files that have never finished a print. It combines with every other filter rather than replacing them, so "Not printed" plus `.gcode.3mf` answers the question worth asking: what have I sliced and never actually run.
@@ -301,6 +313,13 @@ Single-plate files don't render the gallery — the existing main thumbnail cove
 
 Deleted files don't disappear immediately — they move to **Trash** and stay there for a configurable retention window (default **30 days**) before a background sweeper hard-deletes them from disk. This gives you an undo window for accidental deletions and bulk operations.
 
+**Every route into deletion behaves the same way.** Deleting one file, deleting a selection, and deleting a folder all put the entries in the trash — the bulk paths used to destroy files outright, with nothing to restore. Files that were inside a deleted folder come back to the **top level** of the library when restored, since the folder they lived in no longer exists.
+
+!!! note "A file that could not be deleted is not reported as deleted"
+    Bulk delete skips a file whose print is currently running. The result says what
+    actually happened and how many were skipped, rather than counting everything
+    you selected.
+
 ### Restoring or permanently removing trashed files
 
 Open **Trash** (button in the File Manager header) to see what you've deleted. Regular users see their own trashed files; admins see everyone's.
@@ -387,6 +406,24 @@ It is gated exactly like Rename: a user holding only the `*_own` library permiss
 
 !!! note "Filename restrictions"
     Filenames cannot contain path separators (`/` or `\`). The rename API rejects these characters and the modal surfaces the error inline.
+
+### Deleting a folder
+
+Folders have no owner, so deleting one used to need the full "delete anything" permission (`library:delete_all`) — which meant a user could create a folder, delete their own files out of it, and then have to ask an administrator to clear the empty shell.
+
+| Folder | Permission needed |
+|---|---|
+| **Empty** | `library:delete_own` — the ordinary delete permission |
+| Holds files or subfolders | `library:delete_all` |
+| An external / mapped folder | `library:delete_all` |
+| Linked to a project or an archive | `library:delete_all` |
+
+Removing any of the last three affects more than the folder, which is why they still need an administrator.
+
+!!! warning "'Empty' is decided by the server, not by what you can see"
+    A folder holding a file **somebody else** has deleted looks empty in the tree.
+    Deleting it would take that file for good and break their restore — so it is
+    refused, and says why.
 
 ---
 

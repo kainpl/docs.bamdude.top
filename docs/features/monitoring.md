@@ -22,6 +22,8 @@ Adjust the size of printer cards to fit your screen:
 
 Use the **+** and **-** buttons in the toolbar to adjust. Size preference is saved automatically.
 
+**The S card still answers "which one finishes first".** Under its progress bar it carries a single line of metrics while a print is running — **remaining time, ETA and layers** — in the same formatting the M card uses, so the two read alike. Each value is left out individually if the printer doesn't report it, and the row keeps its height when nothing is printing, so cards don't jump as prints start and finish.
+
 ---
 
 ## :material-chart-bar: Status Summary Bar
@@ -94,9 +96,39 @@ Real-time fan speeds in the Controls section:
 
 Active fans show their current speed %; inactive ones grey out at 0 %. A **print speed badge** (:material-gauge:) sits in the same row showing the live speed-preset percentage.
 
+#### The second auxiliary fan (P2S / X2D)
+
+The **P2S** (add-on kit) and **X2D** (fitted from the factory) carry a second auxiliary fan that is never reported as a plain speed field — it exists only inside the printer's air-duct data. It appears as its own badge, with its speed, and **you can set that speed from the badge**.
+
+Nothing appears on a machine that doesn't have it: the printer lists only the parts actually fitted, so the badge is driven by the hardware, not by a list of model names.
+
+!!! info "The fans are named the way your printer names them"
+    The same fan position is not the same fan on every model — on the P2S the
+    second auxiliary fan is the **left** one, on the X2D the **right** one, and on
+    the X2D it is even called something different in cooling and in heating mode.
+    BamDude reads those names from the Bambu Studio printer definitions it already
+    ships, so a P2S says **Right Auxiliary Fan** rather than just "Auxiliary".
+
+A fan that the current air-duct mode holds off — the P2S's left fan in heating mode, for instance — is **shown but not offered as a control**, because the printer accepts the command and ignores it.
+
 ### Door / lid sensor (X1 Series only)
 
 X1 / X1 Carbon / X1E expose a door-open MQTT signal (printer status bit 23). When the printer reports the door open mid-print the card flags it; on other models BamDude doesn't fake the indicator — A1, P1, P2 and H2 series don't ship the sensor.
+
+### AI failure-detection badge
+
+When [Obico AI failure detection](obico.md) is enabled, each printer card carries an **AI** badge alongside the other health badges, so you can watch how detection is tracking an ongoing print without leaving the Printers page.
+
+| Badge | Meaning |
+|---|---|
+| Grey | Detection is configured, but nothing is being watched right now |
+| Green | The monitored print is classified **safe** |
+| Amber | **Warning** — the score is rising |
+| Red | **Failure** — the configured action has fired |
+
+The tooltip carries the current score; clicking it goes to the full status and history. **A printer detection is not watching shows no badge at all**, rather than one implying it is covered.
+
+The badge is readable by anyone who can see printers — it does **not** require permission to read settings, and it deliberately carries no configuration: the ML server address and the detection history stay where they were.
 
 ### Compact-mode status pip
 
@@ -159,6 +191,18 @@ A fifth sort option — **ETA** — orders printers by how soon they finish: pri
 Above the grid, group printers by **location** — the place picked on each printer card. Useful when the farm spans rooms / floors — collapse the room you're not watching.
 
 A location is a real entity, not text typed per printer: you pick it from a list, and printers, sensors and auto-queue targets all point at the same row. That is what stops `Shelf 2` and `shelf 2` from becoming two different places — which used to send auto-queue items to a location no printer had, silently and permanently.
+
+The list itself lives under **Settings → Printing → Locations** — its own card, under the permission that governs locations rather than the one for permanently deleting a printer. (It used to be nested inside the archived-printers card, which meant anyone who could manage places but not delete printers never saw it at all.)
+
+!!! note "Location lists are in alphabetical order"
+    Everywhere: the filters on the printers, queues and maintenance pages, the
+    picker in the printer and auto-queue dialogs, and the list under Settings.
+
+    They used to be ordered by character code, which is not the alphabet — Ґ, Є, І
+    and Ї sort before А, and anything typed in lower case fell to the very end, so
+    a farm with places called *Ірпінь* and *Ангар* saw what looked like no order at
+    all. Numbered halls also count properly now: **Цех 2** comes before **Цех 10**,
+    not after it.
 
 ### Search + filters
 

@@ -53,6 +53,42 @@ Solutions for common issues with BamDude.
    tail -f logs/bamdude.log
    ```
 
+!!! info "A dropped printer now recovers itself"
+    BamDude checks every minute for a printer that **was** working, has been silent
+    for five minutes, and **whose port still answers** — and rebuilds the connection
+    itself rather than waiting for the network library to get around to it. One
+    report had a printer offline from 02:19 to 11:24 with the page open the whole
+    time; the old check only ever looked at connections that were still up but had
+    gone quiet, so a fully dropped one fell outside it.
+
+    A printer that is simply **switched off** is left alone, so powering the farm
+    down overnight causes no churn and no log noise. A printer whose connection
+    keeps dying is retried at a growing distance rather than every minute, and the
+    log names how long it was gone.
+
+### The printer looks connected and idle, but ignores every command
+
+**Symptom.** Prints, temperature changes and filament loads are all silently dropped. Uploads appear to succeed, the printer echoes the job back, and then nothing happens — over and over. Status queries still answer, so the printer shows as connected and idle.
+
+**Cause.** Some firmware (**P1 series, 01.08.03 and later**) can end up rejecting control commands it cannot verify. The printer reports it the whole time, as HMS **`0500-0500-0001-0007`** — *MQTT command verification failed*.
+
+**Fix — on the printer:**
+
+1. On the printer's screen, enable **Developer Mode** (LAN Mode / Developer options, depending on firmware).
+2. **Restart the printer.**
+
+BamDude now recognises the code, shows it with the same four-group form the printer's own screen displays, and carries that remedy. (Bambu's own advice for this code is to update Bambu Studio or Handy, which is no help for a print sent from BamDude.)
+
+!!! note "What else changed with it"
+    - Queueing a print onto such a printer **stops on the first attempt and names
+      the cause**, instead of spending four and a half minutes and three uploads
+      before failing with an unrelated message about SD cards.
+    - The Developer Mode check in the support bundle and printer diagnostics has a
+      third answer, **undetermined**, rather than treating any reply that was not an
+      outright refusal as a pass.
+    - A healthy printer is no longer told to go check its serial number in the
+      moment right after it reconnects.
+
 ---
 
 ## :material-camera: Camera Issues
