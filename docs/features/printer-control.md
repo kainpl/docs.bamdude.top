@@ -329,7 +329,7 @@ After a print completes, the Z axis usually isn't referenced. The first jog clic
 | **Auto Home** | Runs the printer's full auto-home sequence and dismisses the dialog. On success, jogging works for the rest of the browser session |
 | **Cancel** | Closes the dialog, no command sent |
 
-The **Move anyway** button was removed in 0.4.7 — it was the path that drove the plate with the soft endstops bypassed. Bambu Studio refuses a manual move outright while the axis is not homed (`check_axis_z_at_home`), and BamDude now does the same: home first, then jog.
+The **Move anyway** button was removed in 0.4.7 — it was the path that drove the plate with the soft endstops bypassed. BamDude now asks you to home first, then jog. This is deliberately stricter than Bambu Studio, which sends the move and only afterwards suggests recentering: Studio is a window in front of the machine, while this page can be open on a phone in another room.
 
 !!! warning "Travel limits are not guaranteed"
     BamDude enables the soft endstops before every jog, but Bambu firmware has been observed running a move past the limit anyway, and it reports no axis position — so the move cannot be clamped client-side either. Keep distances small (≤10 mm) until the plate is in a known-safe position and watch the printer.
