@@ -401,6 +401,24 @@ Both gated by `printers:control`.
 
 ---
 
+### Timelapse: what BamDude checks before it promises one
+
+The timelapse tick used to be sent to any printer, including one with no card in it — the request went nowhere and the print finished with no video and no explanation. Two checks now stand where Bambu Studio puts them.
+
+**When you choose printers**, a machine that cannot record is named in the dialog, with which of three problems it has: no SD card, an unreadable one, or a read-only one. Those are three different situations — a card sitting in the slot and refusing to be written is not an empty slot.
+
+!!! info "A card is not always needed"
+    Printers with internal timelapse storage, or with a timelapse kit fitted, record without one — so neither is asked about the card at all. Which machines those are comes from the printer itself, not from a list of model names.
+
+**When a queued print starts** and the printer has run out of room, that printer's queue **pauses** instead of quietly dropping the recording. Deleting the video you asked for is a decision nobody was present to make.
+
+!!! warning "It never pauses on a number nobody reported"
+    A printer that has not published its free space does not pause anything. Stranding a farm on a figure that was never measured would be worse than the missing video this protects.
+
+Where the printer keeps timelapses itself, the print dialog also offers to **free space** by dropping the oldest recording — the same escape hatch Bambu Studio gives, and nothing is deleted without that click.
+
+---
+
 ## :material-thermometer: Temperature Control
 
 Set the nozzle, the bed and the chamber — not just read them. Opened from the thermometer button in the temperature row.
