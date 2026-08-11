@@ -509,6 +509,21 @@ Right-click a folder (or use its three-dot menu) → **Link to project** / **Lin
 
 Linked folders show a colored badge in the sidebar and grid. When a folder is linked to multiple projects the badge carries an `×N` overflow counter and the tooltip lists every project name. Per-folder links propagate the project list to every file inside via the M2M pivot, plus any file moved into the folder later inherits the same list.
 
+### What the archive link is for
+
+⚠️ **Its effect appears on the archive, not on the folder.** Linking a folder to an archive puts an "open source folder" shortcut on that archive — the yellow folder icon on the archive card and in the archive row, which jumps straight back to the library folder the files came from. Nothing changes on the folder itself, which is why the dialog now says so.
+
+**One archive belongs to one folder.** Linking an archive that another folder already holds is refused, naming that folder — rather than silently taking it away from a folder you are not looking at. The archive only ever displayed one link anyway, so a second one existed in the database and nowhere on screen.
+
+!!! info "On upgrade"
+    Where several folders already claimed the same archive, the **most recent** link is kept and the others are cleared. Each clearing is written to the log with both folder names.
+
+### Archived projects are not offered
+
+The project picker lists active and completed projects. An archived project is left out — archiving means "I am done with this", the same as it does for a printer, which leaves the choices rather than being labelled inside them.
+
+⚠️ **A project something is already linked to stays on the list even when archived**, so an existing link is never hidden and never silently cleared by saving the dialog.
+
 ---
 
 ## :material-api: API endpoints reference
