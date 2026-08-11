@@ -304,16 +304,18 @@ The `force` parameter was removed in 0.4.7. It wrapped the move in `M211 S0` …
 
 Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is **not** running a print.
 
+The same axis is also in the **Motion Control** window below, together with X, Y and the extruder. Both go through one implementation, so the direction handling and the endstop sequence cannot drift apart.
+
 ### G-code sent
 
-Byte-for-byte what Bambu Studio's own jog sends over the same MQTT `gcode_line` channel (`DevAxis::Ctrl_Axis`):
+What Bambu Studio's own jog sends over the same MQTT `gcode_line` channel (`DevAxis::Ctrl_Axis`). Until 0.5.2 the sequence matched but the feedrate did not — BamDude drove Z at 600 while Studio drives it at 900:
 
 ```
 M211 S              ; remember the current soft-endstop state
 M211 X1 Y1 Z1       ; explicitly ENABLE all three
 M1002 push_ref_mode
 G91
-G1 ZN F600
+G1 ZN F900
 M1002 pop_ref_mode
 M211 R              ; restore the remembered state
 ```
@@ -322,12 +324,14 @@ Enabling the endstops is the point: Bambu's own sliced start G-code turns them *
 
 ### Not-homed warning
 
-After a print completes, the Z axis usually isn't referenced. The first jog click in a session shows a Bambu-Studio-style modal:
+After a print completes, the Z axis usually isn't referenced. Trying to jog shows a Bambu-Studio-style modal:
 
 | Choice | Action |
 |--------|--------|
-| **Auto Home** | Runs the printer's full auto-home sequence and dismisses the dialog. On success, jogging works for the rest of the browser session |
+| **Auto Home** | Runs the printer's full auto-home sequence and dismisses the dialog |
 | **Cancel** | Closes the dialog, no command sent |
+
+Since 0.5.2 whether the printer is homed is read **from the printer** (`home_flag`), not remembered per browser session. The old note was wrong in both directions: homing from the machine's own screen still produced the warning, and a printer that lost its home after BamDude homed it did not.
 
 The **Move anyway** button was removed in 0.4.7 — it was the path that drove the plate with the soft endstops bypassed. BamDude now asks you to home first, then jog. This is deliberately stricter than Bambu Studio, which sends the move and only afterwards suggests recentering: Studio is a window in front of the machine, while this page can be open on a phone in another room.
 
@@ -345,6 +349,96 @@ POST /api/v1/printers/{id}/home-axes?axes={z|xy|all}
 The `axes` parameter is **kept only for backward compatibility** — every call sends a bare `G28`, regardless of what you passed. The reason is upstream issue #1052: on H2C the bed homes by moving **up** toward the top endstop, and a bare `G28 Z` skips the toolhead-park step that a full `G28` runs first. The result was bed crashing into the toolhead. So BamDude unconditionally sends `G28` and lets the firmware run its safe park-XY-then-home-Z sequence.
 
 Invalid `axes` values still return 400 so typos surface.
+
+---
+
+---
+
+## :material-axis-arrow: Motion Control
+
+Everything that moves, in one window — opened from the temperature row on the printer card.
+
+### The toolhead
+
+A round pad, as in Bambu Studio: the **outer ring is 10 mm**, the **inner ring is 1 mm**, and **Home** sits in the middle.
+
+!!! info "Why fixed steps and not a distance field"
+    Newer printers take these moves over a command (`xyz_ctrl`) that carries a **direction and a coarse/fine flag — and nothing else**. On those machines 3 mm and 9 mm are literally the same request, as are 10 mm and 200 mm. A free number box would promise a precision the printer never receives. Older machines still get the G-code form with the exact distance; BamDude picks per printer, the way Studio does.
+
+**Which way is "up" does not depend on your model.** On an A1 or A1 Mini the Z axis carries the toolhead rather than the bed, so the same command means the opposite motion — BamDude flips it for you, and every button sends the same number for every machine.
+
+### The nozzle-bed gap
+
+The same four steps as the bed jog above, laid out either side of the label.
+
+### The extruder
+
+Push filament through the nozzle or pull it back, 10 mm at a time. On dual-nozzle machines, pick **Main** or **Auxiliary** first — the picture shows which one is selected and whether it has filament loaded.
+
+!!! warning "Below 170 °C the extruder will not move"
+    Bambu Studio's own threshold, and it is not a formality: cold extrusion grinds a flat onto the filament and packs the shavings into the gear teeth. The buttons stay disabled and say what temperature they are waiting for. On dual-nozzle machines each extruder is checked separately — a warm nozzle does not vouch for its cold neighbour.
+
+### Release motors
+
+Drops the steppers (`M84`) so the toolhead can be pushed by hand. **This drops whatever the Z axis was holding** — the bed on most machines, the toolhead on a bed-slinger.
+
+### What it refuses
+
+| Situation | What happens |
+|---|---|
+| A print is running or paused | Everything is disabled, and the API refuses too (**409**) |
+| X or Y not homed | Those moves are refused — this is Studio's own rule, which checks before moving |
+| Z not homed | Also refused, which is **stricter** than Studio: it sends the Z move and only afterwards suggests recentering |
+| Nozzle below 170 °C | The extruder is refused (**409**) |
+| No hotend detected | That extruder is refused. Printers that cannot detect a hotend at all (A and P series) are unaffected — "cannot tell" is treated as fitted, as Studio treats it |
+
+```
+POST /api/v1/printers/{id}/jog?axis=x|y|z|e&distance=N&extruder_index=0|1
+POST /api/v1/printers/{id}/disable-steppers
+```
+
+Both gated by `printers:control`.
+
+---
+
+## :material-thermometer: Temperature Control
+
+Set the nozzle, the bed and the chamber — not just read them. Opened from the thermometer button in the temperature row.
+
+Type a value, step it with the arrows, or **turn a heater off** outright. Dual-nozzle machines get both nozzles, addressed separately.
+
+### The limits are your printer's
+
+Each field shows the range that machine actually accepts, and it is not the same everywhere:
+
+| | |
+|---|---|
+| Nozzle | 20–300 °C, or whatever range the printer reports |
+| Bed | up to 120 °C — but see below |
+| Chamber | 60 °C on an X1E, 65 °C on the H2 family |
+
+!!! warning "An X1 on 220 V mains accepts a **lower** bed temperature"
+    110 °C instead of 120. It reads backwards until you take it as a fact about the heating element rather than about available power. BamDude reads the mains voltage from the printer and adjusts the limit, as Bambu Studio does.
+
+Anything above the maximum is trimmed to it rather than rejected — again, Studio's behaviour.
+
+### Off is a real value
+
+Zero is exempt from the range on purpose. A bed whose minimum is 20 °C can still be switched off, which is the whole point of the button.
+
+### What it refuses
+
+- **A chamber that is only measured cannot be commanded.** The X1C and P2S report a chamber temperature they have no heater for; the dialog says so instead of failing silently.
+- **An extruder with no hotend fitted** will not be told to heat, on machines that can detect that.
+
+!!! info "No mid-print confirmation here"
+    Unlike the fan controls, this dialog asks nothing extra during a print. Adjusting a temperature mid-print is ordinary tuning, and Bambu Studio gates none of the three on print state.
+
+```
+POST /api/v1/printers/{id}/temperature?part=nozzle|bed|chamber&target=N&extruder_index=0|1
+```
+
+Gated by `printers:control`.
 
 ---
 
@@ -393,23 +487,44 @@ The badge in the controls row shows the current speed percentage and is dimmed w
 
 ---
 
-## :material-fan: Fan Status
+## :material-fan: Fans and the air duct
 
-Live fan badges in the controls row — **Part Cooling**, **Auxiliary**, **Chamber** — showing real-time speeds (0–100 %) reported by the printer.
+Live fan badges in the controls row, showing the speeds the printer reports — and, where the printer allows it, a control for each.
 
-!!! info "The three standard badges are read-only"
-    Their speeds are determined by the slicer profile and the printer firmware.
-    BamDude shows them but doesn't expose a control.
+**Every fan the printer reports appears, on every model.** Older machines (P1S, P1P, X1C, A1) do not describe an air duct at all, so BamDude builds the same picture from the speeds they do report — which is exactly what Bambu Studio does before drawing its own panel. Those printers used to show three read-only numbers; they now have working fan control.
 
-### Air-duct fans (P2S / X2D) — controllable
+**A fan that does not exist does not appear.** Whether a machine has an auxiliary or chamber fan is answered by the printer's own capability flags, not by a list of model names — an A1 Mini has part cooling only, and reports a speed for the other two anyway, so the reported speed cannot be the evidence.
 
-Machines with an **air-duct** carry fans that are never reported as a plain speed field. Those appear as their own badges, **with a speed control on the badge**: `POST /printers/{id}/fan-speed?part_id=<n>&percent=<0-100>`, gated by `printers:control`.
+### What the air-duct mode does to each fan
 
-The most visible one is the **second auxiliary fan** — an add-on kit on the **P2S**, fitted from the factory on the **X2D**.
+On machines with an air duct (P2S, X2D, H2 family) the active mode decides, per fan, one of three things. The badge shows which:
 
-- **Only what is fitted appears.** The printer lists the parts it actually has, so a badge is driven by the hardware rather than by a list of model names. An id the printer never reported is refused (**400**) rather than sent, since the command would be accepted and do nothing.
-- **The fans are named the way your printer names them.** The same part id is a different fan on different models — part 10 is the *left* auxiliary on a P2S and the *right* one on an X2D, and on the X2D it is even called something different in cooling and in heating mode. The names come from the Bambu Studio printer definitions BamDude ships, so a P2S says **Right Auxiliary Fan**, not just "Auxiliary".
-- **A fan the current air-duct mode holds off is shown but not offered as a control** (**409** if you try) — the printer accepts the command and ignores it.
+| | |
+|---|---|
+| **Adjustable** | the mode hands this fan to you |
+| **Off** | the mode holds it off — the printer would accept a command for it and ignore it |
+| **Auto** | the firmware is driving it |
+
+The difference between the last two matters: one you can change by changing the mode, the other you cannot. Asking for a speed on either is refused (**409**) with a message that says which of the two applies.
+
+### Setting a speed
+
+The menu on a badge offers the steps the printer actually has. Bambu Lab printers count in ten gears, so the speeds are 10 % apart — anything in between would be resolved on arrival to something you did not choose. **Turn off** is its own entry, shown when the fan is running.
+
+`POST /printers/{id}/fan-speed?part_id=<n>&percent=<0-100>`, gated by `printers:control`. An id the printer never reported is refused (**400**) rather than sent.
+
+**Changing a fan while a print is running asks first**, as Studio does, and the request is refused without that acknowledgement — so an automation cannot quietly do what a person is warned about. You are asked once per printer per browser session.
+
+### The air-duct window
+
+Machines that report air-duct modes get a control next to the badges that opens the whole thing: the mode, filtration, and every fan with a `−` / `+` adjuster.
+
+- **The modes offered are the ones your printer lists.** Not a fixed set — a machine that reports two gets two.
+- **The mode cannot be changed while a print is running.** The buttons say so rather than failing when pressed: the loaded material is what the mode was chosen for, and Studio refuses this outright rather than warning.
+- **Filtration** appears where the hardware has it, and only on the cooling mode. It redirects one fan to filtering chamber air, which costs cooling — so turning it **on** mid-print asks first. Turning it off gives the cooling back and asks nothing.
+
+!!! info "Fan names come from your printer, not from a table"
+    The same part id is a different fan on different models — part 10 is the *left* auxiliary on a P2S and the *right* one on an X2D, and on the X2D it is named differently in cooling and in heating mode. The names come from the Bambu Studio printer definitions BamDude ships, so a P2S says **Right Auxiliary Fan** rather than just "Auxiliary".
 
 ---
 
