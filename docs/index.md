@@ -154,6 +154,31 @@ OrcaSlicer + BambuStudio sidecar containers, per-job slicer picker with reachabi
 
 ---
 
+## :material-heart: Where this came from
+
+BamDude grew out of a volunteer workshop. Its author volunteers with
+[**DrukArmy**](https://drukarmy.org.ua/ua/about-us) — Ukraine's largest volunteer 3D-printing effort
+for the front line — printing, and running the FPV direction as senior curator.
+
+Batches, deadlines and a farm that has to keep moving around the clock do not fit any off-the-shelf
+tool, so every feature here earned its place on a real order first. That is also why Ukrainian is a
+first-class locale rather than an afterthought.
+
+[:material-account-plus: Join DrukArmy](https://app.drukarmy.org.ua/inv/ujnv7w8i){ .md-button }
+
+## :material-hand-heart: Support the project
+
+BamDude is free and stays free — AGPL-3.0, no paid tiers, no pro edition. The most valuable support
+is a bug report, a translation PR or a star on GitHub. If you would rather chip in:
+
+| | |
+|---|---|
+| **Monobank jar** | [send.monobank.ua/jar/2vREyf3SrF](https://send.monobank.ua/jar/2vREyf3SrF) |
+| **PayPal** | `pushkar.valeriy@gmail.com` |
+| **USDT (TRC20)** | `TWe1MaXz7mpDZZqDkY7Az7NdZ6s9H5fvMF` |
+
+---
+
 <div style="text-align: center; margin-top: 3rem;" markdown>
 <span style="opacity: 0.6;">Made with :heart: for the 3D printing community</span>
 </div>

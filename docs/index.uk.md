@@ -154,6 +154,29 @@ OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсер
 
 ---
 
+## :material-heart: Звідки це взялося
+
+BamDude виріс із волонтерського цеху. Автор проєкту — волонтер [**ДрукАрмії**](https://drukarmy.org.ua/ua/about-us),
+найбільшої волонтерської ініціативи 3D-друку для фронту: друкує сам і веде напрямок FPV як старший куратор.
+
+Партії, дедлайни й ферма, яку треба тримати в русі цілодобово, не влазять у жоден готовий інструмент — тому
+кожна фіча тут спершу відпрацювала на реальному замовленні. Звідти ж українська локалізація.
+
+[:material-account-plus: Долучитись до ДрукАрмії](https://app.drukarmy.org.ua/inv/ujnv7w8i){ .md-button }
+
+## :material-hand-heart: Підтримати проєкт
+
+BamDude безкоштовний і таким лишиться — AGPL-3.0, без платних тарифів і без pro-версії. Найцінніша
+підтримка — баг-репорт, PR із перекладом або зірка на GitHub. Якщо хочеться закинути:
+
+| | |
+|---|---|
+| **Банка monobank** | [send.monobank.ua/jar/2vREyf3SrF](https://send.monobank.ua/jar/2vREyf3SrF) |
+| **PayPal** | `pushkar.valeriy@gmail.com` |
+| **USDT (TRC20)** | `TWe1MaXz7mpDZZqDkY7Az7NdZ6s9H5fvMF` |
+
+---
+
 <div style="text-align: center; margin-top: 3rem;" markdown>
 <span style="opacity: 0.6;">Створено з :heart: для спільноти 3D-друку</span>
 </div>

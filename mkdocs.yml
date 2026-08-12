@@ -196,6 +196,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/kainpl/bamdude
       name: BamDude on GitHub
+    - icon: fontawesome/solid/heart
+      link: https://send.monobank.ua/jar/2vREyf3SrF
+      name: Support BamDude
   generator: false
 
 extra_css:
