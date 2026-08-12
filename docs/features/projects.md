@@ -102,6 +102,15 @@ When an archive lands, BamDude reads `slice_info.config` from the 3MF, counts th
 
 Open the archive in edit mode and set **Items printed** to the right number — handy when the slicer config disagreed with reality (e.g. you skipped 2 of 4 objects mid-print). The project parts counter recomputes immediately.
 
+### Defective parts
+
+A print archive records how many objects were on the plate. It now also records how many of them came out **unusable** — warped, under-extruded, snapped on removal. Set the scrap count on the archive and the project's parts tally is net of it.
+
+This matters because a project that needs forty usable parts is not finished when forty come off the plates. Without it, the counter reaches the target and the work is not done. The project card shows the defective figure alongside the total, so a run that is quietly producing scrap is visible before you reach the end of it.
+
+!!! tip "A target of zero means 'don't measure it this way'"
+    If you work strictly to a number of parts, set **Target Plates** to `0` and the plate progress bar disappears instead of sitting there at a number nobody is tracking. The same works the other way round.
+
 ---
 
 ## :material-palette: Color coding
