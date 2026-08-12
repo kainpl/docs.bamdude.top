@@ -509,6 +509,19 @@ The two modes can diverge when the printer is powered (heating, idle, standby) w
 
 ---
 
+## :material-chart-line: Power draw over time
+
+The plug row on a printer card has a chart button. It opens the plug's recorded power draw over the last six hours, day, two days or week — the same ranges and the same shape as the sensor charts, so a reader who knows one knows the other.
+
+Readings are kept for a month while the chart window reaches a week. The gap is deliberate: a month of readings for one plug is far more points than any chart can usefully draw, and the retention is there for the range statistics rather than for the picture.
+
+!!! info "How dense the line is depends on the plug type"
+    Zigbee and MQTT plugs **report** on their own, so every report is recorded and the line is dense. Tasmota, REST and Home Assistant plugs never report — they are sampled by a background loop instead. Their history is therefore regular rather than event-driven, and coarser.
+
+    There is deliberately **no de-duplication**: a plug that keeps reporting the same wattage and a plug that has gone silent must not look alike on the chart.
+
+---
+
 ## :material-wrench-cog: Reliability and Maintenance
 
 Smart plugs are auto-resubscribed to MQTT on every BamDude startup via the `subscribe_plug_to_mqtt` helper. Most "plug stopped responding" cases are fixed by a single restart.
