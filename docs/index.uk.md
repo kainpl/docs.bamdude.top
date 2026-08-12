@@ -119,6 +119,8 @@ OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсер
 | **H2 Series** | H2D, H2D Pro, H2C, H2S |
 | **P1 Series** | P1P, P1S |
 | **P2 Series** | P2S |
+| **X2 Series** | X2D |
+| **A2 Series** | A2L |
 | **A1 Series** | A1, A1 Mini |
 
 ---
@@ -149,6 +151,29 @@ OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсер
 </div>
 
 </div>
+
+---
+
+## :material-heart: Звідки це взялося
+
+BamDude виріс із волонтерського цеху. Автор проєкту — волонтер [**ДрукАрмії**](https://drukarmy.org.ua/ua/about-us),
+найбільшої волонтерської ініціативи 3D-друку для фронту: друкує сам і веде напрямок FPV як старший куратор.
+
+Партії, дедлайни й ферма, яку треба тримати в русі цілодобово, не влазять у жоден готовий інструмент — тому
+кожна фіча тут спершу відпрацювала на реальному замовленні. Звідти ж українська локалізація.
+
+[:material-account-plus: Долучитись до ДрукАрмії](https://app.drukarmy.org.ua/inv/ujnv7w8i){ .md-button }
+
+## :material-hand-heart: Підтримати проєкт
+
+BamDude безкоштовний і таким лишиться — AGPL-3.0, без платних тарифів і без pro-версії. Найцінніша
+підтримка — баг-репорт, PR із перекладом або зірка на GitHub. Якщо хочеться закинути:
+
+| | |
+|---|---|
+| **Банка monobank** | [send.monobank.ua/jar/2vREyf3SrF](https://send.monobank.ua/jar/2vREyf3SrF) |
+| **PayPal** | `pushkar.valeriy@gmail.com` |
+| **USDT (TRC20)** | `TWe1MaXz7mpDZZqDkY7Az7NdZ6s9H5fvMF` |
 
 ---
 

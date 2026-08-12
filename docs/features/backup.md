@@ -152,6 +152,11 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
         - Enter the PAT.
         - Click **Test Connection**.
 
+    !!! tip "Instances hosted under a path prefix"
+        If your Gitea sits under a `ROOT_URL` prefix rather than at the root of the server — `https://your-server/gitea` — paste the repository URL exactly as your browser shows it: `https://your-server/gitea/username/bamdude-backup`. The last two segments are read as owner and repository, and everything before them is kept, so the API is addressed at `https://your-server/gitea/api/v1`. Any depth of prefix works. Root-hosted instances are unchanged.
+
+        Path steps of `.` or `..` are refused — they would point the backup at somewhere on the server you did not name.
+
     !!! note "Gitea-shape API divergences from GitHub (handled internally)"
         BamDude's `GiteaBackend` overrides three GitHub-incompatible response shapes Gitea introduced over time: list-shaped `GET /git/refs/heads/{branch}` response (single match still returns an array), the empty-repo Git Data API write refusal (every blob POST 404 until a commit exists — bootstrap routes through the Contents API in one transaction), and the wrapped Commit schema in Gitea 1.24+ (`commit.tree.sha` instead of GitHub's flat `tree.sha`). All transparent to operators — listed here only as a reference for self-hosted deployments noting Gitea version compatibility (1.18+ verified, 1.24+ verified).
 
@@ -169,7 +174,7 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
         - Click **Test Connection**.
 
     !!! note "API-compatible with Gitea"
-        Forgejo's API is currently `/api/v1`-compatible with Gitea, and BamDude's `ForgejoBackend` inherits all of `GiteaBackend`'s behaviour. If the two projects diverge in a future Forgejo release, override-by-override patches in `forgejo.py` will surface here.
+        Forgejo's API is currently `/api/v1`-compatible with Gitea, and BamDude's `ForgejoBackend` inherits all of `GiteaBackend`'s behaviour — including the path-prefix handling described under Gitea, so `https://your-server/forge/username/bamdude-backup` works the same way. If the two projects diverge in a future Forgejo release, override-by-override patches in `forgejo.py` will surface here.
 
 !!! warning "Bambu Cloud login required for K-profiles + Cloud profiles"
     Backing up *Cloud profiles* and *K-profiles* requires an active Bambu Cloud login. Sign in via **Profiles → Cloud Profiles** before scheduling a Git backup that includes those categories — otherwise the relevant directories will be empty in the repo.
@@ -376,7 +381,10 @@ If you have many timelapse videos, large profile is the right model — periodic
 
 ## :material-docker: Docker volume bind-mount example
 
-For Docker users, mount the backup output directory as a volume so backups persist outside the container — and ideally onto a NAS share for off-site coverage:
+For Docker users, mount the backup output directory as a volume so backups persist outside the container — and ideally onto a NAS share for off-site coverage.
+
+!!! warning "The path is fixed — the mount is the knob"
+    Backups are always written to `backups/` inside the data directory. There is no environment variable that moves them: point the volume at `/app/data/backups` and mount whatever host path you like on the other side.
 
 ```yaml
 services:
@@ -392,7 +400,6 @@ services:
       - /mnt/nas/bamdude-backups:/app/data/backups   # NAS / network share
     environment:
       - TZ=Europe/Kyiv
-      - BACKUP_DIR=/app/data/backups
     restart: unless-stopped
 
 volumes:
@@ -409,7 +416,6 @@ docker run -d \
   -v bamdude_logs:/app/logs \
   -v /mnt/nas/bamdude-backups:/app/data/backups \
   -e TZ=Europe/Kyiv \
-  -e BACKUP_DIR=/app/data/backups \
   --name bamdude \
   --restart unless-stopped \
   ghcr.io/kainpl/bamdude:latest

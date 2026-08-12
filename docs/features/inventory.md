@@ -84,6 +84,23 @@ Where a spool physically lives — a shelf, drawer, or dry-box — is a **manage
 
 Viewing the catalog needs `inventory:read`; creating / renaming / deleting a location needs `inventory:update`.
 
+### Editing a spool created by Quick Add, CSV import or RFID
+
+Those three routes create a spool with a material and little else — no slicer preset, no brand, no subtype. **Editing and copying now ask for exactly what the server asks for: the material.**
+
+Reopening such a spool in Edit used to demand preset, brand *and* subtype before it would save anything, so changing its shelf location, its cost or a note was simply impossible — and the Quick Add toggle that waives those fields only exists when creating. Copy Spool hit the same wall with no way around it at all.
+
+Preset, brand and subtype stay visible and editable; the little `*` markers appear only where a field is genuinely required.
+
+!!! info "The brand and material lists no longer hide real products"
+    They used to filter themselves down to the brand/material pairs the colour
+    catalogue happens to know. Elegoo is catalogued for PLA only — so **Elegoo
+    ASA**, a real filament you can buy, looked impossible to enter.
+
+    Both lists now always offer everything: the known pairings ranked first under
+    **Suggested**, the rest under **All**. A spool's own brand or material is always
+    present in its own dropdown, even if nothing else has heard of it.
+
 ### Slicer Preset dropdown shows every per-printer / per-nozzle variant
 
 The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
@@ -172,6 +189,7 @@ The second tab links pressure-advance (K-factor) calibration profiles to the spo
 - **Auto-select** — fills the matrix from your existing K-profiles automatically.
 - **Grouped view** — collapsible printer headings, each with per-nozzle (L / R) sub-rows.
 - **K-factor values** displayed inline so you can sanity-check before saving.
+- **Nozzle diameter badge** on each row. Profiles are fetched for *every* nozzle size a printer reports, so on a multi-nozzle machine one filament can contribute two rows that share a name — the diameter is what tells them apart. A printer that has not yet reported its hardware is queried for 0.4 mm, as before.
 - **Per-printer override** — pick a different profile for one printer if you have brand-specific calibration values that differ between machines.
 
 See [K-Profiles](kprofiles.md) for the calibration workflow that produces these profiles.

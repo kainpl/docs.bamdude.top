@@ -165,7 +165,7 @@ BamDude обмежує частоту запитів на endpoint-ах авте
 | `/printers/*`, `/printer-queues/*`, `/cloud/*`, `/discovery/*` | Принтер + AMS + Bambu Cloud | статус, керування, RFID AMS, snapshot, stream-токен, мережеве виявлення |
 | `/archives/*` | Історія друку | список, отримання, передрук, видалення, **`retry-download`**, **`cleanup/preview`**, **`cleanup/run`**, **`cleanup/status`** |
 | `/queue/*`, `/background-dispatch/*` | Керування чергою + dispatch | додавання, перевпорядкування, скасування, set-status, стан dispatch-у |
-| `/library/*`, `/library-notes/*`, `/pending-uploads/*` | Файловий менеджер | завантаження, список, видалення, додавання в чергу, інбокс slicer-uploads |
+| `/library/*`, `/library-notes/*` | Файловий менеджер | завантаження, список, видалення, теги — і водночас інбокс для аплоадів з віртуального принтера |
 | `/projects/*` | Групування за проєктами | CRUD, план друку, архіви проєкту |
 | `/macros/*` | G-code- та MQTT-action-макроси | CRUD, виконання |
 | `/notifications/*`, `/notification-templates/*`, `/user-notifications/*`, `/telegram/*` | Вихідні канали | CRUD провайдерів, перевизначення шаблонів, тестове надсилання, конфіг Telegram-бота |
@@ -222,6 +222,29 @@ BamDude **не** надає вихідних webhook-ів для подій за
 
 !!! warning "WebSocket наразі неавтентифікований"
     `/api/v1/ws` стоїть у public-route allowlist auth-middleware (`backend/app/main.py::PUBLIC_API_ROUTES`), і обробник не перевіряє токен. Будь-хто з мережевим доступом до WebSocket-порту може підписатися на realtime-події. Тримайте realtime-канал як **read-only intra-network** — поставте reverse proxy (див. [Reverse Proxy & HTTPS](../getting-started/reverse-proxy.uk.md)) і не виставляйте `/ws` напряму в публічний інтернет. Тайтенінг цього в roadmap; не сподівайтесь, що `Authorization: Bearer` сьогодні блокує subscribers.
+
+### Вхідні ендпоінти для автоматизацій
+
+Група `/webhook/*` — це протилежний напрямок: ендпоінти, які **ваша** автоматизація викликає сама, з автентифікацією по API-ключу. Це ті п'ять, що перелічені в **Налаштування → API-ключі**.
+
+| Ендпоінт | Потрібне право | Що робить |
+|---|---|---|
+| `GET /api/v1/webhook/queue` | `can_read_status` | Стан черги всіх принтерів або одного через `?printer_id=` |
+| `GET /api/v1/webhook/printer/{id}/status` | `can_read_status` | Зв'язок, стан, поточний друк, прогрес, час до кінця |
+| `POST /api/v1/webhook/printer/{id}/start` | `can_control_printer` | Запустити **наступний у черзі** друк на цьому принтері |
+| `POST /api/v1/webhook/printer/{id}/stop` | `can_control_printer` | Зупинити поточний друк |
+| `POST /api/v1/webhook/printer/{id}/cancel` | `can_control_printer` | Скасувати поточний **або призупинений** друк |
+
+Ключ, обмежений конкретними принтерами (`printer_ids`), отримує **403** на будь-якому іншому. Непід'єднаний принтер відповідає **503**, а не помилкою — це стан, який варто повторити пізніше. `start` віддає **404**, коли черга порожня.
+
+```bash
+curl -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/status
+curl -X POST -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/start
+```
+
+!!! note "Ендпоінта для постановки в чергу тут немає"
+    Черга йде через `POST /api/v1/queue/` з `archive_id` або `library_file_id`. У webhook-групі був власний варіант; він будував рядок черги вручну й тому оминав перевірку призупиненої черги, гейт сумісності моделі принтера та лічильники черги. Один вхід — у цьому й суть.
+
 
 ---
 

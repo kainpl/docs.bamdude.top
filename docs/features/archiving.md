@@ -160,6 +160,18 @@ If you upgrade from a pre-0.4.2 install where `archive/` may still contain lefto
 
 ---
 
+## :material-content-save-move: Saving a printed file back into the library
+
+An archive's 3MF can be copied into the library from the archive's own menu — pick a folder, and the file arrives read the same way an upload is: metadata, thumbnail, per-plate details and badges already filled in, rather than as an anonymous file.
+
+⚠️ **Saving the same print twice does not make a second copy.** The library recognises identical content and hands back the copy already there, saying so rather than pretending it wrote something.
+
+⚠️ **An archive may have no file to copy.** A print started from the printer's own screen whose 3MF could not be pulled has a real archive row and an empty file — the action explains that instead of failing quietly. The same applies to reprint and to opening in a slicer.
+
+Read-only external folders are left out of the picker: the library refuses to write into them, and offering a choice that cannot work is worse than not offering it.
+
+---
+
 ## :material-folder-multiple-outline: Library File Linking
 
 When you print from the file manager, the resulting archive carries `library_file_id` pointing at the source library row. The library row, in turn, carries running stats:
@@ -511,7 +523,25 @@ Hover an archive in the **List** or **Calendar** view and the matching cell / ro
 
 ## :material-tag: Tags & Filtering
 
-Organize archives with custom tags. Filter by printer, tags, material, color, file type, favorites, and the duplicates view (which uses `COALESCE(source_content_hash, content_hash)`). Sort by date, name, or size. Tag management is under the gear icon next to the tag filter.
+Organize archives with custom tags. Filter by printer, tags, material, color, file type, favorites, and the duplicates view (which uses `COALESCE(source_content_hash, content_hash)`). Tag management is under the gear icon next to the tag filter.
+
+### Sorting
+
+In **List** view, click a column header — **Name**, **Printer**, **Date** or **Size**. Click it again to reverse. Each column opens at the end worth looking at first: the newest print, the biggest file, names A-Z.
+
+Sorting by printer uses the name shown in the column, so a print from a printer you have since deleted keeps its place in the order rather than disappearing or collecting at one end.
+
+**Print time has no sorting.** The archive has never been able to order by it, and a header that looked clickable but did nothing would be worse than a plain one.
+
+**Grid** view has no headers to click, so it keeps the sort dropdown beside the colour filter.
+
+### Paging
+
+How many archives per page, which page you are on, and how many there are in total are one control at the **end of the list** — the same bar the spool table uses.
+
+It stays put when everything fits on one page: the arrows go, the size selector remains. Otherwise "24 of 24" would be a dead end, with no control left to ask for more.
+
+Changing the page size returns you to the first page — staying on page 3 of a re-sized list lands somewhere you did not ask for, and past the end when the list gets shorter.
 
 ### Filter chips
 

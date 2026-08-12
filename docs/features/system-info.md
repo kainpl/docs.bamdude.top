@@ -105,8 +105,31 @@ The system-info page surfaces a **Log Archives** panel listing every gzipped arc
 
 | File | Contents |
 |---|---|
-| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymised settings, dependency versions, log-file size, network interfaces with masked subnets, WebSocket connection count, Docker memory limit (if containerised). |
+| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymised settings, dependency versions, log-file size, network interfaces with masked subnets, WebSocket connection count, Docker memory limit (if containerised), **and the BamDude process itself** — see below. |
 | `bamdude.log` | The tail of `bamdude.log`, sanitised. |
+
+### The BamDude process itself
+
+The bundle used to describe the machine, the database, the printers and the settings — everything except the process actually running. So a report of *"memory climbs for days until it gets killed"* arrived with nothing to act on: the numbers that identify the cause only exist **while it is happening**, and by the time anyone asks, the container has been restarted.
+
+Bundles now carry:
+
+| Field | Why it matters |
+|---|---|
+| **Memory in use vs memory reserved** | The difference between those two is what separates a real leak from harmless address space |
+| **Thread and child-process counts** | A climbing thread count is a different bug from a climbing heap |
+| **Open files and sockets** | Descriptor leaks look like memory leaks from the outside |
+| **Uptime** | Puts every other number in scale |
+| **A breakdown of what the memory is filled with** | Points at *which* allocation is growing |
+
+!!! note "On a process already very large, the breakdown is skipped — and says so"
+    Generating a bundle to diagnose runaway memory must not be the thing that
+    finishes the machine off.
+
+    **Child processes are recorded by name only, never by command line** — an
+    `ffmpeg` command line contains the camera password.
+
+This lands in both the bundle you download and the pack attached to a [bug report](bug-report.md).
 
 The bundle requires **debug logging to be currently enabled** — the endpoint refuses to generate one otherwise (`400 Debug logging must be enabled before generating a support bundle`). Workflow:
 
@@ -121,6 +144,7 @@ The bundle requires **debug logging to be currently enabled** — the endpoint r
 
 - Printer names → `[PRINTER]`, serial numbers → `[SERIAL]`, IP addresses → `[IP]`, access codes → `[ACCESS_CODE]`, usernames → `[USER]`, emails → `[EMAIL]`.
 - URL credentials (`http://user:pass@host`, `rtsps://bblp:code@host`) → `[CREDENTIALS]@`.
+- LDAP Distinguished Names → `[DN]`. A DN's leading `CN=` is the user's real name, so it is treated like an email address. Unlike everything else on this list it cannot be looked up in the database — a DN is per-user and comes from your directory — so it is matched by shape instead: two or more comma-joined `attr=value` components. `CN=Joe Schmoe,OU=Staff,DC=example,DC=com` is therefore removed wherever it appears, including inside an error message raised by the directory library. A lone `key=value` in an unrelated line is left alone.
 - Path components like `/home/<user>/`, `/Users/<user>/`, `/opt/<user>/` collapsed to `/home/[user]/` etc.
 - MQTT relay broker → masked: bare IP becomes `[IP]`, hostname becomes `*.tld`.
 - Subnets in network info → first two octets become `x.x` (so `192.168.1.0/24` → `x.x.1.0/24`).

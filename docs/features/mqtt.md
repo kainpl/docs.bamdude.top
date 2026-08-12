@@ -52,8 +52,8 @@ All topics are prefixed with your configured prefix. **The default prefix is `ba
 | Topic | Description |
 |-------|-------------|
 | `bambuddy/printers/{serial}/status` | Real-time printer state (throttled) |
-| `bambuddy/printers/{serial}/online` | Printer just came online |
-| `bambuddy/printers/{serial}/offline` | Printer just went offline |
+| `bambuddy/printers/{serial}/online` | Printer just came online. Fires on the **connection edge**, so it is a transition, not a heartbeat. |
+| `bambuddy/printers/{serial}/offline` | Printer just went offline — the same edge, the other direction. |
 | `bambuddy/printers/{serial}/print/started` | Print job started |
 | `bambuddy/printers/{serial}/print/completed` | Print completed (status=`completed`) |
 | `bambuddy/printers/{serial}/print/failed` | Print failed (status=`failed`) |
@@ -74,8 +74,13 @@ All topics are prefixed with your configured prefix. **The default prefix is `ba
 | Topic | Description |
 |-------|-------------|
 | `bambuddy/maintenance/alert` | A maintenance task tripped its threshold |
-| `bambuddy/maintenance/acknowledged` | A maintenance alert was acknowledged in the UI |
 | `bambuddy/maintenance/reset` | A maintenance counter was reset (task marked done) |
+
+!!! note "There is no `maintenance/acknowledged`"
+    It described an action BamDude does not have: an alert is **raised**, and then
+    **reset** when the work is done. There is no separate acknowledgement step, so
+    the topic was removed rather than given a meaning it never had. Nothing else
+    changed — `alert` and `reset` are the whole lifecycle.
 
 ### Smart plug events
 
@@ -83,7 +88,7 @@ All topics are prefixed with your configured prefix. **The default prefix is `ba
 |-------|-------------|
 | `bambuddy/smart_plugs/on` | Smart plug just turned on (post-confirmation, not just the request). Payload includes `plug_id`, `plug_name`, `bound_printer_id`. |
 | `bambuddy/smart_plugs/off` | Smart plug just turned off. |
-| `bambuddy/smart_plugs/energy` | Periodic energy snapshot. Payload includes `kwh_total`, `current_watts`, `voltage`, `printer_id` if bound. |
+| `bambuddy/smart_plugs/energy` | **Hourly**, alongside the energy snapshot BamDude already records. Payload: `plug_id`, `plug_name`, `power_watts`, `energy_today_kwh`, `energy_total_kwh`, `timestamp`. |
 
 ### Archive events
 

@@ -306,6 +306,7 @@ BamDude uses a sliding-session model: short-lived access tokens, long-lived rota
 - Stored as a SHA-256 hash in `auth_ephemeral_tokens`; delivered to the browser as the `bamdude_refresh` cookie -- **HttpOnly**, **SameSite=Lax**, **Path=/api/v1/auth**. JavaScript never sees it; non-auth endpoints never receive it.
 - **Rotated on every use.** `POST /auth/refresh` marks the old row `used_at=now`, mints a new row in the same `family_id`, and returns a fresh access token.
 - **OWASP reuse detection.** If a refresh token is replayed (i.e. used twice), BamDude collapses the entire family across every device. The user is forced back to the login page everywhere.
+- **Except within a few seconds of its own rotation.** A token re-presented inside a short grace window is treated as a race rather than a theft: the request is refused with a 401, but nothing is revoked and the cookie is left alone, so the tab that lost simply picks up what the winner already stored. Without this, two tabs refreshing at the same instant looked exactly like a stolen session and logged the user out of everything -- see *Multiple tabs* below.
 - **Logout / password change / admin-initiated MFA reset** revoke ALL refresh tokens for the user, signing out every device.
 
 ### Remember-me
@@ -314,7 +315,7 @@ The login form has a **"Remember me for 30 days"** checkbox.
 
 | Mode | DB row TTL | Cookie lifetime |
 |------|------------|-----------------|
-| Default | 12 hours | Session cookie (cleared when browser closes) |
+| Default | 24 hours | Session cookie (cleared when browser closes) |
 | Remember me | 30 days | `Max-Age=30d` -- survives browser restarts |
 
 ### Session lifetime ceiling (Session Policy)
@@ -330,7 +331,21 @@ The card is read-only for users without `settings:update`.
 
 ### Frontend behaviour
 
-The frontend `request()` helper transparently retries 401s through `/auth/refresh`, **promise-coalesced** so a wave of parallel queries spawns exactly one refresh call. If refresh also fails, a global `bamdude:auth-invalidated` event clears React state and hard-redirects to `/login`. A visibility-change listener proactively revalidates `/auth/me` when a hidden tab regains focus.
+The frontend `request()` helper transparently retries 401s through `/auth/refresh`, **promise-coalesced** so a wave of parallel queries spawns exactly one refresh call. Coalescing extends **across tabs** via the Web Locks API: whichever tab takes the lock performs the refresh, and the others adopt the token it stored instead of asking again. Proactive renewal is also jittered, so tabs that logged in together do not all wake at the same instant. If refresh also fails, a global `bamdude:auth-invalidated` event clears React state and hard-redirects to `/login`. A visibility-change listener proactively revalidates `/auth/me` when a hidden tab regains focus.
+
+### Multiple tabs
+
+Two or more tabs open on BamDude share one session, and they coordinate rather than compete.
+
+Each tab schedules its own quiet renewal shortly before the access token expires. Left alone, every tab would compute the same instant from the same token and fire together -- and the server, which treats a second use of one refresh token as a stolen session, would collapse the family and log you out everywhere. With two tabs open this happened roughly once an hour and looked exactly like the session expiring for no reason.
+
+Three things prevent it now:
+
+- **A cross-tab lock.** Whichever tab claims the Web Locks entry does the refresh; the others wait, then adopt the token it stored.
+- **Jitter.** Renewal times are spread by a few seconds so tabs that logged in together do not wake in lock-step.
+- **A grace window on the server.** A refresh token replayed within seconds of its own rotation is answered with a 401 and nothing else -- no revocation, no cleared cookie. A genuine replay, later, still collapses the family.
+
+If your browser does not implement the Web Locks API, tabs fall back to in-tab coalescing plus the server-side grace, which covers the same race.
 
 ### `Secure` cookie attribute
 
@@ -435,6 +450,48 @@ BamDude supports OpenID Connect single sign-on against any standards-compliant p
 | **Default group** | Group new auto-created users land in. Defaults to **Viewers (read-only)** for safety; pick a custom group for tenant-internal SSO setups where read-only is too restrictive. The picker is sourced from the live group list, so any custom group you create in **Settings → Authentication → Groups** is selectable here. If the chosen group is later deleted, new logins fall back to **Viewers**. |
 
 The login page renders an "Sign in with `<provider>`" button per configured provider, below the password form.
+
+### Declaring a provider in environment variables
+
+For installs managed by a compose file, Helm or GitOps, where clicking through Settings once is not part of the deployment. Set these and the provider is created on startup and **reapplied on every restart**:
+
+```bash
+# Required — all four, or nothing is applied
+BAMDUDE_OIDC_NAME=Authentik
+BAMDUDE_OIDC_ISSUER_URL=https://id.example.com
+BAMDUDE_OIDC_CLIENT_ID=bamdude
+BAMDUDE_OIDC_CLIENT_SECRET=change-me
+```
+
+The optional variables carry the same defaults they have in the UI:
+
+| Variable | Default |
+|---|---|
+| `BAMDUDE_OIDC_ENABLED` | `true` |
+| `BAMDUDE_OIDC_SCOPES` | `openid email profile` |
+| `BAMDUDE_OIDC_AUTO_CREATE_USERS` | `false` |
+| `BAMDUDE_OIDC_AUTO_LINK_EXISTING` | `false` |
+| `BAMDUDE_OIDC_EMAIL_CLAIM` | `email` |
+| `BAMDUDE_OIDC_REQUIRE_EMAIL_VERIFIED` | `true` |
+| `BAMDUDE_OIDC_ICON_URL` | *(empty)* |
+| `BAMDUDE_OIDC_AUTOLOGIN` | `false` |
+| `BAMDUDE_OIDC_DEFAULT_GROUP` | *(unset — falls back to the UI default)* |
+
+Booleans accept `true/1/yes/on` and `false/0/no/off`.
+
+!!! warning "An env-declared provider is read-only in Settings"
+    Because the variables are reapplied on every boot, the provider is shown as read-only and the app refuses to change it there. An edit would be accepted and then silently undone at the next restart, which is worse than being told no.
+
+    **Removing the variables disables the provider rather than deleting it.** Accounts already linked to it keep their link and get it back if the variables return.
+
+!!! info "The failure modes are all quiet ones, so they are all loud here"
+    - A required variable left **empty** counts as unset, not as an empty secret.
+    - Values are **trimmed** — a secret mounted from a file or written as a Kubernetes block scalar does not smuggle in a trailing newline that would only fail on the first sign-in attempt.
+    - An **unrecognised** true/false value is refused with a log line instead of being guessed at, and the whole config is skipped: whatever was already running stays running.
+    - `BAMDUDE_OIDC_DEFAULT_GROUP` is a group **name**, not an ID — IDs differ on every install. A name matching no group refuses the config rather than quietly falling back to Viewers.
+    - A bad configuration **never stops the app from starting**.
+
+Everything above is also documented in `.env.example`.
 
 ### Hardening
 

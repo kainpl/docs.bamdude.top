@@ -152,6 +152,11 @@ sudo systemctl restart bamdude
         - Введи PAT.
         - Натисни **Test Connection**.
 
+    !!! tip "Інстанси під префіксом шляху"
+        Якщо твоя Gitea живе під `ROOT_URL`-префіксом, а не в корені сервера — `https://твій-сервер/gitea` — встав адресу репозиторію рівно так, як її показує браузер: `https://твій-сервер/gitea/username/bamdude-backup`. Останні два сегменти читаються як owner і repository, усе перед ними зберігається, тож API адресується за `https://твій-сервер/gitea/api/v1`. Префікс може бути будь-якої глибини. Кореневі інстанси працюють як раніше.
+
+        Кроки шляху `.` та `..` відхиляються — вони вказали б бекап туди, куди ти не показував.
+
     !!! note "Розбіжності API Gitea від GitHub (обробляються внутрішньо)"
         `GiteaBackend` BamDude перекриває три GitHub-несумісні форми відповідей, які Gitea ввела з часом: list-shape `GET /git/refs/heads/{branch}` (один матч все одно повертає масив), refusal Git Data API на пустий репо (кожен blob POST 404 поки немає коміта — bootstrap йде через Contents API в одній транзакції), і wrapped Commit schema у Gitea 1.24+ (`commit.tree.sha` замість плоского `tree.sha` GitHub'а). Все прозоро для оператора — згадано тут лише як референс для self-hosted деплоїв з зазначенням сумісних версій (1.18+ і 1.24+ перевірені).
 
@@ -169,7 +174,7 @@ sudo systemctl restart bamdude
         - Натисни **Test Connection**.
 
     !!! note "API-сумісний з Gitea"
-        API Forgejo наразі `/api/v1`-сумісний з Gitea, і `ForgejoBackend` BamDude успадковує всю поведінку `GiteaBackend`. Якщо два проєкти розійдуться у майбутніх релізах Forgejo, override-by-override патчі в `forgejo.py` з'являться тут.
+        API Forgejo наразі `/api/v1`-сумісний з Gitea, і `ForgejoBackend` BamDude успадковує всю поведінку `GiteaBackend` — включно з обробкою префікса шляху, описаною вище під Gitea, тож `https://твій-сервер/forge/username/bamdude-backup` працює так само. Якщо два проєкти розійдуться у майбутніх релізах Forgejo, override-by-override патчі в `forgejo.py` з'являться тут.
 
 !!! warning "Bambu Cloud login обов'язковий для K-profiles + Cloud profiles"
     Для бекапу *Cloud profiles* і *K-profiles* потрібен активний Bambu Cloud login. Авторизуйся через **Profiles → Cloud Profiles** перед тим, як планувати Git-бекап з цими категоріями — інакше відповідні директорії будуть пусті в репо.
@@ -376,7 +381,10 @@ DB пошкоджена, видалена, не recoverable:
 
 ## :material-docker: Docker volume bind-mount приклад
 
-Для Docker-користувачів — змонтуй output-директорію бекапу як volume, щоб бекапи переживали контейнер, а ідеально — на NAS-share для off-site:
+Для Docker-користувачів — змонтуй output-директорію бекапу як volume, щоб бекапи переживали контейнер, а ідеально — на NAS-share для off-site.
+
+!!! warning "Шлях фіксований — ручка це монтування"
+    Бекапи завжди пишуться в `backups/` усередині директорії даних. Змінної оточення, яка їх переносить, не існує: наводь volume на `/app/data/backups`, а з боку хоста монтуй що завгодно.
 
 ```yaml
 services:
@@ -392,7 +400,6 @@ services:
       - /mnt/nas/bamdude-backups:/app/data/backups   # NAS / network share
     environment:
       - TZ=Europe/Kyiv
-      - BACKUP_DIR=/app/data/backups
     restart: unless-stopped
 
 volumes:
@@ -409,13 +416,10 @@ docker run -d \
   -v bamdude_logs:/app/logs \
   -v /mnt/nas/bamdude-backups:/app/data/backups \
   -e TZ=Europe/Kyiv \
-  -e BACKUP_DIR=/app/data/backups \
   --name bamdude \
   --restart unless-stopped \
   ghcr.io/kainpl/bamdude:latest
 ```
-
-`BACKUP_DIR` перевизначає дефолтний `data/backups/` всередині контейнера — використовуй коли bind-mount лягає не на `/app/data/backups`.
 
 !!! tip "NAS / Samba / NFS"
     Направ bind-mount на NAS-share, Samba-mount чи NFS-шлях для автоматичних off-site бекапів без додаткових скриптів. У парі з retention-rotation — hands-off off-site backup pipeline.

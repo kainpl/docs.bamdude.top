@@ -58,7 +58,7 @@ Captured on `PrintArchive`:
 
 ## :material-counter: Lifetime kWh and Date Ranges
 
-The hourly snapshot loop (`SmartPlugManager._snapshot_loop`) records one row per plug into `smart_plug_energy_snapshots`:
+The hourly snapshot loop (`SmartPlugManager._snapshot_loop`) records one row per plug into `smart_plug_energy_snapshots`. A snapshot is **also** written at the start of every print, from the same reading that seeds the archive's baseline — so a print's own start is a real boundary in the history rather than whichever hour the loop last happened to fire:
 
 | Column | Meaning |
 |--------|---------|
@@ -73,6 +73,8 @@ range_total = max(0, last_snapshot_in_range − last_snapshot_before_range)
 ```
 
 The `max(0, …)` clamps to zero when the lifetime counter has been reset (e.g. after a plug factory-reset) so you never get negative energy.
+
+**Which day is "today".** Dates you pick, and "energy used today", are resolved in **your** timezone -- the browser tells BamDude which one you are in. Snapshots are stored in UTC, as above, and the day boundary is converted before the query. Work BamDude does on its own schedule -- nightly backups, digests -- keeps using the server's timezone, which is what those should follow. Callers that cannot send a timezone (the Telegram bot, API keys, webhooks) are answered in the server's.
 
 ---
 

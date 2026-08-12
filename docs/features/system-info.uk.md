@@ -105,7 +105,7 @@ Multi-line entry-ї (особливо stack traces) пересобираютьс
 
 | Файл | Вміст |
 |---|---|
-| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymized settings, dependency versions, log-file size, network interfaces з masked subnets, WebSocket connection count, Docker memory limit (якщо containerised). |
+| `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymized settings, dependency versions, log-file size, network interfaces з masked subnets, WebSocket connection count, Docker memory limit (якщо containerised) — **і сам процес BamDude**, див. нижче. |
 | `bamdude.log` | Tail `bamdude.log`, sanitised. |
 
 Bundle вимагає, щоб **debug logging був наразі ввімкнений** — endpoint відмовляється генерувати інакше (`400 Debug logging must be enabled before generating a support bundle`). Workflow:
@@ -115,12 +115,36 @@ Bundle вимагає, щоб **debug logging був наразі ввімкне
 3. Згенеруй bundle.
 4. Перемкни DEBUG logging back off (інакше залишається on — стан персистить у `Settings`-таблиці і re-apply при рестарті).
 
+### Сам процес BamDude
+
+Раніше бандл описував машину, базу, принтери й налаштування — усе, крім процесу, який власне працює. Тож звіт «пам'ять росте днями, поки його не вб'ють» приходив без нічого, з чим можна працювати: числа, які вказують на причину, існують лише **поки це відбувається**, а на момент запитання контейнер уже перезапущено.
+
+Тепер бандли несуть:
+
+| Поле | Чому важливо |
+|---|---|
+| **Пам'ять у користуванні проти зарезервованої** | Різниця між цими двома й відрізняє справжній витік від нешкідливого адресного простору |
+| **Кількість потоків і дочірніх процесів** | Зростання кількості потоків — це інший баг, ніж зростання купи |
+| **Відкриті файли й сокети** | Витік дескрипторів ззовні виглядає як витік пам'яті |
+| **Uptime** | Дає масштаб усім іншим числам |
+| **Розбивка того, чим заповнена пам'ять** | Вказує, *яке саме* виділення росте |
+
+!!! note "На вже дуже великому процесі розбивка пропускається — і про це сказано"
+    Генерація бандла для діагностики некерованого росту пам'яті не має стати тим,
+    що добиває машину.
+
+    **Дочірні процеси записуються лише за іменем, ніколи за командним рядком** —
+    у командному рядку `ffmpeg` лежить пароль камери.
+
+Це потрапляє і в бандл, який ти завантажуєш, і в пакет, доданий до [звіту про баг](bug-report.md).
+
 ### Sanitisation
 
 `_sanitize_log_content` і `_collect_support_info` працюють разом, щоб тримати secret-и зовні:
 
 - Printer names → `[PRINTER]`, serial numbers → `[SERIAL]`, IP addresses → `[IP]`, access codes → `[ACCESS_CODE]`, usernames → `[USER]`, email-и → `[EMAIL]`.
 - URL credentials (`http://user:pass@host`, `rtsps://bblp:code@host`) → `[CREDENTIALS]@`.
+- LDAP Distinguished Name-и → `[DN]`. Провідний `CN=` у DN — це справжнє ім'я користувача, тож поводимось із ним як з email. На відміну від решти списку, DN не візьмеш із БД — він per-user і приходить із твого каталогу — тому ловиться **за формою**: два або більше `attr=value`-компонентів через кому. Тобто `CN=Joe Schmoe,OU=Staff,DC=example,DC=com` прибирається всюди, де трапиться, включно з текстом помилки від бібліотеки каталогу. Одинокий `key=value` у сторонньому рядку не чіпається.
 - Path-компоненти типу `/home/<user>/`, `/Users/<user>/`, `/opt/<user>/` колапсуються в `/home/[user]/` тощо.
 - MQTT relay broker → masked: bare IP стає `[IP]`, hostname стає `*.tld`.
 - Subnets в network info → перші два октети стають `x.x` (тож `192.168.1.0/24` → `x.x.1.0/24`).

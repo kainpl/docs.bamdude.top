@@ -110,6 +110,21 @@ You can also override the env-var defaults that BamDude reads at startup: `SLICE
 | **Enable server-side slicing** (`use_slicer_api`) | Master toggle. When off, the Slice button disappears from the File Manager — slicing falls back to opening the source in the user's local desktop slicer via URI scheme. |
 | **OrcaSlicer API URL** (`orcaslicer_api_url`) | URL of the OrcaSlicer sidecar — e.g. `http://localhost:3003` for the default compose recipe. Empty = use `SLICER_API_URL` env default. |
 | **BambuStudio API URL** (`bambu_studio_api_url`) | URL of the BambuStudio sidecar — e.g. `http://localhost:3001`. Empty = use `BAMBU_STUDIO_API_URL` env default. |
+| **Slicer stall timeout** (`slicer_stall_timeout_minutes`) | Under **Settings → General → Slicer**. Minutes to keep waiting **with no progress** from the sidecar. Default **15**, range 1–240. See below. |
+
+!!! info "The stall timeout is not a limit on how long a model may take"
+    While a slice runs, BamDude asks the sidecar for progress once a second — that
+    is what drives the progress toast. **The clock resets on every progress
+    update**, so a heavy model that keeps reporting runs to completion however long
+    it needs, and only real silence ends the wait.
+
+    On an older sidecar that cannot report progress there is nothing to judge
+    liveness by, so the same number bounds **total** slicing time instead — the old
+    behaviour, but with a number you can raise rather than five minutes fixed in
+    the code.
+
+    A sidecar that won't accept a connection at all is still reported as
+    unreachable, immediately.
 
 The desktop **Open in Slicer** button is controlled by a separate, independent setting — **Settings → Slicer → Open in Slicer** — a dropdown that defaults to **Same as API slicer**. Point it at a different slicer to, e.g., slice through the Bambu Studio sidecar but open files locally in OrcaSlicer (or vice versa); existing setups are unchanged until you pick a different value.
 
@@ -125,7 +140,22 @@ The Slice modal opens with three preset dropdowns:
 
 - **Printer profile** — from the unified preset listing. Each entry is sourced from one of four tiers listed in fixed precedence with **no cross-tier dedup** (`local` → `orca_cloud` → `cloud` → `standard`): `local` (your imported/local `.json` profiles), `orca_cloud` (per-user Orca Cloud presets), `cloud` (per-user Bambu Cloud presets), `standard` (bundled defaults baked into the sidecar). Because there is no dedup, a preset with the same name in two tiers is listed once per tier — it is no longer hidden just because another tier has one by that name. The modal labels the tier next to each option. Defaults to the printer the source 3MF was prepared with when that profile is available, otherwise the first listed.
 - **Process profile** — same four tiers, but **filtered to the selected printer**: profiles for other printers drop into a trailing **"Other printers"** group instead of disappearing, and profiles with no printer info stay in the main list (never hidden). Defaults to the process the 3MF was prepared with when compatible. Changing the printer re-picks the process if the current one no longer fits.
-- **Filament profile(s)** — one dropdown per AMS slot the picked plate uses, filtered the same way (compatible profiles first, "Other printers" group trailing). The modal pre-picks the best match per slot using the source 3MF's filament metadata (type + colour score), with printer-incompatible filaments demoted, so a single click on **Slice** usually does the right thing for multi-color jobs.
+- **Filament profile(s)** — one dropdown per filament slot **the project declares**, not just the ones this plate paints with, filtered the same way (compatible profiles first, "Other printers" group trailing). The modal pre-picks the best match per slot using the source 3MF's filament metadata (type + colour score), with printer-incompatible filaments demoted, so a single click on **Slice** usually does the right thing for multi-color jobs.
+
+    !!! warning "Why every declared slot is listed, even the unused ones"
+        The slicer binds this list **by position**. A model that declares four
+        filaments but paints with slot 4 alone — a common MakerWorld shape — used
+        to show a single dropdown, and your pick landed in **slot 1**; slot 4, the
+        one the model actually prints with, was sliced with whatever the author
+        had left in it, and the print came out in the wrong material with nothing
+        on screen to suggest anything was off.
+
+        Slots this plate doesn't use are shown greyed out (see below), so choosing
+        a filament for slot 4 sets slot 4.
+
+    The **Print** dialog is deliberately different: it asks which spools the job
+    needs, and it needs the narrow answer — otherwise it would have you load three
+    spools the print never touches.
 
 The modal caches the cloud and standard preset listings for a few minutes, so if you delete or rename a preset in Bambu Studio / Bambu Handy it can take a while to disappear from the dropdowns. A **Refresh** control on the preset list fetches the latest listings immediately. Importing or deleting a local profile in **Settings** also refreshes the slice dialog's presets right away.
 
@@ -171,10 +201,43 @@ drive the result.
 !!! note "This is not a settings merge"
     It's all-or-nothing: you get the designer's complete profile, or you get
     yours. Keeping the author's walls while swapping in *your* filament isn't
-    supported — leave the checkbox off and re-create the tweak in your own
-    process preset if you need that combination.
+    supported — for that, use **The designer's print settings** below, which is
+    per-setting and works across printers.
 
-#### Filament slots your plate doesn't use
+### The designer's print settings (per-setting, across printers)
+
+The middle ground between "your preset" and "slice as designed": pick your own
+printer, process and filaments, and carry **only the individual settings the
+author changed**.
+
+When the source 3MF declares deviations from its stock profile, the Slice modal
+adds a **The designer's print settings** panel listing exactly which process
+settings the author changed and what each was set to, with a checkbox per
+setting. Only what you tick is applied.
+
+| Group | Examples | Default |
+|---|---|:---:|
+| **Design intent** | wall count, infill density and pattern, layer and first-layer height, supports, seam position, brim, ironing | :material-check: ticked |
+| **Machine-tuned** — badged `machine-tuned` | speeds, accelerations, jerk, fan speeds, temperatures, prime-tower geometry | :material-close: unticked |
+
+Machine-tuned values were chosen for the *author's* printer. On yours they can be
+merely wrong, or outside the range your profile accepts — which fails the slice
+outright — so they are listed with a badge and left off for you to decide.
+
+!!! info "Nothing here is guessed"
+    Bambu Studio writes the list of deviations into the 3MF itself
+    (`different_settings_to_system` in `Metadata/project_settings.config`).
+    BamDude reads that list; it does not diff profiles or infer intent.
+
+    A file whose list doesn't match its own filament count is **ignored rather
+    than interpreted** — misreading it would risk carrying the author's machine
+    start-up G-code onto your printer.
+
+The panel works when re-slicing for a **different** printer, which is exactly
+where "Slice as designed" isn't offered. It also appears when re-printing from an
+archive.
+
+### Filament slots your plate doesn't use
 
 In a multi-plate project each plate usually paints with only some of the
 project's filament slots. The slice dialog labels the others **"— not used by
@@ -222,7 +285,8 @@ The Settings → Profiles → Slicer API toggle and URL fields are gated by `set
 
 ## :material-alert-circle-outline: Failure modes
 
-- **Sidecar offline** → 502 surfaced as toast, job marked failed; original file untouched.
+- **Sidecar offline** → 502 surfaced as toast, job marked failed; original file untouched. "Could not connect" and "gave up waiting" are reported as **different** things, and the timeout message names the limit that was reached and where to change it.
+- **Slice produced nothing** → a reply that is "OK" with a few bytes — a misconfigured slicer service, a reverse proxy returning its own error page, a truncated response, the slicer crashing without writing output — is **rejected before the file is stored**, rather than being saved, queued, and sent to a printer that then does nothing. A slice refused as too large is named for what it is: a size limit on the proxy in front of the slicer, not a fault of the slicer.
 - **Profile not found** → 400 names the missing profile so you can add it via [K-Profiles](kprofiles.md) or pick a different tier.
 - **Sidecar rejects the file** (corrupt 3MF, unsupported plate format, malformed preset, etc.) → toast surfaces the sidecar's verbatim CLI stdout/stderr so you don't have to dig in container logs.
 - **Embedded-settings fallback** — for 3MF sources, a 5xx from the sidecar with `--load-settings` triggers ONE retry without profiles. The slice then uses the source's embedded settings (the ones the original slicer baked into `Metadata/slice_info.config`); the resulting row carries `used_embedded_settings: true` in its metadata. STL has no embedded settings, so 5xx is terminal there.

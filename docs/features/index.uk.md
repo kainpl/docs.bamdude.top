@@ -79,7 +79,12 @@ MJPEG потокове відео та знімки з вбудованої ка
 
 <div class="feature-card" markdown>
 ### [:material-power-plug: Розумні розетки](smart-plugs.md)
-Інтеграція з Tasmota, Home Assistant, REST/Webhook та MQTT для автоматичного ввімкнення/вимкнення та моніторингу енергоспоживання.
+Інтеграція з Zigbee, Tasmota, Home Assistant, REST/Webhook та MQTT для автоматичного ввімкнення/вимкнення та моніторингу енергоспоживання.
+</div>
+
+<div class="feature-card" markdown>
+### [:material-thermometer: Датчики середовища](sensors.md)
+Zigbee-датчики температури й вологості на тій самій рації, що й розетки — поточні покази поруч із принтерами, графіки історії та тривоги, коли приміщення виходить за межі.
 </div>
 
 <div class="feature-card" markdown>

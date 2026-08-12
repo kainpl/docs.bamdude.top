@@ -56,7 +56,25 @@ Sort dropdown above the file grid:
 - **Name** — A→Z / Z→A
 - **Date** — newest / oldest first
 - **Size** — largest / smallest first
-- **Last printed** — files used recently bubble up
+- **Type** — grouped by file extension
+
+!!! info "Dates on a mapped (external) folder are the file's own"
+    Files on a NAS or USB folder are dated by their **modification time on disk**,
+    read on every scan — not by the moment BamDude discovered them. A scan
+    discovers a whole folder in the same instant, so the discovery time gave every
+    file in it the same timestamp and the order came down to chance. Edit a file on
+    the share and it moves to the top the next time you scan.
+
+    **A folder's date is the newest thing anywhere inside it**, however deep — not
+    just one level down, which used to make a folder whose models all sit in
+    sub-folders look untouched for months. Hover a folder name to see the date it
+    is sorted by.
+
+### Not printed
+
+A toggle beside the type dropdown narrows the list to files that have never finished a print. It combines with every other filter rather than replacing them, so "Not printed" plus `.gcode.3mf` answers the question worth asking: what have I sliced and never actually run.
+
+The toggle is not remembered between visits — it is a question, not a preference, and a library that came back half-empty with nothing on screen explaining why would be worse than one extra click.
 
 ### File-type chips
 
@@ -67,7 +85,13 @@ Above the grid is a chip row that filters by file extension:
 - `.stl`, `.obj`, `.step` — raw geometry
 - `.gcode` — bare gcode (no embedded metadata)
 
-Chips are AND-combined with the [tag chip filter](#tag-chip-filter) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
+Chips are AND-combined with the [tags](#tags) below — selecting `multiplate` + `.gcode.3mf` returns only multi-plate sliced files. The chip row only renders for types actually present in the loaded list, so flat libraries see a tighter row.
+
+### Clearing filters
+
+When nothing matches, the empty view offers **Clear filters**, and it clears all of them: search, file type, **Not printed**, the "filter by user" box, and the [tag filter](#tags).
+
+The tag filter matters here for a reason that is easy to miss. It is applied by the **server**, so a tag combination matching nothing makes the library itself come back empty — and the reset is offered for that case too, rather than a prompt to upload files, which used to be a dead end.
 
 ---
 
@@ -101,6 +125,21 @@ Each selected plate becomes its own queue item / archive with the plate index re
 ### Add to Queue
 
 Queue sliced files for later printing without creating archives upfront. Archives are created automatically when the print actually starts (see [Archives](archiving.md) — deferred archive creation keeps the archive list clean of "queued but never printed" entries).
+
+### Queueing several files at once
+
+Tick the files you want and press **Schedule**. The button only appears when the selection contains something sliced — an STL cannot be printed, so there is nothing to offer.
+
+There is no separate bulk dialog. The ordinary scheduling window opens for the first file, marked **1/3** beside its title, then for the next one, and so on. Every file keeps the full set of choices: a printer or several, or the auto-queue; which plates; filament mapping; print options; quantity; and when to start. Two files in one selection rarely want the same answers — different plates, different colours loaded on different machines — which is why the file, not the batch, is the unit.
+
+Close the window at any point (**Cancel**, the ✕, or Escape) and the run stops there. Whatever you did not get to **stays selected**, so the ticks show what is left to distribute. Everything queued clears the selection.
+
+A submit that fails does not move on: the window stays on that file with its error, which is where the fix is made.
+
+Selecting one file works exactly as it always did — one dialog, no counter.
+
+A file sliced for a printer model that cannot run it is refused rather than quietly queued to fail later. So is a file that was never sliced.
+
 
 ---
 
@@ -204,15 +243,38 @@ Every file in the library is a row in the `library_files` table. The row carries
 - **Hash dedup** — uploads are SHA-256'd and matched against existing rows; an identical re-upload returns the existing entry instead of creating a duplicate copy on disk.
 - **Thumbnails** — extracted from `Metadata/plate_*.png` inside the 3MF on upload (no on-the-fly extraction). Re-uploads or "reparse" trigger fresh extraction.
 - **STL thumbnail render** — STL uploads (`.stl`, `.zip` containing STL) get a thumbnail rendered on upload via the bundled rasteriser, so the card shows the actual part instead of a generic placeholder.
-- **`print_count` + `last_printed_at`** — usage counters maintained by dispatch; visible in the file-card hover and used by sort modes. Backfilled retroactively on upgrade by migration `m014`.
+- **`print_count` + `last_printed_at`** — usage counters maintained by dispatch. `print_count` counts **completed** prints only, so a file that was attempted and failed still reads as never printed; a reprint from the archive does advance it. The count appears on the card and in the list beside the file's other facts, and clicking it opens that file's print history. Nothing is shown at zero — the **Not printed** filter above answers that question instead. Backfilled retroactively on upgrade by migration `m014`.
 - **`file_metadata` JSON column** — stores parsed slicer metadata: filament weights per spool, object count, sliced-for printer model, plus the `gcode_label_objects` / `exclude_object` flags from the source 3MF's `Metadata/project_settings.config` (extracted in 0.4.1, backfilled by migration `m022`). The label-object flags gate the **skip-objects** button on the printer page during a print — both must be `true` for the button to light up. Bambu Studio has no *Label objects* setting at all and enables *Exclude objects* by default; OrcaSlicer exposes both, with *Label objects* on and ***Exclude objects* off** — so on an OrcaSlicer file that one switch is usually what needs turning on (see [Troubleshooting](../reference/troubleshooting.md) for the slicer-side checklist).
 - **`is_multi_plate` + `plates[]` per-plate cache (m023)** — for multi-plate sliced 3MFs (a single `.gcode.3mf` with several `Metadata/plate_N.gcode` entries) BamDude pre-extracts the full per-plate breakdown — thumbnail, print time, filament weight, object count, filament stack, label-object flags — into the same `file_metadata` JSON. The file list returns this without re-opening the 3MF on every query.
 - **`swap_compatible` flag** — detected from a `.swap.` or `.swaps.` marker in the filename, e.g. `MyPart.swap.gcode.3mf` or `Tray.swaps.3mf`. The marker must be **dot-delimited**, not underscore-delimited — `MyPart_swap.gcode.3mf` will not be flagged. Swap-compatible files are surfaced separately in the swap-mode picker.
-- **Composite `file_tags` column (m036 / m037)** — an unordered JSON list of identity tags drives both the badge row and the chip-row filter on the toolbar. Four semantic groups: **format** (`gcode` / `3mf` / `stl` / `obj` / `step` — sliced `.gcode.3mf` keeps the composite `gcode + 3mf` pair so the visual distinction survives `file_type` collapse), **readiness** (mutually exclusive: `sliced` for slicer-output, `project` for unsliced `.3mf` packages, `geometry` for raw mesh / CAD source — one toggle for "what still needs slicing?"), **modifiers** (`swap` / `multiplate`), **provenance** (`makerworld`). Frontend `sortTagsForDisplay` projects onto an explicit precedence so the row reads right-to-left format → readiness → modifiers → provenance.
+- **Composite `file_tags` column (m036 / m037)** — an unordered JSON list of identity tags drives the badge row on each file. Since m128 the same vocabulary also exists as `is_system` rows in `library_tags`, which is what the tag filter and the tag catalog query; the column stays as a derived cache so the badges and the preview-tab logic read a column on the row they already have. Both are written by one function, `sync_system_tags`. Four semantic groups: **format** (`gcode` / `3mf` / `stl` / `obj` / `step` — sliced `.gcode.3mf` keeps the composite `gcode + 3mf` pair so the visual distinction survives `file_type` collapse), **readiness** (mutually exclusive: `sliced` for slicer-output, `project` for unsliced `.3mf` packages, `geometry` for raw mesh / CAD source — one toggle for "what still needs slicing?"), **modifiers** (`swap` / `multiplate`), **provenance** (`makerworld`). Frontend `sortTagsForDisplay` projects onto an explicit precedence so the row reads right-to-left format → readiness → modifiers → provenance.
 
-## :material-tag-multiple: Tag chip filter
+## :material-tag-multiple: Tags
 
-The toolbar carries a chip row above the file list. Each chip is a tag from `file_tags`; clicking toggles it. Selected chips AND-filter the list so e.g. `multiplate + sliced` returns only multi-plate sliced files. Selection persists in localStorage so the filter survives reloads. Only chips for tags actually present in the loaded list render — installs that don't use every provenance source see a tighter row.
+There are two kinds of tag and one row of them.
+
+**Automatic tags** — `3MF`, `SLICED`, `MULTI-PLATE`, `MAKERWORLD` and the rest — are worked out from the file itself. They are shown but locked: they cannot be renamed, deleted, or taken off a file, and they are not offered where you apply tags by hand.
+
+**Your own tags** are anything you like — `kid-safe`, `petg-only`, `toys`. Create, rename and delete them from the **Tags** button in the toolbar.
+
+Both sit in one filter row above the file list, automatic ones first. Clicking toggles, and selections AND together, so `SLICED` + `kid-safe` returns only the sliced files you have labelled that way. The filtering is done by the server, not over whatever is currently on screen, so it reaches the whole library rather than the loaded page.
+
+An automatic tag appears in the row only when at least one file in the library carries it. Your own tags always appear, including empty ones — an unused tag is precisely the one you want to see in order to start using it.
+
+The selection is not remembered between visits. A library that comes back narrowed with nothing on screen explaining why costs more than one click.
+
+### Managing tags
+
+The **Tags** dialog lists both kinds, automatic ones in a locked section with their file counts.
+
+- Rename in place — click the name, type, press Enter. Escape abandons it.
+- Delete asks first and says how many files it will affect.
+- Tick several to delete them together.
+- Clicking a row does nothing else. It does not filter, and it does not close the dialog.
+
+### Tagging one file
+
+**⋮ → Tag** on any file opens a short list of your tags with the file's current ones ticked. A tick applies immediately; there is no confirm step. **+ new tag** at the bottom creates one and applies it in the same move.
 
 ## :material-eye-outline: 3D / G-code viewer
 
@@ -250,6 +312,13 @@ Single-plate files don't render the gallery — the existing main thumbnail cove
 ## :material-delete: Trash workflow
 
 Deleted files don't disappear immediately — they move to **Trash** and stay there for a configurable retention window (default **30 days**) before a background sweeper hard-deletes them from disk. This gives you an undo window for accidental deletions and bulk operations.
+
+**Every route into deletion behaves the same way.** Deleting one file, deleting a selection, and deleting a folder all put the entries in the trash — the bulk paths used to destroy files outright, with nothing to restore. Files that were inside a deleted folder come back to the **top level** of the library when restored, since the folder they lived in no longer exists.
+
+!!! note "A file that could not be deleted is not reported as deleted"
+    Bulk delete skips a file whose print is currently running. The result says what
+    actually happened and how many were skipped, rather than counting everything
+    you selected.
 
 ### Restoring or permanently removing trashed files
 
@@ -321,6 +390,12 @@ You can rename files and folders directly in the File Manager without an externa
 3. Enter the new name
 4. Press Enter or click **Rename** to save
 
+### Moving one file
+
+**Move** sits in the same three-dot menu as **Rename**, in both grid and list view, and opens the folder picker directly. There is no need to tick the file first — the multi-select toolbar still offers Move for several files at once, but a single file does not have to go through a selection to be moved.
+
+It is gated exactly like Rename: a user holding only the `*_own` library permissions sees it on their own files and nowhere else.
+
 ### Renaming a folder
 
 1. Hover over the folder in the sidebar
@@ -331,6 +406,24 @@ You can rename files and folders directly in the File Manager without an externa
 
 !!! note "Filename restrictions"
     Filenames cannot contain path separators (`/` or `\`). The rename API rejects these characters and the modal surfaces the error inline.
+
+### Deleting a folder
+
+Folders have no owner, so deleting one used to need the full "delete anything" permission (`library:delete_all`) — which meant a user could create a folder, delete their own files out of it, and then have to ask an administrator to clear the empty shell.
+
+| Folder | Permission needed |
+|---|---|
+| **Empty** | `library:delete_own` — the ordinary delete permission |
+| Holds files or subfolders | `library:delete_all` |
+| An external / mapped folder | `library:delete_all` |
+| Linked to a project or an archive | `library:delete_all` |
+
+Removing any of the last three affects more than the folder, which is why they still need an administrator.
+
+!!! warning "'Empty' is decided by the server, not by what you can see"
+    A folder holding a file **somebody else** has deleted looks empty in the tree.
+    Deleting it would take that file for good and break their restore — so it is
+    refused, and says why.
 
 ---
 
@@ -416,6 +509,21 @@ Right-click a folder (or use its three-dot menu) → **Link to project** / **Lin
 
 Linked folders show a colored badge in the sidebar and grid. When a folder is linked to multiple projects the badge carries an `×N` overflow counter and the tooltip lists every project name. Per-folder links propagate the project list to every file inside via the M2M pivot, plus any file moved into the folder later inherits the same list.
 
+### What the archive link is for
+
+⚠️ **Its effect appears on the archive, not on the folder.** Linking a folder to an archive puts an "open source folder" shortcut on that archive — the yellow folder icon on the archive card and in the archive row, which jumps straight back to the library folder the files came from. Nothing changes on the folder itself, which is why the dialog now says so.
+
+**One archive belongs to one folder.** Linking an archive that another folder already holds is refused, naming that folder — rather than silently taking it away from a folder you are not looking at. The archive only ever displayed one link anyway, so a second one existed in the database and nowhere on screen.
+
+!!! info "On upgrade"
+    Where several folders already claimed the same archive, the **most recent** link is kept and the others are cleared. Each clearing is written to the log with both folder names.
+
+### Archived projects are not offered
+
+The project picker lists active and completed projects. An archived project is left out — archiving means "I am done with this", the same as it does for a printer, which leaves the choices rather than being labelled inside them.
+
+⚠️ **A project something is already linked to stays on the list even when archived**, so an existing link is never hidden and never silently cleared by saving the dialog.
+
 ---
 
 ## :material-api: API endpoints reference
@@ -427,11 +535,11 @@ The library is fully accessible via the REST API — useful for scripted ingesti
 | `/api/v1/library/files` | `GET` | List files (paginated; query params for folder, sort, filter) |
 | `/api/v1/library/files/{id}` | `GET` | Single file detail (metadata, plates, file_tags) |
 | `/api/v1/library/files/{id}/capabilities` | `GET` | Which viewer tabs to show (3D / G-code / per-plate) |
-| `/api/v1/library/upload` | `POST` | Multipart upload (one or more files) |
+| `/api/v1/library/files` | `POST` | Multipart upload (one or more files) — needs `library:upload` |
 | `/api/v1/library/files/extract-zip` | `POST` | Upload + extract ZIP with options |
 | `/api/v1/library/files/{id}` | `DELETE` | Soft-delete (move to trash) |
 | `/api/v1/library/bulk-delete` | `POST` | Soft-delete many files at once |
-| `/api/v1/library/files/add-to-queue` | `POST` | Queue one or more files for printing |
+| `/api/v1/queue/` | `POST` | Queue a library file (`library_file_id`) onto a printer's queue — needs `queue:create`, not a library permission |
 | `/api/v1/library/folders` | `POST` | Create folder |
 | `/api/v1/library/folders/external` | `POST` | Link an external folder |
 | `/api/v1/library/folders/{id}/scan` | `POST` | Re-scan an external folder |

@@ -26,7 +26,7 @@ A VP runs in **exactly one mode**. The mode is set per-VP and validated server-s
 
 | Mode | What happens to uploads | Use case |
 |------|-------------------------|----------|
-| **`file_manager`** (default) | Upload lands in `/pending-uploads` as a **review item**. From the review modal an operator can dispatch to a real printer, archive in bulk (no print), or reject. | Multi-user / multi-machine inbox where every upload gets a sanity check before printing — also the right mode if you only want to **archive** without printing (use the bulk-archive action in the review modal). |
+| **`file_manager`** (default) | Upload is saved to the **[File Manager](file-manager.md) library** and nothing else happens — no print, no queue entry. An operator prints it from there when ready. | Multi-user / multi-machine inbox where every upload gets a look before printing — also the right mode if you only want to **keep** the file without printing. |
 | **`print_queue`** | Upload is archived **and** queued on a **specific** target printer. With `auto_dispatch=true` the queue item starts immediately; with `auto_dispatch=false` it waits for an explicit Start click. | You always print this VP's uploads on the same machine. |
 | **`auto_queue`** | Upload is archived and dropped into the **[auto-queue router](auto-queue.md)** — no fixed target. The scheduler picks any eligible idle printer (model + filament + color match). Per-VP **Force colour match** toggle pins per-slot `(type, colour, weight)` matching instead of the looser type-only set, so a "Yellow PLA" job won't dispatch to a printer with only "Black PLA" loaded. | Hands-off load-balancing across a multi-printer farm. |
 | **`proxy`** | The slicer's TLS session is TCP-proxied to a real `target_printer_id` — BamDude is just the public endpoint. | Remote printing — slicer reaches BamDude over LAN/VPN, BamDude reaches the printer. |
@@ -620,18 +620,19 @@ The frontend mirrors this with a yellow warning banner that disables the Auto-di
 
 ---
 
-## :material-clipboard-check: Review Modal (file_manager mode)
+## :material-folder-arrow-down: What `file_manager` mode does
 
-In `file_manager` mode, every uploaded 3MF lands in a **review queue** at `/pending-uploads`. From the review modal an operator:
+The upload is saved straight into the **[File Manager](file-manager.md) library** as an ordinary library file — same row, same folders, same tags as anything you upload through the UI. Nothing is printed and nothing is queued; the file simply waits there until somebody acts on it.
 
-1. Opens an upload, sees the parsed metadata + thumbnail.
-2. Picks the target real printer.
-3. Verifies AMS slot mapping, plate selection, and any per-print options.
-4. Clicks **Send to Printer** — the 3MF is dispatched through the standard background-dispatch pipeline (FTP upload, swap macros, archive linkage).
+From the library an operator picks the file and uses the normal **Print** / **Add to queue** flow, which is the same dispatch path every other print takes.
 
-Review batches can also be **archived in bulk** (no print, just stash the metadata) or **rejected** (deletes the upload). Use this when multiple users / machines slice into the same VP and you want a sanity check before it actually hits a printer.
+Two behaviours worth knowing:
 
-API: `GET /api/v1/pending-uploads/`, `POST /api/v1/pending-uploads/{id}/archive`, `POST /api/v1/pending-uploads/archive-all`.
+- **Only `.3mf` is kept.** Anything else the slicer uploads is discarded on arrival rather than stored.
+- **Every mode goes through the library.** `print_queue` and `auto_queue` also save the file here first and then queue against the resulting library file — so the library is the complete record of what a VP received, whatever mode it runs in.
+
+!!! info "There is no separate review queue any more"
+    Earlier versions parked uploads in a `pending_uploads` table with its own review modal. That was folded into the library in 0.4.2, the table was drained by migration `m041` and both it and its endpoints were removed in 0.4.3. If you are following an older guide, the review modal and the `/api/v1/pending-uploads/…` endpoints no longer exist.
 
 ---
 
@@ -657,6 +658,30 @@ Both Queue-mode VPs (`print_queue` and `auto_queue`) carry a **G-code injection*
 - **Flipping it restarts the VP** (the listeners re-initialise), so the slicer may briefly see the printer drop and reappear.
 
 Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / purge / swap-mode preamble, so you don't have to remember the per-item toggle on every send.
+
+---
+
+## :material-swap-vertical-variant: Use the slicer's AMS slots {#save-ams-mapping}
+
+**Off by default, per Virtual Printer**, on the VP card next to the other Queue-mode toggles.
+
+When a slicer sends a job through a Queue-mode VP, BamDude normally ignores the slot numbers the slicer resolved and picks the trays itself, by filament type and colour. That is the right default almost always — but **two spools of the same red PLA are identical as far as the file is concerned**, so matching by type and colour cannot tell them apart. Whichever one you chose in Bambu Studio, BamDude might load the other.
+
+Turn this on and the slots the slicer resolved are used exactly as sent.
+
+!!! warning "It is a trade — understand it before turning it on"
+    For jobs from this VP, BamDude stops choosing slots, which also switches off:
+
+    | What you lose | Normally does |
+    |---|---|
+    | **Lowest spool first** | Burns down a partly-used spool before opening a fresh one |
+    | **The AMS-Backup gate** | Stops "lowest first" stranding a print when AMS filament backup is off |
+    | **Inventory remaining-weight** | Skips a tray your inventory says can't finish the job |
+    | **Flow-Through-System routing** | Routes an FTS-bound slot to the external spool holder |
+
+    With the setting **off**, all of that works exactly as it does today. A mapping the slicer left entirely unresolved is ignored, so an empty answer never becomes a wrong one.
+
+Turn it on for a VP that feeds one printer whose trays you load deliberately; leave it off for a VP feeding a farm, where BamDude choosing is the point.
 
 ---
 

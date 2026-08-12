@@ -165,7 +165,7 @@ The 43 route modules under `backend/app/api/routes/` are registered under the `/
 | `/printers/*`, `/printer-queues/*`, `/cloud/*`, `/discovery/*` | Printer + AMS + Bambu Cloud | status, control, AMS RFID, snapshot, stream-token, network discovery |
 | `/archives/*` | Print history | list, get, reprint, delete, **`retry-download`**, **`cleanup/preview`**, **`cleanup/run`**, **`cleanup/status`** |
 | `/queue/*`, `/background-dispatch/*` | Queue management + dispatch | add, reorder, cancel, set-status, dispatch state |
-| `/library/*`, `/library-notes/*`, `/pending-uploads/*` | File manager | upload, list, delete, add-to-queue, slicer-uploads inbox |
+| `/library/*`, `/library-notes/*` | File manager | upload, list, delete, tags — also the inbox for virtual-printer uploads |
 | `/projects/*` | Project grouping | CRUD, print plan, archives by project |
 | `/macros/*` | G-code + MQTT-action macros | CRUD, execute |
 | `/notifications/*`, `/notification-templates/*`, `/user-notifications/*`, `/telegram/*` | Outbound channels | provider CRUD, template overrides, test send, Telegram bot config |
@@ -222,6 +222,29 @@ The realtime channel is the WebSocket at `wss://<host>/api/v1/ws`. It carries:
 
 !!! warning "WebSocket is currently unauthenticated"
     `/api/v1/ws` is in the auth middleware's public-route allowlist (`backend/app/main.py::PUBLIC_API_ROUTES`) and the handler performs no token check. Anyone able to reach the host on the WebSocket port can subscribe to realtime events. Treat the realtime channel as **read-only and intra-network** — front BamDude with a reverse proxy (see [Reverse Proxy & HTTPS](../getting-started/reverse-proxy.md)) and don't expose `/ws` directly to the public internet. Tightening this is tracked work; do not assume `Authorization: Bearer` will block subscribers today.
+
+### Inbound automation endpoints
+
+The `/webhook/*` group is the other direction: endpoints **your** automation calls, authenticated with an API key. They are the five listed in **Settings → API keys**.
+
+| Endpoint | Scope needed | What it does |
+|---|---|---|
+| `GET /api/v1/webhook/queue` | `can_read_status` | Queue status for every printer, or one via `?printer_id=` |
+| `GET /api/v1/webhook/printer/{id}/status` | `can_read_status` | Connection, state, current print, progress, remaining time |
+| `POST /api/v1/webhook/printer/{id}/start` | `can_control_printer` | Start the **next queued** print on that printer |
+| `POST /api/v1/webhook/printer/{id}/stop` | `can_control_printer` | Stop the running print |
+| `POST /api/v1/webhook/printer/{id}/cancel` | `can_control_printer` | Cancel a running **or paused** print |
+
+A key scoped to specific printers (`printer_ids`) is refused with **403** on any other printer. A printer that is not connected answers **503**, not an error — retry when it comes back. `start` answers **404** when the queue is empty.
+
+```bash
+curl -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/status
+curl -X POST -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/start
+```
+
+!!! note "There is no add-to-queue endpoint here"
+    Queueing goes through `POST /api/v1/queue/` with an `archive_id` or a `library_file_id`. The webhook group used to carry its own version; it built the queue row by hand and so skipped the paused-queue check, the printer-model compatibility gate and the queue counters. One way in is the point.
+
 
 ---
 

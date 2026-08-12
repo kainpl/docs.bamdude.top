@@ -52,8 +52,8 @@ BamDude може публікувати події до зовнішнього M
 | Топік | Опис |
 |-------|------|
 | `bambuddy/printers/{serial}/status` | Стан принтера в реальному часі (з обмеженням частоти) |
-| `bambuddy/printers/{serial}/online` | Принтер щойно зайшов у мережу |
-| `bambuddy/printers/{serial}/offline` | Принтер щойно вийшов із мережі |
+| `bambuddy/printers/{serial}/online` | Принтер щойно зайшов у мережу. Спрацьовує на **межі з'єднання**, тобто це перехід, а не heartbeat. |
+| `bambuddy/printers/{serial}/offline` | Принтер щойно вийшов із мережі — та сама межа, в інший бік. |
 | `bambuddy/printers/{serial}/print/started` | Друк розпочато |
 | `bambuddy/printers/{serial}/print/completed` | Друк завершено (status=`completed`) |
 | `bambuddy/printers/{serial}/print/failed` | Друк не вдався (status=`failed`) |
@@ -74,8 +74,13 @@ BamDude може публікувати події до зовнішнього M
 | Топік | Опис |
 |-------|------|
 | `bambuddy/maintenance/alert` | Завдання обслуговування перетнуло поріг |
-| `bambuddy/maintenance/acknowledged` | Maintenance-alert підтверджено в UI |
 | `bambuddy/maintenance/reset` | Maintenance-counter скинуто (завдання позначено виконаним) |
+
+!!! note "Топіка `maintenance/acknowledged` немає"
+    Він описував дію, якої в BamDude немає: алерт **піднімається**, а потім
+    **скидається**, коли роботу виконано. Окремого кроку підтвердження не існує,
+    тож топік прибрали, а не дали йому значення, якого він ніколи не мав. Більше
+    нічого не змінилося — `alert` і `reset` — це весь життєвий цикл.
 
 ### Події розумних розеток
 
@@ -83,7 +88,7 @@ BamDude може публікувати події до зовнішнього M
 |-------|------|
 | `bambuddy/smart_plugs/on` | Розетка щойно увімкнулась (post-confirmation, не просто запит). Payload містить `plug_id`, `plug_name`, `bound_printer_id`. |
 | `bambuddy/smart_plugs/off` | Розетка щойно вимкнулась. |
-| `bambuddy/smart_plugs/energy` | Періодичний знімок енергії. Payload містить `kwh_total`, `current_watts`, `voltage`, `printer_id` якщо прив'язана. |
+| `bambuddy/smart_plugs/energy` | **Щогодини**, разом зі знімком енергії, який BamDude і так записує. Payload: `plug_id`, `plug_name`, `power_watts`, `energy_today_kwh`, `energy_total_kwh`, `timestamp`. |
 
 ### Події архіву
 

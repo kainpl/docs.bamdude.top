@@ -170,7 +170,7 @@ Full reference: [G-code injection](gcode-injection.md). Reads + applies at dispa
 
 ### `created_by_id` audit
 
-Adding to queue records *who* added the item. The Telegram bot, library bulk-add, per-printer "Print" button, and File Manager prints all propagate the acting user. Visible per row on the archive that the queue item produces. The VP auto-queue and webhook trigger paths legitimately leave it `NULL` (no authenticated user to attribute).
+Adding to queue records *who* added the item. The Telegram bot, the library's Schedule dialog, the per-printer "Print" button, and File Manager prints all propagate the acting user. Visible per row on the archive that the queue item produces. The VP auto-queue and webhook trigger paths legitimately leave it `NULL` (no authenticated user to attribute).
 
 ---
 
@@ -322,13 +322,13 @@ Programmatic queue control via REST:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/v1/print-queue/` | List all queue items (filterable by printer, status) |
-| `POST /api/v1/print-queue/` | Add a new queue item from an archive or library file |
-| `PATCH /api/v1/print-queue/{id}` | Edit position, schedule, AMS, options |
-| `DELETE /api/v1/print-queue/{id}` | Cancel + remove |
-| `POST /api/v1/print-queue/{id}/start` | Force-start a `manual_start` or `pending` item |
-| `POST /api/v1/print-queue/bulk` | Bulk submit / edit / cancel |
-| `POST /api/v1/print-queue/reorder` | Drag-and-drop reorder via API |
+| `GET /api/v1/queue/` | List all queue items (filterable by printer, status) |
+| `POST /api/v1/queue/` | Add a new queue item from an archive or library file |
+| `PATCH /api/v1/queue/{id}` | Edit position, schedule, AMS, options |
+| `DELETE /api/v1/queue/{id}` | Cancel + remove |
+| `POST /api/v1/queue/{id}/start` | Force-start a `manual_start` or `pending` item |
+| `PATCH /api/v1/queue/bulk` | Bulk submit / edit / cancel |
+| `POST /api/v1/queue/reorder` | Drag-and-drop reorder via API |
 
 Full schema + auth details: [API reference](../reference/api.md).
 
@@ -392,7 +392,7 @@ Every cancelled item in the Issues section gets a **Restart** button (`RotateCcw
 - Re-appends it to the **end** of the queue (so it doesn't jump ahead of anything you queued in the meantime).
 - Leaves the archive trail intact — the old cancelled archive stays for forensics; a fresh `printing` archive is created when the item actually dispatches.
 
-The same `POST /api/v1/print-queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items — it now accepts both `failed` and `cancelled` as source states. The bulk-restart from the Issues section uses `POST /api/v1/print-queue/bulk` with the same retry verb.
+The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items — it now accepts both `failed` and `cancelled` as source states. The bulk-restart from the Issues section uses `PATCH /api/v1/queue/bulk` with the same retry verb.
 
 ---
 

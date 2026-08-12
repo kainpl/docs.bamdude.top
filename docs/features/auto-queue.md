@@ -136,13 +136,37 @@ The `find_eligible_printer` helper considers a printer eligible when **all** of 
 | **Model match** | If `target_model` is set, the printer's model code must equal it. |
 | **Location match** | If `target_location` is set, the printer's location tag must equal it. |
 | **Filament types** | Every required filament type must appear in some loaded slot (AMS or external spool). |
-| **Color match** | When `force_color_match=true`, color hex must also match per filament. |
+| **Color match** | When `force_color_match=true`, colour hex must also match per filament — **and so must the kind of filament**, see below. |
 | **Filament-overrides** | Any per-print override (e.g. "use PLA Tough instead of PLA") is honoured before checking the loaded slots. |
 
 Tie-breaker — when multiple printers are eligible:
 
 1. **Lowest filament use** (when `prefer_lowest_filament` setting is on, default off). Picks the printer whose AMS slots have the lowest total grams remaining for the required filaments — keeps "fresh" spools for harder jobs.
 2. Falls back to the lowest-id printer.
+
+### Exact colour matching tells PLA Matte from PLA Basic
+
+A printer reports every kind of PLA as simply **`PLA`** — Basic, Matte, Silk and the rest are distinguished only by the **filament preset code** the slicer wrote into the file.
+
+Exact matching now includes that code, and it holds all the way to the tray: a printer carrying two white spools of different kinds gets the one that was asked for, not whichever came first. Before, a job sliced for **White PLA Matte** counted a machine loaded with **White PLA Basic** as an exact match and printed on it — the finish was wrong and nothing on screen suggested it would be.
+
+!!! info "A preset code is not a colour"
+    The reverse mistake is fixed with it. A preset code identifies the *kind* of
+    filament, and Bambu sells every kind in every colour — but a matching code was
+    read as proof the spool was also the right colour. With a single Matte spool
+    loaded, every job wanting Matte matched it **whatever colour it actually was**:
+    the print dialog showed a green tick and "Ready" for a slot wanting dark red
+    against a tray holding dark green.
+
+    Colour is now judged on the tray actually chosen. The filament kind still
+    decides between trays that **agree** on colour, so a job sliced for Matte still
+    prefers the Matte spool over the Basic one — it just no longer overrules the
+    colour. A tray of the right kind in the wrong colour is used only when there is
+    nothing better, and is reported as a **colour mismatch**. Fixed in all three
+    places it lived: the print dialog, the queue's slot mapping, and the
+    auto-queue's.
+
+Spools that report **no** preset code — third-party filament, and files sliced before printers recorded it — still match on material and colour as they always did, so nothing that worked before starts waiting.
 
 ---
 

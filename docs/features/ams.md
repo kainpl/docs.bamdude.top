@@ -156,20 +156,25 @@ Toggle the same AMS-level behaviours Bambu Studio exposes — without leaving Ba
 
 ### Visibility — what shows up depends on the printer
 
-Each row is gated by what the printer actually supports — there's no point showing **AMS firmware type** on an X1C, or **air-print detection** on a P1S. BamDude resolves the per-printer capability table from the printer model code; rows whose capability is `false` are hidden entirely.
+Each row is gated by what the printer actually supports — there's no point showing **AMS firmware type** on an X1C, or **air-print detection** on a P1S.
 
-| Row | X1 family | P1 / P2 / X2D | A1 | A1 Mini | H2D family |
-|---|---|---|---|---|---|
-| Insertion update | yes | yes | yes | — | yes |
-| Power on update | yes | yes | yes | — | yes |
-| Update remaining capacity | yes | yes | yes | — | yes |
-| AMS filament backup | yes | yes | yes | — | yes |
-| Air printing detection | — | — | yes | yes | — |
-| AMS firmware type | — | — | yes | — | — |
-| Arrange AMS order | — | — | — | — | yes |
+Most of this is answered by **the AMS attached right now**, not by the printer model. That distinction is the whole point: an A1 ships with the AMS Lite, but plug in an AMS 2 Pro and the machine genuinely gains RFID-driven features. A model name cannot know that; the printer's own report can.
+
+| Row | X1 family | P1 / P2 / X2D | A1 + AMS Lite | A1 + full AMS | A1 Mini | H2D family |
+|---|---|---|---|---|---|---|
+| Insertion update | yes | yes | — | yes | — | yes |
+| Power on update | yes | yes | yes | yes | yes | yes |
+| Update remaining capacity | yes | yes | — | yes | — | yes |
+| AMS filament backup | yes | yes | yes | yes | yes | yes |
+| Air printing detection | — | — | yes | yes | yes | — |
+| AMS firmware type | — | — | yes | yes | — | — |
+| Arrange AMS order | — | — | — | — | — | yes |
 | Calibrate AMS | when ≥1 AMS connected, all models |
 
-A1 Mini's AMS Lite has no RFID reader, so the four RFID-driven flags are not shown for it.
+Two rows behave in ways worth knowing:
+
+- **Insertion update** appears only once the printer has actually reported the setting. Before that — and on a machine with no AMS at all — the row stays hidden rather than being offered on the strength of the model name.
+- **Update remaining capacity** can also be suppressed by the printer itself: some firmware supports the feature but asks that the control not be shown, and BamDude honours that.
 
 ### State source of truth — the printer
 
