@@ -160,6 +160,18 @@ If you upgrade from a pre-0.4.2 install where `archive/` may still contain lefto
 
 ---
 
+## :material-content-save-move: Saving a printed file back into the library
+
+An archive's 3MF can be copied into the library from the archive's own menu — pick a folder, and the file arrives read the same way an upload is: metadata, thumbnail, per-plate details and badges already filled in, rather than as an anonymous file.
+
+⚠️ **Saving the same print twice does not make a second copy.** The library recognises identical content and hands back the copy already there, saying so rather than pretending it wrote something.
+
+⚠️ **An archive may have no file to copy.** A print started from the printer's own screen whose 3MF could not be pulled has a real archive row and an empty file — the action explains that instead of failing quietly. The same applies to reprint and to opening in a slicer.
+
+Read-only external folders are left out of the picker: the library refuses to write into them, and offering a choice that cannot work is worse than not offering it.
+
+---
+
 ## :material-folder-multiple-outline: Library File Linking
 
 When you print from the file manager, the resulting archive carries `library_file_id` pointing at the source library row. The library row, in turn, carries running stats:
