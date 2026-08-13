@@ -45,15 +45,31 @@ A macro's `action_type` decides what happens when its event fires.
 
     **Currently shipping commands**
 
-    | ID | Effect |
-    |----|--------|
-    | `chamber_light_on` | Turn the chamber light on |
-    | `chamber_light_off` | Turn the chamber light off |
+    | ID | Value | Effect |
+    |----|-------|--------|
+    | `chamber_light` | `on` / `off` | Turn the chamber light on or off |
+    | `print_speed` | `1`–`4` | Set the speed level: Silent, Standard, Sport, Ludicrous |
+
+    An action names the command; the value is a separate setting that
+    appears in the editor once you pick the action.
 
     **Use cases**
 
     - Auto-light-on at print start, auto-light-off at print finish
+    - Drop to Silent speed part-way through an overnight print
     - External automations that don't need the G-code pipeline
+
+    !!! info "Chamber light macros made before 0.5.3"
+        The light used to be two separate commands, `chamber_light_on` and
+        `chamber_light_off`. They are now one command with an On/Off value,
+        and existing macros are converted the first time the new version
+        starts — they keep doing exactly what they did.
+
+    !!! warning "Print speed only applies while printing"
+        The printer accepts a speed change during a print. Bambu Studio
+        refuses one when the machine is idle, and so does BamDude's own
+        printer card, so a speed macro is worth binding to
+        `layer_reached` or `print_started`, not to `print_finished`.
 
     The catalog lives in `core/mqtt_macro_actions.py` and is exposed
     to the frontend via `/macros/meta`. New named commands are added
@@ -75,9 +91,32 @@ Each macro is bound to exactly one event. **Action-type support is not symmetric
 | **`print_finished`** | When the print reaches a terminal state (`FINISH`, `FAILED`, or `IDLE`-aborted), via `on_print_complete` | **`mqtt_action` only**, same reason — gcode here isn't wired yet (the trigger is shared with `print_started`). |
 | **`swap_mode_start`** | Before the print starts, when dispatch knows it's running with a swap-mode profile | **G-code only** in practice — the swap-mode dispatcher executes the macro synchronously and waits for `stg_cur` to return to idle. Pick G-code that prepares the swap mechanism. |
 | **`swap_mode_change_table`** | After the print completes, before the queue picks up the next item | **G-code only**, same reason. The macro physically swaps plates. See [Swap Mode](swap-mode.md). |
+| **`layer_reached`** | While the print runs, when the layer counter crosses the **Layer** you set | **`mqtt_action` only** — refused at save time for G-code, for the same reason as `print_started`. |
 
 !!! warning "Don't bind G-code to `print_started` / `print_finished`"
-    The macro UI lets you save the combination, but it won't run. If you want chamber lights or external relays toggled on print events, use **MQTT-action** macros (e.g. `chamber_light_on` / `chamber_light_off`). G-code on these events is a planned future extension, not a current feature.
+    The macro UI lets you save the combination, but it won't run. If you want chamber lights or external relays toggled on print events, use **MQTT-action** macros. G-code on these events is a planned future extension, not a current feature.
+
+### `layer_reached` in detail
+
+One layer per macro — for two changes at two layers, make two macros.
+
+The trigger is a **crossing**, not an exact match: MQTT reports do get
+dropped, so a print that jumps from layer 48 to 52 has still passed 50 and
+the macro for layer 50 still runs.
+
+It runs **once per print**, and that survives more than the obvious cases:
+
+- a printer that drops its MQTT connection mid-print gets a fresh client
+  whose layer counter starts at 0 — the replay past your layer does not
+  fire the macro again;
+- neither does a BamDude restart mid-print, because what already ran is
+  recorded on the print's archive entry as well as in memory;
+- a cancelled print followed by a new one *does* start fresh, which is
+  what you want.
+
+It also waits for the print to genuinely start. Some models — the P1S among
+them — tick the layer counter during the calibration they run beforehand,
+up to half an hour before the first layer goes down. Those ticks don't count.
 
 !!! tip "`print_finished` covers all terminal states"
     Whether the print finished cleanly, failed, or was aborted from the
@@ -113,9 +152,9 @@ up your own state-machine.
 
 1. Go to **Settings → Macros**.
 2. Pick or create a macro. Choose the **Action Type** (G-code or MQTT-action).
-3. Pick the **Event**.
+3. Pick the **Event**. For `layer_reached`, a **Layer** field appears — set the layer the macro should fire on.
 4. Set filter fields (printer models, swap mode, profile, delay).
-5. For G-code macros, type the snippet into the editor. For MQTT-action macros, pick the command from the dropdown.
+5. For G-code macros, type the snippet into the editor. For MQTT-action macros, pick the command from the dropdown — and if it takes a value, a second dropdown appears beneath it.
 6. Save.
 
 !!! warning "Test G-code on the printer first"
@@ -144,7 +183,8 @@ To restore the old behaviour:
     |-------|-------|
     | Action type | MQTT-action |
     | Event | `print_finished` |
-    | Command | `chamber_light_off` |
+    | Command | `chamber_light` |
+    | Value | `off` |
     | `delay_seconds` | `0` |
 
 === "Lights on when a print starts"
@@ -153,7 +193,8 @@ To restore the old behaviour:
     |-------|-------|
     | Action type | MQTT-action |
     | Event | `print_started` |
-    | Command | `chamber_light_on` |
+    | Command | `chamber_light` |
+    | Value | `on` |
     | `delay_seconds` | `10` (let heat-up finish first) |
 
 Pair both for full automatic-lighting cycles. Add `swap_mode_only=true` if you only want lights to cycle for swap-mode runs.
