@@ -126,6 +126,29 @@ up to half an hour before the first layer goes down. Those ticks don't count.
 
 ---
 
+## :material-check-decagram: Choosing macros per print
+
+Macros are **opt-in per print**. The print dialog and the queue dialog list the
+macros that apply to the target printer, and only the ones you tick run for
+that job.
+
+- The list is filtered to the printer's model, to enabled macros, and to a
+  matching swap profile. If nothing applies, the panel does not appear.
+- Your choice is remembered **per printer model**, exactly as the swap-macro
+  panel's is. Open the dialog for another printer of the same model and the
+  same ticks come back.
+- What is remembered is what you turned **off**, so a macro you create later
+  arrives ticked rather than quietly missing.
+- Editing a queued job shows what that job stored. A macro created after it
+  was queued starts unticked there — tick it if you want it.
+
+!!! warning "A print started outside BamDude runs no macros"
+    There is no dialog on a print launched from the printer's screen, sent
+    straight from a slicer, started from Telegram, or received by the virtual
+    printer — so nothing was ticked, and nothing runs. The same is true of jobs
+    that were already sitting in a queue before this version. If you depend on
+    a macro for those prints, queue them through BamDude and tick it.
+
 ## :material-filter: Filter Fields
 
 Both action types share the same filter set. A macro fires only when **every** filter matches.
