@@ -16,7 +16,7 @@ BamDude reads two values from each smart plug:
 1. **Live wattage** — how many watts the printer is drawing right now.
 2. **Lifetime energy counter** — total kWh the plug has measured since it was reset.
 
-When a print starts, the lifetime counter is captured on the archive row as `energy_start_kwh`. When the print finishes, BamDude reads the counter again and stores the delta as `energy_kwh`. The starting value lives **on the archive row, not in memory** — so if the backend restarts mid-print, the per-print delta is still computed correctly at completion.
+When a print starts, the lifetime counter is captured on the archive row as `energy_start_kwh`. When the print finishes, BamDude reads the counter again and stores the delta as `energy_kwh`. The starting value lives **on the archive row, not in memory** — so a backend restart mid-print does not lose the baseline, and the delta is still computed when the print completes. (If the print *ends* during the outage, see "If the print ends while BamDude is down" below.)
 
 For lifetime / date-range views, an hourly background loop snapshots each plug's lifetime counter into `smart_plug_energy_snapshots`. Date-range totals are then computed as `last_snapshot_in_range − last_snapshot_before_range` per plug.
 
@@ -51,6 +51,8 @@ Captured on `PrintArchive`:
 | `energy_cost` | At print complete | `energy_kwh × cost_per_kwh` (denominated in your configured currency) |
 
 **Restart-resilient.** Because `energy_start_kwh` is persisted to the archive row inside the same transaction that records `started_at`, a backend crash or container restart mid-print does not lose the baseline — the next `on_print_complete` will compute the delta correctly.
+
+**If the print ends while BamDude is down**, there is no `on_print_complete` to run: the printer finishes alone and BamDude only learns about it on the next start. The startup sweep closes that print and reads the counter then, so the archive still gets a figure — but the meter kept counting through however long the printer sat idle in between, so that idle draw is inside the number. Such archives carry `extra_data.energy_is_approximate = true`, and the log line says `(approximate — recovered print)`. The alternative was leaving the field empty, which reads as "this print used no power" — further from the truth than a modest over-count.
 
 **Failed and cancelled prints still record energy.** A 6-hour print that fails at hour 4 still consumed 4 hours of electricity — the delta is still meaningful and is still written.
 
