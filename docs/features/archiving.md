@@ -366,6 +366,7 @@ The modal exposes the same options table as the new-print and queue modals — s
 | **Mesh-mode fast check** | Inherits from printer setting | When off, BamDude's gcode patcher comments out `M970`/`M970.3` vibration probes — see [archive chain-of-custody](#deduplication-chain-of-custody) |
 | **First Layer Inspection** | Disabled | AI inspection of first layer |
 | **Timelapse** | Disabled | Record timelapse video |
+| **Record to** | Internal storage | Which medium keeps the recording. Shown only on a printer that has both built-in storage and a healthy SD card |
 | **G-code injection** | Per-job | Inject custom G-code (see [G-code Injection](gcode-injection.md)) |
 
 !!! tip "File-type badge"
@@ -401,6 +402,8 @@ The timelapse is available in the archive viewer the moment the print finishes; 
 The SD card first. When the card has nothing — which is where recordings go on a printer with **built-in storage** and no card inserted — BamDude looks in the printer's internal timelapse catalogue instead, and downloads from wherever the file actually is. Both the automatic scan after a print and the **Scan for timelapse** button do this.
 
 That catalogue names the print each recording belongs to, so the video is matched to the right archive outright. The card carries no such information, which is why the SD path still has to match on timing and filename and can ask you when two are ambiguous.
+
+On both media the printer also reports the full path of the recording it has just finished writing, and the automatic scan takes **that** file by name instead of assuming the one new recording is the right one. It is still only accepted if it appeared after this print started — otherwise a video recorded from the printer's own screen mid-print, which the printer would honestly report as its most recent, could be attached to the wrong job.
 
 !!! note "Which printers keep timelapses internally"
     Not the same set as those that keep models internally — a machine can do one and not the other, so BamDude checks the two capabilities separately and only asks for a catalogue the printer says it has.

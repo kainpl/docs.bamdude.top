@@ -155,6 +155,7 @@ When adding to queue, expand **Print options**:
 | **Mesh-mode fast check** | off | Skip the M970 vibration-probe G-code via the [3MF gcode patcher](archiving.md). Disk file stays unpatched; only the bytes shipped to the printer are modified. |
 | **Layer inspection** | `on` | Per-layer first-layer inspection AI (X1 + H2 series). |
 | **Timelapse** | off | Record a built-in timelapse on the printer. |
+| **Record to** | Internal storage | Which medium keeps the recording, the same choice Bambu Studio offers. Shown only where the printer has **both** built-in storage and a healthy SD card; with one medium there is nothing to choose and BamDude uses it. Re-checked at dispatch — a card removed after queueing means the recording falls back to internal storage rather than the print failing. |
 
 !!! tip "Auto calibration (off / auto / on)"
     On models whose firmware supports it — the **X2D** and the **H2** family (H2D, H2D Pro, H2C, H2S), plus the **P2S** and **A2L** for bed levelling + flow calibration — Bed levelling, Flow calibration and (on dual-nozzle machines) Nozzle-offset calibration are **three-position**: **Off**, **Auto** (the printer itself decides whether the step is needed for the job), or **On** (always run). Models without firmware support keep the plain **Off / On** toggle. The choice is remembered per printer model, and Off/On behave exactly as before — the new Auto position only reaches a printer that advertises it.
