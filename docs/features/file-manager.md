@@ -119,8 +119,10 @@ For multi-plate `.gcode.3mf` files (a single bundle exporting several plates), t
 
 Each selected plate becomes its own queue item / archive with the plate index recorded — see [Auto-Queue](auto-queue.md).
 
-!!! warning "SD card required"
-    The file is FTP-uploaded to the printer's SD card before the print starts. No SD card → upload fails with a clear error. Check the SD slot if your printer reports "card error" right at dispatch time.
+!!! warning "Where the file goes before the print starts"
+    The file is uploaded to the printer's SD card over FTP. On **X2D, P2S and the H2 family**, which keep files in built-in storage too, a printer with **no card in** gets the file into that internal storage instead — nothing to set up, and nothing changes when a card *is* in.
+
+    Every other printer needs the card: without one the upload fails with a clear error. A card that is present but **unreadable or write-protected** stops the print on any printer, internal storage or not — an unusable card means something is wrong with the machine, and quietly routing around it would hide that. The message says which of the two situations you are in.
 
 ### Add to Queue
 

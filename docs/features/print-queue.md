@@ -30,8 +30,10 @@ The print queue lets you:
 
 ---
 
-!!! warning "SD card required"
-    Bambu printers fetch the active job from internal SD storage. **An SD card is mandatory** — without one, every dispatch fails at the FTP-upload step. A1-mini owners often run without one; that printer model can't drive the queue.
+!!! warning "The printer needs somewhere to hold the job"
+    A Bambu printer prints from its own storage, so the file has to land there first. On most models that means **an SD card is mandatory** — without one every dispatch fails at the upload step. A1-mini owners often run without one; that printer can't drive the queue.
+
+    **X2D, P2S and the H2 family** also have built-in storage, and BamDude sends there when no card is in — those machines drive a queue with an empty card slot.
 
 ---
 

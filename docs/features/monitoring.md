@@ -295,17 +295,39 @@ The card carries a cumulative print-time counter (sourced from `print_archives` 
 
 ## :material-folder: Printer file browser
 
-Browse and manage files on the printer's internal SD card right from the printer card.
+Browse and manage the files on a printer's storage right from the printer card — on the SD card, and on the built-in storage of printers that have it.
 
 ### Opening it
 
 Click the **folder icon** (:material-folder:) on any printer card → modal opens against the live FTPS session.
+
+### Which storage you are looking at
+
+**X2D, P2S and the H2 family (H2C, H2D, H2D Pro, H2S)** keep files in built-in storage as well as on a card. On those printers the modal shows a **SD card / Internal storage** switch, and everything below works on both: listing, download, plate previews, Save to Library and delete.
+
+- A printer with **no card inserted** opens on its internal storage rather than on an empty list.
+- Printers with only a card — every A1 and P1 — show **no switch** and behave exactly as before.
+
+!!! note "Why the switch is not on every printer"
+    Internal storage is reached over a second, printer-native file channel that only the newer generation speaks. BamDude decides by what the printer reports about itself, not by model name.
 
 ### Navigation
 
 - **Quick-access buttons** for `Root`, `Cache`, `Models`, `Timelapse` — jumps to the typical Bambu paths.
 - **Breadcrumb path** with back-step navigation.
 - Click folders to descend.
+
+**On internal storage the shape is different**, and the modal reflects it:
+
+| | SD card | Internal storage |
+|---|---|---|
+| Structure | folder tree | flat list |
+| Path bar / breadcrumbs | yes | not shown — there is nothing to descend into |
+| Quick-access | folder shortcuts | **Models** and **Timelapses** — two separate catalogues, not two directories |
+| **Clear SD card** | yes | not offered |
+| Free space | when the printer reports it | not shown — the printer does not report it on this channel |
+
+The **Timelapses** button appears only on printers that actually keep recordings internally. That is a separate capability from keeping models: a machine can do one and not the other.
 
 ### Selection + bulk operations
 
@@ -326,7 +348,7 @@ The **Save to Library** path also auto-promotes bare `.3mf` filenames to `.gcode
 
 ### Storage info
 
-When the printer reports it, used / free space appears in the modal header.
+When the printer reports it, used / free space appears in the modal header. It is reported for the SD card only — see the table above.
 
 ---
 

@@ -24,8 +24,10 @@ graph LR
 
 If the FTP fetch fails the row is still created — see [3MF download recovery](#3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
 
-!!! warning "SD card required"
-    The printer must have an SD card inserted — that's where BamDude fetches the 3MF from over FTP. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
+!!! warning "The 3MF has to be somewhere BamDude can reach"
+    BamDude fetches it from the printer's SD card over FTP, so on most printers the card must be inserted. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
+
+    On **X2D, P2S and the H2 family** the file is also fetched from the printer's built-in storage when the card has nothing — including for prints started on the printer's own screen, which would otherwise leave an archive with nothing attached.
 
 !!! note "X2D / P2S firmware TLS quirk (handled automatically)"
     Some firmware trips over modern Python's default TLS 1.3 on the FTPS channel — X2D fails the implicit-FTPS handshake outright, P2S hits a session-reuse bug — which left their archive cards empty (no filament / layers / MakerWorld link / thumbnail). BamDude now caps the FTPS session to TLS 1.2 for these models so the 3MF download at print start connects and the archive populates. No configuration needed.
@@ -393,6 +395,15 @@ BamDude attaches printer timelapses to the matching archive automatically and le
 | **AVI** | P1S, P1P | Saved immediately + converted to MP4 in the background via ffmpeg (`-threads 1`, `nice -n 19`) — runs at low priority so your Pi doesn't choke on it |
 
 The timelapse is available in the archive viewer the moment the print finishes; AVI re-encoding happens silently in the background.
+
+### Where the recording is looked for
+
+The SD card first. When the card has nothing — which is where recordings go on a printer with **built-in storage** and no card inserted — BamDude looks in the printer's internal timelapse catalogue instead, and downloads from wherever the file actually is. Both the automatic scan after a print and the **Scan for timelapse** button do this.
+
+That catalogue names the print each recording belongs to, so the video is matched to the right archive outright. The card carries no such information, which is why the SD path still has to match on timing and filename and can ask you when two are ambiguous.
+
+!!! note "Which printers keep timelapses internally"
+    Not the same set as those that keep models internally — a machine can do one and not the other, so BamDude checks the two capabilities separately and only asks for a catalogue the printer says it has.
 
 ### Editor controls
 
