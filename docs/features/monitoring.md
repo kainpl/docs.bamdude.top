@@ -350,6 +350,20 @@ The **Save to Library** path also auto-promotes bare `.3mf` filenames to `.gcode
 
 When the printer reports it, used / free space appears in the modal header. It is reported for the SD card only — see the table above.
 
+### What BamDude leaves on the printer after a print
+
+Set per printer, in its settings: **Clean up after print**. Printers added from now on have it **on**; printers you already have keep whatever they are set to today.
+
+| | SD card | Built-in storage |
+|---|---|---|
+| **Clean up on** | The file BamDude sent is deleted, and so is the copy the printer made in `cache` | The copy the printer keeps is deleted |
+| **Clean up off** | The file is moved out of the card's root into `cache`, and the saved print-parameters file is rewritten to match | The file is left exactly where the printer put it |
+
+The move on the card is not tidiness — it is protection. A printer will re-start whatever is sitting in the **root** of its card after a power cut, so a finished job left there can print itself again unattended. Nothing auto-starts from built-in storage, so there is nothing to move it away from.
+
+!!! note "One upload is several files on the machine"
+    BamDude sends `Cube.3mf`; the printer writes its own `Cube.gcode.3mf` into the card's `cache` and, if you have **store sent files to storage** switched on, into built-in storage as well. Cleanup clears all of them — and checks each file's contents first, because that same name is what a print sent straight from Bambu Studio leaves behind. A file that does not match is left alone.
+
 ---
 
 ## :material-image-multiple: Printer images

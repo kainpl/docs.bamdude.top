@@ -408,6 +408,15 @@ On both media the printer also reports the full path of the recording it has jus
 !!! note "Which printers keep timelapses internally"
     Not the same set as those that keep models internally — a machine can do one and not the other, so BamDude checks the two capabilities separately and only asks for a catalogue the printer says it has.
 
+### Clearing recordings off the printer
+
+**Settings → General → Remove timelapses from the printer once saved.** Off by default. With it on, a recording is deleted from the printer as soon as it has been attached to its archive — from the SD card or from built-in storage, whichever it was read from.
+
+Only ever after the copy is safely saved. If the attach fails, or the printer cannot be reached, the recording stays where it is.
+
+!!! warning "Why this is not on by default"
+    Having a copy in BamDude is not the same as nobody needing the file on the machine — it can still be watched from the printer's own screen, or carried away on the card.
+
 ### Editor controls
 
 Open an archive with a timelapse → click the timelapse thumbnail → **Edit** in the viewer header.
