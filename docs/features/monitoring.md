@@ -235,11 +235,33 @@ Click the HMS indicator to see error descriptions, codes, and recommended action
 
 A **Clear Errors** button sends a `clean_print_error` command to dismiss stale errors without power-cycling.
 
+### Where the descriptions come from
+
+Descriptions are Bambu's own — the whole catalogue, around 5 000 codes, not a
+selection — and they are looked up **per printer model**. The same code can name
+a different mechanism on a different machine: on an X2D `0300_401F` says the
+*right* hotend is missing, and that machine has two.
+
+An error with no description is still shown, with its code and a link to Bambu's
+HMS reference. BamDude used to hide those, which meant a fault the printer's own
+screen was showing about was invisible here.
+
+Ukrainian is ours: Bambu ships sixteen languages and Ukrainian is not one of
+them, so the descriptions are being translated a batch at a time. Anything not
+yet translated appears in English rather than blank.
+
 ### Remediation actions
 
 The HMS error dialog surfaces the same remediation buttons the printer's own screen offers — **Resume**, **Stop**, **Ignore & Resume**, "**Filament extruded, continue**", **Stop Drying**, **Turn off Fire Alarm**, and so on. Which buttons appear is driven per model and per error code from Bambu's catalog, so a filament-runout fault offers different choices than a chamber-temperature fault.
 
 Click a button and BamDude sends the matching MQTT command, then waits for the printer to actually act on it before confirming — a QoS-1 publish is acked by the broker even when the firmware silently drops a malformed HMS command, so BamDude samples the printer state after ~2.5 s and reports a failure if nothing changed. Needs `printers:control`; a Viewer sees the errors but not the buttons.
+
+!!! note "Refreshing the descriptions"
+    The description catalogue ships as JSON under `backend/app/data/hms/`, one
+    file per printer model. Re-import it from a fresh BambuStudio checkout with
+    `python scripts/import_hms_catalogue.py`, then run
+    `python scripts/translate_hms_catalogue.py --export` to collect any new
+    strings for translation.
 
 !!! note "Refreshing the catalog"
     The action catalog ships bundled as JSON (`data/hms_actions.json`). When Bambu adds codes in a firmware update, regenerate it with `python scripts/update_hms_actions.py`.
