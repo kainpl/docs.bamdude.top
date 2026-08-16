@@ -105,7 +105,7 @@ Per-printer діалог, який віддзеркалює **Bambu Studio → P
 - **Print Options** — усі тогли, що BS показує для конкретної моделі: AI-детекції, сенсори, поведінка plate, звук, auto-recovery. Показуються рівно ті, що принтер реально підтримує (див. [Видимість](#видимість-що-відображається-залежно-від-принтера)).
 - **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, віддзеркалює діалог Safety Options у BS. З'являється лише на моделях із safety-опціями.
 - **Printer Parts** — read-only вид встановлених сопел (тип, діаметр, тип потоку). Редагування parts на принтері залишене на наступну фазу; зараз API повертає `409 parts_not_editable` на спроби запису.
-- **Add-ons** — сам принтер + усі під'єднані аксесуари (AMS, filament buffer, exhaust fan, …), віддзеркалює вид Update Device у BS. Див. секцію [Add-ons](#add-ons) нижче.
+- **Add-ons** — сам принтер + усі під'єднані аксесуари (AMS, filament buffer, exhaust fan, …), віддзеркалює вид Update Device у BS.
 
 ### Print Options — що там є
 

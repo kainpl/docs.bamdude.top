@@ -105,7 +105,7 @@ Four tabs:
 - **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery. Gated to exactly what the printer reports it supports (see [Visibility](#visibility-what-shows-up-depends-on-the-printer)).
 - **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, mirroring BS's Safety Options dialog. Only appears on models that expose safety options.
 - **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
-- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view. See the [Add-ons tab](#add-ons) section below.
+- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view.
 
 ### Print Options — what's there
 
