@@ -1,6 +1,14 @@
-# Pinned to ranges that match the BamDude main repo so the docs build the same
-# way locally and in CI. Bump in lockstep with the main project's
-# requirements-dev.txt when mkdocs-material gets a major release.
+# Ranges rather than exact pins: a patch release of mkdocs-material changes the
+# rendered page, not the source, and CI rebuilds from scratch every time.
+#
+# ⚠️ There is no matching pin in the main BamDude repo to bump "in lockstep"
+# with, whatever this comment said before — that project has no mkdocs
+# dependency at all, deliberately. This file is the only place these versions
+# are decided.
+#
+# This repo has no venv of its own. The usual way to build locally is to
+# install these into the main repo's venv; its requirements-dev.txt spells the
+# two commands out.
 mkdocs>=1.6.0,<2.0.0
 mkdocs-material>=9.5.0
 mkdocs-static-i18n>=1.2.0
