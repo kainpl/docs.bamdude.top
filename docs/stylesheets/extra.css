@@ -223,3 +223,49 @@
     font-size: 1.8rem;
   }
 }
+
+/* Feature cards as links
+ *
+ * Asked for by a reader: the cards on the home page look clickable and were
+ * not. The whole card is now the target, not just the title.
+ *
+ * Done with a "stretched link" — the heading holds the real <a>, and its
+ * ::after is blown up to cover the card — rather than by wrapping each card in
+ * an anchor. Wrapping would put block markup inside an <a>, and would make the
+ * body text unselectable.
+ *
+ * ⚠️ `:not(.headerlink)` matters: Material appends a permalink anchor to every
+ * heading, so without it the ¶ link would also claim the whole card and win by
+ * source order — every card would scroll to itself instead of navigating.
+ */
+.md-typeset .feature-card {
+  position: relative;
+}
+
+.md-typeset .feature-card h3 a:not(.headerlink) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.md-typeset .feature-card h3 a:not(.headerlink)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+
+.md-typeset .feature-card:hover h3 a:not(.headerlink) {
+  color: var(--md-typeset-a-color);
+}
+
+/* Keyboard users get the same affordance the mouse gets. */
+.md-typeset .feature-card:focus-within {
+  outline: 2px solid var(--md-typeset-a-color);
+  outline-offset: 2px;
+}
+
+/* The permalink sits above the stretched overlay so it stays usable. */
+.md-typeset .feature-card h3 .headerlink {
+  position: relative;
+  z-index: 1;
+}
