@@ -66,43 +66,83 @@ The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
-### :material-monitor-dashboard: Real-time Monitoring
+### :material-monitor-dashboard: [Real-time Monitoring](features/monitoring.md)
 Live printer status via WebSocket, MJPEG camera streaming, HMS error tracking, and AMS humidity/temperature monitoring.
 </div>
 
 <div class="feature-card" markdown>
-### :material-clock-outline: Per-Printer Queues
+### :material-clock-outline: [Per-Printer Queues](features/print-queue.md)
 Independent print queues per printer with drag-and-drop ordering, scheduled prints, staggered start, and swap mode for A1 Mini plate swappers.
 </div>
 
 <div class="feature-card" markdown>
-### :material-archive: Print Archive
+### :material-archive: [Print Archive](features/archiving.md)
 Automatic 3MF archiving with metadata extraction, 3D model preview, duplicate detection, and full-text search.
 </div>
 
 <div class="feature-card" markdown>
-### :material-robot: Telegram Bot
+### :material-robot: [Telegram Bot](features/telegram-bot.md)
 Full printer control from Telegram with inline menus, multi-chat authorization, role-based permissions, and actionable notifications.
 </div>
 
 <div class="feature-card" markdown>
-### :material-code-braces: Macros
+### :material-code-braces: [Macros](features/macros.md)
 G-code macros triggered by print events (start, end, pause). Built-in editor with per-printer and per-model configuration.
 </div>
 
 <div class="feature-card" markdown>
-### :material-bell-ring: Notifications
+### :material-bell-ring: [Notifications](features/notifications.md)
 Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
 </div>
 
 <div class="feature-card" markdown>
-### :material-cog-transfer: Server-Side Slicing
+### :material-cog-transfer: [Server-Side Slicing](features/slicer-api.md)
 OrcaSlicer + BambuStudio sidecar containers, per-job slicer picker with reachability badges, bed-type override, inline multi-plate selection, owner-filter on preset dropdowns.
 </div>
 
 <div class="feature-card" markdown>
-### :material-folder-multiple: File Manager + Library
+### :material-folder-multiple: [File Manager + Library](features/file-manager.md)
 3MF / G-code / STL / STEP library with composite tag chips (format / readiness / modifiers / provenance), chip-row filter, per-plate gallery, 3D + G-code viewer with build-volume wireframe. Page-level drag-and-drop on File Manager + per-printer queue cards + the Auto-Queue panel.
+</div>
+
+<div class="feature-card" markdown>
+### :material-source-branch: [Farm Auto-Queue](features/auto-queue.md)
+One pool of work spread across the whole farm: jobs route to any printer whose loaded filament matches, with staggered starts, plate-clear gates and per-printer fallbacks.
+</div>
+
+<div class="feature-card" markdown>
+### :material-power-plug: [Zigbee, With No Hub](features/smart-plugs.md)
+BamDude drives the radio itself over USB or Ethernet — smart plugs and temperature / humidity sensors pair into a network it owns. No Home Assistant, no Zigbee2MQTT, no broker to keep alive.
+</div>
+
+<div class="feature-card" markdown>
+### :material-lightning-bolt: [Energy and Cost per Print](features/energy.md)
+Watt-hours captured against the archive of each print, with hourly snapshots behind the range figures and a dynamic tariff if your supplier publishes one.
+</div>
+
+<div class="feature-card" markdown>
+### :material-palette-swatch: [Filament and Spools](features/inventory.md)
+Spool inventory with usage tracking, colour resolution against a shared catalogue, printable labels, and two-way [Spoolman](features/spoolman.md) sync.
+</div>
+
+<div class="feature-card" markdown>
+### :material-tune: [Calibration](features/filament-calibration.md)
+Flow-rate and pressure-advance runs with the K-profiles they produce, plus device calibration — bed levelling, vibration, motor noise, nozzle offset — gated to what each model actually supports.
+</div>
+
+<div class="feature-card" markdown>
+### :material-wrench-clock: [Maintenance](features/maintenance.md)
+Per-printer service intervals counted in print hours, with what is due surfaced on the printer card and markable from the web or the bot.
+</div>
+
+<div class="feature-card" markdown>
+### :material-printer-eye: [Virtual Printer](features/virtual-printer.md)
+Send from the slicer to a printer that is not there: the file lands in the library as something you can browse, tag and print later, rather than in the archive.
+</div>
+
+<div class="feature-card" markdown>
+### :material-shield-account: [Authentication](features/authentication.md)
+Always on. Permission groups per user, TOTP and email 2FA, OIDC single sign-on, and scoped API keys for everything that is not a browser.
 </div>
 
 </div>

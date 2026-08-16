@@ -105,7 +105,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
-| `log_retention_days` | `30` | Скільки днів ротованих архівів `bamdude.log.*.gz` тримати до видалення. Діапазон 1–365. Застосовується при старті та на кожній опівнічній ротації. Див. [System info → Ротація логів](../features/system-info.md#-логів). |
+| `log_retention_days` | `30` | Скільки днів ротованих архівів `bamdude.log.*.gz` тримати до видалення. Діапазон 1–365. Застосовується при старті та на кожній опівнічній ротації. Див. [System info → Ротація логів](../features/system-info.uk.md#ротація-retention-логів). |
 | `bed_cooled_threshold` | `35.0` | Температура столу (°C), при якій стріляє нотифікація `bed_cooled`. |
 
 ## :material-bolt: Energy & cost
@@ -139,7 +139,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ftp_retry_enabled` | `true` | Перевикачувати FTP 3MF, коли принтер був недосяжний на старті. Див. [Print Archive](../features/archiving.uk.md). |
 | `ftp_retry_count` | `3` | Максимум retry на цикл (1–10). |
 | `ftp_retry_delay` | `2` | Секунди між retry (1–30). |
-| `ftp_timeout` | `30` | FTP-таймаут підключення в секундах (10–300). |
+| `ftp_timeout` | `30` | Скільки секунд одна FTP-операція може простояти без даних (10–300). Обмежує **застряглу** передачу, а не повільну -- завантаженню 3MF, яке продовжує йти, дадуть докачатись, скільки б воно не тривало. Див. [Архів друку](../features/archiving.uk.md#відновлення-завантаження-3mf). |
 
 ## :material-camera: Камера
 

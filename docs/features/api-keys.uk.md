@@ -93,7 +93,7 @@ curl -H "Authorization: Bearer bb_..." http://localhost:8000/api/v1/printers/
     - `can_manage_archives` — для create / edit / delete архівів друку. `archives:purge` — деструктивний hard-delete, що оминає recycle bin — **лишається admin-only** і ніколи не видається цим scope-ом
     - `can_manage_maintenance` — для логування обслуговування, скидання лічильників, редагування інтервалів і керування каталогом типів обслуговування (read-only доступ до обслуговування лишається під `can_read_status`)
     - `can_access_cloud` — для cloud-token-backed ендпоінтів (slicer presets, MakerWorld)
-    - `can_update_energy_cost` — для `POST /settings/electricity-price` (вузько-обмежений Home-Assistant dynamic-tariff endpoint — див. [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.uk.md#tibber--octopus--dynamic-tariff-integration)). НЕ дає загальний `SETTINGS_UPDATE`.
+    - `can_update_energy_cost` — для `POST /settings/electricity-price` (вузько-обмежений Home-Assistant dynamic-tariff endpoint — див. [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.uk.md#tibber-octopus-dynamic-tariff)). НЕ дає загальний `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** звужує printer-bound дзвінки. Ключ з `printer_ids = [3, 7]` поверне 403 на `/printers/5/status`, навіть якщо `can_read_status=true`.
 
 !!! warning "Сувора ізоляція scope-ів"

@@ -18,6 +18,9 @@ BamDude reads two values from each smart plug:
 
 When a print starts, the lifetime counter is captured on the archive row as `energy_start_kwh`. When the print finishes, BamDude reads the counter again and stores the delta as `energy_kwh`. The starting value lives **on the archive row, not in memory** — so a backend restart mid-print does not lose the baseline, and the delta is still computed when the print completes. (If the print *ends* during the outage, see "If the print ends while BamDude is down" below.)
 
+!!! warning "Figures recorded before 0.5.3 understate prints started outside BamDude"
+    "At print start" has always been the intent, and for prints BamDude dispatched itself it was also the fact. For a print started from the printer's screen or sent straight from a slicer, the baseline used to be read once the archive row existed — and that row was only created after BamDude had fetched the print's 3MF back off the printer, which on a P1S measured 8m40s. Everything the printer drew in the meantime, bed heating included, was left out. The error was always in the same direction, so it never averaged out. Historical rows are not recalculated; there is nothing to recalculate them from.
+
 For lifetime / date-range views, an hourly background loop snapshots each plug's lifetime counter into `smart_plug_energy_snapshots`. Date-range totals are then computed as `last_snapshot_in_range − last_snapshot_before_range` per plug.
 
 !!! info "Permission Required"

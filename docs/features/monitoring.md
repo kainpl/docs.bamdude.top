@@ -235,11 +235,33 @@ Click the HMS indicator to see error descriptions, codes, and recommended action
 
 A **Clear Errors** button sends a `clean_print_error` command to dismiss stale errors without power-cycling.
 
+### Where the descriptions come from
+
+Descriptions are Bambu's own — the whole catalogue, around 5 000 codes, not a
+selection — and they are looked up **per printer model**. The same code can name
+a different mechanism on a different machine: on an X2D `0300_401F` says the
+*right* hotend is missing, and that machine has two.
+
+An error with no description is still shown, with its code and a link to Bambu's
+HMS reference. BamDude used to hide those, which meant a fault the printer's own
+screen was showing about was invisible here.
+
+Ukrainian is ours: Bambu ships sixteen languages and Ukrainian is not one of
+them, so the descriptions are being translated a batch at a time. Anything not
+yet translated appears in English rather than blank.
+
 ### Remediation actions
 
 The HMS error dialog surfaces the same remediation buttons the printer's own screen offers — **Resume**, **Stop**, **Ignore & Resume**, "**Filament extruded, continue**", **Stop Drying**, **Turn off Fire Alarm**, and so on. Which buttons appear is driven per model and per error code from Bambu's catalog, so a filament-runout fault offers different choices than a chamber-temperature fault.
 
 Click a button and BamDude sends the matching MQTT command, then waits for the printer to actually act on it before confirming — a QoS-1 publish is acked by the broker even when the firmware silently drops a malformed HMS command, so BamDude samples the printer state after ~2.5 s and reports a failure if nothing changed. Needs `printers:control`; a Viewer sees the errors but not the buttons.
+
+!!! note "Refreshing the descriptions"
+    The description catalogue ships as JSON under `backend/app/data/hms/`, one
+    file per printer model. Re-import it from a fresh BambuStudio checkout with
+    `python scripts/import_hms_catalogue.py`, then run
+    `python scripts/translate_hms_catalogue.py --export` to collect any new
+    strings for translation.
 
 !!! note "Refreshing the catalog"
     The action catalog ships bundled as JSON (`data/hms_actions.json`). When Bambu adds codes in a firmware update, regenerate it with `python scripts/update_hms_actions.py`.
@@ -349,6 +371,20 @@ The **Save to Library** path also auto-promotes bare `.3mf` filenames to `.gcode
 ### Storage info
 
 When the printer reports it, used / free space appears in the modal header. It is reported for the SD card only — see the table above.
+
+### What BamDude leaves on the printer after a print
+
+Set per printer, in its settings: **Clean up after print**. Printers added from now on have it **on**; printers you already have keep whatever they are set to today.
+
+| | SD card | Built-in storage |
+|---|---|---|
+| **Clean up on** | The file BamDude sent is deleted, and so is the copy the printer made in `cache` | The copy the printer keeps is deleted |
+| **Clean up off** | The file is moved out of the card's root into `cache`, and the saved print-parameters file is rewritten to match | The file is left exactly where the printer put it |
+
+The move on the card is not tidiness — it is protection. A printer will re-start whatever is sitting in the **root** of its card after a power cut, so a finished job left there can print itself again unattended. Nothing auto-starts from built-in storage, so there is nothing to move it away from.
+
+!!! note "One upload is several files on the machine"
+    BamDude sends `Cube.3mf`; the printer writes its own `Cube.gcode.3mf` into the card's `cache` and, if you have **store sent files to storage** switched on, into built-in storage as well. Cleanup clears all of them — and checks each file's contents first, because that same name is what a print sent straight from Bambu Studio leaves behind. A file that does not match is left alone.
 
 ---
 

@@ -11,18 +11,20 @@ BamDude archives every print automatically — the 3MF file, an extracted thumbn
 
 ## :material-archive: How Archiving Works
 
-When a print starts, BamDude pulls the 3MF off the printer's SD card via FTP, parses it, and creates a `print_archives` row that mirrors the run from start to finish:
+When a print starts, BamDude creates a `print_archives` row that mirrors the run from start to finish, then pulls the 3MF off the printer's SD card via FTP and attaches it to that row:
 
 ```mermaid
 graph LR
-    A[Print starts] --> B[FTP-fetch 3MF]
-    B --> C[Parse metadata + thumbnail]
-    C --> D[Create row<br/>status=printing]
-    D --> E[Print runs]
+    A[Print starts] --> B[Create row<br/>status=printing]
+    B --> C[FTP-fetch 3MF]
+    C --> D[Parse + attach<br/>metadata, thumbnail]
+    B --> E[Print runs]
     E --> F[Status -> completed/failed/cancelled<br/>fill duration + energy]
 ```
 
-If the FTP fetch fails the row is still created — see [3MF download recovery](#3mf-download-recovery) below. The same dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows).
+**The row comes first, and the file catches up.** Fetching the 3MF back off a printer is not quick: measured on a P1S, 22 MB took 8m40s while the printer was printing, because the file is read from the same SD card the print is reading from. (The identical fetch on an idle printer took 96 seconds.) Creating the row afterwards meant the print did not exist anywhere in BamDude until the download finished — no entry in Archives, no start notification, and the queue still showing the printer free. Worse, the smart-plug meter reading that a print's energy is measured against was taken at the end of that download, so everything the printer drew during it went uncounted, bed heating included.
+
+If the FTP fetch fails, the row simply keeps `file_path = ""` — see [3MF download recovery](#3mf-download-recovery) below. The dispatcher creates exactly one archive per physical print and wires `PrintQueueItem.archive_id` to it inside the same transaction (post-b1: there's no longer a race between scheduler and dispatcher creating duplicate rows). Prints BamDude dispatched itself already have their row before the file is uploaded, so the flow above describes prints started elsewhere — the printer's screen, a slicer's **Send to Printer**, Bambu Cloud.
 
 !!! warning "The 3MF has to be somewhere BamDude can reach"
     BamDude fetches it from the printer's SD card over FTP, so on most printers the card must be inserted. Without one, only the metadata reported over MQTT can be recorded; thumbnails and 3D preview are unavailable.
@@ -192,7 +194,13 @@ In the file manager, sort by **most printed** or **least recently printed** to f
 
 ## :material-cloud-download: 3MF Download Recovery
 
-When a print starts, BamDude tries to FTP-fetch the 3MF from the printer's SD card so it can parse the metadata, extract the thumbnail, and stash a copy. This can fail — the printer is slow, the network glitches, the file has already been moved on the SD card, the path doesn't match. When it does, BamDude creates a **fallback archive** with `file_path = ""` and `extra_data["no_3mf_available"] = True`, and fills the row in retroactively.
+Every archive row starts with `file_path = ""` and gets its 3MF attached once BamDude has fetched it from the printer. That fetch can fail — the printer is slow, the network glitches, the file has already been moved on the SD card, the path doesn't match. When it does, the row keeps its empty `file_path` and gains `extra_data["no_3mf_available"] = True`, and is filled in retroactively.
+
+!!! tip "There is no size limit on the 3MF — `ftp_timeout` bounds a stall, not a slow transfer"
+    A print's 3MF comes back over the same SD card the print is reading from, so the transfer rate depends on what the printer is doing: 231 KB/s on an idle P1S, 43 KB/s on a printing one. `ftp_timeout` used to be applied to the whole download as well as to the socket, which quietly turned it into a **limit on file size** — at 30 seconds, anything past a few megabytes was abandoned mid-transfer and archived as "3MF unavailable". It now applies per socket operation: a connection that has gone quiet is dropped after the configured seconds, and one that keeps delivering is left to finish. Uploads to the printer are separately capped at 10 minutes, which `ftp_timeout` does not affect.
+
+!!! note "Empty `file_path` and `no_3mf_available` are not the same thing"
+    The empty path is what the recovery triggers select on, and it is the normal state of a print that started ninety seconds ago. The flag means something narrower: **an attempt was made and it failed**. Only the flag raises the Archives banner below, which is why it is never set optimistically while a download is still running.
 
 There are four recovery triggers — no periodic polling, so short prints aren't affected:
 
@@ -201,15 +209,15 @@ There are four recovery triggers — no periodic polling, so short prints aren't
 3. **`on_print_complete` last-chance** — right before SD cleanup runs at print end, BamDude tries one more download. The file is still on SD and the printer is no longer busy writing — highest-probability success window.
 4. **Manual** — `POST /api/v1/archives/{id}/retry-download`. The frontend exposes a "Retry 3MF download" menu item on the archive card, visible only when `file_path` is empty.
 
-Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI.
+Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first.
 
-While the row is a fallback:
+While the row has no file yet:
 
 - **Thumbnails and 3D preview won't render** — the 3MF doesn't exist locally yet.
 - **Skip-objects modal stays hidden** — the object list is unknown until the file lands. As soon as recovery completes, the loaded object list is pushed into the printer's MQTT state so the modal works for the rest of the print, not just from the next restart.
 - **MQTT-reported metadata still gets recorded** — filament use, layer counts, energy, timing all flow in even without the 3MF.
 
-When recovery succeeds, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag.
+When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
 
 !!! tip "Archives-page banner — \"prints archived without thumbnails\""
     When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
@@ -407,6 +415,15 @@ On both media the printer also reports the full path of the recording it has jus
 
 !!! note "Which printers keep timelapses internally"
     Not the same set as those that keep models internally — a machine can do one and not the other, so BamDude checks the two capabilities separately and only asks for a catalogue the printer says it has.
+
+### Clearing recordings off the printer
+
+**Settings → General → Remove timelapses from the printer once saved.** Off by default. With it on, a recording is deleted from the printer as soon as it has been attached to its archive — from the SD card or from built-in storage, whichever it was read from.
+
+Only ever after the copy is safely saved. If the attach fails, or the printer cannot be reached, the recording stays where it is.
+
+!!! warning "Why this is not on by default"
+    Having a copy in BamDude is not the same as nobody needing the file on the machine — it can still be watched from the printer's own screen, or carried away on the card.
 
 ### Editor controls
 

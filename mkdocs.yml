@@ -9,6 +9,19 @@ repo_name: kainpl/bamdude
 # "Edit this page" — opens the matching .md in the docs repo for community PRs.
 edit_uri: https://github.com/kainpl/docs.bamdude.top/edit/main/docs/
 
+# A link to a heading that does not exist is reported at INFO by default, so it
+# scrolls past in a normal build and `--strict` never sees it. Eleven had
+# accumulated that way by 2026-08-16: several written as though a heading's
+# `:material-icon:` shortcode were part of the slug (it is not — the icon is an
+# SVG by the time the anchor is taken), and two Ukrainian pages pointing at
+# English anchors, which look right and go nowhere.
+#
+# `warn` plus the `--strict` the deploy already uses makes each one a build
+# failure, so the next is caught by CI instead of by a reader.
+validation:
+  anchors: warn
+  unrecognized_links: warn
+
 theme:
   name: material
   custom_dir: overrides

@@ -66,43 +66,83 @@ BamDude — це **фарм-менеджер**, а не пасивний бек�
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
-### :material-monitor-dashboard: Моніторинг у реальному часі
+### :material-monitor-dashboard: [Моніторинг у реальному часі](features/monitoring.uk.md)
 Статус принтерів у реальному часі через WebSocket, потокове відео з камери MJPEG, відстеження помилок HMS та моніторинг вологості й температури AMS.
 </div>
 
 <div class="feature-card" markdown>
-### :material-clock-outline: Індивідуальні черги для принтерів
+### :material-clock-outline: [Індивідуальні черги для принтерів](features/print-queue.uk.md)
 Незалежні черги друку для кожного принтера з перетягуванням, планованим друком, поетапним запуском та swap mode для A1 Mini з підміною платформ.
 </div>
 
 <div class="feature-card" markdown>
-### :material-archive: Архів друку
+### :material-archive: [Архів друку](features/archiving.uk.md)
 Автоматичне архівування 3MF з витягуванням метаданих, 3D-попереднім переглядом моделей, виявленням дублікатів та повнотекстовим пошуком.
 </div>
 
 <div class="feature-card" markdown>
-### :material-robot: Telegram-бот
+### :material-robot: [Telegram-бот](features/telegram-bot.uk.md)
 Повне керування принтером з Telegram з вбудованими меню, авторизацією кількох чатів, рольовими дозволами та інтерактивними сповіщеннями.
 </div>
 
 <div class="feature-card" markdown>
-### :material-code-braces: Макроси
+### :material-code-braces: [Макроси](features/macros.uk.md)
 G-code макроси, що активуються подіями друку (старт, завершення, пауза). Вбудований редактор з налаштуванням для кожного принтера та моделі.
 </div>
 
 <div class="feature-card" markdown>
-### :material-bell-ring: Сповіщення
+### :material-bell-ring: [Сповіщення](features/notifications.uk.md)
 Багатопровайдерні сповіщення через Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant та власні webhook. Тихі години й щоденний digest на кожен провайдер окремо.
 </div>
 
 <div class="feature-card" markdown>
-### :material-cog-transfer: Server-side нарізання
+### :material-cog-transfer: [Server-side нарізання](features/slicer-api.uk.md)
 OrcaSlicer + BambuStudio sidecar-контейнери, вибір слайсера на кожен запит із live-індикаторами доступності, override типу столу, inline-вибір плити для мульти-плейт-файлів, owner-фільтр на пресетах.
 </div>
 
 <div class="feature-card" markdown>
-### :material-folder-multiple: File Manager + бібліотека
+### :material-folder-multiple: [File Manager + бібліотека](features/file-manager.uk.md)
 Бібліотека 3MF / G-code / STL / STEP із композитними тегами-чіпами (format / readiness / modifiers / provenance), чіп-фільтром, per-plate-галереєю, 3D-/G-code-в'ювером з вайрфреймом друкарського об'єму. Page-level drag-and-drop у File Manager + на картках черг принтерів + у панелі Auto-Queue.
+</div>
+
+<div class="feature-card" markdown>
+### :material-source-branch: [Авточерга ферми](features/auto-queue.uk.md)
+Один пул роботи на всю ферму: завдання йдуть на будь-який принтер, у якому заряджено відповідний філамент, з рознесеними стартами, воротами очистки столу й фолбеками на принтер.
+</div>
+
+<div class="feature-card" markdown>
+### :material-power-plug: [Zigbee без хаба](features/smart-plugs.uk.md)
+BamDude сам керує радіо через USB чи Ethernet — розетки й датчики температури/вологості підключаються в мережу, якою володіє він. Без Home Assistant, без Zigbee2MQTT, без брокера, який треба тримати живим.
+</div>
+
+<div class="feature-card" markdown>
+### :material-lightning-bolt: [Енергія і вартість друку](features/energy.uk.md)
+Ват-години прив'язані до архіву кожного друку, з погодинними знімками під діапазонними цифрами і динамічним тарифом, якщо ваш постачальник його публікує.
+</div>
+
+<div class="feature-card" markdown>
+### :material-palette-swatch: [Філамент і котушки](features/inventory.uk.md)
+Інвентар котушок з обліком витрат, визначенням кольору за спільним каталогом, друкованими етикетками та двосторонньою синхронізацією зі [Spoolman](features/spoolman.uk.md).
+</div>
+
+<div class="feature-card" markdown>
+### :material-tune: [Калібрування](features/filament-calibration.uk.md)
+Прогони flow-rate і pressure-advance разом із K-профілями, які вони дають, плюс калібрування пристрою — рівень столу, вібрації, шум моторів, зміщення сопла — обмежене тим, що конкретна модель справді вміє.
+</div>
+
+<div class="feature-card" markdown>
+### :material-wrench-clock: [Обслуговування](features/maintenance.uk.md)
+Інтервали сервісу на кожен принтер у годинах друку: те, що прострочено, видно на картці принтера й позначається виконаним із вебу або з бота.
+</div>
+
+<div class="feature-card" markdown>
+### :material-printer-eye: [Віртуальний принтер](features/virtual-printer.uk.md)
+Надсилайте зі слайсера на принтер, якого немає: файл потрапляє в бібліотеку як щось, що можна переглянути, позначити тегом і надрукувати пізніше, а не в архів.
+</div>
+
+<div class="feature-card" markdown>
+### :material-shield-account: [Автентифікація](features/authentication.uk.md)
+Завжди увімкнена. Групи прав на користувача, TOTP і email-2FA, OIDC single sign-on та API-ключі з обмеженою областю для всього, що не браузер.
 </div>
 
 </div>

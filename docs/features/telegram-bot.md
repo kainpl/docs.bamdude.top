@@ -15,9 +15,11 @@ The Telegram bot provides:
 
 - **Printer status** -- View all printers with real-time status
 - **Print control** -- Pause, stop, and resume prints
-- **Camera snapshots** -- View live camera images
+- **Camera snapshots** -- View live camera images, with the print controls attached to the photo
+- **Skip a failed object** -- Cancel one part mid-print instead of losing the plate
 - **Speed control** -- Adjust print speed on the fly
 - **Print from library** -- Browse and start prints from your file library
+- **Send the bot a file** -- It lands in the library, and can be printed straight away
 - **Queue management** -- View and manage the print queue
 - **Calibration** -- Trigger printer calibration routines
 - **Maintenance** -- View and mark maintenance tasks as complete
@@ -94,6 +96,75 @@ Request camera snapshots directly in Telegram:
 1. Select a printer from the list
 2. Tap **Camera**
 3. A snapshot is sent as a photo message
+
+`/camera` does the same without going through the printer list -- straight to a
+snapshot when you have one printer, to a picker when you have several.
+
+### The controls come with the photo
+
+If the printer is printing and your chat may control it, the snapshot arrives
+with the same buttons the printer card carries: **Pause** or **Resume**,
+**Stop**, **Speed**, and **Skip an object**. This is the point of the feature --
+seeing a problem and acting on it should not require leaving the chat.
+
+They are the *same* buttons, built in one place, so they cannot drift apart from
+the ones on the printer card. State is read at the moment the snapshot is taken,
+not inherited from whatever screen you came from.
+
+A chat with view-only access gets a plain photo, and so does an idle printer.
+
+!!! note "Stop asks first"
+
+    **Stop** ends the print and discards every part on the plate, and here it
+    sits right under a picture you have just glanced at. It asks for
+    confirmation -- in the bot generally, not only under the photo.
+
+---
+
+## :material-content-cut: Skip Objects
+
+Cancel a single failed part and let the rest of the plate finish. Tap
+**Skip an object** on the printer card or under a camera snapshot.
+
+The bot sends the plate seen from above with a numbered marker on each object,
+and a keyboard of those same numbers below it. Press a number, check the name
+the bot reads back, and confirm.
+
+- Markers are placed by the same code the web overlay uses, so a number means
+  the same part in the bot and in the browser.
+- Objects you have already skipped stay on screen, greyed out and inert. They
+  are not removed, because removing one would shift every button beside it.
+- Large plates paginate, fifteen objects to a page.
+
+**Skipping cannot be undone**, so the bot confirms by name rather than with a
+bare "are you sure?", and explains itself when it cannot help:
+
+| What you see | What it means |
+|---|---|
+| No **Skip an object** button | The printer reported it cannot skip parts at all |
+| "This plate was sliced without object labels" | The slice needs both *Label objects* and *Exclude objects*; see [Printer Control](printer-control.md#skip-object) |
+| "Only one object is still printing" | Skipping it would end the print, which is what **Stop** is for |
+| The list appears without a picture | This 3MF carries no top-down plate render. The bot will not draw markers on the three-quarter view instead -- they would point convincingly at the wrong part |
+
+---
+
+## :material-upload: Send the Bot a File
+
+Forward or upload a document to the chat and it goes into your file library.
+
+1. Send the file
+2. Choose which library folder it belongs in (a **Telegram** folder is offered
+   by default and created on first use)
+3. The bot saves it with the same checks, thumbnails and duplicate detection as
+   a web upload
+
+If the file is ready to print, the bot offers to print it or queue it right
+there. Models and STLs are accepted too -- they are perfectly good library
+files -- and the bot says plainly that they cannot be printed until sliced,
+rather than offering a button that would fail at the printer.
+
+Telegram's Bot API caps downloads at **20 MB**. A larger file is refused
+immediately, by name and with the limit stated, rather than after a wait.
 
 ---
 

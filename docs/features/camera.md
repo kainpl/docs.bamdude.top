@@ -353,7 +353,7 @@ Any device using that token loses access on the next request — no grace period
 
 ## :material-image-frame: Cover Thumbnails
 
-`GET /api/v1/printers/{id}/cover` returns the thumbnail of whatever the printer is *currently* printing. It is served exclusively from the local archive directory -- BamDude never initiates an FTP download from this endpoint. While a print is active and the archive's 3MF hasn't been backfilled yet (e.g. a printer-side print where the FTP recovery loop hasn't caught up), the endpoint returns 404 and the UI falls back to a generic placeholder. Once `archive_download_retry` lands the 3MF, the endpoint starts returning the real PNG without any client action.
+`GET /api/v1/printers/{id}/cover` returns the thumbnail of whatever the printer is *currently* printing. It is served exclusively from the local archive directory -- BamDude never initiates an FTP download from this endpoint. While a print is active and its 3MF hasn't been attached yet, the endpoint returns 404 and the UI falls back to a generic placeholder. Expect that for the opening minutes of any print started outside BamDude: its archive row is created the moment the print starts, and the 3MF is fetched off the printer afterwards -- on a P1S that fetch has been measured at over eight minutes. Once the file lands, whether from that fetch or a later `archive_download_retry` attempt, the endpoint starts returning the real PNG without any client action.
 
 ---
 

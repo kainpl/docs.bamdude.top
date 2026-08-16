@@ -93,7 +93,7 @@ Two layers gate every API-keyed call:
     - `can_manage_archives` — required for print-archive create / edit / delete. `archives:purge` — the destructive hard-delete that bypasses the recycle bin — **stays admin-only** and is never granted by this scope
     - `can_manage_maintenance` — required for logging maintenance, resetting counters, editing intervals, and managing the maintenance-type catalog (read-only maintenance stays under `can_read_status`)
     - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
-    - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber--octopus--dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.
+    - `can_update_energy_cost` — required for `POST /settings/electricity-price` (the narrowly-scoped Home-Assistant dynamic-tariff endpoint — see [Energy → Tibber / Octopus / Dynamic Tariff Integration](energy.md#tibber-octopus-dynamic-tariff-integration)). Does NOT grant general `SETTINGS_UPDATE`.
 3. **`printer_ids` scope** narrows printer-bound calls. A key with `printer_ids = [3, 7]` returns 403 on `/printers/5/status` even if `can_read_status` is on.
 
 !!! warning "Strict scope confinement"

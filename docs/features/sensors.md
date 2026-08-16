@@ -115,7 +115,9 @@ Both are **off by default** — nothing starts talking to you because you upgrad
 
 The gear on a sensor's card opens the same dialog smart plugs use: how often the device should report each quantity, and how much a value must change before it is worth sending.
 
-Battery sensors sleep. Saving new settings does not wait for one to wake — the dialog says *accepted*, *confirmed*, *refused*, or *asleep and not yet asked*, so a setting still on its way is visibly still on its way rather than silently pending.
+Battery sensors sleep. Saving new settings does not wait for one to wake — the dialog says *accepted*, *confirmed by the device*, *refused*, *not asked yet*, or *the device did not answer*, so a setting still on its way is visibly still on its way rather than silently pending.
+
+One more verdict is worth knowing: **the device stored something else**. Cheap sensors quietly clamp what you asked for to what their firmware will do — ask for a report every 10 seconds and get one every 60. The dialog shows what the device actually stored rather than what you typed, because the difference is the reason a sensor seems slower than you configured it to be.
 
 ---
 

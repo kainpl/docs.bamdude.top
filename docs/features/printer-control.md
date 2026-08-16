@@ -64,13 +64,16 @@ GET  /api/v1/printers/{id}/print/objects     → list objects with skip status
 POST /api/v1/printers/{id}/print/skip-objects → skip selected IDs
 ```
 
-The list comes from the active 3MF (`subtask_name`), read from the G-code's own `; model label id:` header where present — that is the list the firmware works from, and it names every copy on the plate. `slice_info.config` is only the last fallback: newer OrcaSlicer records just the original there when a plate holds several copies of one model. If the in-memory object list is empty (e.g. after a backend restart), pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
+The list comes from the active 3MF (`subtask_name`), read from the G-code's own `; model label id:` header where present — that is the list the firmware works from, and it names every copy on the plate. `slice_info.config` is only the last fallback: newer OrcaSlicer records just the original there when a plate holds several copies of one model. Since 0.5.3 the list is also filled when BamDude **joins a print already under way** — a restart mid-plate used to leave it empty, and the Skip button dark, until somebody opened this dialog. If it is still empty, pass `?reload=true` and BamDude pulls the 3MF off the printer's FTP and re-parses it — supports multiple filename variants (`{name}.3mf`, `{name}.gcode.3mf`, with-spaces and underscored).
 
 !!! warning "Wait for layer 2"
     The printer firmware refuses skip commands until the first layer is laid down. The skip modal shows a yellow banner on layer 0/1.
 
 !!! tip "Match printer object IDs"
     The IDs shown in the BamDude modal match the IDs on the printer's touchscreen plate visualisation — that's how you identify which physical part is which.
+
+!!! tip "Also in the Telegram bot"
+    The same action, with the same marker placement, is available from the bot — useful precisely when you are not at the computer. See [Telegram Bot](telegram-bot.md#skip-objects).
 
 ### Clear plate
 
@@ -102,7 +105,7 @@ Four tabs:
 - **Print Options** — every toggle BS exposes for the running printer: AI detections, sensors, plate behaviours, sound, auto-recovery. Gated to exactly what the printer reports it supports (see [Visibility](#visibility-what-shows-up-depends-on-the-printer)).
 - **Safety** *(X2D / P2S)* — Open Door Detection + Idle Heating Protection, mirroring BS's Safety Options dialog. Only appears on models that expose safety options.
 - **Printer Parts** — read-only view of installed nozzle(s) (type, diameter, flow rate). Editing parts on-printer is reserved for a future phase; today the API returns `409 parts_not_editable` if a write is attempted.
-- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view. See the [Add-ons tab](#add-ons) section below.
+- **Add-ons** — the printer body plus every connected accessory (AMS units, filament buffer, exhaust fan, …), mirroring BS's Update Device view.
 
 ### Print Options — what's there
 

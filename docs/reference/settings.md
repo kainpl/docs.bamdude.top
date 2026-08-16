@@ -139,7 +139,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `ftp_retry_enabled` | `true` | Retry FTP 3MF downloads when the printer was unreachable at print start. See [Print Archive](../features/archiving.md). |
 | `ftp_retry_count` | `3` | Maximum retries per attempt cycle (1–10). |
 | `ftp_retry_delay` | `2` | Seconds between retries (1–30). |
-| `ftp_timeout` | `30` | FTP connection timeout in seconds (10–300). |
+| `ftp_timeout` | `30` | Seconds a single FTP socket operation may sit with no data arriving (10–300). It bounds a **stalled** transfer, not a slow one — a 3MF download that keeps arriving is left to finish however long it takes. See [Print Archive](../features/archiving.md#3mf-download-recovery). |
 
 ## :material-camera: Camera
 

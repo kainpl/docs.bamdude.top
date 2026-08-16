@@ -171,7 +171,7 @@ When energy reporting is supported (almost all Tasmota plugs except basic relays
 | Current (A) | `Status10.StatusSNS.ENERGY.Current` |
 | Energy (kWh) | `Status10.StatusSNS.ENERGY.Total` (lifetime cumulative) |
 
-Pulled every 5 s while the plug is on; cached when off.
+Refreshed every 10 s while a BamDude tab showing the plug is open — the Printers page or the Smart Plugs settings tab. Nothing polls a Tasmota plug when no tab is watching, apart from the hourly energy snapshot; the reading you see is as fresh as the page you are looking at.
 
 ### Tasmota commands BamDude uses
 
@@ -546,7 +546,7 @@ The startup-restore code path, the create route, and the update route all funnel
 
     **Power state desyncs (UI says off, plug is on)**
 
-    Tasmota's native MQTT discovery is off by default. BamDude polls every 5 s. Toggle the plug from BamDude — it'll resync. If it doesn't, the polling URL is wrong (rare, only if you hand-edited `IPAddress`).
+    Tasmota's native MQTT discovery is off by default. BamDude polls every 10 s while the page is open. Toggle the plug from BamDude — it'll resync. If it doesn't, the polling URL is wrong (rare, only if you hand-edited `IPAddress`).
 
     **Energy reading flatlines at zero**
 
