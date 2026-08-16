@@ -196,6 +196,9 @@ In the file manager, sort by **most printed** or **least recently printed** to f
 
 Every archive row starts with `file_path = ""` and gets its 3MF attached once BamDude has fetched it from the printer. That fetch can fail — the printer is slow, the network glitches, the file has already been moved on the SD card, the path doesn't match. When it does, the row keeps its empty `file_path` and gains `extra_data["no_3mf_available"] = True`, and is filled in retroactively.
 
+!!! tip "There is no size limit on the 3MF — `ftp_timeout` bounds a stall, not a slow transfer"
+    A print's 3MF comes back over the same SD card the print is reading from, so the transfer rate depends on what the printer is doing: 231 KB/s on an idle P1S, 43 KB/s on a printing one. `ftp_timeout` used to be applied to the whole download as well as to the socket, which quietly turned it into a **limit on file size** — at 30 seconds, anything past a few megabytes was abandoned mid-transfer and archived as "3MF unavailable". It now applies per socket operation: a connection that has gone quiet is dropped after the configured seconds, and one that keeps delivering is left to finish. Uploads to the printer are separately capped at 10 minutes, which `ftp_timeout` does not affect.
+
 !!! note "Empty `file_path` and `no_3mf_available` are not the same thing"
     The empty path is what the recovery triggers select on, and it is the normal state of a print that started ninety seconds ago. The flag means something narrower: **an attempt was made and it failed**. Only the flag raises the Archives banner below, which is why it is never set optimistically while a download is still running.
 
