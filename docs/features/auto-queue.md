@@ -92,9 +92,15 @@ This is the hands-off "slice and forget" path: the slicer doesn't know which pri
 
 ### 3. Drag-and-drop on the Auto-Queue panel
 
-Drop a sliced file (`.gcode` / `.gcode.3mf`) anywhere over the **Auto-Queue panel** at the top of the Queue page. The file is uploaded into the library root, then the same Print Modal opens locked to **Auto** mode (no specific/auto toggle, no printer picker — only the auto-mode constraints: target model / location / force-color). Submit and an `AutoQueueItem` is created.
+Drop **as many sliced files as you like** anywhere over the **Auto-Queue panel** at the top of the Queue page. Each is uploaded into the library root and then walked through the Print Modal in turn, with a `2 / 5` counter — locked to **Auto** mode (no specific/auto toggle, no printer picker, only the auto-mode constraints: target model / location / force-color).
 
-No model-compatibility check on drop (unlike the per-printer queue card drop) — the auto-router already filters candidates by `sliced_for_model` at dispatch time, so an incompatible file just sits in the panel with a `waiting_reason` until a matching printer appears or the operator cancels it.
+**Each item's target model is pinned to that file's own `sliced_for_model`, and cannot be changed.** Per file, not per run: two files sliced for two different machines keep two different targets in one drop. Setting it explicitly rather than leaving it blank matters — blank means "work it out from the 3MF", which usually lands on the same answer but shows nothing on screen where the constraint is, so a run of ten files would say nothing about what any of them is waiting for.
+
+**A file with no recorded model is refused**, by name, before the dialog opens. There is nothing to pin and nothing to verify; queueing it on a guess would leave an item waiting for a machine nobody chose.
+
+The auto-mode form no longer offers a target the file cannot run on either. Choosing a mismatched model never failed — it produced an item waiting for a printer that would never take it, with nothing explaining the wait.
+
+The **Load from library** button on the panel opens the same [file picker](print-queue.md#load-a-queue-from-the-library), with every printable file offered rather than one machine's worth.
 
 Permission-gated on `queue:create`. The panel renders even when empty so the drop target is permanently available; an empty-state hint nudges first-time operators.
 

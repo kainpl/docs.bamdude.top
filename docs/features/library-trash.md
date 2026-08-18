@@ -113,6 +113,16 @@ Both trash pages support:
 - **Empty trash** — bulk hard-delete every eligible row. Skips pinned files (library) and reports `{deleted, skipped_pinned}` so the UI can explain the gap.
 - **Multi-select** — bulk Restore and bulk Hard-delete on selected rows.
 
+!!! warning "Restoring a library file asks before it recreates a duplicate"
+    Every other path now refuses to store the same file twice, so taking one back out of the trash is the one way left to end up with two identical files. Restore checks first, and speaks up **only when the file really is byte-identical to one you already have** — the dialog names the file that is already there and you decide.
+
+    Restoring several at once asks **once**, listing exactly which of them are duplicates, and offers to restore only the rest. A file with nothing matching it restores as before, without a question.
+
+    It asks; it does not refuse. A duplicate can be deliberate — two MakerWorld profiles can produce byte-identical 3MFs — and the person restoring is the one who put the file there.
+
+!!! danger "The archive trash never actually deleted anything before 0.5.4"
+    Emptying it reported *0 deleted* and removed nothing at all; **Delete permanently** on a single archive answered an error; and the retention sweeper removed the database rows while leaving every 3MF, preview, timelapse and photo on disk. Fixed in 0.5.4 — but files leaked before then are still on disk, and BamDude will not go and delete them unasked. `scripts/prune_orphan_archive_files.py` lists what is no longer referenced and removes it only with `--apply`.
+
 ---
 
 ## :material-database-search: Dedup ignores trashed rows

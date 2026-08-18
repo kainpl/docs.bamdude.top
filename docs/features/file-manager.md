@@ -242,7 +242,13 @@ The page-level drop is gated on the `library:upload` permission — viewers with
 
 Every file in the library is a row in the `library_files` table. The row carries:
 
-- **Hash dedup** — uploads are SHA-256'd and matched against existing rows; an identical re-upload returns the existing entry instead of creating a duplicate copy on disk.
+- **Hash dedup, on every path a file can arrive by** — the content is SHA-256'd and matched against the active rows before anything is written, so a file BamDude already holds is never stored twice. This covers uploading, the API, dropping a file on the file manager or on a printer, importing a project, slicing the same model again and Send-to-Printer from a slicer. Whatever you were doing carries on with the row that already exists, and you are told which of your files was used instead of the one you sent.
+
+    **Linked folders join in too.** External files used to be skipped for speed, which left a whole NAS outside deduplication. A scan now reads each file once and remembers its fingerprint next to the size and modification time it already stored, so later scans re-read only what actually changed.
+
+    **A row whose bytes went missing gets them back.** If the library still lists a file but the file is gone from disk, sending the same content again restores it in place — keeping the name, folder, notes, tags, projects and print history — rather than starting a fresh entry with none of that.
+
+    ⚠️ Only **active** rows take part. A file you moved to the trash does not pin a fresh arrival to itself; see [Library trash](library-trash.md). Restoring from the trash is the one remaining way to end up with two identical files, and it asks first.
 - **Thumbnails** — extracted from `Metadata/plate_*.png` inside the 3MF on upload (no on-the-fly extraction). Re-uploads or "reparse" trigger fresh extraction.
 - **STL thumbnail render** — STL uploads (`.stl`, `.zip` containing STL) get a thumbnail rendered on upload via the bundled rasteriser, so the card shows the actual part instead of a generic placeholder.
 - **`print_count` + `last_printed_at`** — usage counters maintained by dispatch. `print_count` counts **completed** prints only, so a file that was attempted and failed still reads as never printed; a reprint from the archive does advance it. The count appears on the card and in the list beside the file's other facts, and clicking it opens that file's print history. Nothing is shown at zero — the **Not printed** filter above answers that question instead. Backfilled retroactively on upgrade by migration `m014`.
