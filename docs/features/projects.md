@@ -40,6 +40,24 @@ A library file (or folder) can belong to **multiple projects at once** — the l
 
 To remove a single association without affecting the rest, click the small `×` on the relevant project chip in the file/folder edit dialog (or use the per-row "remove from project" button on the project detail page) — both go through the dedicated `DELETE /library/{files|folders}/{id}/projects/{project_id}` endpoint, so a file in 3 projects can be detached from 1 without read-modify-write on the whole list.
 
+## :material-content-duplicate: Duplicating a project
+
+**Duplicate** on a project copies its *setup* into a new project and leaves its *history* behind — the point being that you are about to run the same build again, for a second machine or another customer.
+
+Copied: the print plan (every row with its copies and order), the file and folder links, the BOM, both targets, the description, notes, attachments, tags, due date, priority, budget, colour, cover image and URL. Not copied: the archives, which belong to the prints that actually happened.
+
+Two things are deliberate rather than incidental:
+
+- **The copy is always `active`**, whatever the original was. Duplicating a completed or archived project is new work about to start — that is the whole reason to do it.
+- **A duplicate of a template is another template.** The flag describes what the project *is*, not what has happened to it.
+
+Give the copy a name or let BamDude pick one; it lands as a **sibling** of the source, under the same parent. Sub-projects come along only if you ask (`include_children`), and a parent cycle cannot make it loop.
+
+```http
+POST /api/v1/projects/{id}/duplicate
+{ "name": "Voron #2", "include_children": true }
+```
+
 ## :material-playlist-edit: The print plan
 
 The plan is a flat, ordered list of items. Each row carries:

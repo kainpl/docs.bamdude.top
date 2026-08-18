@@ -77,7 +77,21 @@ The queue card header shows live counters (Total / Pending / Printing / Complete
 
 ### Drag-and-drop on a Queue Card
 
-On the **Queue** page each printer's queue card is a drop target. Drag a sliced file (`.gcode` or `.gcode.3mf`) onto the card → the file is uploaded into the library root, then the Add-to-Queue modal opens locked to that printer (no specific/auto toggle, no printer picker — the drop target *is* the choice). Configure plate / AMS / schedule and submit. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
+On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root and then walked through the Add-to-Queue modal one at a time, with a `2 / 5` counter beside the title. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
+
+Each file gets a **fresh** modal. Plate selection, filament mapping and per-printer options belong to one file; carrying them to the next would be wrong rather than convenient, since plate 3 of one file need not exist in the next.
+
+**Every file you dropped is answered for**, by name:
+
+| refused | why |
+|---|---|
+| not a `.3mf` at all | nothing else can be sent to a Bambu printer over the network |
+| a raw `.gcode` | Bambu firmware in LAN mode reads only the `.gcode.3mf` container; a raw `.gcode` fails at the printer half a minute after you press Print |
+| a `.3mf` with no sliced G-code inside | decided by **looking inside the file**, not by its name — a `.3mf` may hold a finished print or a bare model |
+| no recorded printer model | nothing about it can be verified: not the auto-queue target, not the match against this printer |
+| sliced for another model | the plate would not fit or the G-code would not run |
+
+Dropping a file the library already has says so and uses the copy you already have — see [deduplication](file-manager.md#how-files-are-stored).
 
 A `sliced_for_model` mismatch with the card's printer model aborts the upload before the modal opens — the transient library row is rolled back and a toast surfaces the conflict so you can re-slice for the right printer.
 
@@ -176,6 +190,39 @@ Full reference: [G-code injection](gcode-injection.md). Reads + applies at dispa
 Adding to queue records *who* added the item. The Telegram bot, the library's Schedule dialog, the per-printer "Print" button, and File Manager prints all propagate the acting user. Visible per row on the archive that the queue item produces. The VP auto-queue and webhook trigger paths legitimately leave it `NULL` (no authenticated user to attribute).
 
 ---
+
+## :material-playlist-plus: Load a queue from the library
+
+The printer card, the per-printer queue card and the auto-queue panel each carry a **Load from library** button. It opens a simplified file browser: the folder tree down the left, small cards on the right with a preview, the name, print time, filament and size.
+
+- **Ticks survive moving around.** A batch assembled from three different folders is one selection, not three trips — the selection lives in the dialog, not in the folder.
+- **Search covers the whole library**, not the folder you happen to have open. Searching inside one folder would not answer the question the search box is there for.
+- **Only files that can actually run are offered** — sliced files with a recorded printer model, and on a printer only those sliced for that machine. A picker that offered a file the Schedule dialog would then refuse would be worse than no picker.
+
+Pressing **Add to queue** hands the selection to the same per-file Schedule dialog the drops use, with the same `2 / 5` counter. The picker asks nothing about the print itself: plates, AMS mapping, quantity and scheduling stay per file.
+
+Gated on `queue:create`. On the printer card the button is **not** hidden while the machine prints — loading a queue is exactly what you do then.
+
+## :material-content-copy: Copy a queue onto other printers
+
+A farm runs the same job on several machines. The queue card has a **Copy** button, present only when there is something to copy — a running print or something waiting.
+
+The dialog puts **what** on the left and **where** on the right:
+
+- the queue's items, everything ticked to start with, each showing its plate, print time and filament;
+- the other printers **of the same model**, ticked by you, each with its state and progress.
+
+Both sides have select-all and clear. The printer list is in the order and grouping your Queues screen is already in, so you pick from the layout you navigate by.
+
+!!! info "Why only the same model"
+    The items were sliced for this machine. Another model is a different build volume and a different G-code flavour, and BamDude does not re-slice.
+
+**Each item keeps the plate it was queued with** — it is literally the same file on the same model, so that plate exists there too. Copies go to the end of each target queue, so a printer mid-job finishes first.
+
+Then the ordinary Schedule dialog opens **once per item**, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why three items onto four printers is three dialogs and not twelve.
+
+!!! tip "A print started outside the queue counts too"
+    A job sent from the printer's screen or straight from a slicer leaves no queue entry — the card shows it because it reads the printer directly, and the copy reads it from the same place.
 
 ## :material-drag: Drag and Drop Ordering
 
