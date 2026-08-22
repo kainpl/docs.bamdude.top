@@ -270,6 +270,7 @@ nav:
       - Obico AI Failure Detection: features/obico.md
     - Library, Inventory & Projects:
       - Spool Inventory: features/inventory.md
+      - Spool Labels: features/labels.md
       - Projects & Print Plan: features/projects.md
       - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
