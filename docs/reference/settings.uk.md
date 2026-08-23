@@ -95,6 +95,10 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | Key | Default | Ефект |
 |---|---|---|
 | `low_stock_threshold` | `20.0` | % залишку котушки, при якому стріляє `filament_low`. Діапазон 0.1 – 99.9. |
+| `runout_zero_point_enabled` | `true` | Закривати котушку рівно на вазі етикетки, коли принтер однозначно повідомляє про runout. |
+| `ams_sync_bidirectional` | `true` | Дозволити показанням AMS на простої коригувати вагу Bambu-тегованої котушки і вниз (значення має повторитися у двох звітах з інтервалом у хвилину). |
+| `runout_purge_grams` | `0` | Грами на резервну котушку за продувку при автоперемиканні AMS. 0 — вимкнено. |
+| `usage_events_retention_hours` | `72` | Скільки годин тримати журнал usage-подій завершеного друку (таймлайн runout/лотків) для розбору. |
 | `disable_filament_warnings` | `false` | Master mute для low / out-of-filament алертів. |
 | `prefer_lowest_filament` | `false` | Auto-присвоєння віддає перевагу котушці з найменшим залишком. |
 | `default_filament_cost` | `25.0` | Per-kg fallback-ціна, коли поле `cost` котушки не задано. |

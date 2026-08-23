@@ -299,16 +299,41 @@ The deduction pipeline is more nuanced than a flat "subtract slicer estimate at 
 | **G-code-only print, no 3MF** | AMS `remain%` delta between print start and end (integer-precision, ~10 g per 1 % step on a 1 kg spool) | — |
 | **External print, fallback archive recovered later** | Re-uses the 3MF source the moment recovery completes, retroactively reconciling the deduction | — |
 
+### Runouts close the spool at exactly empty (0.5.5)
+
+A filament runout is the one moment reality reports an exact figure: the spool holds **0 g**, whatever the books said. BamDude listens for the printer's **own runout codes** — an AMS slot waiting for new filament, the AMS auto-switching to a backup slot, or the external holder running dry — and turns each into precise accounting. Jams and tangles are *never* mistaken for runouts (only the exact firmware codes count), and a spool whose slot can't be positively identified is never touched.
+
+What happens, in order:
+
+1. The runout is journalled at the exact layer, with the spool that was feeding **frozen at that moment**.
+2. You get the **Filament runout** notification (enable it on your provider): either *"waiting for filament — assign the replacement in BamDude so the rest of the print is booked to the right spool"*, or the informational *"switched to the backup slot"*.
+3. Load the new spool. On RFID spools BamDude spots the new tag by itself; on tagless spools (external holders included) **assigning the replacement to the slot is the signal** — do it any time before the print ends.
+4. At completion the print is split **at the runout layer** (per-layer G-code accuracy): each spool is billed only the segment it actually fed. Then the spent spool gets one final **Runout close-out** row for whatever the books never saw, so its history sums to exactly the label weight — remaining hits precisely zero.
+
+**Worked example.** Spool A's books say 2 kg remaining; a 600 g print runs out mid-way, at a point where the print had consumed 250 g; you load spool B and finish.
+
+| Row | Spool | Grams |
+|---|---|---|
+| Print segment up to the runout layer | A | 250 g |
+| Print segment after | B | 350 g |
+| Runout close-out (orange row in history) | A | **+1750 g** |
+
+A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only its honest 350 g. The archive still records the print as 600 g at 600 g's cost — the close-out is the spool's lifetime drift being recognised, not this print's consumption. If you *don't* assign B, the whole 600 g stays on A and the close-out shrinks to 1400 g — A still ends at zero, B stays untracked, which is why the notification nudges you to assign.
+
+Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
+
+### Two-way AMS weight sync for tagged spools (0.5.5)
+
+For spools with a valid Bambu RFID tag, idle AMS readings can now correct the books **downward** as well as upward — the firmware's own remaining estimate is the same number Bambu Studio mirrors into its filament manager. A downward correction is deliberately cautious: the same value must repeat across two reports at least a minute apart, so a garbled report after a reconnect can never rewrite a spool. Untagged spools are never touched by this path.
+
+### Live "filament so far" (0.5.5)
+
+While a print runs, the expanded printer card shows how much filament it has consumed so far — per-layer G-code accuracy, per slot on multicolour jobs, refreshed twice a minute — and says **"split across spools"** once a runout has genuinely divided the print between reels. Display-only: inventory is still written once, at completion.
+
 #### Mid-print spool change semantics
 
-If you re-assign a spool to a slot **during** a print:
-
-- BamDude compares the assignment-change timestamp to the print-start timestamp.
-- If the change happened **after** print start, the live assignment is used — i.e. consumption flips to the new spool from the swap point onwards.
-- The portion already printed before the change stays billed to the previous spool.
-- If no mid-print change happened, the snapshot taken at print start is preserved and the full deduction goes to that spool.
-
-This makes mid-batch refills work correctly without manual reconciliation: load a fresh spool when one runs low, re-assign it in BamDude, and the rest of the print is billed to the new spool.
+- **After a runout**, attribution is split at the runout layer as described above — the journal owns the boundary.
+- **Without a runout** (you re-assign a slot mid-print to correct a wrong link), the live assignment wins and the whole print is billed to the newly-assigned spool. That is the correction semantic: BamDude assumes the link was wrong from the start, not that you swapped reels.
 
 ### Reset counter
 
