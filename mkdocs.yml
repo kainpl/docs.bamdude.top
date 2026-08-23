@@ -110,6 +110,7 @@ plugins:
             "Library & Slicing": "Бібліотека і слайсинг"
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
+            "Filament Families": "Сім'ї філаментів"
             "Cloud Profiles": "Cloud-профілі"
             "Orca Cloud": "Orca Cloud"
             "Local Profiles": "Локальні профілі"
@@ -256,6 +257,7 @@ nav:
     - Library & Slicing:
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
+      - Filament Families: features/filament-families.md
       - Cloud Profiles: features/cloud-profiles.md
       - Orca Cloud: features/orca-cloud.md
       - Local Profiles: features/local-profiles.md

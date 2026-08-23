@@ -101,9 +101,9 @@ Preset, brand and subtype stay visible and editable; the little `*` markers appe
     **Suggested**, the rest under **All**. A spool's own brand or material is always
     present in its own dropdown, even if nothing else has heard of it.
 
-### Slicer Preset dropdown shows every per-printer / per-nozzle variant
+### The spool links to a filament family (0.5.5)
 
-The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
+The per-variant Slicer Preset dropdown is gone: the spool form carries a single **Filament family** picker — the same identity Bambu Studio uses (`filament_id`), shared with the AMS slot dialog and the K-profile editor. The spool is printer-agnostic by construction now: per-printer preset variants are the *family's* business, resolved per printer at slot-assignment and slicing time. Picking a family prefills material and brand; custom families carry a badge saying which cloud they came from; a "Create new family…" row opens the [Create Filament dialog](filament-families.md#creating-your-own-filament) without leaving the form. Existing spools were migrated onto families automatically on the first start after upgrading. Full model: [Filament Families](filament-families.md).
 
 ### Per-spool category & low-stock override
 
@@ -118,11 +118,11 @@ Both columns are surfaced in the inventory table and editable inline.
 
 ### Full form: Filament Info tab
 
-The "+ Add Spool" form has two tabs. The first one — Filament Info — covers everything needed to identify the spool and resolve the right slicer preset.
+The "+ Add Spool" form has two tabs. The first one — Filament Info — covers everything needed to identify the spool and resolve its filament family.
 
 | Field | Description |
 |---|---|
-| **Slicer Preset** | Search-and-select the filament profile (Bambu Cloud, local OrcaSlicer imports, or built-in fallback — see [Where presets come from](#where-presets-come-from) below). Selecting a preset auto-fills *Material*, *Brand*, and *Subtype* from the preset name. |
+| **Filament family** | Search-and-select the family (built-in catalog + your cloud/local/custom families — see [Filament Families](filament-families.md)). Selecting one auto-fills *Material* and *Brand*. |
 | **Material** | PLA, PETG, ABS, ASA, TPU, PA, PC, … — accepts custom values, see [Custom materials](#custom-materials). |
 | **Brand** | Filament manufacturer; auto-completes from previously-seen brands. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
@@ -146,19 +146,18 @@ The **Quantity** field is only shown in Quick Add and creates that many spools i
 !!! tip "Bulk buying"
     A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, shown as five distinct cards (lot is part of the grouping key). Want them collapsed into one *5 identical spools* row instead? Leave the lot empty (or auto-number off) so the copies are truly identical, then use the **Group similar** toggle.
 
-#### Where presets come from
+#### Where families come from
 
-The **Slicer Preset** dropdown merges filament profiles from three sources, checked in priority order:
+The **Filament family** picker draws on two tiers, both resolved locally (see [Filament Families](filament-families.md)):
 
-| Source | Priority | Badge | Description |
-|---|:---:|---|---|
-| **Bambu Cloud** | 1 | — | Personal cloud presets synced from BambuStudio. Includes Bambu's official presets and any custom presets you created (e.g. *# Overture Matte PLA @BBL P1S*). Requires [Cloud Profiles](cloud-profiles.md) login. |
-| **Local Profiles** | 2 | `Local` (green) | OrcaSlicer presets imported via [Local Profiles](local-profiles.md). Useful if you don't use Bambu Cloud or use OrcaSlicer-only profiles. |
-| **Built-in Fallback** | 3 | `Built-in` (amber) | Static table of ~150 Bambu Lab filament IDs (PLA Basic, PETG HF, ABS, …). Always available, no login needed. |
+| Tier | Description |
+|---|---|
+| **Built-in catalog** | Every official Bambu filament family, distilled from Bambu Studio and OrcaSlicer themselves. Always available, no login needed. |
+| **Your own** | Families behind your Bambu Cloud / Orca Cloud presets (mirrored server-side in the background), your local imports, and families you created in BamDude. Badged with their origin. |
 
-Presets from all three sources are merged + deduplicated. If cloud login fails, local + built-in still appear — the preset list is never empty.
+Browsing shows *your* families first (the ones behind your presets, spools and calibrations); typing searches the full catalog of both ecosystems, deduplicated. The list is never empty, cloud or no cloud.
 
-User presets that inherit from Bambu presets (e.g. *# Overture Matte PLA @BBL H2D*) are fully supported — BamDude resolves the underlying filament ID from the inheritance chain.
+Custom presets that inherit from Bambu presets (e.g. *# Overture Matte PLA @BBL H2D*) are fully supported — the family is resolved from the inheritance chain.
 
 #### Custom materials
 
@@ -522,6 +521,6 @@ No. The inventory tracks **all your spools** — loaded and unloaded. You can lo
 
 See [the comparison table](#configure-ams-slot-vs-assign-spool) above. Short version: **Assign Spool** does both — links the inventory row for tracking and configures the slot using the spool's profile. **Configure Slot** only does the printer-side configuration. Use Assign for normal workflow; use Configure when you want to override settings or set up a slot without an inventory spool.
 
-### Where do the slicer profiles come from?
+### Where do the filament families come from?
 
-Three sources, checked in priority order: **Bambu Cloud** (your synced presets, including custom ones) → **Local Profiles** (OrcaSlicer imports) → **Built-in Fallback** (~150 Bambu Lab filament IDs). Even without cloud login, the latter two ensure the preset list is never empty. See [Where presets come from](#where-presets-come-from) for details.
+From the built-in catalog (every official Bambu filament, offline) plus your own — cloud-mirrored, locally imported, or created in BamDude. Even without a cloud login the list is never empty. See [Where families come from](#where-families-come-from) and [Filament Families](filament-families.md).

@@ -101,9 +101,9 @@ CSV-заголовки толерантні до регістру й пробі�
     **Suggested**, решта — під **All**. Власні бренд і матеріал котушки завжди
     присутні в її ж дропдауні, навіть якщо про них більше ніхто не чув.
 
-### Дропдаун Slicer Preset показує всі per-printer / per-nozzle варіанти
+### Котушка лінкується на сім'ю філаменту (0.5.5)
 
-Поле Slicer Preset у формі котушки тепер перелічує всі імпортовані варіанти окремо — тож усі P1S / X1C / A1 варіанти "Bambu PLA Basic" відображаються як окремі рядки з повним `@printer`-суфіксом, замість того щоб згортатися в один. Сама котушка printer-agnostic — обраний варіант записується як `slicer_filament` і нормалізується через `normalize_slicer_filament` під час слайсингу. (AMS Slot — per-printer і фільтрує; форма котушки — union-of-all і не фільтрує.) Локальні профілі, імпортовані з OrcaSlicer / BambuStudio, показуються поряд з cloud-пресетами — раніше локальні профілі ховались, як тільки користувач залогінювався в Bambu Cloud, що було багом.
+Дропдаун per-варіантних Slicer Preset-ів пішов: форма котушки несе один пікер **Сім'я філаменту** — та сама ідентичність, що в Bambu Studio (`filament_id`), спільна з діалогом слота AMS і редактором K-профілів. Котушка тепер printer-agnostic за конструкцією: per-printer варіанти пресетів — справа *сім'ї* і резолвляться під конкретний принтер у момент призначення слота чи нарізання. Вибір сім'ї префілить матеріал і бренд; кастомні сім'ї мають бейдж своєї хмари; рядок «Створити нову сім'ю…» відкриває [діалог створення філаменту](filament-families.uk.md), не виходячи з форми. Наявні котушки змігровані на сім'ї автоматично при першому старті після оновлення. Повна модель: [Сім'ї філаментів](filament-families.uk.md).
 
 ### Категорія + low-stock на котушку
 
@@ -122,7 +122,7 @@ CSV-заголовки толерантні до регістру й пробі�
 
 | Поле | Опис |
 |---|---|
-| **Slicer Preset** | Search-and-select filament-profile (Bambu Cloud, local OrcaSlicer-імпорти або built-in fallback — див. [Звідки беруться preset-и](#звідки-беруться-slicer-profiles) нижче). Вибір preset auto-fill-ить *Material*, *Brand*, *Subtype* з імені preset-у. |
+| **Сім'я філаменту** | Search-and-select сім'ї (вбудований каталог + ваші хмарні/локальні/кастомні — див. [Сім'ї філаментів](filament-families.uk.md)). Вибір auto-fill-ить *Material* і *Brand*. |
 | **Material** | PLA, PETG, ABS, ASA, TPU, PA, PC, … — приймає кастомні значення, див. [Custom materials](#custom-materials). |
 | **Brand** | Виробник; auto-complete з previously-seen брендів. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
@@ -146,19 +146,18 @@ Quick-Add котушки називаються **stock spools** — вони т
 !!! tip "Bulk buying"
     5-pack PLA з однієї партії → Quantity = 5, Lot = 1, **Авто-нумерація лотів** увімкнена → пʼять котушок з лотами 1–5, показані пʼятьма окремими картками (lot входить у grouping-key). Хочеш згорнути їх в один рядок *5 identical spools*? Лишай Lot порожнім (або вимкни авто-нумерацію), щоб копії були справді ідентичні, і скористайся toggle **Group similar**.
 
-#### Звідки беруться preset-и
+#### Звідки беруться сім'ї
 
-Dropdown **Slicer Preset** мерджить filament-profile з трьох джерел, перевірених у priority-порядку:
+Пікер **Сім'я філаменту** живиться з двох ярусів, обидва резолвляться локально (див. [Сім'ї філаментів](filament-families.uk.md)):
 
-| Джерело | Priority | Бейдж | Опис |
-|---|:---:|---|---|
-| **Bambu Cloud** | 1 | — | Personal cloud presets, синхронізовані з BambuStudio. Включає офіційні Bambu-preset-и і будь-які кастомні (напр. *# Overture Matte PLA @BBL P1S*). Потребує [Cloud Profiles](cloud-profiles.uk.md) login. |
-| **Local Profiles** | 2 | `Local` (зелений) | OrcaSlicer-preset-и, імпортовані через [Local Profiles](local-profiles.uk.md). Корисно, якщо не використовуєш Bambu Cloud або юзаєш OrcaSlicer-only profiles. |
-| **Built-in Fallback** | 3 | `Built-in` (бурштиновий) | Static-таблиця ~150 Bambu Lab filament-ID (PLA Basic, PETG HF, ABS, ...). Завжди доступна, без login-у. |
+| Ярус | Опис |
+|---|---|
+| **Вбудований каталог** | Кожна офіційна сім'я філаментів Bambu, дистильована з самих Bambu Studio та OrcaSlicer. Завжди доступний, без login-у. |
+| **Ваші власні** | Сім'ї за вашими пресетами Bambu Cloud / Orca Cloud (дзеркалюються на сервер у фоні), локальні імпорти і сім'ї, створені в BamDude. З бейджем походження. |
 
-Preset-и з усіх трьох джерел мерджаться + дедуплікуються. Якщо cloud-login падає — local + built-in усе одно з'являються — preset-список ніколи не порожній.
+Перегляд показує спершу *ваші* сім'ї (ті, що за вашими пресетами, котушками й калібруваннями); пошук іде по повному каталогу обох екосистем із дедуплікацією. Список не буває порожнім — з хмарою чи без.
 
-User-preset-и, що inherit-ять з Bambu-preset-ів (напр. *# Overture Matte PLA @BBL H2D*), повністю підтримуються — BamDude резолвить underlying filament-ID з inheritance-ланцюжка.
+Кастомні пресети, що inherit-ять з Bambu-пресетів (напр. *# Overture Matte PLA @BBL H2D*), повністю підтримуються — сім'я резолвиться з inheritance-ланцюжка.
 
 #### Custom materials
 

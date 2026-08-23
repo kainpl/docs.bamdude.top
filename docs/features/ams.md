@@ -29,18 +29,21 @@ Manually configure slots for third-party filaments:
 
 1. Hover over a slot, click the menu
 2. Select **Configure Slot**
-3. Choose a filament preset (filtered by printer model **and by the nozzle
-   actually installed**)
+3. Choose a **filament family** — the same identity Bambu Studio uses; see
+   [Filament Families](filament-families.md)
 4. Select a matching K profile
-5. Optionally set a custom color
+5. Optionally set a custom color — the suggestions are the distinct colours
+   of your own non-archived spools of that family, not a global colour chart
 
-The picker filters by the **nozzle diameter actually fitted**, not a fixed
-0.4 mm. With a 0.6 mm nozzle you get the 0.6 mm profiles for your trays; on a
-dual-nozzle H2D each AMS shows the profiles for the nozzle that feeds it.
-Configuring a slot with a profile that doesn't match the installed nozzle is what
-makes the printer reject a print with the cryptic *"Failed to get AMS mapping
-table"* — the queue now catches that mismatch before uploading and fails the item
-with an actionable message instead.
+The per-printer preset and its temperatures are resolved from the catalog for
+the printer and the **nozzle actually fitted** — with a 0.6 mm nozzle the tray
+gets the 0.6 mm preset, and on a dual-nozzle H2D each AMS resolves against the
+nozzle that feeds it. A custom family is only sent to printers that declare
+support for user presets; others receive the generic family of the same
+material. A profile/nozzle mismatch is what makes the printer reject a print
+with the cryptic *"Failed to get AMS mapping table"* — the queue catches that
+mismatch before uploading and fails the item with an actionable message
+instead.
 
 !!! success "Assignments are confirmed, not assumed"
     Assigning a spool from Inventory, or configuring a slot here, used to report
@@ -55,8 +58,13 @@ with an actionable message instead.
     confirmed** if the tray hasn't reported it after about 30 seconds. If the
     printer goes quiet it stays silent rather than inventing a failure.
 
-!!! tip "AMS-HT preset stickiness fixed (#1053)"
-    Earlier builds keyed AMS-HT slot presets at `ams_id * 4 + tray_id = 512`, but the frontend looks them up by `ams_id` directly for HT (single-slot units share their global tray id with the unit id). The slot fell through to the generic preset (`Generic PLA`) on every poll even after a custom preset was saved — so operators had to re-select it after every spool change. Backend now keys via the same helper the frontend uses, and the saved preset stays put.
+!!! tip "Slot names come from what is loaded, not from what was sent"
+    Earlier builds remembered which preset was *sent* to each slot (and an AMS-HT
+    keying bug, #1053, made even that memory slip to `Generic PLA`). That
+    memory table is gone since 0.5.5: the name shown for a tray is resolved
+    from the id the printer itself reports, through the local catalog — which
+    works offline and stays correct when the slot is changed from Bambu Studio
+    or the printer's screen, cases the old memory could never see.
 
 ### Slots showing "?" instead of "Empty"
 
@@ -85,10 +93,9 @@ rather than naming the wrong slot.
 
 When you open the Configure AMS Slot modal for a slot that already has a configuration, BamDude pre-populates the form so you can review or tweak without starting from scratch:
 
-- **Filament preset** — the previously-configured preset is pre-selected (resolved from the saved mapping or by matching the slot's `tray_info_idx` to the corresponding preset).
+- **Filament family** — the family is pre-selected by resolving the `tray_info_idx` the printer itself reports through the local catalog.
 - **Colour** — the colour picker is pre-populated with the slot's current filament colour, resolved against the [`color_catalog`](inventory.md#colour-catalog).
 - **K-profile** — the active pressure-advance profile is pre-selected by matching the slot's `cali_idx` to the available [K-profile](kprofiles.md) entries.
-- **Auto-scroll** — the preset list automatically scrolls to the selected entry so it's visible without manual scrolling. For empty slots the list scrolls to the last preset you used so common refills are one click away.
 
 ### Multi-AMS Support
 

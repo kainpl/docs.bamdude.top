@@ -1,6 +1,6 @@
 ---
 title: Orca Cloud
-description: Per-user вхід в Orca Cloud (Supabase profile sync від OrcaSlicer) через paste-based PKCE flow, поряд з Bambu Cloud
+description: Per-user парування з Orca Cloud (profile sync від OrcaSlicer) через device-код, поряд з Bambu Cloud
 ---
 
 # Orca Cloud
@@ -19,41 +19,38 @@ OrcaSlicer 2.4.0-alpha додав Supabase-backed cloud sync (`sync_pull`). BamD
 
 ---
 
-## :material-login: Вхід — paste flow
+## :material-login: Вхід — парування device-кодом
 
-Supabase-проєкт Orca allowlist-ить лише **localhost** `redirect_to` (`http://localhost:41172/callback`) — адресу, яку слухає власний desktop-agent OrcaSlicer. Self-hosted BamDude на іншому хості не може прийняти цей redirect, тому вхід використовує **paste-based PKCE** flow замість звичайного browser callback (відстежується в апстрімі як [OrcaSlicer/OrcaSlicer#14028](https://github.com/OrcaSlicer/OrcaSlicer/issues/14028)).
+Парування використовує **OAuth 2.0 Device Authorization Grant** (RFC 8628) —
+флоу, створений для застосунку, що не може прийняти browser-redirect, а це
+рівно те, чим є self-hosted сервер:
 
-### OAuth (Google / Apple / GitHub)
+1. Натисни **Connect** на панелі **Connect to Orca Cloud**
+2. BamDude покаже короткий **user-код** і посилання для підтвердження
+3. Відкрий посилання (будь-який пристрій, будь-який браузер), увійди у свій
+   Orca-акаунт і підтверди код у налаштуваннях свого Orca Cloud
+4. BamDude опитує у фоні та стає **Connected** у мить, коли підтвердження
+   долетіло
 
-1. Вибери провайдера на панелі **Connect to Orca Cloud**
-2. Відкриється нова вкладка зі сторінкою входу `auth.orcaslicer.com`. Увійди у свій Orca-аккаунт
-3. Браузер перенаправить на адресу `http://localhost:41172/callback?code=...&state=...`, яка **не завантажиться** — це нормально; сама адреса і є те, що BamDude потрібно
-4. Скопіюй **усю** адресу з рядка браузера і встав у поле **Paste the callback URL here**
-5. BamDude обмінює `code` (разом з PKCE verifier, який зберіг на кроці 1) на токени → стан стає **Connected**
-
-!!! tip "Якщо вкладка входу не відкрилася"
-    Панель показує authorize URL як клікабельне посилання — відкрий вручну і продовжуй з кроку 3.
-
-### Email + пароль
-
-Для аккаунтів з Orca email/password-credential OAuth-танець повністю пропускається: введи Orca **email** + **пароль**, і BamDude увійде напряму через Supabase-ендпоінт `grant_type=password`.
-
----
+Спроба парування протухає сама за кілька хвилин — натисни Connect ще раз для
+нової. Жодного вставляння URL і жодного localhost-callback: старий paste-based
+PKCE-флоу, який це замінило, пішов.
 
 ## :material-clock-end: Час життя токена та refresh
 
-На відміну від ~90-денного bearer Bambu Cloud, Orca використовує короткоживучі токени Supabase:
+На відміну від довгоживучого bearer Bambu Cloud, токени парування Orca короткі
+й ротуються:
 
 | Токен | Час життя | Примітки |
 |---|---|---|
-| Access JWT | ~1 година | Використовується для кожного API-виклику |
-| Refresh token | Ротаційний, одноразовий | Кожен refresh повертає **новий** refresh token; старий витрачається |
+| Access-токен | ~24 години | Використовується для кожного API-виклику |
+| Refresh-токен | ~90 днів, ротаційний, одноразовий | Кожен refresh повертає **новий** refresh-токен і поновлює 90 днів; старий витрачається |
 
-BamDude оновлює access-токен **just-in-time** — коли виклик от-от запуститься, а токену лишилось менше ~5 хвилин життя, він спершу ротує і **зберігає новий refresh token перед API-викликом**, тому краш посеред refresh не залишить тебе з витраченим токеном. Якщо сам refresh відхилено (revoked на сервері), стан стає **Disconnected** і ти проходиш вхід знову.
-
-Тимчасовий стан PKCE-handshake (verifier / state) живе лише між **Connect** і кроком paste, з **10-хвилинним TTL** — натисни Connect, відійди, і незавершений handshake сам протухне.
-
----
+BamDude оновлює access-токен **just-in-time** — коли виклик от-от запуститься
+на токені, що протухає, він спершу ротує і **зберігає нову пару перед
+API-викликом**, тому краш посеред refresh не залишить тебе з витраченим
+токеном. Якщо сам refresh відхилено (revoked на сервері), стан стає
+**Disconnected** і ти паруєшся знову.
 
 ## :material-database-search: Що підтягується
 
@@ -62,13 +59,13 @@ BamDude оновлює access-токен **just-in-time** — коли викл�
 | Поверхня | Як з'являються Orca-профілі |
 |---|---|
 | Slice modal | Четвертий tier presets, `orca_cloud`, вище за local / Bambu Cloud / standard |
-| AMS-slot filament picker | Orca-філаменти йдуть першими (внутрішньо з префіксом `orca_`); з розпарсеного матеріалу виводиться generic Bambu filament-ID, щоб прошивка принтера все одно розпізнала тип |
+| Пікер сімей у слоті AMS | Кастомні Orca-філаменти — повноцінні [сім'ї](filament-families.uk.md), віддзеркалені на сервер у каталог сімей поряд із Bambu Cloud, з бейджем; принтер отримує ідентифікатор сім'ї, або генерик-сім'ю матеріалу на принтерах без підтримки користувацьких пресетів |
 | Profiles → Orca Cloud tab | Згрупована printer / process / filament сітка з пошуком + фільтрами + read-only detail modal |
 
 Orca `sync_pull` повертає **повний content кожного профілю inline**, тому — на відміну від Bambu Cloud, де filament type/колір потребують окремого per-preset fetch, який впирається в rate limit — Orca-філаменти несуть `filament_type` і колір безкоштовно. Metadata-aware pre-pick у slice modal використовує це, щоб точно ранжувати Orca-філаменти без зайвих round-trip.
 
 !!! note "Пріоритет tier'ів у slicing"
-    `orca_cloud` > `local` > `cloud` (Bambu) > `standard`. Ім'я профілю, яке є у вищому tier, відфільтровується з кожного нижчого, тому кожне ім'я рендериться один раз. Кожен cloud-tier також має **власний** status-банер у slice modal — Bambu і Orca можуть бути signed-out / expired / unreachable незалежно.
+    `local` > `orca_cloud` > `cloud` (Bambu) > `standard`. Крос-tier дедуплікації свідомо **немає**: кожен tier віддає повний список, тож одне ім'я може з'явитись у кількох групах — джерело обираєш ти. Кожен cloud-tier також має **власний** status-банер у slice modal — Bambu і Orca можуть бути signed-out / expired / unreachable незалежно.
 
 ---
 
@@ -90,17 +87,15 @@ Orca `sync_pull` повертає **повний content кожного проф
 
 ## :material-help-circle: Вирішення проблем
 
-??? question "localhost-адреса показує помилку з'єднання — вхід провалився?"
-    Ні — це очікувана поведінка. На твоїй машині ніхто не слухає `localhost:41172` (це desktop-agent OrcaSlicer, якого ти не запускаєш). Провалена сторінка все одно має `code` + `state` в адресному рядку, а це все, що потрібно BamDude. Скопіюй усю адресу і встав.
-
-??? question "\"That URL does not look like an Orca Cloud callback\""
-    У вставленій адресі немає параметра `code`. Переконайся, що скопіював **усю** адресу після redirect (ту, що `http://localhost:41172/callback?...`), а не адресу сторінки входу Orca.
+??? question "Код парування протух, поки я його підтверджував"
+    Спроба парування коротка за задумом. Натисни **Connect** ще раз — свіжий
+    код нічого не коштує, і від старої спроби нічого не лишається.
 
 ??? question "Підключено, але профілі не показуються"
     Можливо, ти ще не синхронізував жодного профілю з OrcaSlicer — Orca Cloud дзеркалить лише те, що ти запушив зі слайсера. Налаштуй профіль в OrcaSlicer, дай йому синхронізуватись, тоді натисни **Refresh** на вкладці Orca Cloud (5-хвилинний listing-кеш).
 
 ??? question "Стан сам перескочив на Disconnected"
-    Ротацію refresh-токена відхилено на сервері (revoked, або одноразовий токен відтворили повторно). Пройди вхід знову. Оскільки refresh-токени одноразові, вхід у той самий Orca-аккаунт з двох місць може інвалідувати один з них.
+    Ротацію refresh-токена відхилено на сервері (revoked, або одноразовий токен відтворили повторно). Спаруйся знову з вкладки Orca Cloud.
 
 ??? question "Orca і Bambu presets мають однакове ім'я — хто виграє?"
-    Orca. Slice modal де-дублює за іменем по tier'ах з `orca_cloud` нагорі, тому спільне ім'я рендериться лише в Orca-tier.
+    Ніхто мовчки: кожен tier віддає повний список, тож спільне ім'я видно в обох групах — джерело обираєш ти.

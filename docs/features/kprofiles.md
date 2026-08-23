@@ -151,9 +151,15 @@ Three ways to create a profile from scratch:
 ### Manual entry
 
 1. Click **Add K-Profile**.
-2. Pick the material, nozzle diameter, and (if multiple) target printer.
+2. Pick the **filament family** (the same picker the spool form uses — see
+   [Filament Families](filament-families.md); custom families included), the
+   nozzle diameter, and (if multiple) the target printer.
 3. Enter the K-factor.
 4. Save — sync state lands as **New** until you push.
+
+Auto-matching between spools and profiles keys on the family — which is what
+lets a custom filament (your own vendor and name) find its own calibration
+instead of collapsing onto Generic.
 
 ### From calibration result
 

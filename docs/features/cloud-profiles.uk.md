@@ -76,8 +76,12 @@ BamDude піднімає це обмеження міграцією **m011**: к
 
 ## :material-clock-end: Час життя токена
 
-Bambu Cloud bearer-и не вічні, і Bambu не дає способу оновити токен без
-повторного входу.
+Bambu Cloud bearer-и не вічні. З 0.5.5 BamDude зберігає й **refresh-токен** із
+відповіді логіну, і коли Bambu повідомляє, що збережений токен протермінувався,
+спершу тихо оновлює пару — з'єднання самозцілюється за лічені хвилини замість
+вимагати повторний вхід з email-кодом раз на кілька місяців. Лише коли відхилено
+саме оновлення, з'являється флоу «вхід протермінувався» нижче. Вставлені вручну
+access-токени refresh-токена не мають і поводяться по-старому.
 
 BamDude перевіряє збережений токен **у самої Bambu Lab**, а не припускає, що той
 досі працює — тож **Connected** означає, що Bambu його прийняла, а не просто що
@@ -118,9 +122,17 @@ BamDude перевіряє збережений токен **у самої Bambu
 | Bound printer devices | `GET /api/v1/cloud/devices` | Printer-add wizard, Bambu-Cloud firmware check |
 | Per-device firmware | `GET /api/v1/cloud/firmware-updates` | Cloud-side firmware check (різний від LAN-only шляху в [Firmware Updates](firmware-updates.md)) |
 | Filament-id → name resolution | `POST /api/v1/cloud/filament-info` | AMS tray tooltips, K-profile filament labels |
-| Built-in filament fallback table | `GET /api/v1/cloud/builtin-filaments` | Коли cloud + local обидва міссять ID |
+| Офіційні назви філаментів | `GET /api/v1/cloud/builtin-filaments` | Віддається з вбудованого [каталогу сімей](filament-families.uk.md) — хардкод-таблиці, яку він читав, більше нема |
 
 Custom (private) presets ідуть першими у списку, public (built-in) presets — після. Slicer-presets unifier (`/slicer/...`) мерджить ці з [Local Profiles](local-profiles.md) по імені і виставляє єдиний дедуплікований список slice-modal-у.
+
+!!! note "Вкладка показує лише ваші пресети (0.5.5)"
+    Вкладка Bambu Cloud перелічує **приватну** половину листингу — ваші власні
+    пресети — як Orca-вкладка робила завжди. Публічний каталог хмари там
+    більше не гортається: профіль, який хочете бачити, приїздить після того,
+    як ви збережете чи ввімкнете його у слайсері. Фільтр принтера перелічує
+    моделі з ваших пресетів, а варіанти написання «A1M» / «A1 mini» зведені в
+    один рядок.
 
 ---
 
@@ -135,6 +147,16 @@ Cloud Profiles не read-only:
 | **Delete** | `DELETE /api/v1/cloud/settings/{id}` | Прибирає preset з Bambu Cloud — без undo |
 
 Field-definition каталог `GET /api/v1/cloud/fields/{filament|process|printer}` живить форму — каже UI, які ключі існують для кожного типу, label, одиниці, valid-межі, dropdown-options.
+
+Dropdown **базового пресета** в «Новому пресеті» має дві групи: **ваші власні
+пресети і сім'ї** (кастомний філамент, створений у BamDude, з'являється тут
+після пушу — новий пресет на його базі стає дитиною тієї сім'ї) та **стандартні
+пресети, звужені до моделей принтерів вашої ферми**, а не повний список для
+кожної машини Bambu.
+
+Вкладка також має кнопку **Створити філамент** — діалог Create Filament з Bambu
+Studio, із сім'єю, що народжується просто у хмарі. Див.
+[Сім'ї філаментів](filament-families.uk.md).
 
 ---
 
