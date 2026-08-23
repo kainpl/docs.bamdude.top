@@ -189,6 +189,14 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `prometheus_enabled` | `false` | Enable the [`/metrics` endpoint](../features/prometheus.md). |
 | `prometheus_token` | empty | Bearer token required on the metrics endpoint. Empty = no auth (local-only deployments). |
 
+### Zigbee sensors
+
+| Key | Default | Effect |
+|---|---|---|
+| `zigbee_sensor_poll_seconds` | `30` | Poll cadence for mains-powered Zigbee sensors (jittered like the plug poller). Battery sensors are never polled — they sleep. |
+| `zigbee_sensor_reporting` | empty | JSON blob of per-measurement reporting defaults (`{"temperature": {"min_interval": …, "max_interval": …, "reportable_change": …}, …}`) applied to devices with no override of their own. Empty, or any missing field, falls back to the registry defaults. |
+| `zigbee_sensor_stale_multiplier` | `2` | A reporting sensor's value older than this multiple of its `max_interval` counts as stale ("sensor went silent"). Per-device staleness override wins; polled devices keep a fixed 120 s window. |
+
 ## :material-robot-confused: Obico AI
 
 See [Obico AI Failure Detection](../features/obico.md) for context on each.

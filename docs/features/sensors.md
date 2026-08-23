@@ -85,6 +85,8 @@ Reported separately, and it matters more than it sounds. Every other alert depen
 
 A sensor is considered silent when it has not reported for longer than its own expected interval allows. You are told again when it starts speaking.
 
+The window is derived, not fixed: the sensor's longest promised reporting interval times the `zigbee_sensor_stale_multiplier` setting (default `2`) — so telling a sensor to speak less often moves the threshold with it. A per-device staleness override in the [reporting dialog](#reporting-settings) wins over the derived value.
+
 !!! note "After a restart"
     BamDude does not announce silence for sensors it has simply not heard from yet — it waits until it has been running longer than the window it is judging. Restarting does not produce a burst of false alarms.
 

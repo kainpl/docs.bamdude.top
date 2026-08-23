@@ -189,6 +189,14 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `prometheus_enabled` | `false` | Увімкнути [`/metrics` endpoint](../features/prometheus.uk.md). |
 | `prometheus_token` | пусто | Bearer-token, потрібний на metrics-endpoint. Пусто = без auth (для local-only деплоїв). |
 
+### Zigbee-датчики
+
+| Key | Default | Ефект |
+|---|---|---|
+| `zigbee_sensor_poll_seconds` | `30` | Каденс опитування Zigbee-датчиків від мережі (з джитером, як у полера розеток). Батарейні датчики не опитуються ніколи — вони сплять. |
+| `zigbee_sensor_reporting` | пусто | JSON per-measurement дефолтів звітування (`{"temperature": {"min_interval": …, "max_interval": …, "reportable_change": …}, …}`) для пристроїв без власного override. Пусто чи відсутнє поле = дефолти реєстру. |
+| `zigbee_sensor_stale_multiplier` | `2` | Показ reporting-датчика, старший за це кратне його `max_interval`, вважається застарілим («датчик замовк»). Per-device override виграє; полюваних пристроїв не стосується (фіксовані 120 с). |
+
 ## :material-robot-confused: Obico AI
 
 Контекст на кожне — на сторінці [AI-детекція фейлів Obico](../features/obico.uk.md).

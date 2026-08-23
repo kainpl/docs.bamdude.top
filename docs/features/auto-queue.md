@@ -138,6 +138,7 @@ The `find_eligible_printer` helper considers a printer eligible when **all** of 
 
 | Check | Detail |
 |-------|--------|
+| **Opted in** | The route icon on the printer's queue card toggles whether the router may send work there at all — an opted-out printer shows a "no auto-queue" pill and is skipped, for machines reserved for manual jobs. Separate from pause: pause halts all dispatch on that queue, the opt-out only tells the router to route new work elsewhere. |
 | **Free to take work** | Not currently printing and not already holding a queued job. Whether the printer can *start* right now — plate-clear confirmation, drying, staggered start — is deliberately **not** checked here; see [Routing is not dispatching](#routing-is-not-dispatching) below. |
 | **Model match** | If `target_model` is set, the printer's model code must equal it. |
 | **Location match** | If `target_location` is set, the printer's location tag must equal it. |
