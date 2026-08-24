@@ -218,6 +218,16 @@ BamDude виріс із волонтерського цеху. Автор про
 
     [:material-account-plus: Долучитись до ДрукАрмії](https://app.drukarmy.org.ua/inv/ujnv7w8i)
 
+-   ![Дракони Оборони](assets/partners/dragons.png){ width="64" style="border-radius:12px;float:right;margin-left:12px" }
+
+    **[Дракони Оборони](https://dragons.in.ua/)**
+
+    ---
+
+    Волонтерська 3D-друк ініціатива: цілодобова ферма, що друкує пластикове спорядження для Сил оборони, з повністю прозорими фінансами — все публічно й рахується автоматично.
+
+    [:material-open-in-new: dragons.in.ua](https://dragons.in.ua/)
+
 -   ![AdditHub](assets/partners/addithub.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
 
     **[AdditHub](https://addithub.com/)**
