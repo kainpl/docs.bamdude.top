@@ -11,6 +11,11 @@ OrcaSlicer 2.4.0-alpha added a Supabase-backed cloud sync (`sync_pull`). BamDude
 
 The integration is **per-user**. Each BamDude account holds its own Orca Cloud token — signing in doesn't touch anyone else's account.
 
+Since 0.5.5, BamDude pairs under its **own registered app identity**, issued by the Orca Cloud team — the approval card names BamDude (and your instance URL), and you can find and disconnect it in your Orca Cloud connected-apps list under its real name. The pairing requests **write access** (`sync:write`, which includes read), powering the [profile push](#pushing-profiles) below.
+
+!!! warning "Upgrading to 0.5.5: re-pair once"
+    The app identity and the granted scope are baked into the issued tokens, and **both changed together** in 0.5.5 — every existing Orca Cloud pairing stops working after the upgrade and asks to be reconnected. One re-pair covers both changes; nothing else is lost.
+
 ---
 
 ## :material-tab: Where it lives
@@ -28,7 +33,8 @@ what a self-hosted server is:
 1. Click **Connect** on the **Connect to Orca Cloud** panel
 2. BamDude shows a short **user code** and a verification link
 3. Open the link (any device, any browser), sign in to your Orca account and
-   approve the code in your Orca Cloud settings
+   approve the code in your Orca Cloud settings — the card shows **BamDude**,
+   your instance URL and the requested permissions
 4. BamDude polls in the background and flips to **Connected** the moment the
    approval lands
 
@@ -69,6 +75,20 @@ Orca's `sync_pull` returns each profile's **full content inline**, so — unlike
 
 ---
 
+## :material-cloud-upload: Pushing profiles { #pushing-profiles }
+
+With a write-scoped pairing, [authored filament families](filament-families.md) can be **pushed to Orca Cloud** — the same way they push to Bambu Cloud, from the same places:
+
+- creating a family with *"Also push to Orca Cloud"* (or creating it straight into the cloud from **Profiles → Orca Cloud → Create filament**);
+- the **Authored families** block under **Profiles → Local**: push or re-push a family to either cloud, see per-cloud state (pushed / edited since push / not pushed), and delete a family together with its pushed cloud copies.
+
+An edit in BamDude never overwrites the cloud silently — the preset is marked as changed and waits for an explicit **re-push**. And the respect runs both ways: if a profile was edited in Orca Cloud (say, from OrcaSlicer) after your last push, BamDude detects it **before writing anything** and asks, per preset:
+
+- **Overwrite cloud copy** — your local version wins;
+- **Adopt cloud version** — the cloud content is taken into your local preset.
+
+A pairing made without write access (an env-pinned `sync:read`, or a pre-0.5.5 pairing that somehow survived) shows the push controls disabled with an explanation — reconnect to grant writing.
+
 ## :material-shield-key: Permissions
 
 | Permission | Grants |
@@ -79,9 +99,11 @@ Default groups grant `orca_cloud:auth` to **Administrators** and **Operators**; 
 
 For API keys, `orca_cloud:auth` folds into the same **Use Bambu Cloud** (`can_access_cloud`) scope as `cloud:auth` — it's the same trust dimension (third-party cloud access on the owner's behalf), so a key already cleared for cloud access covers Orca too.
 
+Pushing a filament family (to either cloud) rides the `cloud:auth` permission — the push button and the create-dialog checkboxes follow it.
+
 ### At-rest encryption
 
-Like the Bambu Cloud token, the Orca access + refresh tokens are stored as plain strings on the `users` row (migration **m090** adds `orca_cloud_token`, `orca_cloud_refresh_token`, `orca_cloud_expires_at`, `orca_cloud_email`, `orca_cloud_user_id` + three transient PKCE columns). They aren't Fernet-encrypted today — run BamDude on an encrypted database volume if you need encryption-at-rest. The tokens never leak through API responses (only the connected flag, email, and user id are surfaced).
+Like the Bambu Cloud token, the Orca access + refresh tokens are stored as plain strings on the `users` row (migration **m090** adds `orca_cloud_token`, `orca_cloud_refresh_token`, `orca_cloud_expires_at`, `orca_cloud_email`, `orca_cloud_user_id` + three transient PKCE columns). Migration **m154** adds `orca_cloud_scope` — the scope actually granted at pairing, which is what gates the push controls. They aren't Fernet-encrypted today — run BamDude on an encrypted database volume if you need encryption-at-rest. The tokens never leak through API responses (only the connected flag, email, user id and granted scope are surfaced).
 
 ---
 
@@ -96,6 +118,15 @@ Like the Bambu Cloud token, the Orca access + refresh tokens are stored as plain
 
 ??? question "Status flipped to Disconnected on its own"
     A refresh-token rotation was rejected server-side (revoked, or the single-use token was replayed). Pair again from the Orca Cloud tab.
+
+??? question "After updating BamDude it asked me to reconnect Orca Cloud"
+    Expected, once: 0.5.5 switched to BamDude's own app identity and the write
+    scope, and both are baked into the issued tokens. Pair again and it stays.
+
+??? question "The push buttons are disabled and say the pairing is read-only"
+    The granted scope is fixed at pairing time. Disconnect and pair again — the
+    new pairing requests write access (unless your deployment pins
+    `ORCA_CLOUD_SCOPE=sync:read`, in which case that's the reason).
 
 ??? question "Orca and Bambu presets have the same name — which wins?"
     Neither silently: every tier surfaces its full list, so a shared name shows in both groups and you pick the source.

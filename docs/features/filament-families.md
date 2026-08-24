@@ -27,14 +27,19 @@ The dialog mirrors Bambu Studio's *Create Filament*: **vendor + type + serial** 
 
 Three ways in:
 
-- **Profiles → Local → Create filament** — the family is saved locally, with an optional *"Also push to Bambu Cloud"*.
+- **Profiles → Local → Create filament** — the family is saved locally, with optional *"Also push to Bambu Cloud"* / *"Also push to Orca Cloud"*.
 - **Profiles → Bambu Cloud → Create filament** — the family is created in the cloud (desktop Bambu Studio sees it on its next sync), with an optional *"Also keep locally"*.
+- **Profiles → Orca Cloud → Create filament** — the same, against [Orca Cloud](orca-cloud.md) (needs a write-scoped pairing).
 - **The spool form's family picker → "Create new family…"** — enter a spool of a new material without leaving the form.
 
 You pick **printer profiles**, the way the slicers do ("Bambu Lab P1S 0.4 nozzle") — your farm's models come pre-checked. For every profile you tick, a full root preset is cloned: from the generic profile of that type (through the slicer sidecar), or from any preset you already have. Without a configured sidecar the family is still created, identity-only, and clearly says its presets are pending.
 
+### Managing what you authored
+
+The **Authored families** block under **Profiles → Local** lists every family you created, with per-cloud push state (pushed / edited since push / not pushed) and explicit **push / re-push** buttons for Bambu Cloud and Orca Cloud.
+
 !!! note "Editing and deleting"
-    A pushed preset edited in BamDude never overwrites the cloud silently — it is marked as changed and waits for an explicit re-push. Deleting a family is refused while any spool or calibration still references it; deleting a pushed one can optionally remove the cloud copies too.
+    A pushed preset edited in BamDude never overwrites the cloud silently — it is marked as changed and waits for an explicit re-push. If the **Orca Cloud** copy was edited over there after your push, BamDude detects it before writing and asks per preset: overwrite the cloud copy, or adopt the cloud version locally. Deleting a family is refused while any spool or calibration still references it; deleting a pushed one can optionally remove the cloud copies too.
 
 ## :material-printer-3d-nozzle: What the printer receives
 
