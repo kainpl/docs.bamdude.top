@@ -220,6 +220,16 @@ first-class locale rather than an afterthought.
 
     [:material-account-plus: Join DrukArmy](https://app.drukarmy.org.ua/inv/ujnv7w8i)
 
+-   ![Dragons of Defense](assets/partners/dragons.png){ width="64" style="border-radius:12px;float:right;margin-left:12px" }
+
+    **[Dragons of Defense](https://dragons.in.ua/)**
+
+    ---
+
+    A volunteer 3D-printing initiative: a 24/7 print farm making plastic gear for Ukraine's defense forces, with fully transparent finances — everything public, counted automatically.
+
+    [:material-open-in-new: dragons.in.ua](https://dragons.in.ua/)
+
 -   ![AdditHub](assets/partners/addithub.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
 
     **[AdditHub](https://addithub.com/)**
