@@ -162,6 +162,11 @@ G-code макроси, що активуються подіями друку, з
 </div>
 
 <div class="feature-card" markdown>
+### [:material-label-outline: Наліпки на котушки](labels.uk.md)
+Малюйте дизайни наліпок мишею — текст, QR, штрихкод і зразок кольору — і друкуйте на папері, на аркуші наліпок або одразу на настільному принтері етикеток.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-folder-multiple: Проєкти та print plan](projects.uk.md)
 Групуй друки в проєкти зі впорядкованим print plan. Stepper копій на файл, live-обчислення пластику/часу/ціни, експорт ZIP / JSON.
 </div>

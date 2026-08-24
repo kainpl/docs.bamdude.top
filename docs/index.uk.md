@@ -204,6 +204,32 @@ BamDude виріс із волонтерського цеху. Автор про
 
 [:material-account-plus: Долучитись до ДрукАрмії](https://app.drukarmy.org.ua/inv/ujnv7w8i){ .md-button }
 
+## :material-handshake: Партнери
+
+<div class="grid cards" markdown>
+
+-   ![ДрукАрмія](assets/partners/drukarmy.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
+
+    **[ДрукАрмія](https://drukarmy.org.ua/ua)**
+
+    ---
+
+    Найбільша волонтерська 3D-друк спільнота України, що друкує для фронту. BamDude народився саме в цій майстерні — і якщо у тебе є принтер, для нього тут знайдеться корисна робота.
+
+    [:material-account-plus: Долучитись до ДрукАрмії](https://app.drukarmy.org.ua/inv/ujnv7w8i)
+
+-   ![AdditHub](assets/partners/addithub.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
+
+    **[AdditHub](https://addithub.com/)**
+
+    ---
+
+    Маркетплейс 3D-друку №1 в Україні: публікуєш замовлення — перевірені виконавці дають сліпі ставки. FDM, SLA і SLS друк, 3D-моделювання та постобробка.
+
+    [:material-open-in-new: addithub.com](https://addithub.com/)
+
+</div>
+
 ## :material-hand-heart: Підтримати проєкт
 
 BamDude безкоштовний і таким лишиться — AGPL-3.0, без платних тарифів і без pro-версії. Найцінніша

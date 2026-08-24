@@ -110,6 +110,7 @@ plugins:
             "Library & Slicing": "Бібліотека і слайсинг"
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
+            "Filament Families": "Сім'ї філаментів"
             "Cloud Profiles": "Cloud-профілі"
             "Orca Cloud": "Orca Cloud"
             "Local Profiles": "Локальні профілі"
@@ -256,6 +257,7 @@ nav:
     - Library & Slicing:
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
+      - Filament Families: features/filament-families.md
       - Cloud Profiles: features/cloud-profiles.md
       - Orca Cloud: features/orca-cloud.md
       - Local Profiles: features/local-profiles.md
@@ -270,6 +272,7 @@ nav:
       - Obico AI Failure Detection: features/obico.md
     - Library, Inventory & Projects:
       - Spool Inventory: features/inventory.md
+      - Spool Labels: features/labels.md
       - Projects & Print Plan: features/projects.md
       - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
@@ -294,6 +297,10 @@ nav:
       - PostgreSQL: features/postgresql.md
       - Backup & Restore: features/backup.md
       - Bug Report: features/bug-report.md
+
+  - Add-ons:
+    - addons/index.md
+    - BamDude Bridge: addons/bridge.md
 
   - Reference:
     - reference/index.md

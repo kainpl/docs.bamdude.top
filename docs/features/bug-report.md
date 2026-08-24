@@ -118,6 +118,17 @@ If you don't want to use the public bamdude.top relay (offline farm, air-gapped 
 
 To use your own relay, set `BUG_REPORT_RELAY_URL=https://your-relay.example.com/api/bug-report` on the BamDude side and redeploy. The bubble will post there instead.
 
+## :material-history: My reports
+
+The form view of the dialog carries a collapsible **My reports** list — every report submitted from this install, newest first (up to 50), each with its current status and a link to the GitHub issue.
+
+Statuses refresh the moment the list is expanded, through the relay's `POST /api/bug-report/status` proxy — the relay holds the GitHub token, so your install never needs one. Closed reports show as **fixed** or **not planned** (GitHub's `state_reason`); once a report reaches either terminal state it is never asked about again.
+
+If the relay cannot be reached, the list still renders from the local table with a "showing last known statuses" notice — only the statuses can go stale, the list itself is always local.
+
+!!! note "Self-hosted relay"
+    A self-hosted relay needs the status endpoint too (`POST /status` beside the submit route) — without it the list works, but statuses stay at `submitted`.
+
 ## :material-database-cog: Audit table
 
 Every submission attempt — successful or failed — writes one row to the `bug_reports` table:
@@ -128,7 +139,7 @@ Every submission attempt — successful or failed — writes one row to the `bug
 | `description` | What the operator typed. |
 | `reporter_email` | Optional. |
 | `github_issue_number` / `github_issue_url` | Set on success. |
-| `status` | `submitted` or `failed`. |
+| `status` | `submitted` / `failed` locally; refreshed from the GitHub issue to `open`, `closed` (fixed) or `not_planned` whenever the **My reports** list is opened. |
 | `error_message` | Set on `failed` — relay error code, network exception, etc. |
 | `email_sent` | True when the GitHub issue was created (the `email_sent` column name is a legacy from upstream — currently always tracks issue-creation success, not literal email delivery). |
 | `created_at` | UTC timestamp. |

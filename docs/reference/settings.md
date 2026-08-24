@@ -95,6 +95,10 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | Key | Default | Effect |
 |---|---|---|
 | `low_stock_threshold` | `20.0` | Spool remaining percentage at which `filament_low` notifications fire. Range 0.1 – 99.9. |
+| `runout_zero_point_enabled` | `true` | Close a spool at exactly its label weight when the printer reports an unambiguous filament runout. |
+| `ams_sync_bidirectional` | `true` | Let idle AMS readings correct a Bambu-tagged spool's weight downward too (a value must repeat across two reports a minute apart). |
+| `runout_purge_grams` | `0` | Grams charged to the backup spool for the purge of an AMS auto-switch. 0 disables it. |
+| `usage_events_retention_hours` | `72` | How long a finished print's usage-event journal (runout/tray timeline) is kept for troubleshooting. |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
 | `prefer_lowest_filament` | `false` | Auto-assignment prefers the spool with the lowest remaining percentage. |
 | `default_filament_cost` | `25.0` | Per-kg fallback cost when a spool's `cost` field is unset. |
@@ -184,6 +188,14 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 |---|---|---|
 | `prometheus_enabled` | `false` | Enable the [`/metrics` endpoint](../features/prometheus.md). |
 | `prometheus_token` | empty | Bearer token required on the metrics endpoint. Empty = no auth (local-only deployments). |
+
+### Zigbee sensors
+
+| Key | Default | Effect |
+|---|---|---|
+| `zigbee_sensor_poll_seconds` | `30` | Poll cadence for mains-powered Zigbee sensors (jittered like the plug poller). Battery sensors are never polled — they sleep. |
+| `zigbee_sensor_reporting` | empty | JSON blob of per-measurement reporting defaults (`{"temperature": {"min_interval": …, "max_interval": …, "reportable_change": …}, …}`) applied to devices with no override of their own. Empty, or any missing field, falls back to the registry defaults. |
+| `zigbee_sensor_stale_multiplier` | `2` | A reporting sensor's value older than this multiple of its `max_interval` counts as stale ("sensor went silent"). Per-device staleness override wins; polled devices keep a fixed 120 s window. |
 
 ## :material-robot-confused: Obico AI
 

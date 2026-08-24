@@ -162,6 +162,11 @@ Built-in filament inventory with cost / lot / purchase-date tracking, AMS slot a
 </div>
 
 <div class="feature-card" markdown>
+### [:material-label-outline: Spool Labels](labels.md)
+Draw label designs with the mouse — text, QR, barcode and a colour swatch — then print them on paper, on a sheet of stock, or straight to a label printer on your desk.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-folder-multiple: Projects & Print Plan](projects.md)
 Group prints into projects with an ordered print plan. Per-file copies stepper, live filament / time / cost totals, ZIP / JSON export.
 </div>

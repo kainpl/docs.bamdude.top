@@ -101,9 +101,9 @@ Preset, brand and subtype stay visible and editable; the little `*` markers appe
     **Suggested**, the rest under **All**. A spool's own brand or material is always
     present in its own dropdown, even if nothing else has heard of it.
 
-### Slicer Preset dropdown shows every per-printer / per-nozzle variant
+### The spool links to a filament family (0.5.5)
 
-The Slicer Preset field on the spool form lists all imported variants individually — so all P1S / X1C / A1 variants of "Bambu PLA Basic" render as separate rows with the full `@printer` suffix visible, instead of collapsing into one. The spool itself is printer-agnostic — the variant you pick is what gets persisted as `slicer_filament` and consumed by `normalize_slicer_filament` during slicing. (AMS Slot is per-printer, so it filters down; the spool form is union-of-all, so it doesn't.) Local profiles imported from OrcaSlicer / BambuStudio show alongside cloud presets — earlier versions hid local profiles whenever the user was logged into Bambu Cloud, which was a bug.
+The per-variant Slicer Preset dropdown is gone: the spool form carries a single **Filament family** picker — the same identity Bambu Studio uses (`filament_id`), shared with the AMS slot dialog and the K-profile editor. The spool is printer-agnostic by construction now: per-printer preset variants are the *family's* business, resolved per printer at slot-assignment and slicing time. Picking a family prefills material and brand; custom families carry a badge saying which cloud they came from; a "Create new family…" row opens the [Create Filament dialog](filament-families.md#creating-your-own-filament) without leaving the form. Existing spools were migrated onto families automatically on the first start after upgrading. Full model: [Filament Families](filament-families.md).
 
 ### Per-spool category & low-stock override
 
@@ -118,11 +118,11 @@ Both columns are surfaced in the inventory table and editable inline.
 
 ### Full form: Filament Info tab
 
-The "+ Add Spool" form has two tabs. The first one — Filament Info — covers everything needed to identify the spool and resolve the right slicer preset.
+The "+ Add Spool" form has two tabs. The first one — Filament Info — covers everything needed to identify the spool and resolve its filament family.
 
 | Field | Description |
 |---|---|
-| **Slicer Preset** | Search-and-select the filament profile (Bambu Cloud, local OrcaSlicer imports, or built-in fallback — see [Where presets come from](#where-presets-come-from) below). Selecting a preset auto-fills *Material*, *Brand*, and *Subtype* from the preset name. |
+| **Filament family** | Search-and-select the family (built-in catalog + your cloud/local/custom families — see [Filament Families](filament-families.md)). Selecting one auto-fills *Material* and *Brand*. |
 | **Material** | PLA, PETG, ABS, ASA, TPU, PA, PC, … — accepts custom values, see [Custom materials](#custom-materials). |
 | **Brand** | Filament manufacturer; auto-completes from previously-seen brands. |
 | **Subtype** | Basic, Matte, Silk, HF, Metal, CF, … |
@@ -146,19 +146,18 @@ The **Quantity** field is only shown in Quick Add and creates that many spools i
 !!! tip "Bulk buying"
     A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, shown as five distinct cards (lot is part of the grouping key). Want them collapsed into one *5 identical spools* row instead? Leave the lot empty (or auto-number off) so the copies are truly identical, then use the **Group similar** toggle.
 
-#### Where presets come from
+#### Where families come from
 
-The **Slicer Preset** dropdown merges filament profiles from three sources, checked in priority order:
+The **Filament family** picker draws on two tiers, both resolved locally (see [Filament Families](filament-families.md)):
 
-| Source | Priority | Badge | Description |
-|---|:---:|---|---|
-| **Bambu Cloud** | 1 | — | Personal cloud presets synced from BambuStudio. Includes Bambu's official presets and any custom presets you created (e.g. *# Overture Matte PLA @BBL P1S*). Requires [Cloud Profiles](cloud-profiles.md) login. |
-| **Local Profiles** | 2 | `Local` (green) | OrcaSlicer presets imported via [Local Profiles](local-profiles.md). Useful if you don't use Bambu Cloud or use OrcaSlicer-only profiles. |
-| **Built-in Fallback** | 3 | `Built-in` (amber) | Static table of ~150 Bambu Lab filament IDs (PLA Basic, PETG HF, ABS, …). Always available, no login needed. |
+| Tier | Description |
+|---|---|
+| **Built-in catalog** | Every official Bambu filament family, distilled from Bambu Studio and OrcaSlicer themselves. Always available, no login needed. |
+| **Your own** | Families behind your Bambu Cloud / Orca Cloud presets (mirrored server-side in the background), your local imports, and families you created in BamDude. Badged with their origin. |
 
-Presets from all three sources are merged + deduplicated. If cloud login fails, local + built-in still appear — the preset list is never empty.
+Browsing shows *your* families first (the ones behind your presets, spools and calibrations); typing searches the full catalog of both ecosystems, deduplicated. The list is never empty, cloud or no cloud.
 
-User presets that inherit from Bambu presets (e.g. *# Overture Matte PLA @BBL H2D*) are fully supported — BamDude resolves the underlying filament ID from the inheritance chain.
+Custom presets that inherit from Bambu presets (e.g. *# Overture Matte PLA @BBL H2D*) are fully supported — the family is resolved from the inheritance chain.
 
 #### Custom materials
 
@@ -300,16 +299,41 @@ The deduction pipeline is more nuanced than a flat "subtract slicer estimate at 
 | **G-code-only print, no 3MF** | AMS `remain%` delta between print start and end (integer-precision, ~10 g per 1 % step on a 1 kg spool) | — |
 | **External print, fallback archive recovered later** | Re-uses the 3MF source the moment recovery completes, retroactively reconciling the deduction | — |
 
+### Runouts close the spool at exactly empty (0.5.5)
+
+A filament runout is the one moment reality reports an exact figure: the spool holds **0 g**, whatever the books said. BamDude listens for the printer's **own runout codes** — an AMS slot waiting for new filament, the AMS auto-switching to a backup slot, or the external holder running dry — and turns each into precise accounting. Jams and tangles are *never* mistaken for runouts (only the exact firmware codes count), and a spool whose slot can't be positively identified is never touched.
+
+What happens, in order:
+
+1. The runout is journalled at the exact layer, with the spool that was feeding **frozen at that moment**.
+2. You get the **Filament runout** notification (enable it on your provider): either *"waiting for filament — assign the replacement in BamDude so the rest of the print is booked to the right spool"*, or the informational *"switched to the backup slot"*.
+3. Load the new spool. On RFID spools BamDude spots the new tag by itself; on tagless spools (external holders included) **assigning the replacement to the slot is the signal** — do it any time before the print ends.
+4. At completion the print is split **at the runout layer** (per-layer G-code accuracy): each spool is billed only the segment it actually fed. Then the spent spool gets one final **Runout close-out** row for whatever the books never saw, so its history sums to exactly the label weight — remaining hits precisely zero.
+
+**Worked example.** Spool A's books say 2 kg remaining; a 600 g print runs out mid-way, at a point where the print had consumed 250 g; you load spool B and finish.
+
+| Row | Spool | Grams |
+|---|---|---|
+| Print segment up to the runout layer | A | 250 g |
+| Print segment after | B | 350 g |
+| Runout close-out (orange row in history) | A | **+1750 g** |
+
+A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only its honest 350 g. The archive still records the print as 600 g at 600 g's cost — the close-out is the spool's lifetime drift being recognised, not this print's consumption. If you *don't* assign B, the whole 600 g stays on A and the close-out shrinks to 1400 g — A still ends at zero, B stays untracked, which is why the notification nudges you to assign.
+
+Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
+
+### Two-way AMS weight sync for tagged spools (0.5.5)
+
+For spools with a valid Bambu RFID tag, idle AMS readings can now correct the books **downward** as well as upward — the firmware's own remaining estimate is the same number Bambu Studio mirrors into its filament manager. A downward correction is deliberately cautious: the same value must repeat across two reports at least a minute apart, so a garbled report after a reconnect can never rewrite a spool. Untagged spools are never touched by this path.
+
+### Live "filament so far" (0.5.5)
+
+While a print runs, the expanded printer card shows how much filament it has consumed so far — per-layer G-code accuracy, per slot on multicolour jobs, refreshed twice a minute — and says **"split across spools"** once a runout has genuinely divided the print between reels. Display-only: inventory is still written once, at completion.
+
 #### Mid-print spool change semantics
 
-If you re-assign a spool to a slot **during** a print:
-
-- BamDude compares the assignment-change timestamp to the print-start timestamp.
-- If the change happened **after** print start, the live assignment is used — i.e. consumption flips to the new spool from the swap point onwards.
-- The portion already printed before the change stays billed to the previous spool.
-- If no mid-print change happened, the snapshot taken at print start is preserved and the full deduction goes to that spool.
-
-This makes mid-batch refills work correctly without manual reconciliation: load a fresh spool when one runs low, re-assign it in BamDude, and the rest of the print is billed to the new spool.
+- **After a runout**, attribution is split at the runout layer as described above — the journal owns the boundary.
+- **Without a runout** (you re-assign a slot mid-print to correct a wrong link), the live assignment wins and the whole print is billed to the newly-assigned spool. That is the correction semantic: BamDude assumes the link was wrong from the start, not that you swapped reels.
 
 ### Reset counter
 
@@ -522,6 +546,6 @@ No. The inventory tracks **all your spools** — loaded and unloaded. You can lo
 
 See [the comparison table](#configure-ams-slot-vs-assign-spool) above. Short version: **Assign Spool** does both — links the inventory row for tracking and configures the slot using the spool's profile. **Configure Slot** only does the printer-side configuration. Use Assign for normal workflow; use Configure when you want to override settings or set up a slot without an inventory spool.
 
-### Where do the slicer profiles come from?
+### Where do the filament families come from?
 
-Three sources, checked in priority order: **Bambu Cloud** (your synced presets, including custom ones) → **Local Profiles** (OrcaSlicer imports) → **Built-in Fallback** (~150 Bambu Lab filament IDs). Even without cloud login, the latter two ensure the preset list is never empty. See [Where presets come from](#where-presets-come-from) for details.
+From the built-in catalog (every official Bambu filament, offline) plus your own — cloud-mirrored, locally imported, or created in BamDude. Even without a cloud login the list is never empty. See [Where families come from](#where-families-come-from) and [Filament Families](filament-families.md).

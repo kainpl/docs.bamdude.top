@@ -95,6 +95,10 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | Key | Default | Ефект |
 |---|---|---|
 | `low_stock_threshold` | `20.0` | % залишку котушки, при якому стріляє `filament_low`. Діапазон 0.1 – 99.9. |
+| `runout_zero_point_enabled` | `true` | Закривати котушку рівно на вазі етикетки, коли принтер однозначно повідомляє про runout. |
+| `ams_sync_bidirectional` | `true` | Дозволити показанням AMS на простої коригувати вагу Bambu-тегованої котушки і вниз (значення має повторитися у двох звітах з інтервалом у хвилину). |
+| `runout_purge_grams` | `0` | Грами на резервну котушку за продувку при автоперемиканні AMS. 0 — вимкнено. |
+| `usage_events_retention_hours` | `72` | Скільки годин тримати журнал usage-подій завершеного друку (таймлайн runout/лотків) для розбору. |
 | `disable_filament_warnings` | `false` | Master mute для low / out-of-filament алертів. |
 | `prefer_lowest_filament` | `false` | Auto-присвоєння віддає перевагу котушці з найменшим залишком. |
 | `default_filament_cost` | `25.0` | Per-kg fallback-ціна, коли поле `cost` котушки не задано. |
@@ -184,6 +188,14 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 |---|---|---|
 | `prometheus_enabled` | `false` | Увімкнути [`/metrics` endpoint](../features/prometheus.uk.md). |
 | `prometheus_token` | пусто | Bearer-token, потрібний на metrics-endpoint. Пусто = без auth (для local-only деплоїв). |
+
+### Zigbee-датчики
+
+| Key | Default | Ефект |
+|---|---|---|
+| `zigbee_sensor_poll_seconds` | `30` | Каденс опитування Zigbee-датчиків від мережі (з джитером, як у полера розеток). Батарейні датчики не опитуються ніколи — вони сплять. |
+| `zigbee_sensor_reporting` | пусто | JSON per-measurement дефолтів звітування (`{"temperature": {"min_interval": …, "max_interval": …, "reportable_change": …}, …}`) для пристроїв без власного override. Пусто чи відсутнє поле = дефолти реєстру. |
+| `zigbee_sensor_stale_multiplier` | `2` | Показ reporting-датчика, старший за це кратне його `max_interval`, вважається застарілим («датчик замовк»). Per-device override виграє; полюваних пристроїв не стосується (фіксовані 120 с). |
 
 ## :material-robot-confused: Obico AI
 

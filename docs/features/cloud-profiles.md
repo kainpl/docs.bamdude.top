@@ -76,8 +76,13 @@ For headless setups, SSO accounts, or environments where the email/OTP round-tri
 
 ## :material-clock-end: Token lifetime
 
-Bambu Cloud bearers are not permanent, and Bambu provides no way to renew one
-without signing in again.
+Bambu Cloud bearers are not permanent. Since 0.5.5 BamDude also stores the
+**refresh token** from the login response, and when Bambu reports the stored
+token expired it first renews the pair silently — the connection self-heals
+within minutes instead of demanding a re-login with an email code every few
+months. Only when the renewal itself is refused does the sign-in-expired flow
+below appear. Access tokens pasted by hand have no refresh token and keep the
+old behaviour.
 
 BamDude checks the stored token **against Bambu Lab** rather than assuming it
 still works, so **Connected** means Bambu accepted it — not merely that one is
@@ -117,9 +122,17 @@ Once connected, the slice modal and other consumers can read your Bambu Cloud da
 | Bound printer devices | `GET /api/v1/cloud/devices` | Printer-add wizard, Bambu-Cloud firmware check |
 | Per-device firmware | `GET /api/v1/cloud/firmware-updates` | Cloud-side firmware check (different from the LAN-only path in [Firmware Updates](firmware-updates.md)) |
 | Filament-id → name resolution | `POST /api/v1/cloud/filament-info` | AMS tray tooltips, K-profile filament labels |
-| Built-in filament fallback table | `GET /api/v1/cloud/builtin-filaments` | Used when cloud + local both miss the ID |
+| Official filament names | `GET /api/v1/cloud/builtin-filaments` | Served from the built-in [family catalog](filament-families.md) — the hardcoded table it used to read is gone |
 
 Custom (private) presets land first in the list, public (built-in) presets after. The slicer-presets unifier (`/slicer/...`) merges these with [Local Profiles](local-profiles.md) by name and surfaces a single deduplicated list to the slice modal.
+
+!!! note "The tab shows your presets only (0.5.5)"
+    The Bambu Cloud tab lists the **private** half of the listing — your own
+    presets — like the Orca tab always did. The cloud's public catalog is no
+    longer browsable there: a profile you want to see arrives after you save
+    or enable it in the slicer. The printer filter lists the printer models
+    your presets mention, with the "A1M" / "A1 mini" spelling variants
+    collapsed onto one row.
 
 ---
 
@@ -134,6 +147,16 @@ Cloud Profiles isn't read-only:
 | **Delete** | `DELETE /api/v1/cloud/settings/{id}` | Removes the preset from Bambu Cloud — cannot be undone |
 
 The field-definition catalog at `GET /api/v1/cloud/fields/{filament|process|printer}` powers the form — it tells the UI which keys exist for each type, their label, units, validation bounds, and dropdown options.
+
+The **base preset** dropdown in "New preset" offers two groups: **your own
+presets and families** (a custom filament created in BamDude appears here once
+pushed — a new preset based on one becomes that family's child) and **standard
+presets narrowed to your farm's printer models** rather than the full list for
+every machine Bambu makes.
+
+The tab also carries a **Create filament** button — Bambu Studio's Create
+Filament dialog, with the family born directly in the cloud. See
+[Filament Families](filament-families.md#creating-your-own-filament).
 
 ---
 
