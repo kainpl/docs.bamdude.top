@@ -298,6 +298,10 @@ nav:
       - Backup & Restore: features/backup.md
       - Bug Report: features/bug-report.md
 
+  - Add-ons:
+    - addons/index.md
+    - BamDude Bridge: addons/bridge.md
+
   - Reference:
     - reference/index.md
     - Supported Printers: reference/printers.md

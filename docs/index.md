@@ -206,6 +206,32 @@ first-class locale rather than an afterthought.
 
 [:material-account-plus: Join DrukArmy](https://app.drukarmy.org.ua/inv/ujnv7w8i){ .md-button }
 
+## :material-handshake: Partners
+
+<div class="grid cards" markdown>
+
+-   ![DrukArmy](assets/partners/drukarmy.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
+
+    **[DrukArmy](https://drukarmy.org.ua/ua)**
+
+    ---
+
+    Ukraine's largest volunteer 3D-printing community, printing for the front line. BamDude was born in this workshop — and if you have a printer, there is useful work waiting for it.
+
+    [:material-account-plus: Join DrukArmy](https://app.drukarmy.org.ua/inv/ujnv7w8i)
+
+-   ![AdditHub](assets/partners/addithub.png){ width="64" style="background:#fff;border-radius:12px;padding:6px;float:right;margin-left:12px" }
+
+    **[AdditHub](https://addithub.com/)**
+
+    ---
+
+    Ukraine's #1 3D-printing marketplace: post a job and verified makers place blind bids — FDM, SLA and SLS printing, 3D modelling and post-processing.
+
+    [:material-open-in-new: addithub.com](https://addithub.com/)
+
+</div>
+
 ## :material-hand-heart: Support the project
 
 BamDude is free and stays free — AGPL-3.0, no paid tiers, no pro edition. The most valuable support
