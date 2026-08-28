@@ -254,6 +254,14 @@ chat can subscribe to everything.
 **active**, **outside quiet hours**, and the event must be in its enabled
 list before a message is sent.
 
+### Progress-milestone floor
+
+Beside the Progress Milestones checkbox each chat carries a **minimum
+duration**: 25/50/75% messages are muted for prints estimated shorter than
+that many minutes (empty or `0` = always send). Per chat — an admin's
+60-minute floor doesn't decide for an operator's chat that wants 10. See
+[Notifications](notifications.md) for how the duration is estimated.
+
 ### Printer scope
 
 A chat can be limited to specific printers — all, one, or several — in the

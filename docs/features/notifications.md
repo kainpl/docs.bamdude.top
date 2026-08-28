@@ -503,7 +503,7 @@ The toggle does not delete digests-in-progress — events that fired into the di
 
 ## :material-printer: Per-Printer Filtering
 
-Each provider has a **Printers** scope picker — select **All** to subscribe to every printer (default) or pin the provider to a subset. Events from printers outside the picked set never reach this provider, regardless of event toggles. Useful patterns:
+Each non-telegram provider has a printer scope — **All** (default), one, or any subset, ticked on the provider form. Events from printers outside the picked set never reach that provider, regardless of event toggles. **For Telegram the scope lives on each chat instead** (see [Telegram Bot → Printer scope](telegram-bot.md)), where it also scopes the bot itself — lists, cameras, queue and controls. Useful patterns:
 
 - One Discord webhook per workshop — each scoped to that workshop's printers
 - A "VIP printer" Telegram chat scoped to your one revenue-generating production unit
