@@ -121,12 +121,14 @@ Full schema in [API reference](../reference/api.md). Quantity > 1 creates N rows
 
 ## :material-monitor-dashboard: AutoQueuePanel on the Queue dashboard
 
-The Queue page has an **Auto-Queue panel** above the per-printer queue cards. **Always rendered** so the drop-zone is permanently available; when there are no pending auto items the panel collapses to a one-line hint inviting a drag-drop. Otherwise it lists pending auto-queue items with:
+The Queue page has an **Auto-Queue panel** above the per-printer queue cards. **Always rendered** so the drop-zone is permanently available; when there are no pending auto items the panel collapses to a one-line hint inviting a drag-drop.
 
-- thumbnail, name, plate, target model
-- estimated print time
-- waiting reason if no eligible printer
-- inline buttons: edit (target model / location / force-color), cancel
+Since **0.5.5** the panel is a real queue, not just a pile:
+
+- **Items list in true dispatch order.** Adjacent copies of one submission collapse into a compact **×N** row; the row expands into its individual copies.
+- **Everything drags.** A collapsed batch moves as a block, an expanded copy moves anywhere in the order — queue five copies of A, add two of B, pull one B to the front and leave the other at the end, and the list shows exactly that. With **Queue Shortest First** enabled the drag handles hide and a hint explains that the distributor owns the order.
+- **Every copy edits in the full Schedule dialog** — the same one the per-printer queue uses: target model and location, schedule, print options, macros. Editing a batch applies the change to all of its copies at once; a single copy can also be edited, deleted or force-assigned on its own.
+- Each row still shows thumbnail, name, plate, target model, estimated print time and the waiting reason when no printer is eligible.
 
 Once an item is assigned to a printer, it disappears from the panel and shows up in that printer's queue card with a small "auto-assigned" badge.
 
@@ -214,7 +216,8 @@ When the router copies an auto-queue item into a per-printer `print_queue`, it *
 |--------|--------|
 | Cancel a `pending` auto-queue item | Row deleted. No printer ever saw it. |
 | Cancel an `assigned` auto-queue item | Cancels the **per-printer queue item** the router created. The auto row stays in `assigned` for audit. |
-| Edit `target_model` / location / force-color | Allowed only while `pending`. After assignment, edit the per-printer queue item instead. |
+| Edit a `pending` item | The full Schedule dialog — target model / location, schedule, print options, macros. A batch edit applies to every copy; a single copy edits alone. |
+| Edit after assignment | Edit the per-printer queue item instead. |
 
 ---
 
