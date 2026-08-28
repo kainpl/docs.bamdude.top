@@ -274,7 +274,7 @@ Each provider subscribes independently. Toggling an event off on one provider do
 |-------|------------|
 | `print_start` | Print starts on a printer |
 | `first_layer_complete` | Layer 1 finishes (catch first-layer fails fast) |
-| `print_progress` | At 25% / 50% / 75% progress. A global **minimum duration** setting (Settings → Notifications) can mute these for prints estimated shorter than N minutes — the duration is estimated from the printer's own remaining-time report at each milestone, and an unknown estimate sends rather than guesses away. `0` (the default) always sends. Applies to every channel equally, Telegram per-chat subscriptions included. |
+| `print_progress` | At 25% / 50% / 75% progress. A global **minimum duration** setting (Settings → Notifications) can mute these for prints estimated shorter than N minutes — the duration is estimated from the printer's own remaining-time report at each milestone, and an unknown estimate sends rather than guesses away. `0` (the default) always sends. Telegram chats each carry their **own** floor, edited beside the Progress Milestones checkbox in the chat's settings (empty inherits the global value, `0` = always) — the other channels follow the global setting. |
 | `print_paused` | Printer transitioned RUNNING→PAUSE — body carries a normalised `{reason}` (door open / filament runout / presence-check / file-pause-command / AI defect / plate-objects / paused by user / HMS-other) plus the underlying `{hms_code}` for forensics. Default ON for new providers + included in the default Telegram-chat event set. |
 | `print_resumed` | Printer transitioned PAUSE→RUNNING — body carries `{paused_for}` (mm:ss) computed from the matching pause edge. Default ON for new providers; opt-in for Telegram chats. |
 
