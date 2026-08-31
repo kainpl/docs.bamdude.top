@@ -77,7 +77,7 @@ The queue card header shows live counters (Total / Pending / Printing / Complete
 
 ### Drag-and-drop on a Queue Card
 
-On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root and then walked through the Add-to-Queue modal one at a time, with a `2 / 5` counter beside the title. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
+On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root, and then the files that would be answered the same way are **grouped** — one dialog per group, with a `group 1 of 3 · 12 items` badge beside the title telling you how many plates that one answer covers. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
 
 Each file gets a **fresh** modal. Plate selection, filament mapping and per-printer options belong to one file; carrying them to the next would be wrong rather than convenient, since plate 3 of one file need not exist in the next.
 
@@ -96,6 +96,54 @@ Dropping a file the library already has says so and uses the copy you already ha
 A `sliced_for_model` mismatch with the card's printer model aborts the upload before the modal opens — the transient library row is rolled back and a toast surfaces the conflict so you can re-slice for the right printer.
 
 Permission-gated on `queue:create` — viewers without that right see no overlay and a drop is a no-op.
+
+### One dialog per group
+
+Whenever more than one thing is queued at once — a File Manager selection, a
+drop onto a printer or the auto-queue, the library picker, or a copied queue —
+the Schedule dialog no longer opens once per file. Files whose answers would
+coincide are **grouped**, and one dialog stands for the group.
+
+Two things belong to a group and are carried across it:
+
+| Carried across the group | Still resolved per file |
+| --- | --- |
+| Printer or auto-queue, and the auto target | Which plates are queued |
+| When it starts — now, scheduled, manual start, "queue only", auto-off | AMS filament mapping |
+| How many copies | |
+| Print options, swap macros, selected macros | |
+
+Two files are in the same group when their **printer model**, **nozzle**,
+**build plate** and the **set of filament types** the plate needs are the same.
+
+!!! tip "Colour does not split a group"
+    The same badge in red and in black is one question, not two — two spools of
+    the same type are interchangeable for everything the dialog asks. On the
+    farm this was built for, putting colour in the key doubled the number of
+    dialogs for no benefit anybody wanted.
+
+A filament **type** is different: if nothing on the chosen printer can supply
+it, the run stops and shows you the dialog for the file that needs it, so you
+can load a spool or send it elsewhere. The check is skipped when the run targets
+several printers or the auto-queue, because there the mapping is worked out per
+plate at dispatch and the dialog would have had nothing to ask.
+
+### Declining a group
+
+Every group's dialog carries an **Apply to the rest of this group** tick, on by
+default. Untick it and that group alone goes back to one dialog per file — each
+one already filled in with the answer you just gave, so you are confirming
+rather than starting over.
+
+The tick belongs to the group, not to the run: the next group opens with it back
+on. Answering the first group as a group, looking through the second file by
+file, and letting the third go as a group again is an ordinary run.
+
+!!! warning "A multi-plate file contributes every plate"
+    Each plate is a unit in its own right, so a single 3-plate file opens with
+    all three of its plates ticked and queues three items where it used to queue
+    one. The ticks are on screen and you can untick the plates you do not want,
+    but the dialog no longer starts on the first plate alone.
 
 ### AMS Filament Mapping
 
@@ -199,7 +247,7 @@ The printer card, the per-printer queue card and the auto-queue panel each carry
 - **Search covers the whole library**, not the folder you happen to have open. Searching inside one folder would not answer the question the search box is there for.
 - **Only files that can actually run are offered** — sliced files with a recorded printer model, and on a printer only those sliced for that machine. A picker that offered a file the Schedule dialog would then refuse would be worse than no picker.
 
-Pressing **Add to queue** hands the selection to the same per-file Schedule dialog the drops use, with the same `2 / 5` counter. The picker asks nothing about the print itself: plates, AMS mapping, quantity and scheduling stay per file.
+Pressing **Add to queue** hands the selection to the same grouped Schedule dialog the drops use, with the same group badge. The picker asks nothing about the print itself, and grouping does not change what belongs to a file: plates and AMS mapping are still resolved per file, while the answer you give — printer, schedule, copies, print options — covers the whole group.
 
 Gated on `queue:create`. On the printer card the button is **not** hidden while the machine prints — loading a queue is exactly what you do then.
 
@@ -219,7 +267,9 @@ Both sides have select-all and clear. The printer list is in the order and group
 
 **Each item keeps the plate it was queued with** — it is literally the same file on the same model, so that plate exists there too. Copies go to the end of each target queue, so a printer mid-job finishes first.
 
-Then the ordinary Schedule dialog opens **once per item**, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why three items onto four printers is three dialogs and not twelve.
+Then the ordinary Schedule dialog opens **once per group** of items that would be answered the same way, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why items onto four printers is never four times the dialogs.
+
+**A copied item keeps what the queue already decided.** Its plate rides with it, so a copy of one plate of a five-plate file is one item and not five, and two copies of the same plate stay two. Any items you had grouped into a block in the source queue come out as a block on the target.
 
 !!! tip "A print started outside the queue counts too"
     A job sent from the printer's screen or straight from a slicer leaves no queue entry — the card shows it because it reads the printer directly, and the copy reads it from the same place.
