@@ -25,13 +25,13 @@ The Inventory page opens with five summary cards above the spool list, each clic
 
 The toolbar above the list combines a free-form search box with chip strips and view-mode toggles:
 
-- **Search box** — matches on name, brand, material, or hex colour. Press `/` from anywhere on the page to focus it.
+- **Search box** — matches the spool **name your display-name template composes**, not just the raw columns behind it, so anything the list shows is findable: with a template of `{brand}/{material}`, typing `LU/PET` finds it. Brand, material, colour, subtype, note and slicer preset are always matched too, as are the spool's **id** and **lot number** — those two whatever your template says, because they are the numbers written on the reel. Every token has to match something, so `SUN Bl` finds a SUNLU Black spool. Press `/` from anywhere on the page to focus it.
 - **Material dropdown** — single-select.
 - **Colour dropdown** — single-select. Options are the colours you actually have in stock — built from your existing (non-archived) spools — and grouped by the resolved colour-catalog name, so two near-identical hexes that both read as "Cobalt Blue" filter together regardless of brand. The dropdown only appears once at least one in-stock spool has a resolvable colour.
 - **Storage Location chip** — narrows the spool list to a single storage location from the [managed locations catalog](#storage-locations-catalog), so you can see just the spools kept in one box / shelf / dry-box.
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
-- **View modes** — **Table** (data-focused, sortable columns) or **Cards** (visual swatches).
+- **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches), or **[History](#history)** (every consumption record on the farm). *Forecast* sits beside them when you have permission for it.
 - **Group similar** — toggle that visually collapses identical unused / unassigned spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label_weight + subtype + lot` — because lot is part of the key, a batch created with **auto-numbered lots** (see below) stays as distinct cards rather than collapsing; only same-lot (or lot-less) copies merge. Used or AMS-assigned spools always appear individually so you can tell which physical spool is in which slot. Group state persists across sessions.
 
 ## :material-package-variant: Adding spools
@@ -341,9 +341,26 @@ Each spool has an eraser action — **Reset counter** — that zeroes the displa
 
 The backing API endpoints were renamed accordingly — the per-spool and reset-all paths now end in `.../reset-consumed-counter` (previously `.../reset-usage`).
 
+### The History view — every consumption record at once {#history}
+
+The inventory's third view mode, **History**, between Cards and Forecast, lists the whole farm's usage records rather than one spool's: what was printed, off which spool, on which printer, how many grams, what it cost, and how it ended — newest first.
+
+A spool's own tab answers "where did this reel go". This answers "where did the filament go", which is usually the question you start from. It is the same records either way; only the entry point differs.
+
+Every part of the list is computed by the **server** — the page, the sort order, the filters, the search and the totals. A farm with a year of prints has six figures of records here and the browser never downloads them.
+
+- **Search** — the page's own search box serves this view too. Same box, same place; it just searches events, reaching the print's name, the spool and the printer at once.
+- **Filters** — printer (including *No printer*, for records charged to no machine), material, brand, outcome, and a date range. Plus the spool's own state: **All / Active / Archived** and **All / In Printer / On the shelf**. Those last two carry an *All* setting the spool table has no equivalent of, and it is the default: retiring or unloading a reel does not un-burn what it printed, so nothing here is hidden until you ask for it to be.
+- **Sorting** — any column: date, spool, print, printer, grams, percent, cost, outcome.
+- **Totals** — the grams (and money) beside the filters are for the **whole filter**, not the page on screen. "What did August cost me" is one date range away.
+
+Spools you have since archived or deleted keep their rows, marked rather than hidden — the grams they carry were still printed, and dropping them would make these totals disagree with the [archives](archiving.md). Spool names follow your [display-name template](#display-name-follows-your-template) and a retired printer reads as *Printer 5 (Archived)*, exactly as everywhere else. Clicking a spool opens it.
+
+The view is **hidden in Spoolman mode**, where Spoolman keeps this record instead.
+
 ### Removing usage records
 
-Each row in a spool's **Usage History** has a hover **×** to delete just that entry; the bulk **Clear** button does the same for the whole list. Removing a record treats that consumption as if it never happened: its weight is **returned to the spool** (`weight_used` drops, so remaining weight goes back up) and the same amount is subtracted from the linked print's recorded filament, so the [Stats](stats.md) page stays in step with inventory. For a multi-colour print the deduction is per-record — removing one colour's entry only reclaims that colour's share and leaves the rest of the print intact. Handy for un-counting a mistaken or test print against a roll.
+Each row has a hover **×** to delete just that entry — in a spool's own **History** tab and in the farm-wide History view alike; the spool tab's bulk **Clear** button does the same for that spool's whole list. Removing a record treats that consumption as if it never happened: its weight is **returned to the spool** (`weight_used` drops, so remaining weight goes back up) and the same amount is subtracted from the linked print's recorded filament, so the [Stats](stats.md) page stays in step with inventory. For a multi-colour print the deduction is per-record — removing one colour's entry only reclaims that colour's share and leaves the rest of the print intact. Handy for un-counting a mistaken or test print against a roll.
 
 ---
 
