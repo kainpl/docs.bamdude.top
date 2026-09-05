@@ -178,7 +178,7 @@ When adding multi-color prints, configure which AMS slot to use for each filamen
 
 **Dual-nozzle printers (H2D / H2D Pro)** show **[L] / [R]** badges next to each AMS slot so you can see which extruder a slot feeds. The auto-matcher uses the slicer's `sliced_for_model` + per-slot filament metadata; falling back to manual when the printer doesn't have an exact filament match for what the gcode wants.
 
-**Prefer lowest remaining filament** (`prefer_lowest_filament`, a farm setting, off by default): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1.
+**Prefer lowest remaining filament** (`prefer_lowest_filament`): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1. It is a farm setting, off by default, and it is switched on under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping.
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 

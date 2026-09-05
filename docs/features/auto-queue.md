@@ -157,8 +157,23 @@ The `find_eligible_printer` helper considers a printer eligible when **all** of 
 
 Tie-breaker — when multiple printers are eligible:
 
-1. **Lowest filament use** (when `prefer_lowest_filament` setting is on, default off). Picks the printer whose AMS slots have the lowest total grams remaining for the required filaments — keeps "fresh" spools for harder jobs.
-2. Falls back to the lowest-id printer.
+1. **Ready first.** A printer that could start right now outranks one that is drying or waiting on the plate-clear gate. The second kind still takes the work — it only loses the tie, and the job waits visibly in its queue.
+2. **Best colour match** across this item's filament overrides.
+3. Otherwise the first of the remaining candidates.
+
+!!! note "«Drain the emptiest spool first» picks the tray, not the printer"
+    `prefer_lowest_filament` plays no part in choosing **which printer** gets the
+    job. It decides, on the printer already chosen, **which of its slots** an
+    equally-good match is mapped to: the one with the least filament left, so a
+    nearly-empty spool is burned down instead of a fresh one. The same switch
+    governs the print dialog's auto-match and the virtual printer's saved
+    mapping.
+
+    It is off by default and lives under **Settings → Filament → Filament
+    checks → «Drain the emptiest spool first»**. On BamDude's own dispatch paths
+    — this router and the queue scheduler — it is additionally skipped for a
+    printer whose **AMS Filament Backup** is off; see
+    [Print Queue](print-queue.md) for why.
 
 ### Exact colour matching tells PLA Matte from PLA Basic
 
