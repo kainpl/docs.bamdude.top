@@ -46,14 +46,12 @@ Every queue item carries one of these statuses (visible on the queue card chip):
 | `pending` | In line, will start when the printer is free + scheduled time hits |
 | `printing` | Currently dispatched + running |
 | `paused` | Print is paused on the printer (operator paused, filament runout, AMS issue) |
-| `waiting_for_filament` | Held back because the required filament/colour isn't loaded |
-| `waiting_for_plate_clear` | Print finished, waiting on plate-clear confirmation before next dispatch |
-| `waiting_for_stagger` | Multi-printer batch — waiting for the staggered-start tick |
-| `waiting_for_dispatch` | Dispatcher is in flight (FTP upload + MQTT start_print) |
 | `failed` | Dispatch or print failed; verbose `error_message` on hover |
 | `cancelled` | Cancelled before completion — by the user, or automatically with reason "Source archive deleted" when a still-pending item's source archive is moved to trash (it can no longer dispatch, so it's cancelled rather than left stuck pending) |
 | `skipped` | Auto-skipped after a previous failure on the same job |
 | `completed` | Print finished — auto-deletes once the matching archive lands (m019) |
+
+**Waiting is not a state of its own.** An item the scheduler looked at and decided not to start yet stays `pending` and carries a separate `waiting_reason` text, shown on the row — *"Plate not cleared"*, *"Printer offline"*, *"Drying in progress"*, *"Previous print failed"*, or *"Staggered start: waiting for P1S-04 to heat up"*. The reason is rewritten on each pass and cleared when the item finally dispatches, so it always reflects the most recent tick rather than a status the row is stuck in. Dispatch itself has no waiting status either: `_start_print` flips the row straight to `printing` before the FTP upload begins.
 
 The queue card header shows live counters (Total / Pending / Printing / Completed / Failed / Cancelled) recomputed from `print_archives` on every read.
 

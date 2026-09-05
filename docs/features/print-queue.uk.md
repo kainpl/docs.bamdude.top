@@ -46,14 +46,12 @@ description: Незалежні черги друку для кожного пр
 | `pending` | У черзі, стартує коли принтер вільний + час scheduled настане |
 | `printing` | Зараз диспатчений + друкується |
 | `paused` | Прінт на паузі (оператор, runout, AMS issue) |
-| `waiting_for_filament` | Тримається — потрібний філамент/колір не завантажений |
-| `waiting_for_plate_clear` | Прінт скінчений, чекає підтвердження clear-plate перед наступним диспатчем |
-| `waiting_for_stagger` | Multi-printer batch — чекає тіку staggered-start |
-| `waiting_for_dispatch` | Диспатчер працює (FTP upload + MQTT start_print) |
 | `failed` | Диспатч або друк зафейлився; докладний `error_message` на ховері |
 | `cancelled` | Скасовано до завершення — користувачем, або автоматично з причиною "Source archive deleted", коли source-архів ще-pending елемента переміщено в кошик (він уже не може диспатчитись, тож скасовується, а не зависає в pending) |
 | `skipped` | Авто-skip після попереднього failure на цьому ж завданні |
 | `completed` | Прінт завершений — авто-видалення коли архів приземляється (m019) |
+
+**Очікування — це не окремий стан.** Елемент, який планувальник подивився і вирішив поки не стартувати, лишається `pending` і несе окреме текстове поле `waiting_reason`, видиме в рядку: *«Plate not cleared»*, *«Printer offline»*, *«Drying in progress»*, *«Previous print failed»* або *«Staggered start: waiting for P1S-04 to heat up»*. Причина переписується на кожному проході і обнуляється, коли елемент нарешті йде в диспатч, — тож вона завжди показує останній тік, а не стан, у якому рядок застряг. У самого диспатчу теж немає стану очікування: `_start_print` переводить рядок одразу в `printing` ще до початку FTP-аплоуду.
 
 Хедер картки черги показує live-лічильники (Total / Pending / Printing / Completed / Failed / Cancelled), які перераховуються з `print_archives` на кожне читання.
 
