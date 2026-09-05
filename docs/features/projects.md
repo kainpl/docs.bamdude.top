@@ -64,7 +64,7 @@ The strip above the lines is computed by the server on every read; the browser n
 | **Ordered** | The sum of the line quantities. Literal — this is what the customer asked for. |
 | **Printed** | Units printed. Literal too: it counts prints and nothing else. |
 | **From stock** | Kits taken off the products' shelves (see [Free stock of parts](#free-stock-of-parts)), each line capped by its own quantity. |
-| **Complete** | Units printed, additionally limited by the purchased parts actually acquired. |
+| **Complete** | Units printed **plus the kits taken from stock**, limited by the purchased parts actually acquired. |
 | **Remaining** | What is still to be made, after prints *and* kits from stock. |
 | **Print time · Filament · Cost · Defective** | Summed over the order's prints. Time is the measured duration where one was recorded, else the slicer's estimate; filament is summed as it stands, including prints that never finished. |
 | **Margin** | Price minus cost, shown when a price is set. |
@@ -79,7 +79,7 @@ Each line expands into a row per printed part:
 | **Usable** | Printed minus defective, over the line's completed prints. |
 | **In progress** | Whatever is on a printer right now. |
 | **Remaining** | Need minus usable, floored at zero. |
-| **Surplus** | Usable minus need, floored at zero, measured against the line's **full** quantity. |
+| **Surplus** | Usable minus what the line's **full** quantity requires, floored at zero. Kits from stock lower the need above; they never raise this. |
 
 **Units printed is the minimum across parts** of usable ÷ per unit — the scarcest part decides, and the table shows at a glance which one it is. Progress is capped at 100 %: an overprinted line reports its excess through the printed-against-ordered counts and through each part's surplus, never through the bar. Prints in the trash count towards nothing.
 
@@ -115,7 +115,7 @@ The catalog carries an **In catalog** flag. A product outside it is not offered 
 | Action | What it does |
 |---|---|
 | **New product** | An empty product you fill in by hand. |
-| **From file…** | Picks a library file, names the product after it, links it, and fills the composition from its plates. "Print this file five times" never needs hand-authoring a product first. |
+| **From file…** | Picks a library file, names the product after it, links it, and fills both the composition from its plates and the model card — with the pictures and documents the 3MF carries — from the file itself. "Print this file five times" never needs hand-authoring a product first. |
 | **Import…** | Takes a ZIP exported from another BamDude — see [Export and import](#export-and-import). |
 | **Duplicate** | Copies the composition with its aliases, the card, the attachments and the file / folder links. Never any history. |
 | **Delete** | Refused with a clear message while any order line still references the product. Hide it from the catalog instead. |
@@ -249,7 +249,7 @@ It is deliberately not automatic. A surplus is sometimes shipped with the order 
 
 A print that completes filed under **no** order is credited to stock automatically, good parts only — printed minus defective. The accounting then follows you if you change your mind: file that print under an order afterwards and the credit is taken back; take it back out and it returns. A reversal that would push a part below zero is refused, but the print is still filed — those parts were already spent, and refusing the filing would punish you for the books not balancing.
 
-Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that belongs to no order, one at a time, when you say so.
+Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that **finished successfully** and belongs to no order, one at a time, when you say so — a failed or cancelled print made nothing there is anything to count.
 
 ### Taking kits from stock
 
@@ -257,10 +257,12 @@ A line for a product with something on its shelf offers **From stock** under the
 
 The request is trimmed to what is actually there at the moment you save, and you are told when it was: a neighbouring order may have taken the last two while the dialog was open.
 
-The reservation comes back on its own when the line is deleted, when its quantity drops below the reservation, or when the order is cancelled. Three things it deliberately does **not** do:
+The reservation comes back on its own when the line is deleted, when its quantity drops below the reservation, when the order is cancelled, and when the order is deleted. Deleting an order does one thing more: its finished prints stop belonging anywhere, so they are credited back onto the shelf as order-less prints. Both movements are marked *the order was deleted* in the table.
 
-- a **completed** order gives nothing back, through any door — those kits went out inside the units the customer received;
-- reopening a cancelled order does not re-reserve, because the shelf may have gone to somebody else in the meantime;
+Three things it deliberately does **not** do:
+
+- a **completed** order gives none of that back — not when it is cancelled, not when one of its lines goes, not when the order itself is deleted, and its prints are not re-credited either: those kits went out inside the units the customer received, and the prints went with them. **One door stays open even then.** Typing a new **From stock** number on a completed order's line still releases the old reservation and takes the new one — that field is the operator correcting what the order took off the shelf, and refusing it would leave a mistake with nowhere to be fixed. The other three doors only dispose of paperwork and say nothing about the parts, which is why they stay shut.
+- reopening a cancelled order does not re-reserve, because the shelf may have gone to somebody else in the meantime.
 - a **duplicated** order reserves nothing, because a reorder must not quietly empty the shelf.
 
 ### The shelf on the product page

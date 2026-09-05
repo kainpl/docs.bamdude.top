@@ -152,7 +152,7 @@ G-code макроси, що активуються подіями друку, з
 
 ---
 
-## :material-folder-multiple: Бібліотека, інвентар і проєкти
+## :material-folder-multiple: Бібліотека, інвентар і замовлення
 
 <div class="feature-grid" markdown>
 

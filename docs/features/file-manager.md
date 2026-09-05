@@ -523,7 +523,7 @@ Linking a **folder** *merges* its list into the files inside: what the folder im
 
 Any `.3mf` in the library carries a **Model card** entry in its menu: the card the designer packed into the file — description, designer, licence, source page — together with the pictures, bill of materials and assembly guide it ships with, read straight off the file and shown read-only. **Nothing is ever written back into the file**, which stays byte-for-byte the file you uploaded.
 
-From that card, **Create product from this file** turns it into a product on the spot; for a file already linked to one, the card offers to re-read into that product instead. See [The model card](projects.md#the-model-card).
+From that card, **Create product from this file** turns it into a product on the spot; a file already linked to one is offered **Re-read into** that product as well, so both doors are open on the same card. See [The model card](projects.md#the-model-card).
 
 ### Printing a file asks which order it is for
 

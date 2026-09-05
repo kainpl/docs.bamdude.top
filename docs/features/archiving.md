@@ -520,7 +520,7 @@ Designer attribution is searchable via the archive search box, so "all prints by
 
 ## :material-card-text: Archive Cards & Actions
 
-Each card shows the thumbnail, filename, printer / model line, duration, status badge, filament, tags, and project badge. The project badge is clickable — it jumps to the project's detail page (the click doesn't bubble up to open the archive modal).
+Each card shows the thumbnail, filename, printer / model line, duration, status badge, filament, tags, and the order badge. The order badge is clickable — it jumps to that order's page (the click doesn't bubble up to open the archive modal).
 
 The printer / model line is **uniform across provenance**: archives tied to a real BamDude printer used to render `H2D-1 GCODE …` while slicer-only uploads rendered `Sliced for X1C GCODE …` — two different shapes on the same line. The `Sliced for ` prefix is gone, so both now read as `<name-or-model> [bed-icon] GCODE <hash>` and scan identically regardless of whether the archive came from a live printer or a slicer-only upload.
 
@@ -532,14 +532,15 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
 | **Schedule** | Add to the print queue. |
 | :material-cube-outline: | Open the 3D preview. |
 | :material-download: | Download the 3MF file. Disabled if `file_path` is empty. |
-| :material-pencil: | Edit archive details (tags, notes, project, cost, photos). |
+| :material-pencil: | Edit archive details (tags, notes, order and line, cost, photos). |
 | :material-cloud-download: | Retry 3MF download. Only visible when `file_path = ""`. |
 
 !!! tip "An archive can be filed under an order — or counted into stock"
     The edit dialog carries an **Order** and a **Line** picker, and the Archives page's selection
     mode offers **Assign to order** for a whole batch — which is how a print started from the
-    printer's own screen reaches the order it belongs to. A print filed under no order also
-    offers **Count into stock**, putting its good parts onto the product's shelf. See
+    printer's own screen reaches the order it belongs to. A print that **finished successfully**
+    and is filed under no order also offers **Count into stock**, putting its good parts onto the
+    product's shelf; a failed or cancelled print made nothing to count. See
     [Filing a print under its order](projects.md#filing-a-print-under-its-order) and
     [Free stock of parts](projects.md#free-stock-of-parts).
 

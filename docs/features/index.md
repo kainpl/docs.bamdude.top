@@ -152,7 +152,7 @@ Full database backup and restore for data protection.
 
 ---
 
-## :material-folder-multiple: Library, Inventory & Projects
+## :material-folder-multiple: Library, Inventory & Orders
 
 <div class="feature-grid" markdown>
 
