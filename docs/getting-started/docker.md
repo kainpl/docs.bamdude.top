@@ -267,7 +267,7 @@ If using bridge network mode, try `network_mode: host`.
 
 [:material-printer-3d: **Add Your Printer**<br><small>Connect your first printer</small>](first-printer.md)
 
-[:material-arrow-up-circle: **Upgrading**<br><small>Migrate from Bambuddy</small>](upgrading.md)
+[:material-arrow-up-circle: **Upgrading**<br><small>Upgrade and roll back safely</small>](upgrading.md)
 
 [:material-help-circle: **Troubleshooting**<br><small>Having issues?</small>](../reference/troubleshooting.md)
 

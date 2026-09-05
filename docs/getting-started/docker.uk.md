@@ -267,7 +267,7 @@ docker compose exec bamdude ping YOUR_PRINTER_IP
 
 [:material-printer-3d: **Додайте принтер**<br><small>Підключіть свій перший принтер</small>](first-printer.uk.md)
 
-[:material-arrow-up-circle: **Оновлення**<br><small>Міграція з Bambuddy</small>](upgrading.uk.md)
+[:material-arrow-up-circle: **Оновлення**<br><small>Безпечне оновлення та відкат</small>](upgrading.uk.md)
 
 [:material-help-circle: **Вирішення проблем**<br><small>Виникли проблеми?</small>](../reference/troubleshooting.uk.md)
 

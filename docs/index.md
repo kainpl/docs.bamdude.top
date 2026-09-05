@@ -55,7 +55,7 @@ The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in
 
 [:material-printer-3d: **Add Printer**<br><small>Connect your first printer</small>](getting-started/first-printer.md)
 
-[:material-arrow-up-circle: **Upgrading**<br><small>Migrate from Bambuddy</small>](getting-started/upgrading.md)
+[:material-arrow-up-circle: **Upgrading**<br><small>Upgrade and roll back safely</small>](getting-started/upgrading.md)
 
 </div>
 

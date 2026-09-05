@@ -55,7 +55,7 @@ BamDude — це **фарм-менеджер**, а не пасивний бек�
 
 [:material-printer-3d: **Додати принтер**<br><small>Підключіть свій перший принтер</small>](getting-started/first-printer.uk.md)
 
-[:material-arrow-up-circle: **Оновлення**<br><small>Міграція з Bambuddy</small>](getting-started/upgrading.uk.md)
+[:material-arrow-up-circle: **Оновлення**<br><small>Безпечне оновлення та відкат</small>](getting-started/upgrading.uk.md)
 
 </div>
 

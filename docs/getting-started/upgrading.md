@@ -157,7 +157,7 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 | Version | Title | What changes | Seed | First needed in |
 |---|---|---|---|---|
-| **m000** | `bambuddy_to_bamdude_301` | Imports a legacy `bambuddy.db` / `bambutrack.db` if found next to where BamDude expects to find `bamdude.db`. No-op when no legacy DB is present. The original Bambuddy file is **renamed**, not deleted, so rollback is possible. | yes (import) | Forks/upgrades from Bambuddy 2.2.2 |
+| **m000** | `bambuddy_to_bamdude_301` | **Stub since 0.5.6 — imports nothing.** It used to import a legacy `bambuddy.db` / `bambutrack.db`; now it only names such a file in the log and leaves it untouched. The version-0 record is kept because the bootstrap step stamps it on every existing install. | no | — |
 | **m001** | `bamdude_baseline` | Creates the FTS index for archive search (FTS5 on SQLite, tsvector + GIN on PostgreSQL) and seeds the initial reference data (printer model catalog, default groups, etc.). | yes | Fresh BamDude installs |
 | **m002** | `bamdude_311` | BamDude 3.0.1 → 3.1.1 schema bump. Adds `printer_queues`, `macros`, swap-mode columns, stagger config, maintenance history tables, queue rework (`queue_id`), `printer_models` on maintenance types. Drops the dead `filaments` table. | yes | Upgrading from BamDude 3.0.x |
 | **m003** | `enforce_admin_user` | Codifies the always-on auth model: stamps `auth_enabled=true` + `setup_completed=true` if at least one admin exists; otherwise clears both flags so the next boot routes the user through `/setup`. Schema unchanged. | yes | All installs |
@@ -188,90 +188,23 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 ### From Bambuddy HE 3.0.x → BamDude 0.4.x
 
-`m000` imports your data, `m002` adapts the schema, `m005`+ are BamDude-native.
+Your `bambuddy.db` is BamDude's own — the startup rename turns it into `bamdude.db`, `m002` adapts the schema, `m005`+ are BamDude-native. (This is unaffected by the removal of the Bambuddy 2.2.2 import in 0.5.6; that only ever concerned upstream's files.)
 
 !!! warning "Always upgrade to **0.4.0.1** or later"
     Going from a legacy 3.0.1 install straight to **0.4.0** crashed at `m005_swap_profiles.seed()` with `no such column: printers.awaiting_plate_clear` — the seed used ORM `select(Printer)` which loaded every column from the *current* model, including columns that don't exist yet at m005's point in the chain. Fixed in 0.4.0.1 by rewriting the seed to use raw SQL with explicit column lists.
 
 ---
 
-## :material-swap-horizontal: Scenario 1 — Migrating from Bambuddy 2.2.2
+## :material-swap-horizontal: Coming from Bambuddy
 
-Place a Bambuddy DB file next to where BamDude expects to find it. On first boot the `m000_bambuddy_import` migration detects it, imports every table BamDude still uses, and renames the file to `bamdude.db`.
+**Not supported since 0.5.6.** BamDude forked from Bambuddy at 2.2.2 and the two schemas have diverged far past the point where a one-time import could be trusted, so the importer was removed.
 
-The original Bambuddy file is **left in place** (not deleted) so you can roll back.
+Start BamDude with an empty data directory and re-add your printers and spools.
 
-### via Docker Compose (source checkout)
+A `bambuddy.db` left sitting in the data directory is **not read and not touched**. `m000` names it in the log on every start, so you can see it was found and ignored; remove it yourself once you no longer need it.
 
-```bash
-# 1. Stop Bambuddy
-cd /path/to/bambuddy && docker compose down
-
-# 2. Clone BamDude
-git clone https://github.com/kainpl/bamdude.git
-cd bamdude
-
-# 3. Copy your Bambuddy DB + archives into the bamdude_data volume
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 4. Start — migrations run automatically on first boot
-docker compose up -d
-
-# 5. Follow startup logs, look for "Bambuddy → BamDude import complete"
-docker compose logs -f bamdude
-```
-
-### via `docker run` (GHCR image)
-
-```bash
-# 1. Stop Bambuddy (however you run it)
-
-# 2. Create the new volume and seed it with your Bambuddy data
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 3. Start BamDude from GHCR
-docker run -d \
-  --name bamdude \
-  --network host \
-  -e TZ=Europe/Kyiv \
-  -v bamdude_data:/app/data \
-  -v bamdude_logs:/app/logs \
-  --restart unless-stopped \
-  ghcr.io/kainpl/bamdude:latest
-```
-
-### via native / self-install
-
-```bash
-# 1. Stop the Bambuddy service
-
-# 2. Install BamDude
-curl -fsSL https://raw.githubusercontent.com/kainpl/bamdude/main/install/install.sh \
-  -o install.sh && chmod +x install.sh
-sudo ./install.sh --yes       # defaults to /opt/bamdude
-
-# 3. Drop your Bambuddy DB into BamDude's data dir BEFORE first start
-sudo cp /path/to/bambuddy/data/bambuddy.db /opt/bamdude/data/
-sudo cp -r /path/to/bambuddy/data/archives /opt/bamdude/data/   # if you have one
-
-# 4. Fix ownership (installer runs as the bamdude service user)
-sudo chown -R bamdude:bamdude /opt/bamdude/data/
-
-# 5. Start the service — import migration fires automatically
-sudo systemctl start bamdude
-sudo journalctl -u bamdude -f
-```
-
-!!! tip "The import is one-shot"
-    `m000_bambuddy_import` checks for `bambuddy.db` / `bambutrack.db` and only runs if BamDude's own `bamdude.db` does not yet exist. After a successful import the file is renamed to `bamdude.db` and the migration is marked applied in the `_migrations` table, so a subsequent restart won't re-import.
+!!! note "This is not the same as upgrading from Bambuddy HE / BamDude 3.0.x"
+    Those are BamDude's own lineage, and they are still supported — see [Notable upgrade paths](#5-notable-upgrade-paths) above. A `bambuddy.db` written by BamDude 3.0.1 is recognised as BamDude's own and renamed to `bamdude.db`, exactly as before.
 
 ---
 
@@ -423,7 +356,7 @@ The version you roll back to **must be the one that created the backup** — oth
 
 The DB file lives at `data/bamdude.db`. SQLite pragmas: WAL journal, 15 s busy timeout, NORMAL synchronous. WAL means there's also `bamdude.db-wal` and `bamdude.db-shm` next to the main file — back up all three together (or stop the service first so the WAL is checkpointed into the main file).
 
-If a legacy `bambuddy.db` (or `bambutrack.db`) exists in the data directory but `bamdude.db` does not, BamDude renames it on first boot before any migration runs. This is how the `m000_bambuddy_import` path takes effect for native installs that swap the binary in-place.
+If a `bambuddy.db` (or `bambutrack.db`) written by **BamDude 3.0.1** exists in the data directory but `bamdude.db` does not, BamDude recognises it as its own and renames it to `bamdude.db` on first boot, before any migration runs — that is how native installs swapping the binary in-place carry their data forward. An upstream *Bambuddy* file is neither renamed nor read; see [Coming from Bambuddy](#coming-from-bambuddy).
 
 ### PostgreSQL
 
@@ -673,8 +606,8 @@ The fix is always the same shape: get the new container reading from the volume 
 **`no such column` / `no such table` on startup**
 : A migration didn't run. Check the log for the stack trace; usually it means the file permissions on `data/` don't allow the service user to write. Fix with `sudo chown -R bamdude:bamdude /opt/bamdude/data`.
 
-**Bambuddy import didn't fire**
-: Either `bamdude.db` already exists (so the file was never scanned) or the file is not named `bambuddy.db` / `bambutrack.db`. Rename and restart — the migration check re-runs on every boot until applied.
+**A Bambuddy database sits in `data/` and nothing happened to it**
+: That is now the expected behaviour. The import was removed in 0.5.6 — `m000` names the file in the log on every start and leaves it alone. Nothing will import it; delete it when you no longer need it.
 
 **Docker volume copy fails with `device or resource busy`**
 : Stop both the source and the destination container first. The `--rm` alpine container mounting both volumes cannot share the filesystem with a running service holding open files.

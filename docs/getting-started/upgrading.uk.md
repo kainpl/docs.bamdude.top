@@ -157,7 +157,7 @@ BamDude трекає застосовані міграції в таблиці `
 
 | Версія | Назва | Що змінює | Seed | Вперше потрібна в |
 |---|---|---|---|---|
-| **m000** | `bambuddy_to_bamdude_301` | Імпортує спадковий `bambuddy.db` / `bambutrack.db`, якщо знайдений поруч із тим, де BamDude очікує знайти `bamdude.db`. No-op, коли спадкової БД нема. Оригінальний файл Bambuddy **перейменовується**, не видаляється, тож відкат можливий. | yes (import) | Форки/оновлення з Bambuddy 2.2.2 |
+| **m000** | `bambuddy_to_bamdude_301` | **Заглушка з 0.5.6 -- нічого не імпортує.** Раніше імпортувала спадковий `bambuddy.db` / `bambutrack.db`; тепер лише називає такий файл у лозі й лишає його недоторканим. Запис версії 0 збережений, бо bootstrap-крок штампує його на кожній наявній інсталяції. | no | -- |
 | **m001** | `bamdude_baseline` | Створює FTS-індекс для пошуку по архівах (FTS5 на SQLite, tsvector + GIN на PostgreSQL) та засіює початкові довідкові дані (каталог моделей принтерів, дефолтні групи тощо). | yes | Свіжі інсталяції BamDude |
 | **m002** | `bamdude_311` | Bump схеми BamDude 3.0.1 → 3.1.1. Додає `printer_queues`, `macros`, колонки swap mode, конфіг stagger, таблиці історії обслуговування, переробку черги (`queue_id`), `printer_models` на типах обслуговування. Дропає мертву таблицю `filaments`. | yes | Оновлення з BamDude 3.0.x |
 | **m003** | `enforce_admin_user` | Кодифікує always-on модель авторизації: штампує `auth_enabled=true` + `setup_completed=true`, якщо існує хоча б один admin; інакше чистить обидва прапорці, щоб наступне завантаження направило користувача через `/setup`. Схема не змінюється. | yes | Усі інсталяції |
@@ -188,90 +188,23 @@ BamDude трекає застосовані міграції в таблиці `
 
 ### З Bambuddy HE 3.0.x → BamDude 0.4.x
 
-`m000` імпортує ваші дані, `m002` адаптує схему, `m005`+ -- BamDude-нативні.
+Ваш `bambuddy.db` -- це власний файл BamDude: стартове перейменування робить із нього `bamdude.db`, `m002` адаптує схему, `m005`+ -- BamDude-нативні. (Видалення імпорту Bambuddy 2.2.2 у 0.5.6 цього не стосується -- воно завжди було лише про файли апстріму.)
 
 !!! warning "Завжди оновлюйтесь до **0.4.0.1** або пізніше"
     Перехід зі спадкової інсталяції 3.0.1 одразу на **0.4.0** падав на `m005_swap_profiles.seed()` з `no such column: printers.awaiting_plate_clear` -- seed використовував ORM-овий `select(Printer)`, який підвантажував кожну колонку з *поточної* моделі, включно з колонками, яких на момент m005 у ланцюжку ще не існує. Виправлено в 0.4.0.1 переписуванням seed на raw SQL з явними списками колонок.
 
 ---
 
-## :material-swap-horizontal: Сценарій 1 -- Міграція з Bambuddy 2.2.2
+## :material-swap-horizontal: Перехід з Bambuddy {#perekhid-z-bambuddy}
 
-Покладіть файл Bambuddy DB поруч із тим місцем, де BamDude очікує його знайти. На першому завантаженні міграція `m000_bambuddy_import` його виявить, імпортує кожну таблицю, яку BamDude ще використовує, та перейменує файл на `bamdude.db`.
+**Не підтримується з 0.5.6.** BamDude відгалузився від Bambuddy на 2.2.2, і схеми розійшлись надто далеко, щоб одноразовому імпорту можна було довіряти, тож імпортер прибрано.
 
-Оригінальний файл Bambuddy **залишається на місці** (не видаляється), тож можна відкотитись.
+Стартуйте BamDude з порожньою текою даних і додайте принтери та котушки заново.
 
-### через Docker Compose (source checkout)
+`bambuddy.db`, залишений у теці даних, **не читається і не чіпається**. `m000` називає його в лозі на кожному старті, тож ви бачите, що файл знайдено й проігноровано; видаліть його самі, коли він більше не потрібен.
 
-```bash
-# 1. Зупиніть Bambuddy
-cd /path/to/bambuddy && docker compose down
-
-# 2. Клонуйте BamDude
-git clone https://github.com/kainpl/bamdude.git
-cd bamdude
-
-# 3. Скопіюйте свою Bambuddy DB + архіви у том bamdude_data
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 4. Старт -- міграції запускаються автоматично на першому завантаженні
-docker compose up -d
-
-# 5. Слідкуйте за стартовими логами, шукайте "Bambuddy → BamDude import complete"
-docker compose logs -f bamdude
-```
-
-### через `docker run` (GHCR-образ)
-
-```bash
-# 1. Зупиніть Bambuddy (як би ви його не запускали)
-
-# 2. Створіть новий том і засійте його даними з Bambuddy
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 3. Стартуйте BamDude з GHCR
-docker run -d \
-  --name bamdude \
-  --network host \
-  -e TZ=Europe/Kyiv \
-  -v bamdude_data:/app/data \
-  -v bamdude_logs:/app/logs \
-  --restart unless-stopped \
-  ghcr.io/kainpl/bamdude:latest
-```
-
-### через native / self-install
-
-```bash
-# 1. Зупиніть сервіс Bambuddy
-
-# 2. Встановіть BamDude
-curl -fsSL https://raw.githubusercontent.com/kainpl/bamdude/main/install/install.sh \
-  -o install.sh && chmod +x install.sh
-sudo ./install.sh --yes       # за замовчуванням /opt/bamdude
-
-# 3. Покладіть свою Bambuddy DB у data-директорію BamDude ДО першого старту
-sudo cp /path/to/bambuddy/data/bambuddy.db /opt/bamdude/data/
-sudo cp -r /path/to/bambuddy/data/archives /opt/bamdude/data/   # якщо є
-
-# 4. Виправте власника (інсталер працює від користувача сервісу bamdude)
-sudo chown -R bamdude:bamdude /opt/bamdude/data/
-
-# 5. Стартуйте сервіс -- міграція імпорту запуститься автоматично
-sudo systemctl start bamdude
-sudo journalctl -u bamdude -f
-```
-
-!!! tip "Імпорт -- one-shot"
-    `m000_bambuddy_import` перевіряє наявність `bambuddy.db` / `bambutrack.db` і запускається, лише якщо власного `bamdude.db` BamDude ще немає. Після успішного імпорту файл перейменовується на `bamdude.db` і міграція позначається як applied у таблиці `_migrations`, тож наступний рестарт не імпортуватиме повторно.
+!!! note "Це не те саме, що оновлення з Bambuddy HE / BamDude 3.0.x"
+    Це власна лінія BamDude, і вона й далі підтримується -- див. [Помітні шляхи оновлення](#5-pomitni-shlyakhy-onovlennya) вище. `bambuddy.db`, записаний BamDude 3.0.1, розпізнається як власний файл BamDude і перейменовується на `bamdude.db`, точно як раніше.
 
 ---
 
@@ -423,7 +356,7 @@ sqlite3.OperationalError: no such column: ...
 
 Файл БД живе за `data/bamdude.db`. Pragma SQLite: WAL journal, 15 с busy timeout, NORMAL synchronous. WAL означає, що поруч із головним файлом є ще `bamdude.db-wal` та `bamdude.db-shm` -- бекапте всі три разом (або зупиніть сервіс перед цим, щоб WAL було чекпойнтнуто в головний файл).
 
-Якщо спадковий `bambuddy.db` (або `bambutrack.db`) існує в директорії даних, але `bamdude.db` -- ні, BamDude перейменовує його при першому завантаженні перед тим, як запуститься хоч одна міграція. Саме так шлях `m000_bambuddy_import` спрацьовує для нативних інсталяцій, що міняють бінарник на місці.
+Якщо `bambuddy.db` (або `bambutrack.db`), записаний **BamDude 3.0.1**, існує в директорії даних, а `bamdude.db` -- ні, BamDude розпізнає його як власний і перейменовує на `bamdude.db` при першому завантаженні, перед тим як запуститься хоч одна міграція -- саме так нативні інсталяції, що міняють бінарник на місці, переносять свої дані далі. Файл апстрім-*Bambuddy* не перейменовується і не читається -- див. [Перехід з Bambuddy](#perekhid-z-bambuddy).
 
 ### PostgreSQL
 
@@ -673,8 +606,8 @@ volumes:
 **`no such column` / `no such table` на старті**
 : Міграція не виконалась. Перевірте лог на стек-трейс; зазвичай це означає, що файлові дозволи на `data/` не дають сервіс-юзеру писати. Полагодьте через `sudo chown -R bamdude:bamdude /opt/bamdude/data`.
 
-**Імпорт Bambuddy не вистрелив**
-: Або `bamdude.db` уже існує (тож файл ніколи не сканувався), або файл не названо `bambuddy.db` / `bambutrack.db`. Перейменуйте і перезапустіть -- перевірка міграції перезапускається на кожному завантаженні, поки не застосується.
+**База Bambuddy лежить у `data/`, і з нею нічого не сталось**
+: Тепер це очікувана поведінка. Імпорт прибрано в 0.5.6 -- `m000` називає файл у лозі на кожному старті й лишає його в спокої. Ніщо його не імпортує; видаліть, коли більше не потрібен.
 
 **Копіювання Docker volume падає з `device or resource busy`**
 : Спочатку зупиніть і source, і destination контейнер. Контейнер alpine з `--rm`, що монтує обидва тома, не може ділити файлову систему з працюючим сервісом, що тримає відкриті файли.
