@@ -84,6 +84,13 @@ In the per-archive / per-library-file Print Modal there's a **Specific / Auto** 
 
 Submit and an `AutoQueueItem` is created.
 
+For a **library file**, the same dialog carries an **Order** field — the open orders that still
+need this plate, ranked so the ones that need it come first (a reprint from an archive keeps the
+original print's own filing, so it is not asked again). Choosing one files the item under that order and, where the
+plate belongs to exactly one of its lines, under that line too, so the order's plan stops asking
+for work you have already queued. **Without an order** is always available. See
+[Filing a print under its order](projects.md#filing-a-print-under-its-order).
+
 ### 2. Virtual Printer `auto_queue` mode
 
 Slicer "Send to Printer" → VP receives upload → archived → dropped into the auto-queue. See [Virtual Printer → auto_queue](virtual-printer.md#auto_queue) for the UI side.

@@ -307,13 +307,15 @@ Single-plate files don't render the gallery — the existing main thumbnail cove
 
 ---
 
-## :material-link-variant: Project & Folder Links
+## :material-link-variant: Product & folder links
 
-- **Per-folder link** -- linking a folder to one or more projects (chip multi-select in the folder edit dialog) attaches every file inside to those projects, and any file moved into that folder later inherits the same project list.
-- **Per-file link** -- each file row also has its own `Link2` button that opens the same chip multi-select to attach the file to any number of projects independently of its folder.
-- **Many-to-many** (m044) -- a file or folder can belong to several projects at once; the legacy single-FK `project_id` was replaced by `library_file_projects` + `library_folder_projects` pivot tables. The same file in N projects shows up as N independent plan rows on the project pages.
-- **Per-chip unlink** -- each selected project chip in the file/folder dialog has a small `×` icon that removes only that one association via `DELETE /library/{files|folders}/{id}/projects/{project_id}`. The bulk "Unlink from all" button is gone — use the chip multi-select to set `project_ids: []` instead.
-- **Per-project plan items** (m016, reshaped by m044) -- the project page renders a flat plan list with copies/order/totals; rows auto-appear when files / folders link to the project, and per-row totals (filament, time, cost) feed the project-level grand totals. The unique constraint is now `(project_id, library_file_id)` so a shared file gets independent plan rows per project.
+- **Per-folder link** — linking a folder to one or more [products](projects.md#products) attaches every file inside to those products, and any file moved into that folder later inherits the same list.
+- **Per-file link** — each file row has its own link button that opens the same chip multi-select, independently of its folder.
+- **Many-to-many** — a file or folder can belong to several products at once, and a product can hold many files and folders. Linking is a *copy*, never a move: a file already linked to somebody else's product stays linked there too.
+- **What the link actually does** — the product gains a plate row for every plate of the file, and every object name on those plates resolves to a printed part of that product. Unlink the file and its plates go; the parts stay, because quantities belong to the product rather than to the file.
+- **Per-chip unlink** — the `×` on a chip removes that one association and leaves the rest alone.
+
+Files no longer link to a project. An order names its **products**, and a print is filed under an order when it is started or queued — see [Filing a print under its order](projects.md#filing-a-print-under-its-order).
 
 ---
 
@@ -504,33 +506,28 @@ External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `
 
 ---
 
-## :material-link: Linking folders to projects / archives
+## :material-link: Linking files and folders to products
 
-Right-click a folder (or use its three-dot menu) → **Link to project** / **Link to archive** to attach a folder to a [Project](projects.md) or an existing [Archive](archiving.md). The project picker is a chip multi-select — pick any number of projects in one go.
+Right-click a folder (or use its three-dot menu) → **Link to products** to attach it to any number of [products](projects.md#products); the picker is a chip multi-select, so several products are chosen in one go. Every file row offers the same thing for a single file.
 
 | Action | Where |
 |---|---|
-| **Link folder** | Right-click on folder → "Link to project / archive" |
-| **Add / drop a project** | Open the link dialog, toggle chips on/off, save |
-| **Remove one project** | Click the `×` on the relevant chip in the dialog (single-pivot DELETE) |
-| **Remove all projects** | Clear every chip in the dialog and save (`project_ids: []`) |
+| **Link a folder** | Right-click on folder → "Link to products" |
+| **Add / drop a product** | Open the link dialog, toggle chips on/off, save |
+| **Remove one product** | Click the `×` on the relevant chip in the dialog |
+| **Remove all products** | Clear every chip in the dialog and save |
 
-Linked folders show a colored badge in the sidebar and grid. When a folder is linked to multiple projects the badge carries an `×N` overflow counter and the tooltip lists every project name. Per-folder links propagate the project list to every file inside via the M2M pivot, plus any file moved into the folder later inherits the same list.
+Linking a **folder** *merges* its list into the files inside: what the folder imposed before is taken away, what it imposes now is added, and a file's own direct link to some **other** product survives. Moving a **file** into a folder is a different statement and *replaces* that file's product list with the folder's — including clearing it when the destination is the root or belongs to no product.
 
-### What the archive link is for
+### The model card of a library file
 
-⚠️ **Its effect appears on the archive, not on the folder.** Linking a folder to an archive puts an "open source folder" shortcut on that archive — the yellow folder icon on the archive card and in the archive row, which jumps straight back to the library folder the files came from. Nothing changes on the folder itself, which is why the dialog now says so.
+Any `.3mf` in the library carries a **Model card** entry in its menu: the card the designer packed into the file — description, designer, licence, source page — together with the pictures, bill of materials and assembly guide it ships with, read straight off the file and shown read-only. **Nothing is ever written back into the file**, which stays byte-for-byte the file you uploaded.
 
-**One archive belongs to one folder.** Linking an archive that another folder already holds is refused, naming that folder — rather than silently taking it away from a folder you are not looking at. The archive only ever displayed one link anyway, so a second one existed in the database and nowhere on screen.
+From that card, **Create product from this file** turns it into a product on the spot; for a file already linked to one, the card offers to re-read into that product instead. See [The model card](projects.md#the-model-card).
 
-!!! info "On upgrade"
-    Where several folders already claimed the same archive, the **most recent** link is kept and the others are cleared. Each clearing is written to the log with both folder names.
+### Printing a file asks which order it is for
 
-### Archived projects are not offered
-
-The project picker lists active and completed projects. An archived project is left out — archiving means "I am done with this", the same as it does for a printer, which leaves the choices rather than being labelled inside them.
-
-⚠️ **A project something is already linked to stays on the list even when archived**, so an existing link is never hidden and never silently cleared by saving the dialog.
+**Print** and **Add to Queue** on a library file show an **Order** field — the open orders that still need this plate, how many prints each is short, and the product each is for. The first order that needs it is chosen for you, and **Without an order** is always available. See [Filing a print under its order](projects.md#filing-a-print-under-its-order).
 
 ---
 

@@ -61,6 +61,13 @@ The queue card header shows live counters (Total / Pending / Printing / Complete
 
 ## :material-plus: Adding to Queue
 
+!!! tip "Queueing a library file asks which order it is for"
+    The dialog carries an **Order** field listing the open orders that still need this plate,
+    how many prints each of them is short, and the product each is for — with the first one
+    that needs it already chosen and **Without an order** always on the list. What you pick is
+    counted by that order's plan straight away. See
+    [Filing a print under its order](projects.md#filing-a-print-under-its-order).
+
 ### From Archive
 
 1. Go to **Archives** page

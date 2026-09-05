@@ -167,8 +167,8 @@ Draw label designs with the mouse — text, QR, barcode and a colour swatch — 
 </div>
 
 <div class="feature-card" markdown>
-### [:material-folder-multiple: Projects & Print Plan](projects.md)
-Group prints into projects with an ordered print plan. Per-file copies stepper, live filament / time / cost totals, ZIP / JSON export.
+### [:material-clipboard-list: Orders, Products & Stock](projects.md)
+Customers, orders of product × quantity, and products made of printed and purchased parts. A plan says what to print next, prints are filed under the order that needs them, and spare parts go onto a free stock shelf.
 </div>
 
 <div class="feature-card" markdown>

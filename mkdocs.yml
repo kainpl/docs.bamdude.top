@@ -122,9 +122,9 @@ plugins:
             "G-code Injection": "Інжекція G-code"
             Notifications: Сповіщення
             "Obico AI Failure Detection": "AI-детекція фейлів Obico"
-            "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
+            "Library, Inventory & Orders": "Бібліотека, інвентар і замовлення"
             "Spool Inventory": "Інвентар котушок"
-            "Projects & Print Plan": "Проєкти та print plan"
+            "Orders, Products & Stock": "Замовлення, вироби та залишок"
             "Filament Calibration": "Калібровка філаменту"
             "K-Profiles": "K-профілі"
             "Stats & Energy": "Статистика і енергія"
@@ -270,10 +270,10 @@ nav:
       - G-code Injection: features/gcode-injection.md
       - Notifications: features/notifications.md
       - Obico AI Failure Detection: features/obico.md
-    - Library, Inventory & Projects:
+    - Library, Inventory & Orders:
       - Spool Inventory: features/inventory.md
       - Spool Labels: features/labels.md
-      - Projects & Print Plan: features/projects.md
+      - Orders, Products & Stock: features/projects.md
       - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
       - Stats & Energy: features/stats.md

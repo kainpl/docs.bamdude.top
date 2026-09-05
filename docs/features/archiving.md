@@ -535,6 +535,14 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
 | :material-pencil: | Edit archive details (tags, notes, project, cost, photos). |
 | :material-cloud-download: | Retry 3MF download. Only visible when `file_path = ""`. |
 
+!!! tip "An archive can be filed under an order — or counted into stock"
+    The edit dialog carries an **Order** and a **Line** picker, and the Archives page's selection
+    mode offers **Assign to order** for a whole batch — which is how a print started from the
+    printer's own screen reaches the order it belongs to. A print filed under no order also
+    offers **Count into stock**, putting its good parts onto the product's shelf. See
+    [Filing a print under its order](projects.md#filing-a-print-under-its-order) and
+    [Free stock of parts](projects.md#free-stock-of-parts).
+
 !!! tip "Action button labels hide on narrow card widths"
     Reprint / Schedule / Slice labels appear only at viewport ≥ 1280 px where the responsive grid (`md:2 lg:3 xl:4`) gives cards real horizontal room. Below that the buttons render icon-only and the existing `title=` attribute serves as the hover tooltip — fixes the previous `"Re..."` / `"Sc..."` label-truncation on narrow viewports.
 
@@ -588,7 +596,7 @@ Changing the page size returns you to the first page — staying on page 3 of a 
 | **Duplicates** | Toggle: groups rows by `effective_hash` so multi-printer reprints collapse into one card with a count badge. |
 
 !!! tip "Batch operations"
-    Enter selection mode to tag, assign projects, or compare multiple archives at once.
+    Enter selection mode to tag, assign an order, or compare multiple archives at once.
 
 !!! tip "Quick search"
     Press ++slash++ to jump to the search box from anywhere on the page.
@@ -600,6 +608,7 @@ Changing the page size returns you to the first page — staying on page 3 of a 
 - [Print Queue](print-queue.md) — how queue items become archives, batch tracking, and the post-m019 archive ↔ queue stats refactor.
 - [File Manager](file-manager.md) — the library side of the link, including per-file `print_count` and `last_printed_at`.
 - [Swap Mode](swap-mode.md) — swap macro events and `execute_swap_macros` flags carried in `extra_data`.
+- [Orders, Products & Stock](projects.md) — filing a print under an order, and counting an order-less print into free stock.
 
 ---
 
