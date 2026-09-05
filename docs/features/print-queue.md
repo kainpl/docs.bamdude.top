@@ -357,12 +357,9 @@ Selection is scoped to a single card — a batch is per-queue, so a selection ca
 
 ## :material-printer-3d-nozzle-alert: Multi-printer queue + staggered start
 
-When you submit one job to **N printers** at once (multi-select in Add-to-Queue), each gets its own queue row. By default they all dispatch immediately — N concurrent FTP uploads, N near-simultaneous start commands. For overhead-constrained farms (single network uplink, single power circuit, shared MQTT broker), enable **Staggered batch start**:
+When you submit one job to **N printers** at once (multi-select in Add-to-Queue), each gets its own queue row. By default they all dispatch immediately — N concurrent FTP uploads, N near-simultaneous start commands.
 
-| Setting | Effect |
-|---------|--------|
-| **Group size** | How many printers fire per wave (e.g. 3 = three at a time, then a pause) |
-| **Interval** | Seconds between waves |
+Spreading those starts out is a **farm setting**, not a per-batch option — there is nothing to tick in the Print or Add-to-Queue dialog. Turn it on once under **Settings → Printing → Queue & Scheduling**, and from then on every print start — queued, Print Now, or begun on the printer's own screen — takes one of a limited number of slots, so only so many beds are heating at a time. The cap can be farm-wide, or split per electrical phase (printer tags) and per room (locations), with its own number for each group.
 
 Cross-link: full deep-dive in [Staggered start](staggered-start.md).
 
