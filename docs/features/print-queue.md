@@ -297,7 +297,7 @@ Both sides have select-all and clear. The printer list is in the order and group
 
 Then the ordinary Schedule dialog opens **once per group** of items that would be answered the same way, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why items onto four printers is never four times the dialogs.
 
-**A copied item keeps what the queue already decided.** Its plate rides with it, so a copy of one plate of a five-plate file is one item and not five, and two copies of the same plate stay two. Any items you had grouped into a block in the source queue come out as a block on the target.
+**A copied item keeps what the queue already decided.** Its plate rides with it, so a copy of one plate of a five-plate file is one item and not five, and two copies of the same plate stay two. The order it was filed under rides along as well — including the answer *no order* — so the Schedule dialog does not ask about it again; the copy dialog names the order next to each item's plate, where the item can still be unticked. Any items you had grouped into a block in the source queue come out as a block on the target.
 
 !!! tip "A print started outside the queue counts too"
     A job sent from the printer's screen or straight from a slicer leaves no queue entry — the card shows it because it reads the printer directly, and the copy reads it from the same place.
