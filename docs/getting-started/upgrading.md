@@ -592,7 +592,7 @@ volumes:
 
 ### Why our legacy-DB rename doesn't always fire
 
-BamDude's startup (`migrations/__init__.py`) renames `bambuddy.db` / `bambutrack.db` to `bamdude.db` if found in the data directory. This **only fires when the legacy file is inside the new container's `/app/data`** — i.e. when the volume mount is correct. If the new container is reading from a fresh empty volume (Scenarios A, C, D, E), there is no legacy file to rename in the first place; the rename logic is irrelevant.
+BamDude's startup (`migrations/__init__.py`) renames `bambuddy.db` / `bambutrack.db` to `bamdude.db` — but **only when the file is BamDude's own 3.0.1-era database**, which it recognises by the `telegram_chats` table inside it. A genuine upstream *Bambuddy* file is left untouched and merely named in the log; see [Coming from Bambuddy](#coming-from-bambuddy). For a 3.0.1 file the rename then **only fires when the legacy file is inside the new container's `/app/data`** — i.e. when the volume mount is correct. If the new container is reading from a fresh empty volume (Scenarios A, C, D, E), there is no legacy file to rename in the first place; the rename logic is irrelevant.
 
 The fix is always the same shape: get the new container reading from the volume that holds your data, by either pointing at the existing volume (`external: true`) or copying the data into the new one.
 
