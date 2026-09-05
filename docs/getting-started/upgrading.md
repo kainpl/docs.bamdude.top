@@ -157,7 +157,7 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 | Version | Title | What changes | Seed | First needed in |
 |---|---|---|---|---|
-| **m000** | `bambuddy_to_bamdude_301` | **Stub since 0.5.6 — imports nothing.** It used to import a legacy `bambuddy.db` / `bambutrack.db`; now it only names such a file in the log and leaves it untouched. The version-0 record is kept because the bootstrap step stamps it on every existing install. | no | — |
+| **m000** | `bambuddy_to_bamdude_301` | **Inert since 0.5.6 — does nothing at all.** It used to import a legacy `bambuddy.db` / `bambutrack.db`. The version-0 record is kept because the bootstrap step stamps it on every existing install. Reporting a Bambuddy file is a startup check, not this migration: a migration runs once, and the notice has to repeat for as long as the file is there. | no | — |
 | **m001** | `bamdude_baseline` | Creates the FTS index for archive search (FTS5 on SQLite, tsvector + GIN on PostgreSQL) and seeds the initial reference data (printer model catalog, default groups, etc.). | yes | Fresh BamDude installs |
 | **m002** | `bamdude_311` | BamDude 3.0.1 → 3.1.1 schema bump. Adds `printer_queues`, `macros`, swap-mode columns, stagger config, maintenance history tables, queue rework (`queue_id`), `printer_models` on maintenance types. Drops the dead `filaments` table. | yes | Upgrading from BamDude 3.0.x |
 | **m003** | `enforce_admin_user` | Codifies the always-on auth model: stamps `auth_enabled=true` + `setup_completed=true` if at least one admin exists; otherwise clears both flags so the next boot routes the user through `/setup`. Schema unchanged. | yes | All installs |
@@ -201,7 +201,7 @@ Your `bambuddy.db` is BamDude's own — the startup rename turns it into `bamdud
 
 Start BamDude with an empty data directory and re-add your printers and spools.
 
-A `bambuddy.db` left sitting in the data directory is **not read and not touched**. `m000` names it in the log on every start, so you can see it was found and ignored; remove it yourself once you no longer need it.
+A `bambuddy.db` left sitting in the data directory is **not read and not touched**. BamDude's startup names it in the log on every start, so you can see it was found and ignored; remove it yourself once you no longer need it.
 
 !!! note "This is not the same as upgrading from Bambuddy HE / BamDude 3.0.x"
     Those are BamDude's own lineage, and they are still supported — see [Notable upgrade paths](#5-notable-upgrade-paths) above. A `bambuddy.db` written by BamDude 3.0.1 is recognised as BamDude's own and renamed to `bamdude.db`, exactly as before.
@@ -607,7 +607,7 @@ The fix is always the same shape: get the new container reading from the volume 
 : A migration didn't run. Check the log for the stack trace; usually it means the file permissions on `data/` don't allow the service user to write. Fix with `sudo chown -R bamdude:bamdude /opt/bamdude/data`.
 
 **A Bambuddy database sits in `data/` and nothing happened to it**
-: That is now the expected behaviour. The import was removed in 0.5.6 — `m000` names the file in the log on every start and leaves it alone. Nothing will import it; delete it when you no longer need it.
+: That is now the expected behaviour. The import was removed in 0.5.6 — BamDude's startup names the file in the log on every start and leaves it alone. Nothing will import it; delete it when you no longer need it.
 
 **Docker volume copy fails with `device or resource busy`**
 : Stop both the source and the destination container first. The `--rm` alpine container mounting both volumes cannot share the filesystem with a running service holding open files.
