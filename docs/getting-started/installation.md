@@ -74,6 +74,17 @@ Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, a
 
 That's it — the service is already running.
 
+### :material-certificate: Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- **What is signed:** the `bamdude-<version>-windows-x64-setup.exe` attached to each tagged release. The upstream binaries bundled inside it (embedded Python, NSSM, ffmpeg) carry their own vendors' signatures or none; the source tree and the Docker images are not signed.
+- **Roles:** committers, reviewers and approvers are the project maintainer, [@kainpl](https://github.com/kainpl). Every release is approved for signing by hand; nothing is signed automatically.
+- **Privacy policy:** [Privacy & Telemetry](../privacy.md) — what the app sends out, and how to switch telemetry off.
+
+!!! warning "Status: application under review"
+    The application to SignPath Foundation was submitted on 2026-09-06. Installers published before approval are **unsigned**, so Windows SmartScreen shows *"Windows protected your PC"* on first run — click **More info → Run anyway**. The first signed release will be noted here and in the release notes.
+
 ### :material-folder-cog: What the installer lays down
 
 | What | Where |

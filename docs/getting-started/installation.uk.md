@@ -74,6 +74,17 @@ description: Встановлення BamDude на вашу систему, вк
 
 От і все — сервіс уже працює.
 
+### :material-certificate: Політика підписання коду (Code signing policy)
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- **Що підписується:** `bamdude-<version>-windows-x64-setup.exe`, що чіпляється до кожного тегованого релізу. Чужі бінарники всередині (embedded Python, NSSM, ffmpeg) несуть підписи своїх вендорів або не несуть жодного; вихідний код і Docker-образи не підписуються.
+- **Ролі:** комітер, рев'юер і апрувер — мейнтейнер проєкту, [@kainpl](https://github.com/kainpl). Кожен реліз підтверджується на підпис вручну; автоматично не підписується нічого.
+- **Політика приватності:** [Приватність і телеметрія](../privacy.uk.md) — що застосунок надсилає назовні і як вимкнути телеметрію.
+
+!!! warning "Статус: заявка на розгляді"
+    Заявку до SignPath Foundation подано 2026-09-06. Інсталятори, опубліковані до схвалення, **не підписані**, тож Windows SmartScreen на першому запуску показує *«Windows protected your PC»* — натисни **More info → Run anyway**. Перший підписаний реліз буде відмічено тут і в release notes.
+
 ### :material-folder-cog: Що розкладає інсталятор
 
 | Що | Куди |
