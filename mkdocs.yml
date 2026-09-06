@@ -227,6 +227,8 @@ extra:
 # plugin + Material's `url` filter emit page-relative ones. See the hook.
 hooks:
   - hooks/absolute_hreflang.py
+  # sitemap <lastmod> from git, printed by overrides/sitemap.xml; see the hook.
+  - hooks/sitemap_lastmod.py
 
 extra_css:
   - stylesheets/extra.css

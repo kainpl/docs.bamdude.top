@@ -21,6 +21,11 @@ jobs:
     runs-on: [self-hosted, linux, docs-deploy]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the sitemap's <lastmod> is each page's last commit
+          # (hooks/sitemap_lastmod.py). On the default shallow checkout every
+          # file dates to HEAD and the build writes no lastmod at all.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
