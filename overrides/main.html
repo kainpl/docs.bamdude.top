@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
+{#
+  x-default beside the en/uk pair: the page Google shows when neither
+  language matches. It cannot live in `config.extra.alternate` — the language
+  switcher renders that list verbatim and would grow a third, bogus entry —
+  so it is emitted here from the English link, absolute by then thanks to
+  hooks/absolute_hreflang.py.
+#}
+{% block extrahead %}
+  {{ super() }}
+  {% for alt in config.extra.alternate %}
+    {% if alt.lang == "en" %}
+      <link rel="alternate" hreflang="x-default" href="{{ alt.link | url }}">
+    {% endif %}
+  {% endfor %}
+{% endblock %}
+
 {% block announce %}
 <a href="https://github.com/kainpl/bamdude" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
   <span><strong>BamDude</strong> - Self-hosted 3D print farm management</span>

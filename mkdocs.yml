@@ -223,6 +223,11 @@ extra:
       name: Support BamDude
   generator: false
 
+# hreflang must be a fully-qualified URL for Google to read it; the i18n
+# plugin + Material's `url` filter emit page-relative ones. See the hook.
+hooks:
+  - hooks/absolute_hreflang.py
+
 extra_css:
   - stylesheets/extra.css
 
