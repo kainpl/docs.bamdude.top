@@ -169,11 +169,13 @@ These are local UI notifications — separate from the configured notification p
 
 ### Status sorting + collapsible groups
 
-When you sort by **Status**, **Model**, or **Location**, cards render inside collapsible section headers — click a header to fold / unfold the group. **Name** sort stays as a flat grid.
+When you sort by **Status**, **Model**, **Location**, or **Tag**, cards render inside collapsible section headers — click a header to fold / unfold the group. **Name** sort stays as a flat grid.
 
 - Group collapsed-state persists per browser in `localStorage`.
 - In selection mode each header gets a **Select All** button — selects every card in that group.
 - Status groups order by priority: **Error → Printing → Paused → Finished → Idle → Offline**. The sort-direction toggle inverts the order.
+- Grouping by **Tag** lists a printer under **each** of its tags; untagged printers gather under *No tag*. The section dot takes the tag's colour.
+- The **Tags** control in the toolbar narrows the grid to printers wearing **every** selected tag (persisted like the status and location filters), and the search box matches tag names too.
 
 Sorting **by status** in flat mode follows the same priority — printers needing attention float to the top:
 

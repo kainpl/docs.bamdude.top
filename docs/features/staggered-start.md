@@ -72,12 +72,14 @@ There are two axes, and they can be used together:
 
 | Axis | How a printer joins a group | Where the group is named |
 |------|-----------------------------|--------------------------|
-| **Split by printer tags** | It carries that tag | **Settings → Printing → Tags**, picked on the printer form |
+| **Split by printer tags** | It carries that tag | **Settings → Printing → Tags** (each tag may carry a colour from the palette there — the banner and the printer cards wear it), picked on the printer form |
 | **Split by location** | Its own location, or the nearest picked place **above** it in the location tree | **Settings → Printing → Locations**, picked on the printer form |
 
 Turn an axis on and pick which tags (or which locations) are groups — an axis that is on but has nothing picked changes nothing. With **both** axes on, every **tag × location** pair is its own cap.
 
 **Concurrent starts** then means *per group*, and the field relabels itself to say so. Two phases with a cap of 2 means up to four beds farm-wide — two on each — and never three on one phase.
+
+**A group can carry its own limit.** Beside each picked tag or location a small number field appears; a value there caps *that* group alone, an empty field means the farm-wide number above. With both axes on, a group's cap is the smallest of its tag override, its location override and the global value — a workshop limited to 1 never starts two beds however generous its phase is. Un-picking a group clears its override. The banner prints each group's own `occupied/cap`.
 
 The banner grows a segment per group, and a waiting item names the group it is waiting on:
 
