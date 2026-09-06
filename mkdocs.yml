@@ -84,6 +84,7 @@ plugins:
         - locale: uk
           name: Українська
           build: true
+          site_description: Самостійно хостоване керування фермою 3D-друку для принтерів Bambu Lab
           nav_translations:
             Home: Головна
             Why BamDude: Чому BamDude
@@ -229,6 +230,8 @@ hooks:
   - hooks/absolute_hreflang.py
   # sitemap <lastmod> from git, printed by overrides/sitemap.xml; see the hook.
   - hooks/sitemap_lastmod.py
+  # Open Graph / Twitter / JSON-LD per page, printed by overrides/main.html.
+  - hooks/seo_head.py
 
 extra_css:
   - stylesheets/extra.css
