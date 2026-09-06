@@ -3,8 +3,8 @@
 Material emits no `og:*` at all unless its `social` plugin is on, and that
 plugin wants cairosvg plus a system cairo on the deploy runner and renders
 one card per page per build. The docs share one static card per language
-instead (`docs/assets/og-<lang>.png`, 1200×630, drawn once in the landing's
-OG style); the page-level facts ride in the tags.
+instead (`docs/assets/og-<lang>.png`, 1200×630, rendered by the landing's
+`npm run og:docs`); the page-level facts ride in the tags.
 
 JSON-LD is one `@graph` per page: the Organization and WebSite under the
 same `@id`s the landing uses (so Google merges the two sites' records), a
@@ -80,7 +80,7 @@ def on_page_context(context, page, config, nav):
             "url": f"{LANDING}/",
             "logo": {
                 "@type": "ImageObject",
-                "url": f"{LANDING}/android-chrome-512x512.png",
+                "url": f"{LANDING}/brand/png/icon-tile-512.png",
                 "width": 512,
                 "height": 512,
             },
