@@ -56,7 +56,15 @@ theme:
     - navigation.footer
     - search.suggest
     - search.highlight
-    - search.share
+    # `search.share` is deliberately absent. Material rewrites the share
+    # button's href to `<page>?q=<query>` on every query emission — including
+    # the empty one fired the moment the dialog mounts — so every rendered page
+    # carries an `<a href="…?q=">`. Googlebot executes the JS and harvested one
+    # such URL per page (Search Console 2026-09-06: eight of them, filed as
+    # "alternate page with proper canonical"). The canonical kept them out of
+    # the index, but each was a crawl spent on nothing. Deep links (`?q=term`)
+    # still open the dialog pre-filled without the button; only the copy-link
+    # icon is gone.
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
