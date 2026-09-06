@@ -32,3 +32,12 @@ jobs:
       # build failures so they don't reach main and end up live.
       - name: Build (strict)
         run: mkdocs build --strict
+
+      # The header mark, the favicon and the JSON-LD Organization.logo are the
+      # docs' only visible identity; the third must equal the landing's URL
+      # character for character (both sites declare the same @id).
+      - name: Identity is wired into the built index
+        run: |
+          for needle in 'assets/logo.svg' 'assets/favicon.ico' 'https://bamdude.top/brand/png/icon-tile-512.png'; do
+            grep -q -- "$needle" site/index.html || { echo "missing in site/index.html: $needle" >&2; exit 1; }
+          done
