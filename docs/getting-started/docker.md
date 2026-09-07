@@ -113,7 +113,8 @@ volumes:
 | `DEBUG` | `false` | Enable debug logging |
 | `LOG_LEVEL` | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `LOG_TO_FILE` | `true` | Write logs to `/app/logs/bamdude.log` |
-| `DATABASE_URL` | unset (SQLite) | PostgreSQL URL, e.g. `postgresql+asyncpg://user:pass@host:5432/bamdude` |
+| `DATABASE_URL` | unset (SQLite) | `embedded` runs the bundled PostgreSQL 18 inside this container (data in the `bamdude_data` volume under `postgres/`); a URL such as `postgresql+asyncpg://user:pass@host:5432/bamdude` uses your own server. For a separate PostgreSQL container use the shipped `docker-compose.postgres.yml` override — mind the host-networking note in [PostgreSQL Support](../features/postgresql.md). |
+| `EMBEDDED_PG_PORT` | picked once, remembered | Pin the bundled server's port (e.g. `6432`). |
 | `TRUSTED_PROXY_IPS` | empty | Comma-separated reverse-proxy IPs trusted for `X-Forwarded-For` (set this when fronting BamDude with nginx / Caddy / Traefik) |
 | `AUTH_REFRESH_COOKIE_SECURE` | unset (auto) | Force the refresh-cookie `Secure` flag. Auto-detect from request scheme by default. |
 | `MFA_ENCRYPTION_KEY` | unset | URL-safe base64 Fernet key for at-rest encryption of TOTP / OIDC secrets. |

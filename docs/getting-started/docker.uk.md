@@ -113,7 +113,8 @@ volumes:
 | `DEBUG` | `false` | Увімкнення логування налагодження |
 | `LOG_LEVEL` | `INFO` | Рівень логування: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `LOG_TO_FILE` | `true` | Запис логів у `/app/logs/bamdude.log` |
-| `DATABASE_URL` | не задано (SQLite) | URL PostgreSQL, наприклад `postgresql+asyncpg://user:pass@host:5432/bamdude` |
+| `DATABASE_URL` | не задано (SQLite) | `embedded` — вбудований PostgreSQL 18 просто в цьому контейнері (дані в томі `bamdude_data`, підкаталог `postgres/`); URL на кшталт `postgresql+asyncpg://user:pass@host:5432/bamdude` — власний сервер. Для окремого контейнера PostgreSQL є штатний override `docker-compose.postgres.yml` — зверніть увагу на застереження про host-мережу в [Підтримці PostgreSQL](../features/postgresql.md). |
+| `EMBEDDED_PG_PORT` | обирається один раз і запам'ятовується | Запінити порт вбудованого сервера (наприклад `6432`). |
 | `TRUSTED_PROXY_IPS` | порожньо | Розділені комою IP реверс-проксі, що довіряються для `X-Forwarded-For` (встановлюйте, коли BamDude стоїть за nginx / Caddy / Traefik) |
 | `AUTH_REFRESH_COOKIE_SECURE` | не задано (auto) | Примусово встановити прапорець `Secure` для refresh-cookie. За замовчуванням -- автовизначення зі схеми запиту. |
 | `MFA_ENCRYPTION_KEY` | не задано | URL-safe base64 Fernet-ключ для at-rest шифрування TOTP / OIDC секретів. |

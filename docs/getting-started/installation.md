@@ -144,7 +144,11 @@ nano .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | unset (SQLite) | Postgres URL, e.g. `postgresql+asyncpg://user:pass@host:5432/bamdude`. See [PostgreSQL Support](../features/postgresql.md). |
+| `DATABASE_URL` | unset (SQLite) | `embedded` for the bundled PostgreSQL 18, or a URL such as `postgresql+asyncpg://user:pass@host:5432/bamdude` for your own server. Empty means SQLite. See [PostgreSQL Support](../features/postgresql.md). |
+| `EMBEDDED_PG_PORT` | picked once, remembered | Pin the bundled server's port (e.g. `6432`) so `psql` or DBeaver can reach it. |
+
+!!! tip "The installer asks for you"
+    `install.sh` offers SQLite, the bundled PostgreSQL, or an external server — interactively, or unattended with `--db sqlite|embedded|external` (plus `--database-url` for the last). Re-running over an existing install keeps the backend you already use.
 
 #### Auth & reverse-proxy
 

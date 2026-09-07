@@ -144,7 +144,11 @@ nano .env
 
 | Змінна | За замовчуванням | Опис |
 |--------|------------------|------|
-| `DATABASE_URL` | не задано (SQLite) | Postgres URL, наприклад `postgresql+asyncpg://user:pass@host:5432/bamdude`. Див. [Підтримка PostgreSQL](../features/postgresql.md). |
+| `DATABASE_URL` | не задано (SQLite) | `embedded` — вбудований PostgreSQL 18; або URL на кшталт `postgresql+asyncpg://user:pass@host:5432/bamdude` для власного сервера. Порожнє значення означає SQLite. Див. [Підтримка PostgreSQL](../features/postgresql.md). |
+| `EMBEDDED_PG_PORT` | обирається один раз і запам'ятовується | Запінити порт вбудованого сервера (наприклад `6432`), щоб до нього діставали `psql` чи DBeaver. |
+
+!!! tip "Інсталятор питає сам"
+    `install.sh` пропонує SQLite, вбудований PostgreSQL або зовнішній сервер — в інтерактиві або без нього через `--db sqlite|embedded|external` (плюс `--database-url` для останнього). Повторний запуск поверх наявної інсталяції лишає той бекенд, яким ви вже користуєтесь.
 
 #### Автентифікація та реверс-проксі
 
