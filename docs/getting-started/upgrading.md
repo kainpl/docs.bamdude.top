@@ -358,11 +358,97 @@ The DB file lives at `data/bamdude.db`. SQLite pragmas: WAL journal, 15 s busy t
 
 If a `bambuddy.db` (or `bambutrack.db`) written by **BamDude 3.0.1** exists in the data directory but `bamdude.db` does not, BamDude recognises it as its own and renames it to `bamdude.db` on first boot, before any migration runs — that is how native installs swapping the binary in-place carry their data forward. An upstream *Bambuddy* file is neither renamed nor read; see [Coming from Bambuddy](#coming-from-bambuddy).
 
-### PostgreSQL
+### PostgreSQL — bundled or your own
 
-Set `DATABASE_URL=postgresql+asyncpg://user:pass@host/db` in your environment. On first startup with a **fresh, empty** PostgreSQL database, BamDude auto-migrates content from the SQLite file if both are present (one-shot SQLite → PG copy). After the copy, only PG is used; the SQLite file is left in place for safety but no longer touched.
+`DATABASE_URL` has three states, and switching between them is a migration in its own right:
 
-Existing PG installs run the same migration chain on every boot — same `_migrations` table, same versions, same sequencing. The dialect helpers route DDL through PG-native paths where SQLite needs `recreate_table` (FK changes, column drops). PG-side migrations also enforce FK constraints that SQLite lets pass silently — `m018` is a good example, where SET NULL only affects the live behaviour on PG.
+| `DATABASE_URL` | Backend |
+|----------------|---------|
+| *empty / unset* | SQLite at `data/bamdude.db` |
+| `embedded` | the PostgreSQL 18 bundled with BamDude, under `DATA_DIR/postgres/18` |
+| `postgresql+asyncpg://…` | your own server |
+
+Existing PostgreSQL installs run the same migration chain on every boot — same `_migrations` table, same versions, same sequencing. The dialect helpers route DDL through PG-native paths where SQLite needs `recreate_table` (FK changes, column drops), and PG enforces FK constraints SQLite lets pass silently (`m018` is a good example, where SET NULL only really bites on PG).
+
+---
+
+### Moving from SQLite to PostgreSQL
+
+This is a **one-shot automatic copy**, the same for the bundled server and your own.
+
+1. Back up first (see [Backup commands](#backup-commands)). This is the one step nothing does for you.
+2. Set `DATABASE_URL` — `embedded`, or your server's URL. For an external server the **database must already exist**; BamDude creates tables, not databases.
+3. Restart BamDude.
+
+On that start BamDude sees a PostgreSQL with **no printers table content** (i.e. a fresh database) next to an existing `bamdude.db`, and copies everything across. In the log:
+
+```text
+Found local SQLite database at .../bamdude.db, migrating to PostgreSQL
+...
+SQLite -> PostgreSQL migration complete (78 tables). Original renamed to bamdude.db.migrated
+```
+
+Then the normal migration chain runs against PostgreSQL and the app comes up. On a real farm's data the copy takes on the order of a minute or two; the schema chain afterwards is what you usually wait for.
+
+!!! info "What the copy does"
+    Every table and row moves, with type conversion (SQLite `0/1` → boolean, datetime strings → timestamps). Auto-increment sequences are reset to the right values, and the full-text index is rebuilt as PostgreSQL `tsvector` + GIN. FTS5 virtual tables, WAL/SHM files and the migrations bookkeeping are not copied — they are SQLite-specific or recreated.
+
+!!! warning "Orphan rows are dropped, and it is logged"
+    PostgreSQL enforces foreign keys that SQLite never did, so rows pointing at records that no longer exist cannot come across. The importer purges them and says exactly what it dropped, for example:
+
+    ```text
+    Purging 3 orphan label_jobs rows before import
+    Purging 5 orphan spool_usage_history rows
+    Purging 51 orphan smart_plug_energy_snapshots rows
+    ```
+
+    This is by design — those rows were already unreachable. Read the lines; if a count looks wrong for your install, stop and restore the backup rather than carrying on.
+
+!!! danger "A failed import aborts the start — it does not fall through"
+    If the copy fails part-way, BamDude stops with an error instead of continuing as a fresh install. PostgreSQL is left as it is and **`bamdude.db` is not renamed**, so your SQLite data is untouched and you can simply unset `DATABASE_URL` and restart to get back exactly where you were. (Older builds could silently continue with an empty database — hence the rename happening only after a fully successful copy.)
+
+### Going back to SQLite
+
+Unset `DATABASE_URL` (or set it empty) and rename the file back:
+
+```bash
+mv data/bamdude.db.migrated data/bamdude.db
+```
+
+Anything created after the switch lives only in PostgreSQL, so take a backup from the running PostgreSQL instance first if you want to keep it — the UI backup format is portable and restores onto either backend.
+
+### The bundled server (`DATABASE_URL=embedded`) on upgrades
+
+| Path | What it holds |
+|------|---------------|
+| `DATA_DIR/postgres/18/` | the cluster, in a directory named after the PostgreSQL major |
+| `DATA_DIR/postgres/password` | the generated password (mode 0600) |
+| `DATA_DIR/postgres/port` | the port it settled on, unless you pinned `EMBEDDED_PG_PORT` |
+
+Back these up together with the rest of `data/` — the cluster is just files in your data directory, so a `tar` of `data/` with the service **stopped** is a valid copy. For a portable copy that restores onto any backend, use **Settings → Backup** instead.
+
+!!! warning "The PostgreSQL major is pinned"
+    BamDude refuses to open a cluster created by a different PostgreSQL major and says so plainly rather than touching the data:
+
+    ```text
+    the data directory ... was created by PostgreSQL 17, but the bundled server is
+    PostgreSQL 18. Refusing to start: a major upgrade needs a migration step, not a
+    silent open.
+    ```
+
+    A future major ships as its own release with an explicit migration step. Routine BamDude upgrades within the same major need nothing from you.
+
+!!! tip "Upgrade with the server stopped"
+    On a native install, `pip install -r requirements.txt` cannot replace the bundled PostgreSQL package while a server from it is still running — stop BamDude (which stops the server) before updating dependencies. `install/update.sh` already stops the service first.
+
+### Windows: the two service layouts
+
+The Windows installer offers the bundled server either as **its own `BamDudePostgres` service** (started before BamDude by the service manager) or as a **child of BamDude**. Re-running the installer keeps whichever you already use — it reads the current backend from the installed service's environment and preselects it, so an upgrade never quietly moves you back to SQLite. Uninstalling stops and removes both services, and asks separately (defaulting to *No*) whether to delete your data.
+
+### Docker
+
+- `DATABASE_URL=embedded` runs the bundled server inside the BamDude container, with its cluster in the existing `bamdude_data` volume under `postgres/`. The shipped compose file allows 60 s on `docker compose down` so it checkpoints cleanly — don't shorten that.
+- For PostgreSQL in its own container, use the shipped `docker-compose.postgres.yml` override. Mind the host-networking note in [PostgreSQL Support](../features/postgresql.md): with the default `network_mode: host`, BamDude cannot reach another container by its Compose name.
 
 ---
 
