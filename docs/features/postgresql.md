@@ -28,13 +28,17 @@ Anything else is refused at startup with a readable message, so a typo is caught
 |----------|:-----------:|
 | Single user, 1–5 printers | SQLite |
 | Small farm, < 10 printers | SQLite |
-| Large, busy farm, 10+ printers | PostgreSQL |
+| Busy farm, 10+ printers | PostgreSQL |
+| **40+ printers** | **PostgreSQL — treat this as required** |
 | High concurrency (many API clients) | PostgreSQL |
 | Want PostgreSQL without running a server | **`embedded`** |
 | Already run PostgreSQL, want BamDude to use it | external URL |
 | Simplest possible setup | SQLite |
 
 The bundled and external servers are the same PostgreSQL to BamDude — the difference is only who starts and stops it.
+
+!!! warning "Past about 40 printers, move to PostgreSQL"
+    SQLite allows exactly one writer at a time, and its page cache is per connection, so every connection in a busy pool starts cold. Neither is a setting anyone can tune around: at that size the writer becomes the queue everything waits in. Switching is one variable and a restart — the import runs itself — so do it before the farm grows into the problem rather than after. `embedded` is the least work: no server to install or administer.
 
 ---
 
