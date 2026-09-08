@@ -8,7 +8,7 @@ description: Every keyboard shortcut wired into the BamDude UI — verified agai
 BamDude has a deliberately small keyboard surface. The shortcuts below are the ones actually wired into the React app — the in-app shortcuts modal (open with `?`) lists the same set.
 
 !!! tip "Open this list inside the app"
-    Press ++question++ (i.e. ++shift+slash++) anywhere in BamDude to pop the same shortcuts modal that mirrors this page. Press ++esc++ or click outside to close.
+    Press ++question++ (i.e. ++shift+slash++) anywhere in BamDude to pop the same shortcuts modal that mirrors this page. Press ++esc++ or the ✕ in the header to close.
 
 ---
 
@@ -78,15 +78,20 @@ Inside the photo gallery modal and the Makerworld lightbox preview:
 
 ## :material-application-cog: Modals & dialogs
 
-Almost every modal in BamDude (~50 of them) wires the same baseline:
+Every modal in BamDude goes through one shell, so they all answer the keyboard the same way:
 
 | Shortcut | Action |
 |:--------:|--------|
-| ++esc++ | Close the modal (or cancel, when there's a destructive in-flight action like a Purge) |
+| ++esc++ | Close the **topmost** modal — a confirmation raised over a form closes alone, the form stays open |
 | ++enter++ | Submit when focus is in an input that's wired for it (e.g. inline rename, tag-add, search input) |
 
-Confirmation modals (Purge Old Files, Purge Archives, Confirm dialogs) deliberately ignore ++esc++ while a request is in flight so you can't cancel mid-purge.
+A click or tap outside a modal does **not** close it — only its buttons, the ✕ in its header, or ++esc++ do. The one exception is an enlarged picture (galleries, plate previews, the printer cover), which closes on a tap beside it like any lightbox.
 
+Modals with a request in flight (Purge Old Files, Purge Archives, confirm dialogs while saving) ignore ++esc++ and grey out their ✕ until it finishes, so you can't cancel mid-purge.
+
+While any modal is open, the number-key page shortcuts above are off.
+
+---
 ---
 
 ## :material-form-textbox: Form navigation
@@ -128,7 +133,7 @@ Keyboard shortcuts are **not** user-customizable. The bindings above are hard-co
 
 ## :material-human: Accessibility
 
-Every shortcut has an equivalent UI button or menu item — sidebar items have visible nav links, the shortcuts modal has a footer "Press Esc or click outside to close" hint, and search inputs are reachable through normal Tab navigation. You can run BamDude with the keyboard alone or with a screen reader without memorizing any shortcut from this page.
+Every shortcut has an equivalent UI button or menu item — sidebar items have visible nav links, the shortcuts modal has a footer "Press Esc to close" hint, and search inputs are reachable through normal Tab navigation. You can run BamDude with the keyboard alone or with a screen reader without memorizing any shortcut from this page.
 
 ---
 
