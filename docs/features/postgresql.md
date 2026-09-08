@@ -238,6 +238,32 @@ Some migrations are slow whatever the backend, because the bottleneck is opening
 
 ---
 
+---
+
+## :material-heart-pulse: Checking that it is healthy
+
+**System → Database health** answers «is this database well, and if not, which part» on either backend. Note the page: it is the top-level **System** entry in the sidebar, not a Settings tab.
+
+| What it shows | What to look at |
+|---|---|
+| Engine, version and **mode** | `SQLite`, the bundled PostgreSQL run by BamDude, the bundled one run as a Windows service, or an external server. Worth checking first — an install that was *meant* to move to PostgreSQL and did not says so here. |
+| Size on disk | The real figure on both backends. (The older «Database» card above it stats `bamdude.db`, so it reads 0 on PostgreSQL.) |
+| Connection pool | Checked-out against pool size, plus overflow. Persistent overflow means the pool is too small for the farm — raise `DB_POOL_SIZE`. |
+| Cache hit ratio (PostgreSQL) | Below ~90% on a warm server means it is reading from disk more than it should; usually `shared_buffers`, or a query reading far more rows than it needs. |
+| Deadlocks (PostgreSQL) | Should be 0. Anything else is worth reporting. |
+| Journal mode and WAL size (SQLite) | Journal mode must be `wal`. A WAL that keeps growing means checkpoints are not completing. |
+| Slowest statements | The statement text, how often it ran, and how long it took in total. |
+
+### Where the slow-statement list comes from
+
+- **PostgreSQL** — from the server's own `pg_stat_statements`. The bundled server enables it for you. ⚠️ If you run the bundled PostgreSQL **as a Windows service**, BamDude does not write that server's configuration, so the extension may be installed while the library was never preloaded; the card then says so rather than showing an empty table.
+- **SQLite** — there is no such view, so the list comes from BamDude's own measurements and needs **Slow query log** turned on in Settings → General (see [Finding what is slow](../reference/troubleshooting.md#finding-what-is-slow)). Until it is, the card says so.
+
+A figure BamDude could not read is left out and named at the bottom of the card, so a single unavailable statistic never blanks the rest.
+
+!!! tip "Prometheus"
+    The same numbers are exported as `bamdude_db_*` gauges on the metrics endpoint — engine info, size, pool, and per backend either cache hit ratio, connections and deadlocks, or WAL bytes and free pages.
+
 ## :material-alert: Good to know
 
 !!! warning "An external database must exist first"
