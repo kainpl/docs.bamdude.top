@@ -244,6 +244,46 @@ The format is short (8 hex chars, `[trace=abc12345]` in log lines) so log lines 
 
 ---
 
+## :material-speedometer: Finding what is slow
+
+A farm that "feels slow" has two very different possible causes, and telling them apart is the whole game: either a **database statement** is slow, or the server is **busy elsewhere** and the database is idle. BamDude can measure both. Neither is on by default — leave them off unless you are investigating.
+
+**Settings → General**:
+
+| Setting | What it does |
+|---|---|
+| **Slow query log** | Writes one warning for every database statement slower than this many milliseconds. `0` turns it off. |
+| **Slow request log** | Writes one warning for every API request slower than this many milliseconds, with its database share. `0` turns it off. |
+
+Both take effect the moment you save — no restart — and both work on SQLite and PostgreSQL alike. Reasonable starting points on a busy farm: `500` for queries, `3000` for requests. Turn them back to `0` when you are done.
+
+### Reading the request line
+
+```
+slow request 1830ms GET /api/v1/inventory/spools (db 41 queries, 1620ms) [a1b2c3d4]
+```
+
+That trailing `[a1b2c3d4]` is the trace ID from the section above, so you can pull the whole request's log cluster with one `grep`. The part in brackets before it is what makes the line worth reading:
+
+- **Most of the time in the database, over many statements** (`db 41 queries, 1620ms`) — the endpoint is asking too often. Usually one query per row where one query for all rows would do.
+- **Most of the time in the database, in one or two statements** — a missing index, or a query over more rows than it needs. The slow query log names the statement.
+- **Almost no time in the database** (`db 3 queries, 12ms` out of 1830 ms) — the database is fine and the server was busy with something else: a big file walk, image work, or simply too much happening at once.
+
+### Without turning anything on
+
+Every response already carries a standard `Server-Timing` header:
+
+```
+Server-Timing: db;dur=1620.4, total;dur=1830.2
+```
+
+Your browser renders it in **DevTools → Network → the request → Timing**, so the same split is one click away for anything you can reproduce in the UI.
+
+!!! info "What the log does and does not contain"
+    The slow query log records the **text** of a statement, shortened and with any credentials in it masked. It never records the values bound to it — those are your file names, spool names and printer serials, and `bamdude.log` is a file people attach to public issues. Request lines record the method and path only, never the query string.
+
+---
+
 ## :material-stethoscope: Self-service diagnostics
 
 BamDude can triage most setup problems for you. On the **System** page, the **Connection Diagnostic** section probes each printer (ports, LAN developer mode, Docker network mode, subnet, credentials) and the **System Health** section scans recent logs against the known-issue catalog below. The in-app bug reporter runs both when you open it, so a fixable problem is surfaced before you file a report. The "How to fix" links on each finding point at the matching section here.
