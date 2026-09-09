@@ -19,6 +19,8 @@ The print queue lets you:
 - **Drag-and-drop** ordering
 - **Scheduled** start times
 - **Timeline view** -- production schedule with estimated completion times
+- **Card size** -- the same S / M / L / XL switch as the printers page, shown in the cards view; it sets how many queue cards share a row and is remembered per browser
+- **Sort by ETA** -- the two orders the printers page has, under the same names: *ETA (job)* and *ETA (queue)*, the second from the server's forecast of every queue (see [Sort by ETA](monitoring.md#sort-by-eta-two-orders))
 - **Model-based assignment** -- queue to "any printer of matching model" and let the [auto-queue](auto-queue.md) pick the machine
 - **Smart plug automation** -- auto power-on/off
 

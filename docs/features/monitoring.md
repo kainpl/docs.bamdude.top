@@ -15,14 +15,14 @@ Adjust the size of printer cards to fit your screen:
 
 | Size | Description |
 |:----:|-------------|
-| **S** | Compact view, more cards per row |
+| **S** | Compact fleet view — up to four cards per row |
 | **M** | Default balanced view |
 | **L** | More detail, fewer cards per row |
 | **XL** | Maximum detail, single column |
 
 Use the **+** and **-** buttons in the toolbar to adjust. Size preference is saved automatically.
 
-**The S card still answers "which one finishes first".** Under its progress bar it carries a single line of metrics while a print is running — **remaining time, ETA and layers** — in the same formatting the M card uses, so the two read alike. Each value is left out individually if the printer doesn't report it, and the row keeps its height when nothing is printing, so cards don't jump as prints start and finish.
+**The S card is the fleet view.** It has no thumbnail: the model and the name share the first line (`X1C | X1C-01`), the second line carries the state, the pause chip, the recording badge, the plate pill and the maintenance pill. While printing it names the job, shows the progress bar with **remaining time, ETA and layers** in the same formatting the M card uses, and the «filament so far» line. After a print it names what finished and when, with the same **Repeat print / Clear plate** buttons the M card has. Whenever the printer's queue holds something, **Next: …** with a `+N` count sits above the footer. The select / expand / menu buttons live in the card's corner and appear on hover or keyboard focus (always on a touch screen), or while the printer is selected.
 
 ---
 
@@ -130,17 +130,18 @@ The tooltip carries the current score; clicking it goes to the full status and h
 
 The badge is readable by anyone who can see printers — it does **not** require permission to read settings, and it deliberately carries no configuration: the ML server address and the detection history stay where they were.
 
-### Compact-mode status pip
+### Compact-mode state shadow
 
-In **Small** card size each card shows a single coloured pip instead of the full status bar:
+In **Small** card size the card's shadow says how the printer is doing instead of a status dot:
 
-| Colour | Meaning |
+| Shadow | Meaning |
 |:------:|---------|
-| :material-circle:{ style="color: #4caf50" } Green | Connected, no issues |
-| :material-circle:{ style="color: #f44336" } Red | Offline, or HMS fatal / serious (severity ≤ 2) |
-| :material-circle:{ style="color: #ff9800" } Amber | HMS warning (info / common severity) **OR** print is currently paused |
+| Neutral | Connected, no issues |
+| :material-circle:{ style="color: #ff9800" } Amber | Print paused **or** an HMS warning (info / common severity) |
+| :material-circle:{ style="color: #f44336" } Red | Print stopped (failed) **or** an HMS fatal / serious error (severity ≤ 2) |
+| Faded | Offline |
 
-Hover the pip for the count of active HMS errors, or the resolved pause cause when paused.
+An HMS error also prints its code and the catalogue's text under the printer's name; the name is underlined in the severity colour and opens the HMS dialog.
 
 ### Pause chip + live elapsed counter
 
@@ -184,9 +185,12 @@ Sorting **by status** in flat mode follows the same priority — printers needin
 3. Idle
 4. Offline
 
-### Sort by ETA
+### Sort by ETA — two orders
 
-A fifth sort option — **ETA** — orders printers by how soon they finish: printing with a known time-remaining first (soonest on top, so you can stage the next job's filament), then prints that have just started without an ETA yet, then idle, then offline. It reads the same cached `remaining_time` the per-card ETA label already shows — no extra backend round-trip.
+- **ETA (job)** orders printers by how soon their *current* print finishes: printing with a known time-remaining first (soonest on top, so you can stage the next job's filament), then prints that have just started without an ETA yet, then idle, then offline. It reads the same cached `remaining_time` the per-card ETA label already shows — no extra backend round-trip. What waits in the printer's queue does not count here.
+- **ETA (queue)** orders printers by when they will actually be *free*: the running print plus everything queued behind it, including the auto-queue work the server would hand that printer. The number comes from the same server-side simulation the queue page's «estimated remaining» tile reads, answered per printer, so this order and that tile always agree. Same tiers as the first order: busy with a timed finish (soonest first), busy with a print nobody has timed yet, free now, offline.
+
+Both orders are also offered on the [queue page](print-queue.md), under the same names.
 
 ### Group printers by location
 
