@@ -291,6 +291,31 @@ BamDude розширює `spool.tag_uid` з 16 до 32 символів на Pos
 
 ---
 
+## :material-database-import: Йдемо зі Spoolman: одноразовий імпорт
+
+Синхронізація вище лишає Spoolman джерелом істини. Якщо ви натомість хочете
+**перестати** тримати Spoolman, але зберегти його дані, `scripts/import_spoolman.py`
+одноразово переносить котушки у власний інвентар BamDude через API:
+
+```bash
+python scripts/import_spoolman.py \
+    --spoolman-url http://localhost:7912 \
+    --bamdude-url  http://localhost:8000 \
+    --api-key      <ключ BamDude API з inventory:update> \
+    --dry-run
+```
+
+Приберіть `--dry-run`, щоб записати. Переносяться матеріал, колір, бренд, вага
+за етикеткою, використана вага, ціна за кг (рахується з ціни котушки у Spoolman)
+і tag UID; у примітці лишається id зі Spoolman, тож повторний запуск легко
+помітити й відкотити.
+
+!!! warning "Це імпорт, а не синхронізація"
+    Він виконується один раз і назад не дивиться. Спершу **вимкніть** синхронізацію
+    зі Spoolman, інакше обидві сторони вважатимуть ті самі котушки своїми.
+
+---
+
 ## :material-help-circle: Траблшутинг
 
 **Connection failed**

@@ -291,6 +291,31 @@ Full API contract: [API Reference → Spoolman Inventory](../reference/api.md).
 
 ---
 
+## :material-database-import: Moving off Spoolman: one-way import
+
+Sync above keeps Spoolman as the source of truth. If you would rather **stop**
+running Spoolman and keep its data, `scripts/import_spoolman.py` copies its
+spools into BamDude's own inventory once, over the API:
+
+```bash
+python scripts/import_spoolman.py \
+    --spoolman-url http://localhost:7912 \
+    --bamdude-url  http://localhost:8000 \
+    --api-key      <a BamDude API key with inventory:update> \
+    --dry-run
+```
+
+Drop `--dry-run` to write. Each spool carries over its material, colour, brand,
+label weight, used weight, cost per kg (computed from Spoolman's per-spool
+price) and tag UID; the note records the Spoolman id it came from, so a second
+run is easy to spot and undo.
+
+!!! warning "It is an import, not a sync"
+    It runs once and does not look back. Turn Spoolman sync **off** first, or
+    the two will each believe they own the same spools.
+
+---
+
 ## :material-help-circle: Troubleshooting
 
 **Connection failed**
