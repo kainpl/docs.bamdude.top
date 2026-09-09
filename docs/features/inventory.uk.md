@@ -32,7 +32,7 @@ BamDude має власний інвентар фізичних котушок �
 - **Status tabs** — Active / Archived / All, плюс quick filters Used / New, плюс stock filter All / Stock (без slicer profile) / Configured (зі slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches) або **[History](#history)** (усі списання ферми). Поруч стоїть *Forecast*, якщо є права на нього.
-- **Group similar** — toggle, що візуально колапсує ідентичні unused / unassigned котушки в один expandable рядок з count-бейджем (напр. *5 identical spools*). Grouping-key — `manufacturer + material + color name + label_weight + subtype + lot` — оскільки lot входить у ключ, batch, створений з **авто-нумерацією лотів** (див. нижче), лишається окремими картками, а не колапсує; зливаються лише копії з однаковим лотом (чи без лота). Used або AMS-assigned котушки завжди видні окремо, тож знаєш, яка фізична котушка в якому слоті. Group-state persist-ить через сесії.
+- **Group similar** — toggle, що візуально колапсує ідентичні котушки в один expandable рядок з count-бейджем (напр. *5 identical spools*). Grouping-key — `manufacturer + material + color name + label weight + subtype`; lot у ключ свідомо **не** входить, тож batch, створений з **авто-нумерацією лотів** (див. нижче), усе одно колапсує в один рядок, і група може охоплювати кілька лотів. Котушка, встановлена в принтер, завжди видна окремо, тож знаєш, яка фізична котушка в якому слоті; надпочата котушка, повернута на полицю, групується зі своїми близнючками, а залишок рядка — точна сума по всіх учасниках. Group-state persist-ить через сесії.
 
 ## :material-package-variant: Додавання котушок
 
@@ -144,7 +144,7 @@ Quick-Add котушки називаються **stock spools** — вони т
 - **Авто-нумерація вимкнена** — усі копії отримують одне введене значення Lot (або взагалі без лота).
 
 !!! tip "Bulk buying"
-    5-pack PLA з однієї партії → Quantity = 5, Lot = 1, **Авто-нумерація лотів** увімкнена → пʼять котушок з лотами 1–5, показані пʼятьма окремими картками (lot входить у grouping-key). Хочеш згорнути їх в один рядок *5 identical spools*? Лишай Lot порожнім (або вимкни авто-нумерацію), щоб копії були справді ідентичні, і скористайся toggle **Group similar**.
+    5-pack PLA з однієї партії → Quantity = 5, Lot = 1, **Авто-нумерація лотів** увімкнена → пʼять котушок з лотами 1–5, кожну видно за її лотом, і при цьому один рядок *5 identical spools* під toggle **Group similar** — lot у grouping-key не входить, тож нумерація лотів нічого не коштує у списку.
 
 #### Звідки беруться сім'ї
 

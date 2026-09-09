@@ -32,7 +32,7 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
 - **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches), or **[History](#history)** (every consumption record on the farm). *Forecast* sits beside them when you have permission for it.
-- **Group similar** — toggle that visually collapses identical unused / unassigned spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label_weight + subtype + lot` — because lot is part of the key, a batch created with **auto-numbered lots** (see below) stays as distinct cards rather than collapsing; only same-lot (or lot-less) copies merge. Used or AMS-assigned spools always appear individually so you can tell which physical spool is in which slot. Group state persists across sessions.
+- **Group similar** — toggle that visually collapses identical spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label weight + subtype`; lot is deliberately **not** part of it, so a batch created with **auto-numbered lots** (see below) still collapses into one row, and a group may span several lots. A spool that is loaded in a printer always appears individually, so you can tell which physical spool is in which slot; a started spool back on the shelf groups with its twins, and the row's remaining weight is the exact sum over the members. Group state persists across sessions.
 
 ## :material-package-variant: Adding spools
 
@@ -144,7 +144,7 @@ The **Quantity** field is only shown in Quick Add and creates that many spools i
 - **Auto-number unticked** — every copy shares the single Lot value you typed (or no lot at all).
 
 !!! tip "Bulk buying"
-    A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, shown as five distinct cards (lot is part of the grouping key). Want them collapsed into one *5 identical spools* row instead? Leave the lot empty (or auto-number off) so the copies are truly identical, then use the **Group similar** toggle.
+    A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, each traceable by its lot, and still one *5 identical spools* row under the **Group similar** toggle — lot is not part of the grouping key, so numbering the lots costs you nothing in the list.
 
 #### Where families come from
 
