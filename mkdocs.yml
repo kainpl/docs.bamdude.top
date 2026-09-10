@@ -106,6 +106,7 @@ plugins:
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
             Auto-Queue Routing: Авто-черга
+            Filament Routing: Призначення філаменту
             "Slice settings": "Налаштування слайсингу"
             "Preheat & Heat Soak": "Прогрів і heat-soak"
             Staggered Start: Поетапний запуск
@@ -262,6 +263,7 @@ nav:
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
       - Auto-Queue Routing: features/auto-queue.md
+      - Filament Routing: features/filament-routing.md
       - Slice settings: features/slicer-pipelines.md
       - Preheat & Heat Soak: features/preheat.md
       - Staggered Start: features/staggered-start.md

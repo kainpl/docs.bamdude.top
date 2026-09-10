@@ -215,26 +215,17 @@ BamDude **не** зберігає "desired state" на своєму боці. С
 
 BamDude авто-discover-ить AMS юніти, коли принтер підключається — без ручного конфігу. Updates течуть, коли AMS-конфігурація міняється (юніт додано / прибрано / перекабельовано).
 
-### Dual-nozzle wiring (H2D / H2D Pro)
+### Dual-nozzle wiring {#dual-nozzle-wiring-h2d-h2d-pro}
 
 На dual-nozzle принтерах кожен AMS-юніт фізично закабельований або до лівого, або до правого nozzle. BamDude показує wiring-діаграму на картці принтера, щоб міг планувати multi-material друки.
 
 ### Nozzle-aware filament mapping
 
-Коли 3MF призначає філаменти конкретним nozzle-ам, BamDude обмежує матчинг до AMS-tray-їв, з'єднаних з правильним nozzle:
+Для нарізаного 3MF BamDude зіставляє сопла використаних каналів обраної плити з поточними фізичними прив'язками AMS і зовнішньої подачі. За відсутності відповідного джерела завдання не переходить до довільного слота іншого сопла.
 
-1. 3MF несе `filament_nozzle_map` + `physical_extruder_map` у `project_settings.config`, мапінг кожного filament-слота на target-nozzle (`0` = right, `1` = left).
-2. Принтер репортує `ams_extruder_map` через MQTT, вказуючи, який AMS подає на який nozzle.
-3. Matcher розглядає лише tray-ї на правильному nozzle — якщо немає збігів, fallback на повний tray-список.
+Позначки **L / R** у діалозі показують прив'язки. Перевірка перед запуском застосовується до авточерги, черг конкретних принтерів і повторів. Вона охоплює підтримувані двосоплові моделі загалом, зокрема змішану подачу AMS + зовнішня та окремі зовнішні подачі, якщо це дозволяють файл і принтер.
 
-UI filament-mapping показує **L** / **R** badges поруч із кожним filament-requirement, тож на одному погляді видно, який nozzle задіяний. Це стосується:
-
-- Auto-mapping print-scheduler-а
-- Reprint-модалки
-- Add-to-Queue модалки
-- Multi-printer selection (per-printer mapping для farm-ів)
-
-Single-nozzle принтери (X1C, P1S, A1, A1-mini, P2S, тощо) пропускають nozzle-фільтр — кожен AMS-tray доступний.
+Невідомий стан AMS відрізняється від підтвердженої відсутності AMS. Після перепідключення потрібні свіжі дані. Повні приклади та правила кольорів — у [Призначенні філаменту](filament-routing.uk.md).
 
 ### Filament Track Switch (FTS)
 

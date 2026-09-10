@@ -216,26 +216,17 @@ Click the badge to jump straight to the AMS Settings dialog where the toggle liv
 
 BamDude auto-discovers AMS units when a printer connects — no manual configuration. Updates flow in whenever the AMS configuration changes (a unit added / removed / re-cabled).
 
-### Dual-nozzle wiring (H2D / H2D Pro)
+### Dual-nozzle wiring {#dual-nozzle-wiring-h2d-h2d-pro}
 
 On dual-nozzle printers each AMS unit is physically wired to either the left or right nozzle. BamDude shows the wiring diagram on the printer card so you can plan multi-material prints.
 
 ### Nozzle-aware filament mapping
 
-When a 3MF assigns filaments to specific nozzles, BamDude constrains matching to AMS trays connected to the correct nozzle:
+For a sliced 3MF, BamDude matches the selected plate's used-channel nozzles against current physical AMS and external-feed bindings. If no suitable source exists, the job does not fall back to an arbitrary slot on the other nozzle.
 
-1. The 3MF carries `filament_nozzle_map` + `physical_extruder_map` in `project_settings.config`, mapping each filament slot to a target nozzle (`0` = right, `1` = left).
-2. The printer reports `ams_extruder_map` over MQTT, indicating which AMS feeds which nozzle.
-3. The matcher only considers trays on the correct nozzle — if no trays match, falls back to the full tray list.
+**L / R** badges in the dialog show bindings. The check before start applies to Auto-Queue, specific-printer queues, and repeats. It covers supported dual-nozzle models generally, including mixed AMS + external and separate external feeds when the file and printer permit them.
 
-The filament-mapping UI shows **L** / **R** badges next to each filament requirement so you can see at a glance which nozzle is involved. This applies to:
-
-- The print scheduler's auto-mapping
-- The reprint modal
-- The Add-to-Queue modal
-- Multi-printer selection (per-printer mapping for farms)
-
-Single-nozzle printers (X1C, P1S, A1, A1-mini, P2S, etc.) skip the nozzle filter — every AMS tray is available.
+Unknown AMS state is different from confirmed absence of AMS. Fresh information is required after reconnecting. See [Filament Routing](filament-routing.md) for complete examples and color rules.
 
 ### Filament Track Switch (FTS)
 

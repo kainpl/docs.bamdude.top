@@ -202,6 +202,16 @@ A single row goes to the auto-queue on its own, the whole plan goes at once, or 
 
 Both queue targets fill in the **print options you saved as a preference** (swap macros, calibration and the rest) — the same profile the print dialog reads. The preference is looked up by the chosen printer's model, or, for the auto-queue, by the model the file was sliced for, so one plan spanning two machines reads two profiles. Swap macros stay muted where they would fire twice: on a printer with swap mode off, or for a file that already carries them baked in.
 
+### Plate and feed-rule validation
+
+Before creating jobs, the server validates every selected source in that request: the actual plate, its G-code, model, used channels, and required nozzles. If a source is invalid, that request does not create part of the plan while silently omitting the rest.
+
+**Whole file** stays a recipe choice. If the 3MF contains one unambiguous printable plate, the queue receives its actual number, including 2 or 5. Several printable plates need an explicit selection. Choosing Auto-Queue does not make an unsliced recipe printable.
+
+Automatic and named-printer targets receive the same plate requirements. Auto-Queue keeps the exact model of the selected alternative file; quantity, order line, and the split of copies between files stay intact. A multicolor plan is allowed when every channel has its own compatible source. Copy count never grants automatic permission to change colors. See [Filament Routing](filament-routing.md).
+
+A production plan does not confirm that a ready printer exists: a valid job can wait for the required filament or printer state. Preparation that never starts a print is not counted as produced parts or a completed print.
+
 ---
 
 ## :material-file-document-edit: Filing a print under its order

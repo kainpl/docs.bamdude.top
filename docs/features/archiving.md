@@ -336,32 +336,25 @@ The viewer URL carries the archive reference, so refreshing the page keeps you i
 
 ## :material-printer-3d: Re-print with AMS Mapping
 
-The **Reprint** button on an archive card opens a filament comparison modal that maps the slicer's required filaments to the AMS slots currently loaded on the target printer.
+**Reprint** opens the ordinary Print dialog with the archive's source file and plate. It compares the used channels with the destination printer's current sources — AMS or supported external feeds.
 
 ### What the modal shows
 
-| Required (from 3MF) | → | Loaded (in AMS) | Status |
-|---|---|---|---|
-| PLA Red (25 g) | → | PLA Red (AMS-A slot 1) | :material-check:{ style="color: #4caf50" } |
-| PETG Black (10 g) | → | PETG White (AMS-B slot 2) | :material-alert:{ style="color: #ff9800" } different colour |
-| PLA Blue (5 g) | → | TPU (external) | :material-close:{ style="color: #f44336" } different type |
+The selected plate's required materials and colors, available slots, and nozzle bindings. Several plates have separate requirements and mappings: unused colors from other plates do not become requirements for this print.
 
 ### Status indicators
 
-| Icon | Meaning |
-|---|---|
-| :material-check:{ style="color: #4caf50" } | Type and colour both match (exact or fuzzy hex tolerance) |
-| :material-alert:{ style="color: #ff9800" } | Same type, different colour |
-| :material-close:{ style="color: #f44336" } | Different filament type or slot empty |
+Material and color matches, a different color, and empty or incompatible sources help you review the selection. Allowing another color does not relax material, known variant, or nozzle requirements. A preview does not reserve a spool: the server checks the complete mapping again before start.
 
 ### Auto-matcher + manual override
 
-- **Auto-match** runs first: BamDude pairs each required filament to the best AMS slot by type then colour, with a fuzzy hex tolerance so a slightly off RGB (5 D printed→batch shift) still resolves as a match.
-- **Manual override per slot** — click any row's dropdown to pick a different AMS slot. Manually-overridden slots get a **blue ring** indicator so you can see at a glance which rows you touched.
-- **Slot labels** include AMS unit + slot number (e.g. `AMS-B Slot 3`) and respect any [Custom AMS Labels](ams.md#custom-ams-labels) you've set.
-- **Colour names** come from the [`color_catalog`](inventory.md#colour-catalog) (Bambu Lab manufacturer wins for shared hex; HSL fallback for unknown hex).
-- **Re-read AMS** button at the top of the modal pulls a fresh AMS state from the printer if you've swapped a spool since the modal opened.
-- **Multi-plate archives** show a plate-grid selector first — only the filaments used by the chosen plate are displayed for mapping; this prevents the cross-plate mis-mapping that would otherwise pull every plate's filament into one list.
+- Auto-matching looks for a complete mapping of every used channel; one physical slot cannot supply two channels at once.
+- A manual slot choice preserves physical intent. Another printer or plate needs a new mapping review.
+- Slot labels respect [Custom AMS Labels](ams.md#custom-ams-labels); color names come from the catalog.
+- Refresh AMS state in the dialog after changing a spool. Stale information does not permit an incompatible mapping to start.
+- Repeats retain available feed and color rules. Actual sources are checked for the new attempt; old AMS numbers do not move arbitrarily between machines.
+
+See [Filament Routing](filament-routing.md) for AMS, external-feed, dual-nozzle, and waiting examples.
 
 ### Print options
 

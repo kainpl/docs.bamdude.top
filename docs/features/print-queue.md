@@ -21,6 +21,7 @@ The print queue lets you:
 - **Timeline view** -- production schedule with estimated completion times
 - **Card size** -- the same S / M / L / XL switch as the printers page, shown in the cards view; it sets how many queue cards share a row and is remembered per browser
 - **Sort by ETA** -- the two orders the printers page has, under the same names: *ETA (job)* and *ETA (queue)*, the second from the server's forecast of every queue (see [Sort by ETA](monitoring.md#sort-by-eta-two-orders))
+- **Sort by Tag** -- the queue cards grouped under each printer's [tags](monitoring.md#status-sorting-collapsible-groups), a printer with several tags under each of them, *No tag* last, the tag's colour on the section dot
 - **Model-based assignment** -- queue to "any printer of matching model" and let the [auto-queue](auto-queue.md) pick the machine
 - **Smart plug automation** -- auto power-on/off
 
@@ -125,34 +126,17 @@ Permission-gated on `queue:create` — viewers without that right see no overlay
 
 ### One dialog per group
 
-Whenever more than one thing is queued at once — a File Manager selection, a
-drop onto a printer or the auto-queue, the library picker, or a copied queue —
-the Schedule dialog no longer opens once per file. Files whose answers would
-coincide are **grouped**, and one dialog stands for the group.
+When adding several files from the library, a drop, or a queue copy, files sharing the printer model, nozzle, build plate, and set of filament types are grouped into one dialog.
 
-Two things belong to a group and are carried across it:
+| Shared answer for the group | Checked for each file and plate |
+|---|---|
+| Printer or Auto-Queue, target model and location | Selected plates and their actual numbers |
+| Schedule, quantity, print options, and macros | Used channels and a complete source mapping |
+| General feed and exact-color rules | Individual channel choices and manual physical selections |
 
-| Carried across the group | Still resolved per file |
-| --- | --- |
-| Printer or auto-queue, and the auto target | Which plates are queued |
-| When it starts — now, scheduled, manual start, "queue only", auto-off | AMS filament mapping |
-| How many copies | |
-| Print options, swap macros, selected macros | |
+Color alone does not split a group, but color rules are checked for each file. The grouping checkbox does not permit replacing a pinned color or transferring a channel choice between files. If you change a channel for the current file, the next file opens for review; the form explains this.
 
-Two files are in the same group when their **printer model**, **nozzle**,
-**build plate** and the **set of filament types** the plate needs are the same.
-
-!!! tip "Colour does not split a group"
-    The same badge in red and in black is one question, not two — two spools of
-    the same type are interchangeable for everything the dialog asks. On the
-    farm this was built for, putting colour in the key doubled the number of
-    dialogs for no benefit anybody wanted.
-
-A filament **type** is different: if nothing on the chosen printer can supply
-it, the run stops and shows you the dialog for the file that needs it, so you
-can load a spool or send it elsewhere. The check is skipped when the run targets
-several printers or the auto-queue, because there the mapping is worked out per
-plate at dispatch and the dialog would have had nothing to ask.
+A missing material on the selected printer can bring back the dialog for that file. Auto-Queue can accept a valid file to wait, but neither grouping nor selecting multiple printers bypasses source validation and complete mapping before start. See [Filament Routing](filament-routing.md).
 
 ### Declining a group
 
@@ -173,46 +157,22 @@ file, and letting the third go as a group again is an ordinary run.
 
 ### AMS Filament Mapping
 
-When adding multi-color prints, configure which AMS slot to use for each filament. Auto-matching by type and color is available, with manual override.
+Choose a source for every used channel of the selected plate: AMS or a supported external feed. Auto-matching considers material, known variant, color, and nozzle. A manual physical slot choice is saved as a restriction and checked again before start.
 
-!!! tip "Stored Mappings"
-    AMS mappings are saved with the queued print. When it starts, BamDude uses your configured mapping.
+On supported dual-nozzle printers, **[L] / [R]** badges show nozzle bindings. Support is not limited to H2D or X2D: it follows the model's capabilities and current configuration. Mixed AMS + external feeds or two separate external feeds are allowed only with the selected plate's correct bindings.
 
-**Dual-nozzle printers (H2D / H2D Pro)** show **[L] / [R]** badges next to each AMS slot so you can see which extruder a slot feeds. The auto-matcher uses the slicer's `sliced_for_model` + per-slot filament metadata; falling back to manual when the printer doesn't have an exact filament match for what the gcode wants.
+The job retains its feed and color rules through schedule edits, repeats, and cloning. A manual mapping needs a new answer for another printer or plate. [Complete rules and waiting reasons](filament-routing.md#editing).
 
 **Prefer lowest remaining filament** (`prefer_lowest_filament`): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1. It is a farm setting, off by default, and it is switched on under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping.
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 
 
-!!! warning "Several plates at once get one mapping each"
-    Ticking more than one plate used to hide the Filament Mapping panel — but the
-    dialog still sent a mapping, built from the *union* of every selected plate's
-    filaments. Tray assignment is stateful, so where plate 1 prints red on slot 1
-    and plate 2 prints red on slot 2, slot 1 claimed the only red spool and slot 2
-    fell through to whatever else was loaded. That single mapping then went out
-    with **every** plate, and the queue uses a stored mapping verbatim.
+!!! info "Each plate has its own mapping"
+    Several selected plates get separate panels and separate mappings. Channels used by one plate are not combined with another's. For multiple printers, requirements are checked against the actual destination. Remaining-filament checks account for total demand on a spool: 60 g does not cover two 40 g plates.
 
-    Each selected plate now gets its own panel (named after the plate), its own
-    tray overrides, and its own mapping on its own queue item. Fanning several
-    plates across several printers ships no mapping at all, so the scheduler maps
-    each plate against the printer it actually picks.
-
-    A manual tray pick no longer survives a change of printer (a tray number means
-    a different spool on a different machine), the "not enough filament" check
-    follows what each plate actually dispatches and sums demand per spool (60 g
-    left doesn't cover two plates of 40 g even though it covers either one), and a
-    plate whose filaments can't be read is named and blocks **Print** instead of
-    being queued unmapped.
-
-!!! tip "Nozzle mismatch is caught before upload"
-    A file sliced for one nozzle size sent to a printer with a different nozzle
-    fitted used to fail *on the printer*, after the whole upload, with a cryptic
-    HMS error. The queue now checks before uploading and fails the item with an
-    actionable message. It only ever blocks on a positive mismatch: a file with no
-    recorded nozzle size, or a printer that hasn't reported its nozzles, dispatches
-    exactly as before, and on a dual-nozzle printer a match against either hotend
-    passes.
+!!! info "Nozzle information is checked before starting"
+    The required nozzle and its known diameter requirement are checked. A match against the other hotend does not replace the required binding. If necessary printer state is not available yet, the job waits; if required information is missing from the file, fix the source. An earlier preview does not permit an incompatible mapping to start.
 
 ### Plate selection (multi-plate 3MF)
 
@@ -220,9 +180,11 @@ Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal
 
 - Click a single plate to dispatch just that plate (the queue row records it as `plate_id`).
 - Multi-select plates → one queue row per plate, queued in order.
-- The thumbnail + per-plate filament list comes from the m023 plate cache (no re-parse on each render).
+- The preview shows the thumbnail and filament list for each plate; the server validates the selected plate against the source before queueing.
 
 Plate index is preserved across restart-recovery + reprint flows. See [archiving](archiving.md) for chain-of-custody on multi-plate dispatches.
+
+**Whole file** is accepted only for one unambiguous printable plate. Its actual number is retained, even when it is not 1; a multi-plate file needs an explicit choice. [Source validation](filament-routing.md#plates).
 
 ### Build-plate type on queue items + print dialog
 
@@ -247,7 +209,7 @@ When adding to queue, expand **Print options**:
 | **Preheat / heat-soak** | inherit | `inherit` follows the farm-wide [preheat](preheat.md) toggle; `on` / `off` decide it for this job alone, with an optional explicit chamber target. |
 
 !!! note "Use AMS is not one of these toggles"
-    Whether the job feeds from the AMS or from an external spool follows the filament mapping you give it, and rides on the queue row as `use_ams`. There is no separate switch in the Print options panel — it is what the mapping panel already said. It *can* be set directly through the API and the bulk edit.
+    Choose feeds in the mapping panel or the Auto form's **Filament source** field. There is no separate switch in Print options. API and bulk-edit `use_ams` choices are reconciled with the saved routing rules; the actual start command follows the validated source mapping. A boolean does not override a physical slot selection or supply missing AMS hardware.
 
 !!! tip "Auto calibration (off / auto / on)"
     On models whose firmware supports it — the **X2D** and the **H2** family (H2D, H2D Pro, H2C, H2S), plus the **P2S** and **A2L** for bed levelling + flow calibration — Bed levelling, Flow calibration and (on dual-nozzle machines) Nozzle-offset calibration are **three-position**: **Off**, **Auto** (the printer itself decides whether the step is needed for the job), or **On** (always run). Models without firmware support keep the plain **Off / On** toggle. The choice is remembered per printer model, and Off/On behave exactly as before — the new Auto position only reaches a printer that advertises it.
@@ -303,6 +265,8 @@ Then the ordinary Schedule dialog opens **once per group** of items that would b
 
 !!! tip "A print started outside the queue counts too"
     A job sent from the printer's screen or straight from a slicer leaves no queue entry — the card shows it because it reads the printer directly, and the copy reads it from the same place.
+
+A copy also retains feed and color rules. The form identifies a source with manual mapping and asks you to check it for the destination printer. Channel choices for another file require individual review even in a grouped addition.
 
 ## :material-drag: Drag and Drop Ordering
 

@@ -28,7 +28,7 @@ A VP runs in **exactly one mode**. The mode is set per-VP and validated server-s
 |------|-------------------------|----------|
 | **`file_manager`** (default) | Upload is saved to the **[File Manager](file-manager.md) library** and nothing else happens — no print, no queue entry. An operator prints it from there when ready. | Multi-user / multi-machine inbox where every upload gets a look before printing — also the right mode if you only want to **keep** the file without printing. |
 | **`print_queue`** | Upload is archived **and** queued on a **specific** target printer. With `auto_dispatch=true` the queue item starts immediately; with `auto_dispatch=false` it waits for an explicit Start click. | You always print this VP's uploads on the same machine. |
-| **`auto_queue`** | Upload is archived and dropped into the **[auto-queue router](auto-queue.md)** — no fixed target. The scheduler picks any eligible idle printer (model + filament + color match). Per-VP **Force colour match** toggle pins per-slot `(type, colour, weight)` matching instead of the looser type-only set, so a "Yellow PLA" job won't dispatch to a printer with only "Black PLA" loaded. | Hands-off load-balancing across a multi-printer farm. |
+| **`auto_queue`** | The file is saved to the library and, after plate validation, added to [Auto-Queue](auto-queue.md). The machine is chosen by exact model and the complete filament, feed, and nozzle requirements. **Force colour match** requires the colors of every used channel. | Load-balancing across a farm. |
 | **`proxy`** | The slicer's TLS session is TCP-proxied to a real `target_printer_id` — BamDude is just the public endpoint. | Remote printing — slicer reaches BamDude over LAN/VPN, BamDude reaches the printer. |
 
 !!! info "There is no separate ‘archive only’ mode"
@@ -663,25 +663,13 @@ Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / p
 
 ## :material-swap-vertical-variant: Use the slicer's AMS slots {#save-ams-mapping}
 
-**Off by default, per Virtual Printer**, on the VP card next to the other Queue-mode toggles.
+Off by default. In queue mode with a **specific target printer**, this option preserves the physical slots selected in the slicer. It lets you distinguish two spools of the same material and color.
 
-When a slicer sends a job through a Queue-mode VP, BamDude normally ignores the slot numbers the slicer resolved and picks the trays itself, by filament type and colour. That is the right default almost always — but **two spools of the same red PLA are identical as far as the file is concerned**, so matching by type and colour cannot tell them apart. Whichever one you chose in Bambu Studio, BamDude might load the other.
+That selection prevents automatic matching from replacing the chosen spool with one holding less filament or another suitable spool. Complete mapping, material, nozzle, and current-source validation still runs before start. An incomplete or stale physical mapping needs review; it is not sent blindly. An entirely unresolved slot list from the slicer is not treated as a physical selection.
 
-Turn this on and the slots the slicer resolved are used exactly as sent.
+In **Auto-Queue** mode, no printer is pinned: sources are resolved for the machine selected by the router. Saving slicer slots does not transfer one printer's AMS numbers across the farm.
 
-!!! warning "It is a trade — understand it before turning it on"
-    For jobs from this VP, BamDude stops choosing slots, which also switches off:
-
-    | What you lose | Normally does |
-    |---|---|
-    | **Lowest spool first** | Burns down a partly-used spool before opening a fresh one |
-    | **The AMS-Backup gate** | Stops "lowest first" stranding a print when AMS filament backup is off |
-    | **Inventory remaining-weight** | Skips a tray your inventory says can't finish the job |
-    | **Flow-Through-System routing** | Routes an FTS-bound slot to the external spool holder |
-
-    With the setting **off**, all of that works exactly as it does today. A mapping the slicer left entirely unresolved is ignored, so an empty answer never becomes a wrong one.
-
-Turn it on for a VP that feeds one printer whose trays you load deliberately; leave it off for a VP feeding a farm, where BamDude choosing is the point.
+In both queue modes, explicitly disabling **Use AMS** in the slicer's job retains an external-only restriction. Enabling it permits automatic selection of supported feeds; it does not assume an AMS exists on a printer without one. The plate, used channels, and nozzle bindings are validated from the file itself. See [Filament Routing](filament-routing.md).
 
 ---
 

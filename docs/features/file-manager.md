@@ -592,3 +592,11 @@ The currently-selected folder when you land in the Library is the default destin
     Look for "sliced" badges to identify files ready for printing.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
+
+## Validation before queueing {#queue-validation}
+
+For a sliced 3MF, the server validates the selected plate and its used channels before creating a job. Multi-plate files need an explicit plate selection; **Whole file** is accepted for one unambiguous printable plate, preserving its actual number.
+
+Incomplete filament information, missing G-code, or missing required nozzle bindings means the file needs correction or re-slicing. A temporarily unavailable compatible printer means waiting in Auto-Queue. The form distinguishes these situations.
+
+Grouped additions retain common options, but do not transfer one file's channel choices to another without review. AMS, external-feed, color, and repeat rules are covered in [Filament Routing](filament-routing.md).
