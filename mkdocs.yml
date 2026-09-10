@@ -163,6 +163,17 @@ plugins:
             API Reference: Довідка API
             "Keyboard Shortcuts": "Гарячі клавіші"
             Troubleshooting: Усунення неполадок
+            Scenarios: Сценарії
+            "Three phases, one bed heating per phase": "Три фази — по одному нагріву столу на фазу"
+            "An urgent print ahead of the queue": "Терміновий друк поперед черги"
+            "A hundred parts across five printer models": "Сто деталей на п'ять моделей принтерів"
+            "The customer asks when fifty will be ready": "Замовник питає, коли буде п'ятдесят"
+            "Recording scrap": "Облік браку"
+            "Surplus on the shelf, reused by the next order": "Надлишок на полиці, який бере наступне замовлення"
+            "A night shift with nobody in the shop": "Нічна зміна без людини в цеху"
+            "Maintenance across fifty printers": "Обслуговування п'ятдесяти принтерів"
+            "Keeping the breaker and the power bill in check": "Тримати автомат і рахунок за світло під контролем"
+            "A camera wall on the workshop TV": "Стіна камер на телевізорі в цеху"
             Privacy: Приватність
 
 markdown_extensions:
@@ -318,6 +329,18 @@ nav:
       - Backup & Restore: features/backup.md
       - Bug Report: features/bug-report.md
 
+  - Scenarios:
+    - scenarios/index.md
+    - Three phases, one bed heating per phase: scenarios/three-phases.md
+    - An urgent print ahead of the queue: scenarios/urgent-print.md
+    - A hundred parts across five printer models: scenarios/one-part-five-models.md
+    - The customer asks when fifty will be ready: scenarios/when-will-it-be-ready.md
+    - Recording scrap: scenarios/recording-defects.md
+    - Surplus on the shelf, reused by the next order: scenarios/spare-parts-on-the-shelf.md
+    - A night shift with nobody in the shop: scenarios/unattended-night.md
+    - Maintenance across fifty printers: scenarios/maintenance-at-scale.md
+    - Keeping the breaker and the power bill in check: scenarios/power-budget.md
+    - A camera wall on the workshop TV: scenarios/camera-wall-tv.md
   - Add-ons:
     - addons/index.md
     - BamDude Bridge: addons/bridge.md
