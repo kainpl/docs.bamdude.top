@@ -168,6 +168,29 @@ A printer that *is* ready still wins when there's a choice.
 
 ---
 
+## :material-swap-horizontal: Rebalancing across printer models
+
+An order line's work is split between printer models when it is queued — by hand, or with the farm's proposal — and a queued copy belongs to its file's model. When the P1S machines free up faster than the forecast assumed, the X1C copies keep waiting in their own pile. Rebalancing lets the auto-queue **move still-pending copies of an order line to idle printers of another model** when that finishes the line sooner — including a model whose plate makes a different number of parts, in which case the plates and the number of prints are recalculated.
+
+**The rule.** A pending copy moves only when *all* of these hold: its own model has no printer ready right now; the other model has at least one printer that is idle *and* ready (an empty queue is not enough — a printer still waiting for a plate clear only looks free); the line has a sliced file for that model with a print-time estimate; and the prints needed to cover the same parts there would finish no later than waiting at home. Among several models that qualify, the earliest finish wins, then the least surplus.
+
+**Parts, not prints.** A copy is a claim on covering N parts. Moving a 6-part P1S plate to an A1 mini whose plate makes 2 parts turns one print into three; moving 2 parts onto a bigger bed turns them into one print with a surplus of less than one plate's worth, which lands on the shelf like any other surplus.
+
+**Three ways to run it.**
+
+- **Automatically** — Settings → Printing → Auto-Queue Routing → **Rebalance across printer models** (off by default). The scheduler checks after every placement pass, moves at most one copy per idle printer per pass, and leaves a line alone for five minutes after a move.
+- **Per line** — the **Rebalance** button on an order line's plan, shown while the line has pending auto-queue copies. It runs regardless of the setting and ignores the five-minute pause.
+- **Per copy** — **Rebalance** on a pending row or a collapsed `×N` block of the auto-queue panel. A row that cannot move says why.
+
+**What is never moved.** A copy that is already handed to a printer, scheduled for a time, staged for a manual start, pinned to specific filament slots, aimed at a location, queued from an archive rather than a library file, or not filed under an order line. Those either belong to a printer already or carry a decision of yours.
+
+**What you see.** A moved row carries a `← P1S` badge on the panel, naming the model it was queued for before; the copies created with it share its batch. Routing, dispatch and filament rules are untouched: a moved copy is written by the same writer every enqueue uses and passes the same file and filament checks.
+
+!!! note "Estimates decide"
+    Rebalancing compares the same print-time estimates the ETA uses. A file without an estimate is never chosen as a target, and a copy without one is treated as if it could start at home the moment a printer frees.
+
+---
+
 ## :material-fire-off: Drying takes lower priority than a print
 
 [Queue Auto-Drying](ams.md#queue-auto-drying) keeps idle spools dry between prints. When **Settings → AMS Display Thresholds → Queue Auto-Drying** is in its default **non-blocking** mode (`queue_drying_block=false`, *"prints take priority over drying"*), a job queued **directly** to a printer already stops an in-progress dry cycle and starts printing.

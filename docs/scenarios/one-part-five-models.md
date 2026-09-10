@@ -54,12 +54,12 @@ Say the number once — **100** — and have the whole thing land in the queue: 
 - **Each copy is routed by its file's model.** `bracket-p1s` copies go to free P1S printers only, `bracket-x1c` to X1C — the router never sends a file to a model it was not sliced for. Within a model, the next free printer wins; one printer gets at most one new item per tick.
 - **Every start still passes the usual gates:** filament loaded and mapped, plate-clear confirmation where the printer asks, the staggered-start slot, drying. A copy that cannot start yet waits in that printer's queue with its reason on the row.
 - **The order counts from the prints.** As archives complete, the line's *Printed* rises and the plan's *Outstanding* falls; what is queued is subtracted too, so reopening the plan never asks for prints already on their way.
-- **The proposal is a proposal.** Nothing about the split is applied until you press the button, and nothing re-splits later by itself.
+- **The proposal is a proposal.** Nothing about the split is applied until you press the button, and nothing re-splits later by itself unless rebalancing is on.
 
 ## :material-alert: Pitfalls and what-ifs
 
-!!! warning "The split is fixed when you queue it"
-    Once queued, a copy belongs to its file's model. If the P1S machines free up faster than the forecast assumed, the X1C copies keep waiting in their own pile — BamDude does not move copies between models on its own. To rebalance, delete the pending X1C copies from the auto-queue panel (a `×3` block deletes copy by copy) and send the row again from the order's plan: the plan has already subtracted what is still queued, so it asks only for what is missing, and **Split by the farm** proposes afresh.
+!!! tip "The split is a starting point"
+    Once queued, a copy belongs to its file's model — until rebalancing moves it. With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the auto-queue moves still-pending copies to idle printers of another model whenever that finishes the row sooner, recalculating plates and counts for that model's bed. With it off, the row's **Rebalance** button does the same on demand, and a pending row on the auto-queue panel can be moved on its own. Details: [Rebalancing across printer models](../features/auto-queue.md#rebalancing-across-printer-models).
 
 - **All five files first.** The wizard can only offer the models it has files for; a model with no file simply gets no copies. *Prepare every slice before you calculate.*
 - **Same part, same name.** The unified list depends on the object being called the same thing in every file. `bracket` in one slice and `bracket_v2` in another are two parts with two targets — rename in the slicer, or set the stray one's target to `0` and let the other carry the hundred.

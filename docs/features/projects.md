@@ -196,11 +196,15 @@ Each row therefore carries a **File** switch listing the other candidate plates 
 - **Split across files** shares one row's count between them. The auto-queue routes an item by the model its file names, so this is the only way one order line's work reaches two printer models at once — and the numbers have to add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
 - A file a row already offers this way is no longer listed under **Add a plate…**, where it would put the same work on screen twice.
 
+With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the split is a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
+
 ### Sending the plan to the queue
 
 A single row goes to the auto-queue on its own, the whole plan goes at once, or **To printer…** opens the usual print dialog for one machine. That dialog opens at one copy — set the number there.
 
 Both queue targets fill in the **print options you saved as a preference** (swap macros, calibration and the rest) — the same profile the print dialog reads. The preference is looked up by the chosen printer's model, or, for the auto-queue, by the model the file was sliced for, so one plan spanning two machines reads two profiles. Swap macros stay muted where they would fire twice: on a printer with swap mode off, or for a file that already carries them baked in.
+
+Once queued, a copy belongs to its file's model until rebalancing moves it — automatically with the setting on, or with the line's **Rebalance** button.
 
 ### Plate and feed-rule validation
 
