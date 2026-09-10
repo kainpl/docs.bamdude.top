@@ -173,7 +173,7 @@ Draw label designs with the mouse — text, QR, barcode and a colour swatch — 
 
 <div class="feature-card" markdown>
 ### [:material-clipboard-list: Orders, Products & Stock](projects.md)
-Customers, orders of product × quantity, and products made of printed and purchased parts. A plan says what to print next, prints are filed under the order that needs them, and spare parts go onto a free stock shelf.
+Customers, orders of product × quantity, and products made of printed and purchased parts. A plan says what to print next, prints are filed under the order that needs them, spare parts go onto a free stock shelf, and the Stock tab shows every shelf on the farm at once.
 </div>
 
 <div class="feature-card" markdown>
