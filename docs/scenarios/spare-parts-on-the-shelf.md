@@ -57,7 +57,7 @@ The two spare shades exist **in BamDude**: on the product's shelf, where the nex
 - **A duplicated order takes nothing.** A reorder must not quietly empty the shelf.
 - **Only counted printed parts have a shelf.** A part with *per unit* `0` is not measured; a purchased part is procurement, not stock.
 - **History is not swept up.** Prints from before the shelf existed are not counted in; for one you know is still in the box, the archive editor's **Count into stock** does it — one print at a time, on your say-so, and only for a print that finished successfully and belongs to no order.
-- **The shelf is per product, and one product per page.** There is no farm-wide stock page yet; the catalog card shows a product's kit count as a badge when there is anything on its shelf.
+- **The whole farm's shelves are one tab.** **Projects → Stock** lists every product with anything on its shelf, the orders holding its kits, and one journal of every movement — the place to look when the question is "what do we have" rather than "what does this product have".
 
 ## :material-link-variant: Related scenarios
 

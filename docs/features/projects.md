@@ -283,6 +283,14 @@ Three things it deliberately does **not** do:
 
 Deleting a part removes its ledger; **merging** two parts moves the movements onto the survivor, because a merge says the two were always the same thing. Deleting a product removes the ledgers of all its parts. Deleting a print leaves its movements alone and simply drops the reference — the parts are still on the shelf.
 
+### The Stock tab
+
+**Projects → Stock** is the same shelf for the whole farm at once. One row per product that has anything to count — kits first, then name — expanding into the balance of each counted part and the **active** orders whose lines hold kits of it in reserve, each a link. **Adjust** on a row opens the same hand-correction dialog the product page has.
+
+Under the table, the **Movements** journal lists every movement on every shelf, newest first, filterable by product and by reason, with **Show older** loading the next page until the ledger is exhausted — the page says so, rather than leaving the oldest row shown to be read as the first there ever was.
+
+**Only with stock** (on by default) hides a product whose shelf is empty and unreserved; turn it off to see every product with a counted part, zeros included. A product hidden from the catalog still appears, marked, because its parts are on the shelf all the same. Completed orders are not listed as holding kits — theirs went out inside the units the customer received — and cancelled orders have already given theirs back.
+
 ---
 
 ## :material-shield-key: Permissions
