@@ -5,6 +5,9 @@ description: A screen on the wall that shows every camera and names no file — 
 
 # A camera wall on the workshop TV
 
+!!! tip "Need states and completion times instead of video?"
+    Use the [status monitor](../features/status-monitor.md): 50 uniform tiles on Full HD, attention-first ordering and separate printer/queue views. It has its own **Status monitor** TV token; the **Cam Wall** token in this scenario is for cameras.
+
 ## :material-map-marker-question: The situation
 
 Forty-eight printers in two rooms. The operator walks the rows to see what is going on; from the desk, the Printers page is a wall of cards and the cameras are one click each. A TV is already hanging in the shop. What it should show is every camera at once — and nothing a visitor should not read off a screen in a room anyone can walk into: no file names, no serial numbers, no addresses.
@@ -25,7 +28,7 @@ A URL that a TV, or a Raspberry Pi behind it, opens once and keeps showing: the 
 
 1. **Try the wall signed in.** On the Printers page switch **Cards / Cam wall**, or open `http://your-bamdude:8000/camwall` in your own browser. That is the full wall — tiles are clickable and the gear opens its settings. Note what looks right: how many tiles live at once, the snapshot interval.
 
-2. **Make a token for the TV.** **Settings → Long-lived Tokens → create**: name it after the screen — *Workshop TV* — scope **Cam Wall**, and an expiry (a year at most; *never* is refused by design). Copy the token: it is shown once.
+2. **Make a token for the TV.** **Settings → API Keys → Camera and monitor tokens → create**: name it after the screen — *Workshop TV* — scope **Cam Wall**, and an expiry (a year at most; *never* is refused by design). Copy the token: it is shown once.
 
 3. **Build the URL.**
 
@@ -37,7 +40,7 @@ A URL that a TV, or a Raspberry Pi behind it, opens once and keeps showing: the 
 
 4. **Point the TV at it.** A browser in kiosk mode on the Pi, or the TV's own browser, full screen. That is all the configuration there is.
 
-5. **Retire it one day.** **Settings → Long-lived Tokens**, find *Workshop TV* by name or by its prefix, **Revoke**. The wall goes dark on its next request; there is no cache to wait out.
+5. **Retire it one day.** **Settings → API Keys → Camera and monitor tokens**, find *Workshop TV* by name or by its prefix, **Revoke**. The wall goes dark on its next request; there is no cache to wait out.
 
 ## :material-cogs: What BamDude does on its own after that
 

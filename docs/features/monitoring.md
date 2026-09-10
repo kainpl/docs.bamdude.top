@@ -7,6 +7,9 @@ description: Monitor your printers in real-time
 
 BamDude provides live monitoring of all your connected Bambu Lab printers through WebSocket-based real-time updates.
 
+!!! tip "A separate operator display"
+    Open the [status monitor](status-monitor.md) for uniform tiles, attention-first ordering, separate printer/queue views and a signed-out TV. The working printer cards below remain available for control.
+
 ---
 
 ## :material-resize: Resizable Printer Cards

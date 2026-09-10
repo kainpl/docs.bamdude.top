@@ -14,6 +14,11 @@ BamDude має безліч функцій для керування вашою 
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
+### [:material-monitor: Монітор стану](status-monitor.md)
+50 однакових плиток на Full HD, порядок за увагою та ETA, подання принтерів і черги й обмежений ТВ-доступ.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-monitor-dashboard: Моніторинг у реальному часі](monitoring.uk.md)
 Статус принтерів у реальному часі, температури, прогрес друку та відстеження помилок HMS через WebSocket.
 </div>

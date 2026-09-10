@@ -236,7 +236,7 @@ The 60-min UI-side token is the wrong shape for a wall-mounted dashboard, a Home
 Assistant camera entity, or a Frigate front-end that re-fetches the same URL for
 months. BamDude mints **long-lived tokens** for those cases.
 
-**Settings → API Keys → Camera API Tokens → Create new token.** Give it a name,
+**Settings → API Keys → Camera and monitor tokens → Create new token.** Give it a name,
 pick a **scope** (below) and a lifetime (1–365 days, default 90), and click
 Create. The token is shown **exactly once**.
 
@@ -263,6 +263,8 @@ bed, so folding the two together would silently widen every wall token already
 handed out) and vice versa. **None** of them exposes a printer's IP address,
 serial number or access code, or reaches any other BamDude API.
 
+**Status monitor** is a separate, metadata-only scope in the same panel. It opens the [operator monitor](status-monitor.md) for all non-archived printers, with no cameras, filenames or printer control. It cannot be used as a camera token, and camera scopes cannot open the status monitor.
+
 #### Token properties
 
 | Property | Detail |
@@ -279,10 +281,11 @@ Administrators see an extra **All users** section listing every active token in
 the install — useful for triage if one is suspected of being leaked, or to
 enforce farm-wide hygiene.
 
-Creating and managing these tokens needs the `camera:view` permission — the same
-one already required for the ordinary browser-side stream tokens. Default Viewers
-and Operators groups have it. To delegate management to a non-admin, put them in
-a group with both `camera:view` and `settings:read` (so they can reach Settings).
+Camera scopes require `camera:view`, plus the API-key permission for the action:
+`api_keys:create`, `api_keys:read` or `api_keys:delete`. Access to the Settings UI
+also needs `settings:read`. A **Status monitor** token instead needs printer and
+queue read permissions along with the API-key permissions; it does not require
+camera access. See the [monitor setup guide](status-monitor.md).
 
 URL shape: `/api/v1/printers/{id}/camera/stream?token=<token>` — the same
 query-param contract as the short-lived flow, so Home Assistant's generic camera
@@ -343,7 +346,7 @@ browser, so opening a kiosk link once won't overwrite your own wall preferences.
 
 ### Revoking a token
 
-1. **Settings → Long-lived Tokens**.
+1. **Settings → API Keys → Camera and monitor tokens**.
 2. Find the row by name or by `lookup_prefix`.
 3. Click **Revoke**, confirm in the modal.
 
@@ -660,7 +663,7 @@ http://your-bamdude:8000/overlay/{printer_id}
 
 ### Streaming Overlay token
 
-1. **Settings → API Keys → Camera API Tokens.**
+1. **Settings → API Keys → Camera and monitor tokens.**
 2. Create a token with the **Streaming Overlay** scope and copy it.
 3. Append it to the overlay URL, with the printer number matching the printer's
    own URL on the Printers page (`/overlay/1` is printer 1, and so on):

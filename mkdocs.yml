@@ -98,6 +98,7 @@ plugins:
             Features: Функції
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
+            Status Monitor: Монітор стану
             "Printer Control": "Керування принтером"
             "Archived Printers": "Архівовані принтери"
             "Firmware Updates": "Оновлення прошивки"
@@ -266,6 +267,7 @@ nav:
     - features/index.md
     - Printers & Monitoring:
       - Real-time Monitoring: features/monitoring.md
+      - Status Monitor: features/status-monitor.md
       - Printer Control: features/printer-control.md
       - Archived Printers: features/archived-printers.md
       - Firmware Updates: features/firmware-updates.md

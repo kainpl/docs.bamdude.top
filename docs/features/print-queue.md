@@ -9,6 +9,9 @@ Queue and schedule prints with independent per-printer queues, drag-and-drop ord
 
 ---
 
+!!! tip "Keep the queue on a second screen"
+    Select **Open monitor** for the [status monitor](status-monitor.md). Its Queue view shows the current print, queue pause or waiting reason, next job and queue ETA in uniform tiles. The monitor is read-only; keep this page open to manage jobs.
+
 ## :material-playlist-plus: Overview
 
 The print queue lets you:

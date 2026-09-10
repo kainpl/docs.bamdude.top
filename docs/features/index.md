@@ -14,6 +14,11 @@ BamDude is packed with features to manage your 3D print farm. Explore them all b
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
+### [:material-monitor: Status Monitor](status-monitor.md)
+50 uniform tiles on Full HD, attention and ETA sorting, printer/queue views and scoped TV access.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-monitor-dashboard: Real-time Monitoring](monitoring.md)
 Live printer status, temperatures, print progress, and HMS error tracking via WebSocket.
 </div>
