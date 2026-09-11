@@ -28,7 +28,7 @@ Skipped objects are counted for you: a part you skip from the printer's screen o
 ## What changes when you do
 
 - **The order's figures.** Defective parts are not usable parts: they come off the line's progress and go back into *what to print next*.
-- **The shelf.** A print that belonged to no order was put on the product's shelf when it finished — as *printed − defective*. Record two bad parts the next morning and the shelf gives them up, with a line in the stock journal saying why. If those parts have already gone out of the door, the shelf cannot follow; the journal tells you, and you correct it by hand on the product page.
+- **The shelf.** A print that belonged to no order was put on the product's shelf when it finished — as *printed − defective*. Record two bad parts the next morning and the shelf gives them up, with a line in the stock journal saying why. If those parts have already gone out of the door, the shelf cannot follow: BamDude says so where you recorded the defects — on the printer card or in the Telegram prompt — and you correct the shelf by hand on the product page.
 - **Statistics.** *Defects by printer* shows printed, defective and the rate per machine, so a printer that eats every third part shows up.
 
 !!! warning "Surplus you already banked stays banked"
