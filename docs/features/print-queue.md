@@ -315,6 +315,8 @@ After a print finishes, the next print does **not** start automatically. The pri
 
 This is a **per-printer** setting, not a farm-wide one — **Require plate-clear confirmation** sits on each printer's edit form, so an automated cell can run without it while the bench next to it still asks. Swap-mode printers force it off: the swapper is the plate-clear.
 
+**Defects with the answer.** When a finished print waits for *Clear plate*, its parts appear beside the two buttons with a counter each; fill in what came out bad and press either answer — the count is written to that print, under the same permission. Untouched counters send nothing.
+
 ### Bulk Editing
 
 Select multiple queue items via the toolbar checkboxes to apply a bulk edit. **Only `pending` rows are touched** — anything already printing or finished is counted as skipped and reported back, and without `queue:update_all` so is anything you didn't queue yourself.

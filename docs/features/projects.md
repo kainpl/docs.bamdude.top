@@ -104,6 +104,8 @@ Beneath it: **Queue** (what is still waiting for this order, with the line each 
 
 To file many prints at once, select them on the [Archives](archiving.md) page and use **Assign to order**, which takes an order and optionally one of its lines.
 
+**Defects.** Every completed print card shows what came off the plate and how many went in the bin, and its menu offers **Defects…** — one counter per part, capped at what the plate made, saved under the order's own permission. The order's *Defective*, *Remaining* and progress move at once; a print that belonged to no order also has its shelf credit corrected. See [Recording defects](../scenarios/recording-defects.md).
+
 ---
 
 ## :material-package-variant: Products

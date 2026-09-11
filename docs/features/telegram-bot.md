@@ -207,6 +207,8 @@ Notifications sent to Telegram include inline action buttons:
 | **Maintenance Due** | Mark done |
 | **Print Progress** | Pause / Stop |
 
+**Defects…** on the completion message, and after *Plate cleared* / *Repeat print*: one message per part with buttons 0–5 (*other…* to type a number), *no defects, done* ends it. Needs the plate-clear permission and the printer in the chat's scope.
+
 ---
 
 ## :material-account-multiple: Multi-Chat Roles & Authorization

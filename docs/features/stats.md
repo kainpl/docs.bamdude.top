@@ -37,6 +37,8 @@ Hover any bar to see the breakdown for that day.
 
 A table at the bottom rolls every printer's contribution: prints, filament, time, energy, cost. Click a row to drill into the archive list pre-filtered to that printer.
 
+**Defects by printer** — printed, defective and the rate per machine over the selected timeframe, worst rate first; completed prints only.
+
 ## :material-flash: Per-print energy capture
 
 Energy tracking is opt-in. To capture it on each print:
