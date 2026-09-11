@@ -25,12 +25,13 @@ The on-demand and scheduled local backups produce the same ZIP layout. Top-level
 | `.mfa_encryption_key` | Encryption key, when the source install stores it in a file. |
 | `zigbee/zigbee.db` | Zigbee driver database, including network state, when present. |
 | `.install_id` | Existing anonymous telemetry identity, when present. |
+| `backup-manifest.json` | File sizes, SHA-256 checksums and the complete directory list, including empty directories. |
 
 The ZIP contains sensitive database values and key files. API response filtering does **not** remove secrets from this database backup. Keep it private. If the encryption key is supplied only through `MFA_ENCRYPTION_KEY`, configure the same key on the destination; an environment-only key is not added to the ZIP.
 
 PostgreSQL export reads one consistent database snapshot and preserves column types, defaults, constraints, indexes and migration history. Archive search is rebuilt for the destination backend. SQLite backups include committed data still in its WAL. An export or ZIP-writing failure does not publish a partially written backup over an existing file.
 
-The database snapshot does not freeze the accompanying directories. For a complete copy of files while they are changing, pause uploads, deletion and other file-changing work during backup. Logs, runtime caches, temporary files and the application itself are excluded. File-copy permission failures are reported in server logs, so check those as well as the backup result.
+The database snapshot does not freeze the accompanying directories. For a complete copy of files while they are changing, pause uploads, deletion and other file-changing work during backup. Logs, runtime caches, temporary files and the application itself are excluded. An unreadable file, a detected source change or a failed copy fails the backup; it never reports success with skipped files. This includes an existing but unreadable Zigbee database. The configured archive and plate-calibration paths are used in both directions. Symlinks, Windows junctions and special files are rejected rather than followed.
 
 ---
 
@@ -243,11 +244,17 @@ Push frequency, content checkboxes, and credentials can all be edited live witho
 
 1. Keep a backup of the current installation if you may need to return to it. Use the same or a newer BamDude version than the one that created the backup.
 2. While BamDude is running, open **Settings → System → Restore** and upload the ZIP. Placing a ZIP in the data directory does not start a restore automatically.
-3. BamDude checks the database before stopping background services. A damaged database, missing application tables or unknown migration versions are rejected before the live database or encryption key changes.
-4. Restore replaces the database and the included directories and files listed above. It applies pending migrations; it does not replay migrations already recorded in the backup.
+3. BamDude checks ZIP paths, CRC, the manifest (when present), the application database and any included Zigbee database before stopping background services. Unsafe entries, corrupt or missing files, missing application tables and unknown migration versions are rejected before changing live data.
+4. Restore prepares and verifies all incoming files on their destination filesystems. It retains the old contents, replaces the files, then replaces the database. Directory roots and Docker mount points stay in place. Pending migrations run after the replacement; recorded migrations are not replayed.
 5. **Restart BamDude after restore**, then verify printers, archive search, File Manager files and sign-in. If restore failed after services were paused, restart before returning to normal work as well.
 
-On PostgreSQL, replacing the schema, loading rows, and restoring sequences and foreign keys is one database transaction. A failure during those steps rolls back the database. If the database swap fails after the encryption-key file was written, the old key file is restored too. Later schema migrations and copying directories are separate steps: the entire ZIP restore is not a single transaction over database and filesystem.
+A preparation or file-replacement failure aborts before the database swap. If replacement of the database fails, all replaced directories, the MFA key, telemetry identity and Zigbee database/sidecars are rolled back. PostgreSQL schema, rows, sequences and foreign keys still use one database transaction. Zigbee is shut down before its database is replaced; an unsuccessful shutdown aborts restore.
+
+New backups preserve empty directories: restoring one removes old contents there. Older ZIPs without a manifest remain supported; a directory or optional file absent from an older ZIP leaves the destination unchanged. Manual backups, scheduled backups and restores cannot overlap in one running BamDude process (API returns HTTP 409 for a second request).
+
+Allow space for the extracted ZIP in the system temporary directory and for the incoming files alongside the existing files on every destination volume. Old contents are retained until the database replacement succeeds. If a file lock or external write also prevents rollback, BamDude reports failure and retains recovery copies in `.bamdude-restore-*` directories named in server logs: keep them for recovery. A failure to remove staging after a successful restore is logged and leaves the restored files usable.
+
+Perform restore during a maintenance window, without uploads or other file-changing work. This is a reversible file replacement, not an operating-system snapshot or a distributed transaction: power loss, external writers and loss of the database connection during commit can still require recovery. A later migration failure keeps the newly restored database and its matching files together.
 
 API: `POST /api/v1/settings/restore` (multipart `file=…`, requires `settings:restore`).
 
