@@ -447,6 +447,8 @@ Send the same print to multiple printers at once:
 
 When you set quantity to **N**, **all N copies** are added to the queue at once. They share a `batch_id` (a UUID stamped on every copy) so you can still answer "how many of this batch finished?" after the live queue rows clean up.
 
+**With several printers picked, N is per printer by default.** Three printers at 4 make twelve prints — the dialog says so in a line under the field («4 × 3 printers = 12 in total»). Switch the toggle beside the field to **Total** and the number is dealt across the picked printers one copy at a time, in the order the picker lists them, so 13 on three printers becomes 5 / 4 / 4 and the line names who gets what; a printer dealt nothing is simply not asked. The choice is remembered in your browser. The auto-queue's quantity was always a total and has no toggle.
+
 - You can reorder, edit AMS, or cancel each copy individually before it starts.
 - The very first copy doesn't get "direct dispatched" any more — every copy goes through the same queue path. This eliminates the historical "first archive lands ahead of N-1 copies still in queue" inconsistency.
 - The endpoint response status is `"queued"` for the whole N-copy submission; `dispatch_job_id` and `dispatch_position` are nullable in this path.
