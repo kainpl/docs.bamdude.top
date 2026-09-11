@@ -290,7 +290,7 @@ The pause-state is also visualised on the Printers page in real time — a pause
 | Event | Fires when |
 |-------|------------|
 | `print_missing_spool_assignment` | Print started without complete spool→AMS mapping |
-| `filament_low` | Spool remaining below `low_stock_threshold` |
+| `filament_low` | Spool remaining below `low_stock_threshold` (or the spool's own override). A spool bound to your inventory is checked when a print's consumption lands, once per run-down; an unbound Bambu spool (the printer's own counter) and a Spoolman-bound slot are checked on every AMS change, once per spool in a slot. |
 | `ams_humidity_high` / `ams_temperature_high` | AMS exceeds its threshold |
 | `sensor_above_max` / `sensor_below_min` | A [sensor](sensors.md) reading left the limits set for it |
 | `sensor_back_in_range` | …and came back |

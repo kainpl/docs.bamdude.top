@@ -290,7 +290,7 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 | Подія | Спрацьовує коли |
 |-------|------------------|
 | `print_missing_spool_assignment` | Друк стартував без повного мапінгу spool→AMS |
-| `filament_low` | Залишок котушки нижче `low_stock_threshold` |
+| `filament_low` | Залишок котушки нижче `low_stock_threshold` (або власного порога котушки). Котушка з інвентарю перевіряється, коли лягає витрата друку, — раз на пробіг; неприв'язана котушка Bambu (лічильник принтера) і слот, прив'язаний до Spoolman, — на кожній зміні AMS, раз на котушку в слоті. |
 | `ams_humidity_high` / `ams_temperature_high` | AMS перевищив свій поріг |
 | `sensor_above_max` / `sensor_below_min` | Показ [датчика](sensors.md) вийшов за задані для нього межі |
 | `sensor_back_in_range` | …і повернувся |
