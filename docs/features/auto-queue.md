@@ -11,6 +11,14 @@ Printers of the same model with and without AMS are checked against their actual
 
 ## :material-router-network: How it works
 
+### Unavailable source files
+
+In the upcoming fixes release, an already queued file that disappears, cannot be read, or times out produces a **File error** on that job. Other jobs continue; the printer queue is not paused and no failed physical print is counted. Failed AutoQueue jobs remain visible with **Retry** and removal actions; printer queues show them under Issues. Restore access and retry explicitly. AutoQueue validates the source before returning the same job to pending. Busy printers and unavailable filament continue to wait normally.
+
+Queueing an external-folder file does not create an independent copy. A laptop hosting an SMB share must remain accessible until all pending jobs have been sent. When moving those files to local NAS storage, preserve their paths and folder structure inside the container for existing jobs.
+
+### Assignment
+
 1. On submission, BamDude validates the selected plate in the sliced 3MF, its matching G-code, model, and used channels. A source error blocks adding the job; a temporary lack of compatible printers does not.
 2. The background router reads pending work in queue order, or SJF order when enabled.
 3. It looks for a printer of the required model and location with a complete suitable set of feeds. Each used channel needs its own source.
