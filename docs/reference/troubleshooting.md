@@ -7,6 +7,29 @@ description: Common issues and solutions
 
 Solutions for common issues with BamDude.
 
+## Printer states appear slowly when opening the page
+
+Printer cards can display live WebSocket states while the REST status request is
+still pending. REST supplies additional archive and plate information and remains
+the fallback when WebSocket access is unavailable. Simultaneous status reads are
+combined into a bounded batch; returning to a tab refreshes only active queries.
+A stalled WebSocket viewer is disconnected so it cannot hold up other viewers.
+
+For a support report, note the time you opened the page and attach backend logs
+covering that time. The following entries help narrow down the delay:
+
+- `WebSocket bootstrap timing`: authentication/accept and initial queue preparation.
+- `WebSocket bootstrap applied`: the browser has applied the initial states to its
+  query cache. Match the `id` with the previous entry. `client_connect_ms` includes
+  the token request, connection and receipt; `server_elapsed` also includes the
+  return trip for this acknowledgement. Neither measures the first painted card.
+- `Slow WebSocket send`, `WebSocket send timed out`, or `WebSocket outbox overflow`:
+  a browser connection cannot keep up with outgoing data.
+
+Missing acknowledgement alone does not prove a server fault: an older browser
+bundle, a disconnected tab or a network interruption can also explain it. These
+timings do not include loading the application's JavaScript or the printer list.
+
 ---
 
 ## :material-printer-3d: Printer Connection Issues
