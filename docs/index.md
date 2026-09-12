@@ -67,7 +67,7 @@ The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in
 
 <div class="feature-card" markdown>
 ### :material-monitor-dashboard: [Real-time Monitoring](features/monitoring.md)
-Live printer status via WebSocket, MJPEG camera streaming, HMS error tracking, and AMS humidity/temperature monitoring.
+Live printer status via WebSocket, shared MJPEG camera streaming with built-in diagnostics, HMS error tracking, and AMS humidity/temperature monitoring.
 </div>
 
 <div class="feature-card" markdown>
