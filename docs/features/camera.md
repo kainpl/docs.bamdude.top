@@ -48,7 +48,7 @@ Each tile shows:
 - an **offline chip** when the printer isn't connected;
 - an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
 - an **HMS-error badge** when the printer has active (non-noise) HMS errors;
-- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings.
+- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
 
 ### Wall settings
 
@@ -438,6 +438,11 @@ When a stall is detected:
 3. Reconnects automatically.
 4. Resumes streaming.
 
+For a brief break, the first RTSP reconnect is immediate. Repeated failures use a
+short, capped exponential delay with per-stream jitter, so a whole farm does not
+retry in one burst when an access point or switch returns. Closing the viewer
+interrupts that wait; it does not leave a reconnect task behind.
+
 !!! tip "Network blips"
     If your network briefly drops, the stream will automatically recover once the connection is restored — no manual intervention needed.
 
@@ -459,7 +464,12 @@ It calls `POST /api/v1/printers/{id}/camera/diagnose` and shows the results inli
 !!! note "Live-stream shortcut"
     If a viewer is already watching the camera **and** the buffered last frame is fresher than 10 seconds, the diagnostic skips the real test and reports the stream as live / healthy. Opening a fresh socket would kick the live viewer off on firmwares that allow only a single camera connection — so when there's already proof the camera works, BamDude doesn't disturb it.
 
-The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), and a summary code.
+The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), the mirrored Bambu Studio catalog resolution when known, and a summary code. The catalog is descriptive only; it never chooses a camera transport over live evidence.
+
+If the `first_frame` check joined a camera capture that was already in progress,
+the dialog says **Shared concurrent capture**. That is a successful result which
+avoided opening a second socket to a printer that allows only one reader; **New
+camera capture** means this diagnostic opened the capture path itself.
 
 ---
 
@@ -471,7 +481,10 @@ BamDude can automatically capture a camera snapshot when prints complete:
 2. Enable **Capture snapshot on print complete**.
 3. Snapshots are saved to the print's archive folder and surface in the archive's photo gallery.
 
-This creates a visual record of every completed print — paired with the timelapse and finish photo, you've got a full visual log of farm output.
+This creates a visual record of every completed print. It is **off by default**:
+an installation with no explicit saved setting does not keep background frames,
+take finish photos, or add notification images. Enabling it does not enable the printer's own timelapse;
+that remains the per-print choice made by the slicer or printer.
 
 !!! note "How BamDude picks the moment"
     The ideal moment is the last object layer, while the print is still on the bed and before the End G-code parks the toolhead, swaps the plate or clears it. BamDude tries three sources in order of quality:
