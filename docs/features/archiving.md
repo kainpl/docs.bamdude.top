@@ -209,7 +209,7 @@ There are four recovery triggers — no periodic polling, so short prints aren't
 3. **`on_print_complete` last-chance** — right before SD cleanup runs at print end, BamDude tries one more download. The file is still on SD and the printer is no longer busy writing — highest-probability success window.
 4. **Manual** — `POST /api/v1/archives/{id}/retry-download`. The frontend exposes a "Retry 3MF download" menu item on the archive card, visible only when `file_path` is empty.
 
-Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first.
+Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first. So does the download for a print BamDude adopts at start-up (below).
 
 While the row has no file yet:
 
@@ -221,6 +221,17 @@ When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing
 
 !!! tip "Archives-page banner — \"prints archived without thumbnails\""
     When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
+
+### A print that started while BamDude was off
+
+Until 0.5.6, a print begun from the printer's screen or the slicer while BamDude was down left no trace at all — no archive, no queue row — because the only place an external print's archive is created is the print-start event, and on a fresh start BamDude deliberately does not treat the first "running" it sees as a start (doing so would re-archive a print already under way). Now the print that is running when BamDude comes up is **adopted**: it gets the same row an external print gets at start, the queue row is claimed, the 3MF and thumbnails are fetched through the recovery path above, and the archive card appears like any other.
+
+Two figures on such a row are honest rather than exact, and are marked so:
+
+- **Start time** is reconstructed once the 3MF arrives, from the slicer's estimate and the remaining time the printer reported when BamDude joined (`estimate − remaining` before that moment). If the file never arrives, the start stays unknown rather than invented, and the print's duration is left out of the statistics.
+- **Energy** counts only from the moment BamDude joined — the plug's meter had no earlier reading — so the figure is marked approximate.
+
+There is no late "print started" notification, and only the print in progress at start-up can be recovered; prints that finished during the outage are gone.
 
 ---
 
