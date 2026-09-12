@@ -138,6 +138,9 @@ DATABASE_URL=postgresql+asyncpg://bamdude:password@192.168.1.100:5432/bamdude
 | Port | default `5432` |
 | Database | must already exist |
 
+!!! warning "Create the database with a UTF-8 locale"
+    Case-insensitive search (`ILIKE`) and full-text ranking follow the database's `LC_CTYPE`. A database created with the `C` or `POSIX` locale folds ASCII letters only, so «Лампа» would not match a search for `ЛАМПА`. Create it with a UTF-8 locale — for example `CREATE DATABASE bamdude ENCODING 'UTF8' LOCALE 'en_US.utf8' TEMPLATE template0;` (or `LOCALE_PROVIDER builtin LOCALE 'C.UTF-8'` on PostgreSQL 17+). BamDude checks this at start: on a `C`-locale database it folds case through a Unicode collation (PostgreSQL 17+ or an ICU build), turns full-text ranking off, and says so in the log; a server with no such collation searches with ASCII folding only and logs a warning with the fix. The bundled server is created correctly by BamDude itself.
+
 ---
 
 ## :material-docker: PostgreSQL with Docker
@@ -217,6 +220,8 @@ The search API behaves the same either way; only the engine underneath differs:
 | Engine | FTS5 virtual table | `tsvector` + GIN index |
 | Query syntax | `MATCH` with wildcards | `to_tsquery` with prefix matching |
 | Weights | not weighted | A (name) > B (filename, tags) > C (designer, filament) > D (notes) |
+
+Ranking needs a database that folds Unicode case itself (a UTF-8 locale). On a `C`-locale database that offers a Unicode collation, BamDude searches with `ILIKE` through that collation instead (no ranking); one without any collation keeps the index and ranks, ASCII-folded — see the locale note above.
 
 ---
 
