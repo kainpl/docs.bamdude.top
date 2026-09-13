@@ -37,9 +37,20 @@ The Printers page has two layouts, switched with the **Cards / Cam wall** toggle
 To conserve bandwidth and `ffmpeg` processes, the wall streams intelligently rather than opening every camera at once:
 
 - **Only on-screen tiles go live.** An `IntersectionObserver` marks a tile "visible" once ≥40% of it is on screen — the 40% floor stops a scroll-boundary sliver from spinning up a stream.
-- **Live is capped.** Up to **4** visible tiles stream live MJPEG at once (the *max live* setting, default 4 — the documented Raspberry Pi 4 ceiling), assigned in list order so the choice is stable. Visible tiles past the cap fall back to snapshots.
+- **Live is capped by the browser transport.** The saved *max live* preference defaults to 4. HTTP/1.x or an unknown protocol permits at most **2 live streams per tab**, shared with the floating camera. Confirmed HTTP/2 or HTTP/3 permits the chosen maximum (up to 16). Extra visible tiles show snapshots; off-screen tiles pause. The UI explains a lower effective limit without changing your saved preference.
 - **Snapshots for the rest.** Over-cap tiles refresh a still frame every **8 seconds** by default (the *snapshot interval* setting).
 - **Off-screen tiles pause.** Scroll a tile out of view and it stops all network activity until it returns. Disconnected printers also render paused — no live slot is burned on a camera that has nothing to stream.
+
+
+The protocol comes from completed browser API requests, including the browser-facing
+hop through a reverse proxy. HTTPS alone does not prove HTTP/2. Missing browser
+timing data keeps the two-stream cap. Separate tabs/windows do not share this
+frontend budget, so it is not a browser-wide connection guarantee.
+
+Snapshots share a two-request queue, cancel on exit and keep the last decoded
+image while a replacement arrives. The bottom-right time is when this tab last
+successfully updated the snapshot, not the printer's capture time. Failed refreshes
+retain the previous frame and retry. Live streams keep the LIVE badge.
 
 ### Per-tile
 
@@ -204,6 +215,28 @@ held open. The relay accepts at most 64 active sources and drops JPEGs over
 
 The setting does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
 and hardware-decoder behaviour still depend on the host and the camera model.
+
+---
+
+### Restart and INFO diagnostics
+
+Set the variable in the environment used to launch the backend (or its `.env`)
+and restart BamDude. Removing it or setting `CAMERA_RUNTIME=inline` takes effect
+on the next restart. A development reloader can add a Python launcher process;
+count worker-ready log entries and child PIDs, not just all Python processes.
+
+The normal backend log includes worker ready/stopped records, viewer attach/detach,
+relay start/first frame/end, and completed-session metrics. Match the printer and
+session/identity fields; they connect parent records to the child. First-frame
+latency and frame counts describe backend delivery, not proof of browser rendering.
+`viewers_gone` after close is normal. `subscribers=0` confirms that no browser viewer
+remains on that relay; another viewer legitimately keeps the shared source alive.
+
+Download the current log from **System Info**. DEBUG is not required for this
+basic diagnosis. Worker forwarding bounds record size and rate and redacts
+credentials/URLs; it does not log each video frame. Keep an issue's time and
+printer name when sending a log to support. Isolation does not automatically
+enable VAAPI/D3D11 or remove HTTP/1 browser connection limits.
 
 ---
 
@@ -408,13 +441,13 @@ When using embedded mode, the camera appears as a floating window with the follo
 - **Draggable** — click and drag the header to reposition.
 - **Resizable** — drag the bottom-right corner to resize.
 - **Persistent position** — position and size are remembered per printer across sessions.
-- **Navigation persistence** — open cameras stay open when you navigate away from the Printers page and back.
-- **Minimize** — click the minimize button to collapse to the title bar.
+- **Navigation persistence** — leaving Printers closes its media requests; returning restores the last selected camera.
+- **Minimize** — collapse to the title bar and stop the live request; expand to start it again.
 - **Close** — click X to close the viewer.
-- **Multi-viewer** — open cameras for multiple printers simultaneously, each with its own remembered position and size.
+- **One viewer** — clicking another printer replaces the current camera and cancels the old stream. Old saved multi-camera lists restore only the last camera.
 
 !!! tip "Embedded mode for the whole farm"
-    Embedded mode keeps you on the main screen while monitoring prints — no need to switch between browser windows. Open multiple viewers to monitor your entire print farm at once.
+    Use the single floating viewer to inspect a printer; use Camera Wall for the whole fleet.
 
 ---
 
@@ -792,7 +825,7 @@ When no print is running, the overlay still works — it shows the camera feed p
 ## :material-lightbulb: Tips
 
 !!! tip "Multiple Cameras"
-    In embedded mode, open multiple camera viewers simultaneously -- each remembers its own position and size.
+    Use Camera Wall for multiple cameras. Embedded mode keeps one viewer and switches it when you select another printer.
 
 !!! tip "Bandwidth Conservation"
     Close camera windows when not actively watching to save server resources.
