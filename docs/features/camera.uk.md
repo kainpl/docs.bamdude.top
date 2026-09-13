@@ -194,10 +194,10 @@ One-shot capture та **зовнішні** live MJPEG, RTSP і snapshot прох
 !!! warning "Експериментально: перевірте перед production-фермою"
     `worker` працює fail-closed. Якщо containment процесу або локальне з'єднання
     не стартує, BamDude не перемикає запит назад на `inline` transport.
-    Built-in Bambu live view і Virtual Printer camera passthrough у цьому режимі
-    ще недоступні: повернеться помилка замість другого owner камери. Лишайте
-    `inline` за замовченням, якщо не перевірили external-camera path на своєму
-    хості.
+    Built-in Bambu live view у цьому режимі ще недоступний: повернеться помилка
+    замість другого owner камери. Virtual Printer camera passthrough уже є
+    worker-owned byte-for-byte raw TCP lease. Лишайте `inline` за замовченням,
+    якщо не перевірили external-camera і Virtual Printer paths на своєму хості.
 
 Налаштування не замінює hardware test. Camera firmware, Wi-Fi, `ffmpeg` і
 поведінка hardware decoder залежать від хоста та моделі камери.

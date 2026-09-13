@@ -194,10 +194,11 @@ of leaving a camera or `ffmpeg` process held open.
 !!! warning "Experimental: verify before using on a production farm"
     `worker` fails closed. If its process containment or local connection cannot
     start, BamDude does not switch that request back to `inline` transport.
-    Built-in Bambu live view and Virtual Printer camera passthrough are not yet
-    available in this mode, so they return an error rather than create a second
-    camera owner. Keep the default `inline` setting unless you specifically test
-    the external-camera path on your host first.
+    Built-in Bambu live view is not yet available in this mode, so it returns an
+    error rather than create a second camera owner. Virtual Printer camera
+    passthrough is already a worker-owned, byte-for-byte raw TCP lease. Keep the
+    default `inline` setting unless you specifically test the external-camera
+    and Virtual Printer paths on your host first.
 
 The setting does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
 and hardware-decoder behaviour still depend on the host and the camera model.
