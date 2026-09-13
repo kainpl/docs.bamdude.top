@@ -186,18 +186,21 @@ CAMERA_RUNTIME=worker
 ```
 
 Вона запускає один supervised локальний дочірній процес для роботи камери.
-One-shot capture та **зовнішні** live MJPEG, RTSP і snapshot проходять через
-автентифікований локальний JPEG relay; browser URL, токени й звичайна поведінка
-спільного перегляду не змінюються. Якщо browser relay відвалився, producer у
-дочірньому процесі звільняється, а не лишає камеру чи `ffmpeg` відкритими.
+One-shot capture, built-in Bambu chamber/RTSPS live view та зовнішні live MJPEG,
+RTSP і snapshot проходять через автентифікований локальний JPEG relay; browser
+URL, токени й звичайна поведінка спільного перегляду не змінюються. Якщо browser
+relay відвалився, producer у дочірньому процесі звільняється, а не лишає камеру
+чи `ffmpeg` відкритими. Relay приймає не більше 64 активних джерел і відкидає
+JPEG понад 2 MiB: черги live-кадрів обмежені 128 MiB на процес.
 
 !!! warning "Експериментально: перевірте перед production-фермою"
     `worker` працює fail-closed. Якщо containment процесу або локальне з'єднання
     не стартує, BamDude не перемикає запит назад на `inline` transport.
-    Built-in Bambu live view у цьому режимі ще недоступний: повернеться помилка
-    замість другого owner камери. Virtual Printer camera passthrough уже є
-    worker-owned byte-for-byte raw TCP lease. Лишайте `inline` за замовченням,
-    якщо не перевірили external-camera і Virtual Printer paths на своєму хості.
+    Built-in Bambu live view теж належить worker; його RTSPS шлях бере той самий
+    profile моделі для probe і reconnect, що й inline view. Virtual Printer
+    camera passthrough — worker-owned byte-for-byte raw TCP lease. Лишайте
+    `inline` за замовченням, якщо не перевірили camera і Virtual Printer paths
+    на своєму хості.
 
 Налаштування не замінює hardware test. Camera firmware, Wi-Fi, `ffmpeg` і
 поведінка hardware decoder залежать від хоста та моделі камери.

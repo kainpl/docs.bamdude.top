@@ -185,20 +185,22 @@ the service:
 CAMERA_RUNTIME=worker
 ```
 
-It starts one supervised local child process for camera work. One-shot captures
-and **external** MJPEG, RTSP and snapshot live views use an authenticated local
-JPEG relay; browser URLs, tokens, and the normal shared-viewer behaviour do not
-change. A disconnected browser relay releases the child-side producer instead
-of leaving a camera or `ffmpeg` process held open.
+It starts one supervised local child process for camera work. One-shot captures,
+built-in Bambu chamber/RTSPS live view, and external MJPEG, RTSP and snapshot
+live views use an authenticated local JPEG relay; browser URLs, tokens, and the
+normal shared-viewer behaviour do not change. A disconnected browser relay
+releases the child-side producer instead of leaving a camera or `ffmpeg` process
+held open. The relay accepts at most 64 active sources and drops JPEGs over
+2 MiB, bounding queued live frames to 128 MiB per process.
 
 !!! warning "Experimental: verify before using on a production farm"
     `worker` fails closed. If its process containment or local connection cannot
     start, BamDude does not switch that request back to `inline` transport.
-    Built-in Bambu live view is not yet available in this mode, so it returns an
-    error rather than create a second camera owner. Virtual Printer camera
-    passthrough is already a worker-owned, byte-for-byte raw TCP lease. Keep the
-    default `inline` setting unless you specifically test the external-camera
-    and Virtual Printer paths on your host first.
+    Built-in Bambu live view is worker-owned too; its RTSPS path uses the same
+    per-model probe and reconnect profile as the inline view. Virtual Printer
+    camera passthrough is a worker-owned, byte-for-byte raw TCP lease. Keep the
+    default `inline` setting unless you specifically test the camera and Virtual
+    Printer paths on your host first.
 
 The setting does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
 and hardware-decoder behaviour still depend on the host and the camera model.
