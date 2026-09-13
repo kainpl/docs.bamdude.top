@@ -93,11 +93,15 @@ Multi-line entries (stack traces, especially) are reassembled — a continuation
 
 ### Log rotation + retention
 
-The active log file (`bamdude.log`) rolls over at midnight (local time) — yesterday's logs are gzipped to `bamdude.log.YYYY-MM-DD.gz` and kept under `log_retention_days` (default **30**). On startup BamDude scans `<log_dir>/bamdude.log.*.gz` and deletes anything older than the retention setting.
+The active log file (`bamdude.log`) rolls over on the first log entry after midnight (server local time). Archives are plain text, named `bamdude-YYYY-MM-DD.log`. Restarting during the day does not force rotation.
 
-The system-info page surfaces a **Log Archives** panel listing every gzipped archive currently on disk — for each archive: date, size, **Download** (streams the `.gz`), and **Delete** (two-stage: first click arms the destructive button, second click actually deletes). Combined with the **Truncate** action on the live log file, the panel gives full per-day control without shelling into the container.
+Under **System Info → Log Files**, `bamdude.log` appears first with a **Current** label, its size, modification time and **Download** button. It is available even before the first daily archive exists. Download saves the full file as it stands when copying begins; logging continues. There is no restart or DEBUG-mode requirement, and no support-bundle tail limit. The size shown in the list is refreshed with **Refresh** and may differ from the later download as new entries arrive.
 
-`log_retention_days` lives in **Settings → System** (range 1–365) — operators with `settings:update` can change it in-app. The setting also applies on tomorrow's rollover, so reducing 30→7 frees disk on the next midnight tick.
+Daily archives follow, newest first, with **Download** and a two-step **Delete** confirmation. The current row has no delete action; the existing **Truncate** action in the log viewer remains separate.
+
+Current-log download uses `GET /api/v1/support/logs/download` and requires `settings:read`. It serves raw text, like archive downloads. The backend copies a bounded snapshot in a worker thread, closes the live file before network transfer, and removes the temporary copy after transfer or disconnection. If the log is cleared during copying, retry the download.
+
+`log_retention_days` defaults to **7** (range 1–365). Operators with `settings:update` can change it in Settings. The new limit applies to the live handler immediately, with excess archives removed on the next successful rotation; saving the setting does not delete them immediately.
 
 ## :material-lifebuoy: Support bundle
 
