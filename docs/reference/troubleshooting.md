@@ -18,7 +18,8 @@ A stalled WebSocket viewer is disconnected so it cannot hold up other viewers.
 For a support report, note the time you opened the page and attach backend logs
 covering that time. The following entries help narrow down the delay:
 
-- `WebSocket bootstrap timing`: authentication/accept and initial queue preparation.
+- `WebSocket bootstrap timing`: authentication/accept and initial queue preparation,
+  including waits for that viewer's writer to make room in the queue.
 - `WebSocket bootstrap applied`: the browser has applied the initial states to its
   query cache. Match the `id` with the previous entry. `client_connect_ms` includes
   the token request, connection and receipt; `server_elapsed` also includes the
