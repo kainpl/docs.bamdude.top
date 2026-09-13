@@ -175,6 +175,35 @@ BamDude тримає це за двома осями:
 
 ---
 
+## :material-application-cog: Експериментальний ізольований процес камери
+
+Стандартний runtime `inline` виконує camera transport у процесі сервера
+BamDude. Досвідчені оператори можуть перед запуском сервісу встановити змінну
+середовища:
+
+```text
+CAMERA_RUNTIME=worker
+```
+
+Вона запускає один supervised локальний дочірній процес для роботи камери.
+One-shot capture та **зовнішні** live MJPEG, RTSP і snapshot проходять через
+автентифікований локальний JPEG relay; browser URL, токени й звичайна поведінка
+спільного перегляду не змінюються. Якщо browser relay відвалився, producer у
+дочірньому процесі звільняється, а не лишає камеру чи `ffmpeg` відкритими.
+
+!!! warning "Експериментально: перевірте перед production-фермою"
+    `worker` працює fail-closed. Якщо containment процесу або локальне з'єднання
+    не стартує, BamDude не перемикає запит назад на `inline` transport.
+    Built-in Bambu live view і Virtual Printer camera passthrough у цьому режимі
+    ще недоступні: повернеться помилка замість другого owner камери. Лишайте
+    `inline` за замовченням, якщо не перевірили external-camera path на своєму
+    хості.
+
+Налаштування не замінює hardware test. Camera firmware, Wi-Fi, `ffmpeg` і
+поведінка hardware decoder залежать від хоста та моделі камери.
+
+---
+
 ## :material-magnify: Масштабування та панорамування
 
 | Метод | Дія |
