@@ -274,6 +274,12 @@ You can assign a spool to a slot **before** loading the filament — useful when
 - Surfaces this in the confirmation toast: *"Spool assigned. The slot will be configured when you insert the filament."*
 - Replays the full configuration automatically the moment the slot transitions to loaded. The "loaded" signal is the AMS state code (`state == 11`, "filament fed to extruder"), not the tray's material string — so 3rd-party spools without readable RFID (which report state=11 but keep `tray_type=""`) trigger the replay too. After the replay the assignment fingerprint is stamped, so subsequent AMS pushes don't re-fire.
 
+### Replacing the spool on an assigned slot
+
+You do not have to unassign first. Hover an assigned slot and pick **Replace spool** (next to **Unassign**): the dialog shows what is currently assigned, lists only spools that are free — the current one and anything assigned to another slot stay hidden, so you can never pull a spool out of a different printer by mistake — and one confirm swaps the assignment. This works the same on AMS, AMS HT and external slots, with the built-in inventory or Spoolman.
+
+Nothing about accounting changes: a replace runs exactly the code path an unassign followed by an assign did. Mid-print, the same prompt appears — while the printer is paused, or after a pause — asking whether this is a physical spool change (filament usage is split at the pause layer) or a correction of a wrong link (the new spool owns the whole print).
+
 ## :material-water-percent: Automatic consumption tracking
 
 Every print BamDude dispatches reads the per-filament `weight` from the source 3MF. On `print_complete`, the dispatched grams are deducted from the spool that was assigned to the matching AMS slot at the time the print started:
