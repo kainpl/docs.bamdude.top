@@ -18,6 +18,7 @@ The on-demand and scheduled local backups produce the same ZIP layout. Top-level
 | `bamdude.db` | Full database in portable SQLite format, including migration history. Works for restore onto SQLite or PostgreSQL. |
 | `archive/` | Print files and thumbnails, File Manager storage, and product attachments stored below the archive directory. |
 | `virtual_printer/` | Virtual-printer working files. |
+| `queue-sources/` | Verified immutable copies owned by ready queued jobs. The ZIP includes exactly the files named by its database snapshot; unfinished `staging/` files are excluded. |
 | `plate_calibration/` | Plate-detection reference frames. |
 | `icons/` | Custom icons. |
 | `projects/` | Project attachments stored here. |
