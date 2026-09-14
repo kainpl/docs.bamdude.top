@@ -11,11 +11,11 @@ Printers of the same model with and without AMS are checked against their actual
 
 ## :material-router-network: How it works
 
-### Unavailable source files
+### Self-contained queued files
 
-In the upcoming fixes release, an already queued file that disappears, cannot be read, or times out produces a **File error** on that job. Other jobs continue; the printer queue is not paused and no failed physical print is counted. Failed AutoQueue jobs remain visible with **Retry** and removal actions; printer queues show them under Issues. Restore access and retry explicitly. AutoQueue validates the source before returning the same job to pending. Busy printers and unavailable filament continue to wait normally.
+When BamDude accepts a job it takes one verified immutable copy of the actual bytes into its data storage. Routing, preparation and upload read that copy from then on. A laptop can sleep, an SMB share can disconnect, an external library file can move or be deleted, and archive retention can run without changing work already in either queue. Identical bytes queued many times are stored once. Portable backups include the ready queue copies named by their database snapshot, so a restored farm does not need the original folders.
 
-Queueing an external-folder file does not create an independent copy. A laptop hosting an SMB share must remain accessible until all pending jobs have been sent. When moving those files to local NAS storage, preserve their paths and folder structure inside the container for existing jobs.
+Rows created before this change remain legacy rows until they are captured by a later operation. A missing or checksum-mismatched snapshot, or a vanished legacy source, produces **File error** and is skipped. Other jobs continue; the printer queue is not paused and no failed physical print is counted. Failed AutoQueue jobs remain visible with **Retry** and removal actions; printer queues show them under Issues. Restore access only for a legacy row, then retry explicitly. A ready snapshot never retries an old NAS path.
 
 ### Assignment
 
