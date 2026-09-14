@@ -66,7 +66,8 @@ Open Print for a library file or archive and choose **Auto**.
 | Target Model | The exact model from the sliced file. An empty selection means detect it from the 3MF, not allow any model. |
 | Target Location | An optional printer-location restriction. |
 | Filament source | Automatic: AMS or external spool; AMS only; External spools only. |
-| Force exact color match | Off by default: exact colors are preferred, but another color is allowed. Material, known variant, and nozzle requirements remain. |
+| Force exact color match | Off by default: exact colours are preferred, but another compatible colour is allowed. Material and nozzle requirements remain. |
+| Allow match by base material | On by default: when the sliced profile resolves to a family, compare its family `filament_type` such as `PETG`, not its vendor or profile name. Turn it off to require the profile type and, where known, its variant. |
 | Plate channels | Material and color for each used channel; **Require this color** pins one channel's color. |
 
 Below the fields, **AMS connected / Without AMS / AMS state unknown** groups show compatible and ready counts separately, with reasons. A valid job may be added with zero counts and wait. A source-reading error must be resolved before adding it.
@@ -109,7 +110,8 @@ POST /api/v1/auto-queue/
   "target_model": "P1S",
   "plate_id": 1,
   "feed_policy": "external_only",
-  "force_color_match": false
+  "force_color_match": false,
+  "allow_base_material_match": true
 }
 ```
 
@@ -140,7 +142,7 @@ Once an item is assigned to a printer, it disappears from the panel and shows up
 
 The printer must be active, unarchived, available to the router, and free to take new work. The route icon on its queue card lets you opt it out of automatic assignment without stopping its ordinary queue.
 
-It needs the exact model, the selected location, and a **complete mapping for every used channel**: material, known variant, nozzle, source rule, and required colors. One PLA slot does not satisfy two PLA channels. Manual physical selections cannot move arbitrarily between printers.
+It needs the exact model, the selected location, and a **complete mapping for every used channel**: material under the saved matching rule, nozzle, source rule, and required colours. One PLA slot does not satisfy two PLA channels. Manual physical selections cannot move arbitrarily between printers.
 
 Among eligible candidates, readiness comes first, then the best color match. See [Filament Routing](filament-routing.md#channels) for worked examples.
 
@@ -152,15 +154,15 @@ Among eligible candidates, readiness comes first, then the best color match. See
     governs automatic matching for print-dialog and virtual-printer jobs.
     An explicit physical slot selection is retained instead of ranked again.
 
-    It is off by default and lives under **Settings → Filament → Filament
+    It is on by default and lives under **Settings → Filament → Filament
     checks → «Drain the emptiest spool first»**. On BamDude's own dispatch paths
     — this router and the queue scheduler — it is additionally skipped for a
     printer whose **AMS Filament Backup** is off; see
     [Print Queue](print-queue.md) for why.
 
-### Color and filament variant
+### Color, material, and profile variant
 
-Color and variant are checked separately. Two known PLA variants do not become interchangeable when exact color matching is off. If a variant code is not reported, known material, color, and other requirements are checked; the missing code is not invented. See [Choosing colors](filament-routing.md#colors).
+Colour and material are separate decisions. With **Allow match by base material** on, a resolvable family contributes its `filament_type`, so a custom PETG profile and Generic PETG can match despite different names or vendors. With it off, a known `tray_info_idx` variant remains a restriction. A missing variant is never invented. See [material matching](filament-routing.md#material) and [colour rules](filament-routing.md#colors).
 
 ---
 

@@ -100,7 +100,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `runout_purge_grams` | `0` | Grams charged to the backup spool for the purge of an AMS auto-switch. 0 disables it. |
 | `usage_events_retention_hours` | `72` | How long a finished print's usage-event journal (runout/tray timeline) is kept for troubleshooting. |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
-| `prefer_lowest_filament` | `false` | Auto-assignment prefers the spool with the lowest remaining percentage. |
+| `prefer_lowest_filament` | `true` | After compatibility and exact-colour preference, auto-assignment favours the lowest remaining source. Tracked AMS spools use grams; firmware-only sources use percentage in a separate tier. |
 | `default_filament_cost` | `25.0` | Per-kg fallback cost when a spool's `cost` field is unset. |
 | `auto_add_unknown_rfid` | `true` | Auto-add a spool to inventory when an AMS reads an unknown RFID tag. Off → a confirmation card (material / colour pre-filled) is shown instead of silent creation. See [Spool Inventory](../features/inventory.md). |
 | `ams_humidity_good` | `40` | Green-zone humidity threshold (%) on AMS cards (≤ this value). |

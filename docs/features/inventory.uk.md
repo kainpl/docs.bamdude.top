@@ -490,7 +490,7 @@ PDF-и рендеряться на сервері через ReportLab + qrcode 
 |---|---|---|
 | `low_stock_threshold` | `20` | % залишку котушки, при якому стріляє нотифікація `filament_low` (діапазон 0.1 – 99.9). |
 | `disable_filament_warnings` | `false` | Master mute для low / out-of-filament алертів. |
-| `prefer_lowest_filament` | `false` | При авто-присвоєнні котушки до друку — перевага котушці з найменшим залишком (щоб дотиснути огризки). |
+| `prefer_lowest_filament` | `true` | При авто-призначенні джерела після сумісності й переваги точного кольору — перевага найменшому залишку, щоб дотиснути огризки. Відстежувані AMS-грами й відсотки прошивки — окремі рівні. |
 | `default_filament_cost` | `25` | Per-kg fallback-ціна, коли поле `cost` не задано. |
 | `spoolman_enabled` | `false` | Toggle інтеграції зі Spoolman. Див. [Spoolman](spoolman.uk.md). |
 

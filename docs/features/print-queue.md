@@ -168,19 +168,19 @@ file, and letting the third go as a group again is an ordinary run.
 
 ### AMS Filament Mapping
 
-Choose a source for every used channel of the selected plate: AMS or a supported external feed. Auto-matching considers material, known variant, color, and nozzle. A manual physical slot choice is saved as a restriction and checked again before start.
+Choose a source for every used channel of the selected plate: AMS or a supported external feed. Auto-matching considers material, colour, and nozzle. **Allow match by base material** is on by default: a resolvable family contributes its `filament_type` (such as `PETG`) rather than the profile name or vendor; with it off, a known profile variant remains a restriction. A manual physical slot choice is saved as a restriction and checked again before start. See [material matching](filament-routing.md#material).
 
 On supported dual-nozzle printers, **[L] / [R]** badges show nozzle bindings. Support is not limited to H2D or X2D: it follows the model's capabilities and current configuration. Mixed AMS + external feeds or two separate external feeds are allowed only with the selected plate's correct bindings.
 
 The job retains its feed and color rules through schedule edits, repeats, and cloning. A manual mapping needs a new answer for another printer or plate. [Complete rules and waiting reasons](filament-routing.md#editing).
 
-**Prefer lowest remaining filament** (`prefer_lowest_filament`): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1. It is a farm setting, off by default, and it is switched on under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping.
+**Prefer lowest remaining filament** (`prefer_lowest_filament`): this farm setting is **on by default** under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. After compatibility and the exact-colour preference, it picks the lower remaining otherwise-equivalent source so near-empty spools are used first. Tracked AMS spools use BamDude/Spoolman grams; firmware-only sources use their reported percentage in a separate, lower-priority tier. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping. See [the complete ranking](filament-routing.md#selection).
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 
 
 !!! info "Each plate has its own mapping"
-    Several selected plates get separate panels and separate mappings. Channels used by one plate are not combined with another's. For multiple printers, requirements are checked against the actual destination. Remaining-filament checks account for total demand on a spool: 60 g does not cover two 40 g plates.
+    Several selected plates get separate panels and separate mappings. Channels used by one plate are not combined with another's. For multiple printers, requirements are checked against the actual destination. Remaining filament is a source-ranking input, not a reservation or a grams-sufficiency gate: a mapped source is rechecked for identity and compatibility before start, but BamDude does not promise that its reported remainder covers the slicer's estimated grams.
 
 !!! info "Nozzle information is checked before starting"
     The required nozzle and its known diameter requirement are checked. A match against the other hotend does not replace the required binding. If necessary printer state is not available yet, the job waits; if required information is missing from the file, fix the source. An earlier preview does not permit an incompatible mapping to start.

@@ -490,7 +490,7 @@ The relevant settings keys (all under Settings → Inventory):
 |---|---|---|
 | `low_stock_threshold` | `20` | Spool remaining percentage at which the `filament_low` notification fires (range 0.1 – 99.9). |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
-| `prefer_lowest_filament` | `false` | When auto-assigning a spool to a print, prefer the spool with the lowest remaining percentage to use up odd ends first. |
+| `prefer_lowest_filament` | `true` | When automatically assigning a source, after compatibility and exact-colour preference favour the lowest remaining source to use up odd ends first. Tracked AMS grams and firmware percentages are separate tiers. |
 | `default_filament_cost` | `25` | Per-kg fallback cost when a spool's `cost` field is unset. |
 | `spoolman_enabled` | `false` | Toggle the Spoolman integration. See [Spoolman](spoolman.md). |
 

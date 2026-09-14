@@ -355,7 +355,7 @@ The selected plate's required materials and colors, available slots, and nozzle 
 
 ### Status indicators
 
-Material and color matches, a different color, and empty or incompatible sources help you review the selection. Allowing another color does not relax material, known variant, or nozzle requirements. A preview does not reserve a spool: the server checks the complete mapping again before start.
+Material and colour matches, a different colour, and empty or incompatible sources help you review the selection. Allowing another colour does not relax material or nozzle requirements. **Allow match by base material**, on by default, may use a resolvable family's `filament_type` instead of a custom profile name; with it off, a known profile variant remains required. A preview does not reserve a spool: the server checks the complete mapping again before start.
 
 ### Auto-matcher + manual override
 
