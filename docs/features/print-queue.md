@@ -105,6 +105,14 @@ The queue card header shows counters in two flavours. **Pending** and **Skipped*
 2. Click **Add to Queue** in toolbar
 3. Choose target printer
 
+### Run next on a selected printer
+
+When an urgent job arrives, choose its printer in the **Schedule Print** dialog, leave **ASAP** selected, then tick **Run next**. The new job goes before the other **pending** jobs on that printer. It does not interrupt a print that has already started or been claimed for dispatch.
+
+For a multi-plate file, every selected plate and its requested copies are inserted together in the order shown in the dialog. If you selected several printers, each queue is handled independently: one unavailable printer does not undo work accepted by another.
+
+**Run next** is intentionally unavailable for **Queue Only**, scheduled work, and the **Auto-Queue**. Those modes have their own dispatch semantics; the option does not reserve a printer or choose the first printer that will become free.
+
 ### Drag-and-drop on a Queue Card
 
 On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root, and then the files that would be answered the same way are **grouped** — one dialog per group, with a `group 1 of 3 · 12 items` badge beside the title telling you how many plates that one answer covers. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
