@@ -262,6 +262,8 @@ Both sides have select-all and clear. The printer list is in the order and group
 
 **Each item keeps the plate it was queued with** — it is literally the same file on the same model, so that plate exists there too. Copies go to the end of each target queue, so a printer mid-job finishes first.
 
+**Ready queued items copy from their saved file, not from the original.** The copy reuses the verified immutable object already held in `data/queue-sources/`, so it still works after the archive, library record, laptop folder or SMB share has gone away. It asks for fresh target-printer, AMS-mapping, schedule and print-option choices. Legacy rows retain their original-file behavior; a missing or broken saved source stays visible but cannot be copied.
+
 Then the ordinary Schedule dialog opens **once per group** of items that would be answered the same way, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why items onto four printers is never four times the dialogs.
 
 **A copied item keeps what the queue already decided.** Its plate rides with it, so a copy of one plate of a five-plate file is one item and not five, and two copies of the same plate stay two. The order it was filed under rides along as well — including the answer *no order* — so the Schedule dialog does not ask about it again; the copy dialog names the order next to each item's plate, where the item can still be unticked. Any items you had grouped into a block in the source queue come out as a block on the target.
@@ -412,7 +414,8 @@ Programmatic queue control via REST:
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/v1/queue/` | List queue items (filterable by printer, status) |
-| `POST /api/v1/queue/` | Add a new queue item from an archive or library file |
+| `GET /api/v1/queue/{id}/copy-source` | Read the saved source profile used by Copy Queue |
+| `POST /api/v1/queue/` | Add a new queue item from an archive, library file, or saved queue-job source |
 | `PATCH /api/v1/queue/{id}` | Edit position, schedule, AMS, options |
 | `DELETE /api/v1/queue/{id}` | Remove the row outright |
 | `POST /api/v1/queue/{id}/cancel` · `/stop` | Cancel a pending item · stop a running one |

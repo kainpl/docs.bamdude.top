@@ -243,7 +243,7 @@ curl -X POST -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/start
 ```
 
 !!! note "There is no add-to-queue endpoint here"
-    Queueing goes through `POST /api/v1/queue/` with an `archive_id` or a `library_file_id`. The webhook group used to carry its own version; it built the queue row by hand and so skipped the paused-queue check, the printer-model compatibility gate and the queue counters. One way in is the point.
+    Queueing goes through `POST /api/v1/queue/` with an `archive_id`, a `library_file_id`, or a readable existing queue row as `source_queue_item_id` when copying a saved job. The webhook group used to carry its own version; it built the queue row by hand and so skipped the paused-queue check, the printer-model compatibility gate and the queue counters. One way in is the point.
 
 
 ---
