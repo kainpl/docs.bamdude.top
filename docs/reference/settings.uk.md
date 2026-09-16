@@ -109,6 +109,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
+| `inbox_retention_days` | `30` | Скільки днів історії центру сповіщень зберігається в кожного користувача. Діапазон 1-365. Прибирається раз на добу, незалежно від прочитаності. |
 | `log_retention_days` | `7` | Ліміт зберігання добових архівів `bamdude-YYYY-MM-DD.log`. Діапазон 1–365. Зайві архіви видаляються під час наступної успішної ротації. Див. [System info → Ротація логів](../features/system-info.uk.md#ротація-retention-логів). |
 | `bed_cooled_threshold` | `35.0` | Температура столу (°C), при якій стріляє нотифікація `bed_cooled`. |
 

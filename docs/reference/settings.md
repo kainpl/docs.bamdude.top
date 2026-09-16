@@ -109,6 +109,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `ams_temp_good` | `28.0` | Green-zone temperature threshold (°C) on AMS cards. |
 | `ams_temp_fair` | `35.0` | Yellow-zone temperature threshold. Above is red. |
 | `ams_history_retention_days` | `30` | How many days of AMS history to keep before pruning. |
+| `inbox_retention_days` | `30` | How many days of in-app notification-centre history each person keeps. Range 1-365. Swept once a day, read or not. |
 | `log_retention_days` | `7` | Retention limit for daily `bamdude-YYYY-MM-DD.log` archives. Range 1–365. Excess archives are removed at the next successful rotation. See [System info → Log rotation](../features/system-info.md#log-rotation-retention). |
 | `bed_cooled_threshold` | `35.0` | Bed temperature (°C) at which the `bed_cooled` notification fires. |
 
