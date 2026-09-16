@@ -31,7 +31,7 @@ A date on the order that already accounts for the machines the farm has, the pri
 
 3. **Read the plan.** *What to print next* lists the plates that cover the 38 with their counts, and every row shows its own *ready ≈* — the row's last print, not the order's. Nothing here has been sent yet; the numbers move as you change the counts.
 
-4. **Check the filament.** The table under the plan's totals has a row per material and colour the plan needs: *need*, *on the shelf in this colour*, *on the shelf in this material*, with a shortage in amber. A shelf that could not be read — Spoolman down — says so rather than showing zero.
+4. **Check the filament.** The table under the plan's totals has a row per material and colour the plan needs: *need*, *on the shelf in this colour*, *on the shelf in this material*, with a shortage in amber. The line's colour names the order's main filament — the heaviest one of the line's material on the plate, or of the whole plate when the line names no material — so a support printed in whatever is loaded is counted by its material rather than asked for in a colour you never stock. A shelf that could not be read — Spoolman down — says so rather than showing zero.
 
 5. **Answer the customer.** *Ready ≈* is the date if the plan goes to the queue now, on top of what is already there. If two more urgent orders sit ahead, the second date is the honest one.
 
