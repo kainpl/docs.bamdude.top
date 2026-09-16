@@ -21,7 +21,7 @@ A date on the order that already accounts for the machines the farm has, the pri
 | [What to print next](../features/projects.md#what-to-print-next) | How many prints the fifty need, after what is printed, running and queued. |
 | The farm forecast | *Ready ≈* on the order and on every plan row, the machine-hours left, and the *after N more urgent orders* date. |
 | The filament table under the plan | Need per material and colour against the spools on the shelf. |
-| [Staggered start](../features/staggered-start.md) and [plate-clear confirmation](../features/print-queue.md#clear-plate-confirmation) | Two of the things the forecast deliberately does not model — listed on every date it shows. |
+| [Staggered start](../features/staggered-start.md) and [plate-clear confirmation](../features/print-queue.md#clear-plate-confirmation) | Both are counted in the date, using the same rules and the same live state the scheduler uses. |
 
 ## :material-format-list-numbered: Step by step
 
@@ -52,8 +52,8 @@ A date on the order that already accounts for the machines the farm has, the pri
 
 ## :material-alert: Pitfalls and what-ifs
 
-!!! note "Four things the date does not include"
-    Every date carries the same footnote: **staggered start**, **plate-clear confirmation**, **drying between prints**, and **upload and preheat** are not modelled — and print times are the slicer's estimate, not the archive's actual. A farm that staggers hard, or whose operators clear plates once a shift, finishes later than the date. Read it as *the machines' date*, and add the shop's habits yourself.
+!!! note "What the date includes — and the one thing it still does not"
+    The date counts **staggered start** (per group, with the slots heating right now), the **plate-clear confirmation** after every print on a printer that requires it, and the **file transfer plus preheat** before every print that has not started. Two of those need a figure only you know: Settings → Printing → **ETA Forecast** sets how long a file transfer takes and how long a cleared plate usually waits for its confirmation. What is still not modelled is **drying between prints**, and the footnote says so only when **Block queue until drying completes** is on — with it off, a print never waits for drying; with it on, a printer drying right now is dated after its cycle. Print times remain the slicer's estimate, not the archive's actual.
 
 - **"No estimate" is a file problem.** A plate the slicer left without a time, or a mesh linked to the product, gives the row nothing to add. Re-slice, or link the sliced file.
 - **"No printer for its model."** The plan picked a plate sliced for a model the farm has none of active — perhaps all of them are archived or in maintenance. The count says how many prints are stranded; switch the row's **File** to another model's slice.

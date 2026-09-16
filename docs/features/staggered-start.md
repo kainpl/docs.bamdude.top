@@ -127,6 +127,8 @@ What this means:
 
 Use stagger when peak power draw during heating is the constraint. Skip it when your circuit can handle simultaneous bed heating.
 
+- **The ETA forecast counts it.** *Ready ≈* on an order and *free at* on a printer already include the waiting a stagger cap imposes, group by group, seeded with the slots that are heating right now — so a farm that staggers hard no longer reads a date that assumes it does not. See [When will it be ready](../scenarios/when-will-it-be-ready.md).
+
 ---
 
 ## :material-lightbulb: Tips
