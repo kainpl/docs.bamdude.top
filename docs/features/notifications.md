@@ -5,7 +5,7 @@ description: Multi-provider push notifications for print events
 
 # Notifications
 
-Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language.
+Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a tenth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
 
 ---
 
@@ -511,7 +511,65 @@ Each non-telegram provider has a printer scope — **All** (default), one, or an
 
 ---
 
-## :material-account-bell: Per-User Email Notifications
+## :material-inbox: The notification centre
+
+Every notification used to leave the farm — Telegram, e-mail, ntfy, Discord, whatever you had configured. An install with no provider at all had nowhere to put an alarm about its own hardware: the event fired, matched nobody, and was gone. The **Bell** in the sidebar now opens a per-user notification centre with three tabs, and **the inbox fills whether or not a single provider is set up**. That is the point of it — providers are how a notification reaches your phone, the inbox is how it reaches whoever logs in.
+
+Read and unread are **per person**. One operator opening an alarm does not clear it for anybody else. That is the difference between an inbox and a shared log: everyone subscribed to an event has to deal with it themselves.
+
+### Inbox
+
+The events you are subscribed to, newest first. Unread rows are marked; clicking a row marks it read and expands its full text. Every row carries:
+
+| Shown on the row | What it tells you |
+|---|---|
+| Severity | **info**, **warning** or **error** |
+| Printer | which printer the event came from |
+| Age | how long ago it happened |
+
+Four filters narrow the list — **severity**, **printer**, **unread only**, and the **period**: last 24 hours, last 7 days, last 30 days, or all time. A long history loads a page at a time behind a **Show more** button instead of all at once.
+
+!!! warning "Mark all read and Clear act on the filter, not on the whole inbox"
+    Both buttons apply to exactly what the filters currently select. With *error* + *one printer* + *last 7 days* picked, **Clear** deletes those rows and leaves everything else alone — and with no filters set at all, it deletes everything. **Clear** deletes; it asks for confirmation first. Single rows can also be deleted one at a time from the row itself.
+
+### Subscriptions
+
+A checkbox per event, grouped by area — print jobs, printers, filament, AMS, queue, inventory, sensors — each shown with the severity it carries, so you can see what a subscription will cost you before you tick it.
+
+**By default a person receives warnings and errors only.** The inbox stays quiet unless something actually wants attention, and **Reset to defaults** puts it back to exactly that after any amount of experimenting. Every change saves immediately — there is no Save button to forget.
+
+Subscriptions belong to the person, not to the farm: two operators on the same install can watch completely different things, and neither one's choices touch the other's inbox.
+
+### Email
+
+The four per-user e-mail switches that used to be this whole page, unchanged in behaviour — see [Per-User Email Notifications](#per-user-email-notifications) below for what they send and when.
+
+The tab appears only when Advanced Authentication is on, the **User Notifications** master switch is on, and you hold the `notifications:user_email` permission — the same three conditions as before.
+
+### The unread badge
+
+The sidebar Bell carries a live unread count. It updates over the WebSocket connection the rest of the interface already uses, so a new event lands on the bell without a page refresh and without polling for it. On narrow screens the compact header carries the same bell and the same badge.
+
+### Permission
+
+The notification centre requires the `notifications:inbox` permission.
+
+!!! warning "Upgrade note — a custom group does not get it on its own"
+    **Administrators**, **Operators** and **Viewers** all receive `notifications:inbox` on upgrade. A group you built yourself does **not** — an upgrade will not add permissions to a group somebody hand-made. Until an administrator grants it, that group's members lose the page entirely, **including the per-user e-mail switches they had before**. Walk your custom groups right after upgrading.
+
+### Retention
+
+**Settings** → **Data Management** carries **Inbox notifications (days)**.
+
+| Setting | Default | Range |
+|---|---|---|
+| Inbox notifications | **30 days** | 1–365 days |
+
+The daily cleanup removes anything older than the window, whether or not it was read — an inbox nobody opens does not grow forever. Deleting a user removes that user's inbox along with them.
+
+---
+
+## :material-email-outline: Per-User Email Notifications { #per-user-email-notifications }
 
 Separate from the provider system above, BamDude can email the **owner** of a print directly when it completes / fails / stops — useful in shared / multi-tenant deployments where each user wants their own prints' mail in their personal inbox.
 
@@ -522,6 +580,7 @@ Separate from the provider system above, BamDude can email the **owner** of a pr
 - **Settings** → **Notifications** → **User Notifications** toggled on
 - The user has an email address on their account
 - The user holds the `notifications:user_email` permission (granted to **Administrators** + **Operators** by default — see [Authentication](authentication.md))
+- The user holds the `notifications:inbox` permission — the switches are a tab of the [notification centre](#the-notification-centre), and without it the page cannot be opened at all
 
 ### Supported Events
 
@@ -532,7 +591,7 @@ Separate from the provider system above, BamDude can email the **owner** of a pr
 | `user_print_failed` | Their print errored |
 | `user_print_stopped` | They cancelled their own print |
 
-The user can opt in/out of each event individually under their personal **Notifications** sidebar entry. Operators / admins control the global "User Notifications" master switch under **Settings** → **Notifications**.
+Each user opts in and out of the four events individually on the **Email** tab of their own [notification centre](#the-notification-centre) — the Bell in the sidebar, which used to open this list of switches and nothing else. Operators / admins control the global **User Notifications** master switch under **Settings** → **Notifications**.
 
 ---
 
