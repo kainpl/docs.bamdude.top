@@ -289,7 +289,7 @@ Every print BamDude dispatches reads the per-filament `weight` from the source 3
 - `spool.used_grams` is the running total.
 - `spool.weight - spool.used_grams` is what's left.
 
-The inventory page colour-codes each spool by remaining percentage, with a configurable **low-stock threshold** (Settings → Inventory). When a spool drops below the threshold, the matching `filament_low` notification fires (subscribe to it under whichever providers you care about). A spool with no inventory binding is judged by the printer's own remaining counter (Bambu RFID spools only), and a Spoolman-bound slot by Spoolman's figure — against the same threshold.
+The inventory page colour-codes each spool by remaining percentage, with a configurable **low-stock threshold** (Settings → Inventory). When a spool drops below the threshold, the matching `filament_low` notification fires (subscribe to it under whichever providers you care about). A Spoolman-bound slot is judged by Spoolman's figure against the same threshold. A slot with no inventory binding is not judged at all: the printer's own counter reads 0 % for any spool without an RFID tag, and that is no answer — assign the spool, and BamDude knows what is on it.
 
 If a print fails partway through, the deducted amount is the slicer-estimate × completion ratio (best effort) rather than the full estimate. External-print fallback archives — the ones from prints started directly on the printer touchscreen — get reconciled the same way once their 3MF is recovered.
 
