@@ -46,10 +46,11 @@ Build date і git SHA через цей endpoint не експонуються �
 | Bucket | Roots |
 |---|---|
 | `database` | `bambuddy.db` (і legacy `bambutrack.db`, якщо є). |
-| `library_thumbnails` / `library_files` / `library_other` | `<archive_dir>/library/...`. |
+| `library_thumbnails` / `library_files` / `library_other` | `<data_dir>/library/...`. |
 | `archive_files` / `archive_thumbnails` / `archive_timelapses` | Сама archive-директорія. |
 | `virtual_printer_uploads` / `virtual_printer_upload_cache` / `virtual_printer_certs` / `virtual_printer_other` | `<base_dir>/virtual_printer/...`. |
 | `downloads` | `<base_dir>/firmware/`. |
+| `attachments` | `<data_dir>/projects/` і `<data_dir>/products/` — вкладення замовлень і виробів. |
 | `plate_calibration` | Директорія plate-detection reference image. |
 | `logs` | Сконфігурована log-директорія. |
 | `other_data` | Все під data-теками, що не зматчилось правилом, з per-bucket sub-breakdown, що відрізняє `system` (deletable=false) від `data` (deletable=true). |

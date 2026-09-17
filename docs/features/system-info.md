@@ -46,10 +46,11 @@ Build date and git SHA are not exposed via this endpoint — release builds bake
 | Bucket | Roots covered |
 |---|---|
 | `database` | `bambuddy.db` (and a legacy `bambutrack.db` if present). |
-| `library_thumbnails` / `library_files` / `library_other` | `<archive_dir>/library/...`. |
+| `library_thumbnails` / `library_files` / `library_other` | `<data_dir>/library/...`. |
 | `archive_files` / `archive_thumbnails` / `archive_timelapses` | The archive directory itself. |
 | `virtual_printer_uploads` / `virtual_printer_upload_cache` / `virtual_printer_certs` / `virtual_printer_other` | `<base_dir>/virtual_printer/...`. |
 | `downloads` | `<base_dir>/firmware/`. |
+| `attachments` | `<data_dir>/projects/` and `<data_dir>/products/` — order and product attachments. |
 | `plate_calibration` | The plate-detection reference image directory. |
 | `logs` | The configured log directory. |
 | `other_data` | Anything under the data dirs that didn't match a rule, with a per-bucket sub-breakdown distinguishing `system` (deletable=false) from `data` (deletable=true). |

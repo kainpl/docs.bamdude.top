@@ -16,12 +16,14 @@ The on-demand and scheduled local backups produce the same ZIP layout. Top-level
 | Entry | Contents |
 |-------|----------|
 | `bamdude.db` | Full database in portable SQLite format, including migration history. Works for restore onto SQLite or PostgreSQL. |
-| `archive/` | Print files and thumbnails, File Manager storage, and product attachments stored below the archive directory. |
+| `archive/` | Print files and thumbnails, one folder per run, plus the 3MF download staging. |
+| `library/` | File Manager storage: files, thumbnails, MakerWorld covers. |
 | `virtual_printer/` | Virtual-printer working files. |
 | `queue-sources/` | Verified immutable copies owned by ready queued jobs. The ZIP includes exactly the files named by its database snapshot; unfinished `staging/` files are excluded. |
 | `plate_calibration/` | Plate-detection reference frames. |
 | `icons/` | Custom icons. |
-| `projects/` | Project attachments stored here. |
+| `projects/` | Order attachments. |
+| `products/` | Product attachments. |
 | `certs/` | Virtual-printer TLS certificates and keys. |
 | `.mfa_encryption_key` | Encryption key, when the source install stores it in a file. |
 | `zigbee/zigbee.db` | Zigbee driver database, including network state, when present. |

@@ -144,8 +144,8 @@ Legacy `recent-imports` endpoint досі експозований для backwa
 
 Обкладинки **завантажуються локально** на момент імпорту і обслуговуються BamDude, а не hot-link'аються з CDN MakerWorld. Дві штуки на рядок:
 
-- **Model cover** — hero-картинка дизайну. Записується у `<archive_dir>/library/makerworld-covers/<library_file_id>-cover.<ext>`.
-- **Variant cover** — картинка plate-рівня (якщо MakerWorld публікує її окремо). Записується у `<archive_dir>/library/makerworld-covers/<library_file_id>-variant.<ext>`.
+- **Model cover** — hero-картинка дизайну. Записується у `<data_dir>/library/makerworld-covers/<library_file_id>-cover.<ext>`.
+- **Variant cover** — картинка plate-рівня (якщо MakerWorld публікує її окремо). Записується у `<data_dir>/library/makerworld-covers/<library_file_id>-variant.<ext>`.
 
 Картки History спершу беруть variant-обкладинку, потім model-обкладинку, потім fallback на звичайний thumbnail library-файлу. Endpoint'и:
 
