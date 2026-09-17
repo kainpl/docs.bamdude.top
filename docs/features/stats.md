@@ -204,3 +204,19 @@ Existing archives keep the prices that were active when they completed — histo
 The Stats page polls every **60 s** so dashboards left open during a print session stay fresh without a manual reload. The refresh icon in the header forces an immediate refetch — useful right after a long print finishes if you don't want to wait the next tick.
 
 Mutations from elsewhere in the app (deleting an archive, recalculating costs, editing a filament price) invalidate the underlying queries automatically — you don't need to click refresh after them.
+
+---
+
+## :material-api: API
+
+Everything this page reads lives under `/api/v1/statistics/`:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /statistics/overview` | The KPI block: counts, hours, grams, cost, energy, per-printer accuracy and defects (`date_from`, `date_to`, `created_by_id`) |
+| `GET /statistics/aggregate` | The time series, breakdowns and records the charts and the archive calendar fold |
+| `GET /statistics/failures` | Failure analysis — see [Failure analysis](failure-analysis.md) |
+| `GET /statistics/export` | The failure-analysis summary as CSV, or `?format=xlsx` — see [Export](export.md) |
+| `POST /statistics/recalculate-costs` | Recalculate every archive's filament cost at current prices |
+
+Earlier releases answered under `/api/v1/archives/…` (`/archives/stats`, `/archives/aggregate`, `/archives/analysis/failures`, `/archives/stats/export`, `/archives/recalculate-costs`). Those paths are gone, not redirected. `/api/v1/statistics/reports` is reserved for the reports that will be built here.

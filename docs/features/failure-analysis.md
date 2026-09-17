@@ -174,7 +174,7 @@ Use them together: Obico catches the next spaghetti, Failure Analysis tells you 
 
 ## :material-export: Export
 
-The same numbers feed the [Export](export.md) page. `GET /api/v1/archives/stats/export` returns a CSV/XLSX with the summary, per-reason / per-filament / per-printer breakdowns, and the weekly trend — handy for monthly reporting or for feeding a BI tool.
+The same numbers feed the [Export](export.md) page. `GET /api/v1/statistics/export` returns a CSV/XLSX with the summary, per-reason / per-filament / per-printer breakdowns, and the weekly trend — handy for monthly reporting or for feeding a BI tool.
 
 ---
 
