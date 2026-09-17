@@ -293,9 +293,19 @@ Library files share the same `<ModelViewerModal>` as archives, with two library-
 - **Build-volume wireframe** — the 3D viewer draws a translucent box matching the printer the file was sliced for (read from `printer_settings`). G-code preview already painted a similar box; same visual cue across both tabs now.
 - **Shared modal features** — OBJ format support, wireframe / X-ray toggle, theme-synced canvas, dual-handle layer slider (Start + End), travel-moves toggle, layer-play with 1× / 2× / 4× / 8× speeds, streaming download progress, and Export-as-PNG. See [Archives → 3D + G-code Preview](archiving.md#3d-g-code-preview) for the full feature breakdown; library uses the same `<ModelViewerModal>` verbatim.
 
-## :material-view-gallery: Per-plate gallery (multi-plate 3MFs)
+## :material-view-gallery: Per-plate browsing (multi-plate 3MFs)
 
-Sliced 3MFs that contain more than one plate render as a per-plate gallery on the file card:
+### On the card
+
+A file with more than one plate is browsed **one plate at a time**. The card carries arrows and a plate counter, and everything on it belongs to the plate on screen: the picture, the print time, the weight, the object count, and the filament types that plate prints with (`PETG+PLA` for a two-material plate). Those types are shown on single-plate cards too — the card never used to say what a file prints with.
+
+There is deliberately no whole-file total. A file is printed plate by plate, so a sum of every plate's time beside a picture of plate 1 described a print nobody makes; the card answers *what does this plate cost* instead. Nothing is fetched to page through it — the figures ride in the file list itself.
+
+In **list view** a row shows plate 1 and an **N plates** count. Clicking the row's thumbnail — or that count — opens the very same card in a window, where the arrows live. That window opens for any file, single-plate ones included, so the way into a file's card is the same everywhere.
+
+### The gallery
+
+The **Plate gallery** button opens the deeper view, on whichever plate the card was showing:
 
 - A vertical paginator strip on the left — one button per plate, each showing the selected-state dot.
 - A big card on the right with that plate's thumbnail, name, print time, total weight, instance count, and per-filament breakdown (color swatch + type + grams).
@@ -303,7 +313,7 @@ Sliced 3MFs that contain more than one plate render as a per-plate gallery on th
 
 When dispatching, you can select one plate, multiple plates, or all of them — every selected plate becomes its own queue item / archive with the plate index recorded on the row.
 
-Single-plate files don't render the gallery — the existing main thumbnail covers that case.
+Single-plate files don't render the gallery — one plate has nothing to page through.
 
 ---
 
