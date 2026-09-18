@@ -188,6 +188,8 @@ Zero-config, коли HA вже підключений у **Settings** → **Net
 
 Фото завершеного друку прикріплюється до повідомлення. URL підпадає під ті самі правила адрес, що й самохостний ntfy чи `bark-server`: у власній мережі — можна, усе, що не є справжнім HTTP-сервісом, — відхиляється.
 
+BamDude у Docker, а signal-cli-rest-api ще немає? Штатний `docker-compose.signal.yml` піднімає його поруч із BamDude, і `docker-install.sh` це пропонує — див. [Docker → Сайдкар для сповіщень Signal](../getting-started/docker.md#signal-notifications-sidecar).
+
 ---
 
 ### Generic Webhook

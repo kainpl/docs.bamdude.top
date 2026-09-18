@@ -188,6 +188,8 @@ Signal messages through a [signal-cli-rest-api](https://github.com/bbernhard/sig
 
 Print-finish photos attach to the message. The URL is subject to the same address rules as a self-hosted ntfy or `bark-server`: your own network is fine, anything that is not a real HTTP service is refused.
 
+Running BamDude in Docker with no signal-cli-rest-api yet? The shipped `docker-compose.signal.yml` runs one next to BamDude and `docker-install.sh` offers it — see [Docker → Signal notifications sidecar](../getting-started/docker.md#signal-notifications-sidecar).
+
 ---
 
 ### Generic Webhook
