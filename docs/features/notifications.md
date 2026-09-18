@@ -37,6 +37,10 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 
 ---
 
+Every provider subscribes to events on its own, and the form offers all of them, grouped exactly as the notification centre groups them — print, printers, filament, AMS, queue, inventory, sensors. What you see ticked when you add a provider is what it will be saved with.
+
+---
+
 ## :material-cog: Per-Provider Setup
 
 ### ntfy
