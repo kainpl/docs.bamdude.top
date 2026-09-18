@@ -38,7 +38,7 @@ Anything else is refused at startup with a readable message, so a typo is caught
 The bundled and external servers are the same PostgreSQL to BamDude — the difference is only who starts and stops it.
 
 !!! warning "Past about 40 printers, move to PostgreSQL"
-    SQLite allows exactly one writer at a time, and its page cache is per connection, so every connection in a busy pool starts cold. Neither is a setting anyone can tune around: at that size the writer becomes the queue everything waits in. Switching is one variable and a restart — the import runs itself — so do it before the farm grows into the problem rather than after. `embedded` is the least work: no server to install or administer.
+    SQLite allows exactly one writer at a time, and its page cache is per connection, so every connection in a busy pool starts cold. Neither is a setting anyone can tune around: at that size the writer becomes the queue everything waits in. Switching is one variable and a restart — the import runs itself — so do it before the farm grows into the problem rather than after. `embedded` is the least work on a native install: no server to install or administer. In Docker it is not available — use the separate container described below.
 
 ---
 
@@ -118,7 +118,7 @@ Every installer now asks which backend you want, and an upgrade keeps whatever y
 
 === "Docker (`docker-install.sh`)"
 
-    Asks SQLite / bundled-in-container / a separate PostgreSQL container / external URL, and writes `.env` for you. See the Docker section below.
+    Asks SQLite / a separate PostgreSQL container / external URL, and writes `.env` for you. The bundled server is deliberately not offered here — see the Docker section below.
 
 ---
 
@@ -145,18 +145,10 @@ DATABASE_URL=postgresql+asyncpg://bamdude:password@192.168.1.100:5432/bamdude
 
 ## :material-docker: PostgreSQL with Docker
 
-There are two easy paths.
+!!! warning "The bundled server is not a Docker option"
+    `DATABASE_URL=embedded` works on a native install — the Linux service, the Windows installer — but **not in a container**. The BamDude image runs as root, and `initdb` refuses to run as root; that is PostgreSQL's own rule, not a BamDude limitation. Setting it in a container leaves you with one that dies on first boot saying `initdb: cannot be run as root`, so `docker-install.sh` does not offer it.
 
-### Bundled, inside the BamDude container
-
-The simplest: no second container, no networking.
-
-```env
-# .env next to docker-compose.yml
-DATABASE_URL=embedded
-```
-
-The database lives in the existing `bamdude_data` volume under `postgres/`. The shipped compose file already waits 60 seconds on `docker compose down` so the server checkpoints cleanly.
+    In Docker, PostgreSQL means one of the two below.
 
 ### A separate PostgreSQL container
 
