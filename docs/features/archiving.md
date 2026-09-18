@@ -151,7 +151,7 @@ The reason: the dispatch pipeline can patch a 3MF before upload — for example,
 - Reprinting from an existing archive copies the unpatched file into a fresh archive directory — new `content_hash` if the new run patches differently, but the same `source_content_hash`, so reprint history stays linked to the original design.
 - External prints (started on the printer screen / cloud / manual SD start) get a one-SELECT lookup at archive creation: if any prior archive on **any** printer matches by `content_hash` or `source_content_hash`, the chain is inherited (cross-printer in 0.4.2 — was per-printer before).
 
-The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "оригінальний друк" / "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Consequence: a printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are grouped together in the badge **and** share one on-disk file (see below).
+The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Consequence: a printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are grouped together in the badge **and** share one on-disk file (see below).
 
 ### Cross-printer file-on-disk dedup *(0.4.2)*
 
