@@ -566,9 +566,9 @@ that remains the per-print choice made by the slicer or printer.
 
 A dark chamber makes a dark photo. BamDude can switch the chamber light on for the camera and off again afterwards — for every use of it: a photo in Telegram, a browser stream, the Camera Wall, the finish photo, the plate check, the camera diagnostics.
 
-1. **Settings → General → Archive Settings → Light for the camera** — the card that also holds the finish-photo toggle. Off by default — nothing changes for a farm that does not switch it on.
-2. **Settings → Printing → External cameras**, per printer: **Light for the camera** — *As on the farm* / *Yes* / *No*. A printer that must not glow towards the window says *No* whatever the farm says; one in a dark corner says *Yes* on a farm that is otherwise off. The selector is hidden for a connected printer that has reported no controllable light.
-3. **Also for Obico failure detection** — a separate toggle, off by default. Obico looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
+1. **Settings → Printing → Camera → Light for the camera.** Off by default — nothing changes for a farm that does not switch it on. This is the master switch: with it off, nothing below applies.
+2. In the same card, the **External cameras** list, per printer: **Light for the camera** — *As on the farm* / *No*. The printer that must not glow towards the window says *No*. The selector is shown only while the farm toggle is on, and not for a connected printer that has reported no controllable light.
+3. **Also for Obico failure detection** — a separate toggle, off by default, shown only when the farm toggle is on and Obico detection is enabled. Obico looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
 
 Two rules make it safe to leave on:
 
@@ -576,6 +576,8 @@ Two rules make it safe to leave on:
 - **Only a light BamDude switched on is switched off**, and only once nobody is using the camera any more. If you switch the light off yourself during a stream, BamDude does not switch it back on; if you switch it on yourself, BamDude does not switch it off after.
 
 How it behaves in practice: a one-off photo waits for the printer to confirm the light before the frame is taken (no fixed pause, no dark first photo), and the light goes off about ten seconds after the last use, so two photos in a row do not blink it. Several browser tabs on one printer are one switch-on and one switch-off. The Camera Wall in snapshot mode keeps the light on for as long as the wall is open, and lets it go within one refresh interval after the wall is closed. The layer-based timelapse deliberately does not take the light — it would flash on every layer; leave the light on yourself if the timelapse needs it. The printer's own timelapse lights itself.
+
+One use does not wait for the toggle: the **build plate check** (below) lights the plate for its comparison whatever the settings say, as it always did — its reference was calibrated with the light on, and a check in the dark would pause a print for nothing. It now does so through the same mechanism: confirmed by the printer instead of a fixed pause, and never touching a light that was already on.
 
 !!! note "A1 / A1 mini"
     These printers do not switch their light on at print start the way the X1 and P1 series do, so a photo from the bot on a dark A1 was always dark. This setting is what fixes that.
@@ -653,7 +655,7 @@ The green box in the preview shows the detection area. Focus it on the build pla
 | Requirement | Details |
 |-------------|---------|
 | **OpenCV** | `opencv-python-headless` (already installed in the Docker image). |
-| **Chamber light** | Should be ON for reliable detection. |
+| **Chamber light** | Switched on for the check by BamDude if it is off, whatever the *Light for the camera* setting says, and off again after. Calibrate with it ON. |
 | **Calibration** | At least one reference image required. |
 
 ### Troubleshooting
