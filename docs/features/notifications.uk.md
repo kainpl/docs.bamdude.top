@@ -20,6 +20,7 @@ description: Push-сповіщення про події друку через �
 | **ntfy** | Легко | Topic-based, опційний bearer-токен, прикріплення картинок. |
 | **Bark** | Легко | Тільки iOS, без акаунта. Рівні переривання — **Critical** доставляє крізь Silent mode і Focus. Публічний релей або власний `bark-server`. |
 | **CallMeBot** | Легко | Bridge до WhatsApp / Signal — телефон + API-ключ, URL-encoded повідомлення. |
+| **Signal CLI API** | Середньо | Власний [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) — номери отримувачів або одна група, прикріплення картинок. |
 | **Home Assistant** | Легко | `persistent_notification.create` або будь-який `notify.*` сервіс. Глобальний URL/token Home Assistant з Settings (або `HA_URL` / `HA_TOKEN` env). |
 | **Webhook** | Гнучко | Generic JSON або Slack-format POST, кастомні імена полів, base64 картинка, опційний bearer. |
 
@@ -172,6 +173,22 @@ Zero-config, коли HA вже підключений у **Settings** → **Net
 
 !!! tip "Форвард HA-сповіщень в інші канали"
     Використовуй HA-автоматизації, щоб дзеркалити persistent-сповіщення на HA Companion app, Telegram, ntfy тощо — отримаєш єдиний audit log в HA плюс звичний мобільний push.
+
+### Signal CLI API
+
+Повідомлення в Signal через власну інстанцію [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api). Провайдер названо за тим, з чим він говорить: офіційного API в Signal немає, і BamDude не вдає, що це воно. Спершу зареєструй номер у signal-cli (README того проєкту веде за руку); далі BamDude шле з цього номера.
+
+| Поле | Значення |
+|---|---|
+| **Signal API URL** | Базовий URL твого signal-cli-rest-api, напр. `http://192.168.1.50:8080`. Вставлений повний endpoint `/v2/send` із його документації не ламає нічого — BamDude зрізає його до бази. |
+| **Sender Number** | Номер, зареєстрований у signal-cli, у форматі E.164 (`+380501234567`) |
+| **Recipient Type** | **Phone Numbers** — один або кілька отримувачів, рядок за рядком, — або **Group ID** — одна група Signal. signal-cli-rest-api не вміє змішати обидва в одному запиті, тож провайдер — або те, або те; хочеш обидва — додай другий провайдер. |
+| **Group ID** | ID групи, як його показує signal-cli; голий id отримає префікс `group.` сам |
+| **Authorization** | Опційно — значення заголовка `Authorization`, якщо API стоїть за reverse proxy з автентифікацією (`Bearer …` або просто токен) |
+
+Фото завершеного друку прикріплюється до повідомлення. URL підпадає під ті самі правила адрес, що й самохостний ntfy чи `bark-server`: у власній мережі — можна, усе, що не є справжнім HTTP-сервісом, — відхиляється.
+
+---
 
 ### Generic Webhook
 
@@ -368,7 +385,7 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 
 Форма конфіга залежить від типу провайдера — Telegram-бот окремий випадок.
 
-**Не-telegram провайдери (email / ntfy / pushover / discord / webhook / homeassistant / callmebot)** тримають обидва налаштування на самому provider-row:
+**Не-telegram провайдери (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal)** тримають обидва налаштування на самому provider-row:
 
 | Налаштування | Де | Ефект |
 |---|---|---|
@@ -397,7 +414,7 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 
 Кожна картка несе маленький UPPERCASE-бейдж каналу:
 
-- **Зелений `ALL`** — фан-аут до всіх типів провайдерів (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). Записи у перших 4 групах.
+- **Зелений `ALL`** — фан-аут до всіх типів провайдерів (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal). Записи у перших 4 групах.
 - **Синій `EMAIL`** — SMTP-only флоу. 4× `user_print_*` job-owner emails плюс `user_created` / `password_reset`.
 - **Амбер `TEST`** — внутрішній test-button helper.
 

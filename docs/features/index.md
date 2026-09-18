@@ -104,7 +104,7 @@ G-code macros triggered by print events with a built-in editor.
 
 <div class="feature-card" markdown>
 ### [:material-bell-ring: Notifications](notifications.md)
-Eight delivery channels — Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, custom webhooks. Per-provider quiet hours, daily digest, customisable templates.
+Ten delivery channels — Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, custom webhooks. Per-provider quiet hours, daily digest, customisable templates.
 </div>
 
 <div class="feature-card" markdown>

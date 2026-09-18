@@ -20,6 +20,7 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 | **ntfy** | Easy | Topic-based, optional bearer token, image attachments. |
 | **Bark** | Easy | iOS-only, no account. Interruption levels — **Critical** delivers through Silent mode and Focus. Public relay or your own `bark-server`. |
 | **CallMeBot** | Easy | WhatsApp / Signal bridge — phone + API key, URL-encoded message. |
+| **Signal CLI API** | Medium | Self-hosted [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) — recipient numbers or one group, image attachments. |
 | **Home Assistant** | Easy | `persistent_notification.create` or any `notify.*` service. Single global HA URL/token from Settings (or `HA_URL` / `HA_TOKEN` env). |
 | **Webhook** | Flexible | Generic JSON or Slack-format POST, custom field names, base64 image, optional bearer token. |
 
@@ -172,6 +173,22 @@ The **Data** field is what makes an Android push behave. HA's mobile-app integra
 
 !!! tip "Forward HA notifications to other channels"
     Use HA automations to mirror these persistent notifications to the HA Companion app, Telegram, ntfy, etc. — gives you a single audit log in HA plus your usual mobile push.
+
+### Signal CLI API
+
+Signal messages through a [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) instance you host yourself. The provider is named for what it talks to: there is no official Signal API, and BamDude does not pretend to be one. Register a number with signal-cli first (that project's README walks through it); BamDude then sends from that number.
+
+| Field | Value |
+|---|---|
+| **Signal API URL** | The base URL of your signal-cli-rest-api, e.g. `http://192.168.1.50:8080`. Pasting the full `/v2/send` endpoint from its docs is tolerated — BamDude strips it back to the base. |
+| **Sender Number** | The number registered with signal-cli, in E.164 form (`+15551234567`) |
+| **Recipient Type** | **Phone Numbers** — one or more recipients, added row by row — or **Group ID** — a single Signal group. signal-cli-rest-api cannot mix the two in one request, so a provider is one or the other; add a second provider if you want both. |
+| **Group ID** | The group's id as signal-cli lists it; a bare id gets the `group.` prefix for you |
+| **Authorization** | Optional — the `Authorization` header value when the API sits behind an authenticating reverse proxy (`Bearer …`, or just the token) |
+
+Print-finish photos attach to the message. The URL is subject to the same address rules as a self-hosted ntfy or `bark-server`: your own network is fine, anything that is not a real HTTP service is refused.
+
+---
 
 ### Generic Webhook
 
@@ -368,7 +385,7 @@ This is independent of the daily digest / quiet hours pipeline below — a quiet
 
 Configuration shape varies by provider type — the Telegram bot is special.
 
-**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot)** carry both settings on the provider row itself:
+**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal)** carry both settings on the provider row itself:
 
 | Setting | Where | Effect |
 |---|---|---|
@@ -398,7 +415,7 @@ The Templates tab groups the default templates by purpose so a glance tells you 
 
 Each card carries a small UPPERCASE channel badge:
 
-- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). The entries in the first 4 groups.
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal). The entries in the first 4 groups.
 - **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
 - **Amber `TEST`** — internal test-button helper.
 

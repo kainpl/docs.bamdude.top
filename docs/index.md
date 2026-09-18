@@ -92,7 +92,7 @@ G-code macros triggered by print events (start, end, pause). Built-in editor wit
 
 <div class="feature-card" markdown>
 ### :material-bell-ring: [Notifications](features/notifications.md)
-Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
+Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
 </div>
 
 <div class="feature-card" markdown>
