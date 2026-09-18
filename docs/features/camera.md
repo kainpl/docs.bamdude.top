@@ -562,9 +562,36 @@ that remains the per-print choice made by the slicer or printer.
 
 ---
 
+## :material-cctv: Other cameras (not tied to a printer)
+
+An external camera above is a **replacement** for one printer's camera: that printer's live view, finish photo, plate check and Obico frames all come through it. A camera that watches a room, a shelf or a filament dryer is a different thing, and lives in its own list.
+
+1. **Settings → Printing → Camera → Other cameras → Add camera.**
+2. Give it a **name** (it is what the tile, the button and the window title say, so it must be unique), pick the **type** — MJPEG, RTSP, Snapshot or USB — and enter the **URL** or device path. The same optional **Snapshot URL** override and **rotation** as above are available.
+3. Optionally pick a **Location** — the same places printers and Zigbee sensors are filed under.
+4. **Test** opens the source once and confirms a frame, exactly as it does for a printer's camera.
+
+Where it then appears:
+
+- **The camera wall**, after the printers and in name order, on both the signed-in wall and a `?token=` kiosk wall. The tile can go live like any other and counts against the same live budget; it carries no print status, because there is no print.
+- **The Printers page**, as a button on the heading of the location you filed it under, beside that location's sensor readings. Clicking it opens the floating window or a browser window, following the same **Camera view mode** setting the printer cards use.
+
+**Show on the wall** switches a camera off without deleting it: the tile and the button disappear and its stream and snapshot routes stop answering, while the settings stay for later.
+
+!!! note "What a standalone camera never does"
+    It does not take finish photos, check the build plate, feed Obico's failure detection, record a layer timelapse, or switch a chamber light on: every one of those belongs to a printer, and this camera has none. It also never replaces a printer's camera — if you want that, use **External Cameras** above.
+
+!!! tip "One connection per camera"
+    Everyone watching the same standalone camera shares one upstream connection, so a USB camera — which allows exactly one reader — does not drop the first viewer when a second opens it. A snapshot taken while somebody is watching reuses the live frame rather than opening a competing reader.
+
+!!! warning "The kiosk list carries no URL"
+    A kiosk wall authenticates with a token in its URL, and an RTSP camera's credentials live inside its own URL. The kiosk feed therefore serves a name, a rotation and a location and nothing else — the same reason it never serves a printer's serial number.
+
+---
+
 ## :material-lightbulb-on: Light for the camera
 
-A dark chamber makes a dark photo. BamDude can switch the chamber light on for the camera and off again afterwards — for every use of it: a photo in Telegram, a browser stream, the Camera Wall, the finish photo, the plate check, the camera diagnostics.
+A dark chamber makes a dark photo. BamDude can switch the chamber light on for the camera and off again afterwards — for every use of it: a photo in Telegram, a browser stream, the Camera Wall, the finish photo, the plate check, the camera diagnostics. (A standalone camera above has no printer, so none of this applies to it.)
 
 1. **Settings → Printing → Camera → Light for the camera.** Off by default — nothing changes for a farm that does not switch it on. This is the master switch: with it off, nothing below applies.
 2. In the same card, the **External cameras** list, per printer: **Light for the camera** — *As on the farm* / *No*. The printer that must not glow towards the window says *No*. The selector is shown only while the farm toggle is on, and not for a connected printer that has reported no controllable light.
