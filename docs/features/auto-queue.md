@@ -1,44 +1,29 @@
 ---
 title: Auto-Queue Routing
-description: Router queue layer that distributes prints to any eligible idle printer based on model, filament, and color match
+description: Route prints by exact model, complete filament requirements, and the current AMS and external feed configuration
 ---
 
 # Auto-Queue Routing
 
-The auto-queue is a **router layer above the per-printer queues**. Drop a print into it without naming a target — the scheduler picks a suitable printer (by model + filament + color match), copies the item into that printer's queue, and lets the existing per-printer dispatch handle the rest.
+Auto-Queue distributes work into per-printer queues. Choose the file, plate, and print rules; the router finds a printer of the exact model that can supply every used filament channel.
 
-Introduced in **0.4.2**.
-
----
+Printers of the same model with and without AMS are checked against their actual configurations. See [Filament Routing](filament-routing.md) for the complete rules, multicolor and dual-nozzle examples, and waiting reasons.
 
 ## :material-router-network: How it works
 
-```
-┌────────────────┐   eligible idle printer found?
-│ AutoQueueItem  │────────┐
-│ (target_model, │        │ yes → copy into printer's print_queue
-│  filaments,    │        │       mark auto row "assigned"
-│  colors)       │        │
-└────────────────┘        ▼
-                     PrintScheduler picks it up
-                     within ~1 tick (background_dispatch)
-```
+### Self-contained queued files
 
-A background loop (`AutoQueueScheduler`, started from `main.py` lifespan) wakes every **30 seconds** and on each tick:
+When BamDude accepts a job it takes one verified immutable copy of the actual bytes into `data/queue-sources/`. Routing, preparation and upload read that copy from then on. A laptop can sleep, an SMB share can disconnect, an external library file can move or be deleted, and archive retention can run without changing work already in either queue. Identical bytes queued many times are stored once. The shared copy is released only when its last printer-queue or Auto-Queue job is removed. Portable backups include the ready queue copies named by their database snapshot, so a restored farm does not need the original folders. The `staging/` subdirectory contains unfinished copies only; it is never queued or backed up.
 
-1. **Snapshots busy printers** — anything currently `status='printing'` in `print_queue` is excluded from this round.
-2. **Reads pending auto-queue rows** ordered by SJF (Shortest Job First) + `been_jumped` if the **Queue Shortest First** setting is on, else by `position`.
-3. **For each item, calls `find_eligible_printer`** — picks a printer that matches:
-    - the item's `target_model` (e.g. `X1C`, `P1S`, `A1MINI`, `H2D`)
-    - all `required_filament_types` (extracted from the 3MF, user-overridable)
-    - color requirements (when `force_color_match=true`)
-    - the optional `target_location` (room / shelf tag) if you've grouped printers by location.
-4. **If a match exists**: the item is copied into that printer's `print_queue` with AMS mapping computed from the printer's current spool state. The auto row flips to `status='assigned'` and back-references the new per-printer item.
-5. **If no match**: `waiting_reason` is updated so the queue UI can explain *why* the item is still parked (e.g. `"all P1S busy"`, `"need PETG (red), no printer has it loaded"`).
+Rows created before this change remain legacy rows until they are captured by a later operation. A missing or checksum-mismatched snapshot, or a vanished legacy source, produces **File error** and is skipped. Other jobs continue; the printer queue is not paused and no failed physical print is counted. Failed AutoQueue jobs remain visible with **Retry** and removal actions; printer queues show them under Issues. Restore access only for a legacy row, then retry explicitly. A ready snapshot never retries an old NAS path.
 
-Once a row lands in a per-printer queue, the **existing dispatch flow** takes over — plate-clear gate, staggered start, swap macros, drying, the lot. The router doesn't bypass anything.
+### Assignment
 
----
+1. On submission, BamDude validates the selected plate in the sliced 3MF, its matching G-code, model, and used channels. A source error blocks adding the job; a temporary lack of compatible printers does not.
+2. The background router reads pending work in queue order, or SJF order when enabled.
+3. It looks for a printer of the required model and location with a complete suitable set of feeds. Each used channel needs its own source.
+4. Among eligible printers, one ready to start wins. The job moves to that printer's queue with its routing rules; if no candidate exists, the panel shows a waiting reason.
+5. The printer queue applies its usual plate-clear, drying, staggered-start, and swap-macro gates. Filament and source checks run again before the actual start command.
 
 ## :material-sort-numeric-ascending: SJF + starvation guard
 
@@ -70,29 +55,39 @@ The router itself is **always on** — there's no master switch. If no auto-queu
 
 ## :material-plus-circle: Adding to the auto-queue
 
-There are four ways to drop something into the auto-queue:
+Choose the entry point that fits your workflow:
 
 ### 1. Print Modal — "Auto" toggle
 
-In the per-archive / per-library-file Print Modal there's a **Specific / Auto** toggle. Pick **Auto** and the modal shows:
+Open Print for a library file or archive and choose **Auto**.
 
-| Field | Notes |
-|-------|-------|
-| Target Model | Pre-filled from the 3MF's sliced-for model. Defaults to "any" — leave blank to let any compatible printer pick it up. |
-| Target Location | Optional room / shelf tag if you've labelled your printers. |
-| Force Color Match | When on, the eligibility check requires a printer that has every filament *and the right color* loaded. Off by default — match by type only. |
+| Field | Meaning |
+|---|---|
+| Target Model | The exact model from the sliced file. An empty selection means detect it from the 3MF, not allow any model. |
+| Target Location | An optional printer-location restriction. |
+| Filament source | Automatic: AMS or external spool; AMS only; External spools only. |
+| Force exact color match | Off by default: exact colours are preferred, but another compatible colour is allowed. Material and nozzle requirements remain. |
+| Allow match by base material | On by default: when the sliced profile resolves to a family, compare its family `filament_type` such as `PETG`, not its vendor or profile name. Turn it off to require the profile type and, where known, its variant. |
+| Plate channels | Material and color for each used channel; **Require this color** pins one channel's color. |
 
-Submit and an `AutoQueueItem` is created.
+Below the fields, **AMS connected / Without AMS / AMS state unknown** groups show compatible and ready counts separately, with reasons. A valid job may be added with zero counts and wait. A source-reading error must be resolved before adding it.
+
+For a **library file**, the same dialog carries an **Order** field — the open orders that still
+need this plate, ranked so the ones that need it come first (a reprint from an archive keeps the
+original print's own filing, so it is not asked again). Choosing one files the item under that order and, where the
+plate belongs to exactly one of its lines, under that line too, so the order's plan stops asking
+for work you have already queued. **Without an order** is always available. See
+[Filing a print under its order](projects.md#filing-a-print-under-its-order).
 
 ### 2. Virtual Printer `auto_queue` mode
 
-Slicer "Send to Printer" → VP receives upload → archived → dropped into the auto-queue. See [Virtual Printer → auto_queue](virtual-printer.md#auto_queue) for the UI side.
+Slicer "Send to Printer" → VP saves the file in the library → validates its plate → adds it to Auto-Queue. See [Virtual Printer → auto_queue](virtual-printer.md#auto_queue) for the UI side.
 
-This is the hands-off "slice and forget" path: the slicer doesn't know which printer will run the job, and neither does the operator until the router decides.
+The router chooses the machine under the job's rules. Plate-clear confirmation and the other start gates still apply.
 
 ### 3. Drag-and-drop on the Auto-Queue panel
 
-Drop **as many sliced files as you like** anywhere over the **Auto-Queue panel** at the top of the Queue page. Each is uploaded into the library root and then walked through the Print Modal in turn, with a `2 / 5` counter — locked to **Auto** mode (no specific/auto toggle, no printer picker, only the auto-mode constraints: target model / location / force-color).
+Drop **as many sliced files as you like** anywhere over the **Auto-Queue panel** at the top of the Queue page. Each is uploaded into the library root, and then the files that would be answered the same way are grouped — one Print Modal per group, with a `group 1 of 3 · 12 items` badge — locked to **Auto** mode (no specific/auto toggle, no printer picker, the Auto rules: model, location, filament source, and colors).
 
 **Each item's target model is pinned to that file's own `sliced_for_model`, and cannot be changed.** Per file, not per run: two files sliced for two different machines keep two different targets in one drop. Setting it explicitly rather than leaving it blank matters — blank means "work it out from the 3MF", which usually lands on the same answer but shows nothing on screen where the constraint is, so a run of ten files would say nothing about what any of them is waiting for.
 
@@ -104,6 +99,8 @@ The **Load from library** button on the panel opens the same [file picker](print
 
 Permission-gated on `queue:create`. The panel renders even when empty so the drop target is permanently available; an empty-state hint nudges first-time operators.
 
+Channel-specific choices belong to the file: after such an answer, the next file in the group opens for review.
+
 ### 4. REST API
 
 ```http
@@ -111,11 +108,18 @@ POST /api/v1/auto-queue/
 {
   "library_file_id": 42,
   "target_model": "P1S",
-  "force_color_match": false
+  "plate_id": 1,
+  "feed_policy": "external_only",
+  "force_color_match": false,
+  "allow_base_material_match": true
 }
 ```
 
 Full schema in [API reference](../reference/api.md). Quantity > 1 creates N rows in one call (same `batch_id` semantics as `print_queue`).
+
+### 5. Order plans and Telegram
+
+An [order plan](projects.md) can send one row or the whole plan to Auto-Queue; plate validation happens before queue items are created. Telegram uses the same source validation. A large quantity does not relax color or feed rules.
 
 ---
 
@@ -136,46 +140,29 @@ Once an item is assigned to a printer, it disappears from the panel and shows up
 
 ## :material-filter-variant: Eligibility rules
 
-The `find_eligible_printer` helper considers a printer eligible when **all** of these hold:
+The printer must be active, unarchived, available to the router, and free to take new work. The route icon on its queue card lets you opt it out of automatic assignment without stopping its ordinary queue.
 
-| Check | Detail |
-|-------|--------|
-| **Opted in** | The route icon on the printer's queue card toggles whether the router may send work there at all — an opted-out printer shows a "no auto-queue" pill and is skipped, for machines reserved for manual jobs. Separate from pause: pause halts all dispatch on that queue, the opt-out only tells the router to route new work elsewhere. |
-| **Free to take work** | Not currently printing and not already holding a queued job. Whether the printer can *start* right now — plate-clear confirmation, drying, staggered start — is deliberately **not** checked here; see [Routing is not dispatching](#routing-is-not-dispatching) below. |
-| **Model match** | If `target_model` is set, the printer's model code must equal it. |
-| **Location match** | If `target_location` is set, the printer's location tag must equal it. |
-| **Filament types** | Every required filament type must appear in some loaded slot (AMS or external spool). |
-| **Color match** | When `force_color_match=true`, colour hex must also match per filament — **and so must the kind of filament**, see below. |
-| **Filament-overrides** | Any per-print override (e.g. "use PLA Tough instead of PLA") is honoured before checking the loaded slots. |
+It needs the exact model, the selected location, and a **complete mapping for every used channel**: material under the saved matching rule, nozzle, source rule, and required colours. One PLA slot does not satisfy two PLA channels. Manual physical selections cannot move arbitrarily between printers.
 
-Tie-breaker — when multiple printers are eligible:
+Among eligible candidates, readiness comes first, then the best color match. See [Filament Routing](filament-routing.md#channels) for worked examples.
 
-1. **Lowest filament use** (when `prefer_lowest_filament` setting is on, default off). Picks the printer whose AMS slots have the lowest total grams remaining for the required filaments — keeps "fresh" spools for harder jobs.
-2. Falls back to the lowest-id printer.
+!!! note "«Drain the emptiest spool first» picks the tray, not the printer"
+    `prefer_lowest_filament` plays no part in choosing **which printer** gets the
+    job. It decides, on the printer already chosen, **which of its slots** an
+    equally-good match is mapped to: the one with the least filament left, so a
+    nearly-empty spool is burned down instead of a fresh one. The same switch
+    governs automatic matching for print-dialog and virtual-printer jobs.
+    An explicit physical slot selection is retained instead of ranked again.
 
-### Exact colour matching tells PLA Matte from PLA Basic
+    It is on by default and lives under **Settings → Filament → Filament
+    checks → «Drain the emptiest spool first»**. On BamDude's own dispatch paths
+    — this router and the queue scheduler — it is additionally skipped for a
+    printer whose **AMS Filament Backup** is off; see
+    [Print Queue](print-queue.md) for why.
 
-A printer reports every kind of PLA as simply **`PLA`** — Basic, Matte, Silk and the rest are distinguished only by the **filament preset code** the slicer wrote into the file.
+### Color, material, and profile variant
 
-Exact matching now includes that code, and it holds all the way to the tray: a printer carrying two white spools of different kinds gets the one that was asked for, not whichever came first. Before, a job sliced for **White PLA Matte** counted a machine loaded with **White PLA Basic** as an exact match and printed on it — the finish was wrong and nothing on screen suggested it would be.
-
-!!! info "A preset code is not a colour"
-    The reverse mistake is fixed with it. A preset code identifies the *kind* of
-    filament, and Bambu sells every kind in every colour — but a matching code was
-    read as proof the spool was also the right colour. With a single Matte spool
-    loaded, every job wanting Matte matched it **whatever colour it actually was**:
-    the print dialog showed a green tick and "Ready" for a slot wanting dark red
-    against a tray holding dark green.
-
-    Colour is now judged on the tray actually chosen. The filament kind still
-    decides between trays that **agree** on colour, so a job sliced for Matte still
-    prefers the Matte spool over the Basic one — it just no longer overrules the
-    colour. A tray of the right kind in the wrong colour is used only when there is
-    nothing better, and is reported as a **colour mismatch**. Fixed in all three
-    places it lived: the print dialog, the queue's slot mapping, and the
-    auto-queue's.
-
-Spools that report **no** preset code — third-party filament, and files sliced before printers recorded it — still match on material and colour as they always did, so nothing that worked before starts waiting.
+Colour and material are separate decisions. With **Allow match by base material** on, a resolvable family contributes its `filament_type`, so a custom PETG profile and Generic PETG can match despite different names or vendors. With it off, a known `tray_info_idx` variant remains a restriction. A missing variant is never invented. See [material matching](filament-routing.md#material) and [colour rules](filament-routing.md#colors).
 
 ---
 
@@ -188,6 +175,29 @@ The router only answers the first. It will hand a job to a printer that cannot s
 Before **0.5.1.2** the router refused to route to such a printer at all. That sounded safer and was not: the printer's queue stayed empty, so nothing on screen explained the hold-up, and the **Clear Plate** prompt — which appears on a printer's queue — never had a chance to show. Operators saw idle machines reported as busy and a farm that looked dead. Placing the work is what makes the reason visible.
 
 A printer that *is* ready still wins when there's a choice.
+
+---
+
+## :material-swap-horizontal: Rebalancing across printer models
+
+An order line's work is split between printer models when it is queued — by hand, or with the farm's proposal — and a queued copy belongs to its file's model. When the P1S machines free up faster than the forecast assumed, the X1C copies keep waiting in their own pile. Rebalancing lets the auto-queue **move still-pending copies of an order line to idle printers of another model** when that finishes the line sooner — including a model whose plate makes a different number of parts, in which case the plates and the number of prints are recalculated.
+
+**The rule.** A pending copy moves only when *all* of these hold: its own model has no printer ready right now; the other model has at least one printer that is idle *and* ready (an empty queue is not enough — a printer still waiting for a plate clear only looks free); the line has a sliced file for that model with a print-time estimate; and the prints needed to cover the same parts there would finish no later than waiting at home. Among several models that qualify, the earliest finish wins, then the least surplus.
+
+**Parts, not prints.** A copy is a claim on covering N parts. Moving a 6-part P1S plate to an A1 mini whose plate makes 2 parts turns one print into three; moving 2 parts onto a bigger bed turns them into one print with a surplus of less than one plate's worth, which lands on the shelf like any other surplus.
+
+**Three ways to run it.**
+
+- **Automatically** — Settings → Printing → Auto-Queue Routing → **Rebalance across printer models** (off by default). The scheduler checks after every placement pass, moves at most one copy per idle printer per pass, and leaves a line alone for five minutes after a move.
+- **Per line** — the **Rebalance** button on an order line's plan, shown while the line has pending auto-queue copies. It runs regardless of the setting and ignores the five-minute pause.
+- **Per copy** — **Rebalance** on a pending row or a collapsed `×N` block of the auto-queue panel. A row that cannot move says why.
+
+**What is never moved.** A copy that is already handed to a printer, scheduled for a time, staged for a manual start, pinned to specific filament slots, aimed at a location, queued from an archive rather than a library file, or not filed under an order line. Those either belong to a printer already or carry a decision of yours.
+
+**What you see.** A moved row carries a `← P1S` badge on the panel, naming the model it was queued for before; the copies created with it share its batch. Routing, dispatch and filament rules are untouched: a moved copy is written by the same writer every enqueue uses and passes the same file and filament checks.
+
+!!! note "Estimates decide"
+    Rebalancing compares the same print-time estimates the ETA uses. A file without an estimate is never chosen as a target, and a copy without one is treated as if it could start at home the moment a printer frees.
 
 ---
 
@@ -206,9 +216,9 @@ When Queue Auto-Drying is set to **blocking** (`queue_drying_block=true`), dryin
 
 ## :material-clipboard-text: AMS mapping at assign time
 
-When the router copies an auto-queue item into a per-printer `print_queue`, it **computes AMS mapping right then** from the printer's current spool state — not at submission time. So if you swap a spool between submission and dispatch, the assigned mapping reflects the new spool. The original `filament_overrides` on the auto row are still applied first, then auto-mapped slots are filled in.
+Mapping is computed from the chosen printer's current sources and the job's saved rules. The printer-queue item keeps those rules independently of the original Auto-Queue row.
 
----
+Checks repeat before preparation and immediately before the start command. A changed spool, connection, file, or current job can return the print to waiting with a reason; a partial mapping is not sent. See [Before printing](filament-routing.md#before-printing).
 
 ## :material-link-variant-off: Cancel / edit semantics
 
@@ -229,38 +239,12 @@ When the router copies an auto-queue item into a per-printer `print_queue`, it *
 | 2-3 printers, one model | Auto-queue is great for load-balancing — drop jobs in, the scheduler picks the next free one. |
 | Mixed-model farm | Auto-queue with explicit `target_model` per job — same load-balancing within the model, no cross-pollination. |
 | Color-critical jobs (logos, signage) | Turn on `force_color_match` so a job won't dispatch to a printer with the wrong color loaded. |
-| Hands-off slicer flow | VP `auto_queue` mode + auto-queue → fully unattended slice → print pipeline. |
-
----
-
-## :material-code-tags: Internals
-
-| File | Role |
-|------|------|
-| `backend/app/models/auto_queue.py` | `AutoQueueItem` ORM model |
-| `backend/app/services/auto_queue_scheduler.py` | Background loop, 30 s tick |
-| `backend/app/services/auto_queue_eligibility.py` | `find_eligible_printer` + match helpers |
-| `backend/app/services/auto_queue_ams.py` | `compute_ams_mapping_for_printer` |
-| `backend/app/services/auto_queue_threemf.py` | `extract_auto_queue_requirements` (3MF parser) |
-| `backend/app/api/routes/auto_queue.py` | REST endpoints |
-| `backend/app/migrations/m024_*.py` | Schema migration |
-| `frontend/src/components/Queue/AutoQueuePanel.tsx` | Dashboard panel |
-| `frontend/src/components/PrintModal/AutoModeOptions.tsx` | Print Modal "Auto" mode form |
+| Hands-off slicer flow | VP `auto_queue` mode + auto-queue → routing under the job's rules with the usual start gates. |
 
 ---
 
 ## :material-history: Migration from per-printer queues
 
-If you've been using the **"any printer of model X"** target option in the per-printer queue picker, that's the legacy single-tier router. It still works but is being superseded by the auto-queue:
+Per-printer queues remain the way to choose a specific machine; Auto-Queue defers that choice. Both paths apply complete filament checks before starting.
 
-| Capability | Legacy "any of model X" | Auto-Queue |
-|-----------|--------------------------|------------|
-| Picks idle printer of given model | yes | yes |
-| Filament type match | no — assumes operator checks | yes |
-| Color match | no | optional (`force_color_match`) |
-| SJF + starvation guard | no | yes |
-| Location filter | no | yes |
-| Visible "waiting" panel with reasons | no | yes |
-| VP integration | proxy only | dedicated `auto_queue` mode |
-
-No automatic conversion — existing per-printer queue items keep working as-is. Use the auto-queue going forward when the routing decision can be deferred.
+After an upgrade, older jobs retain established source restrictions and physical selections. If there is not enough saved evidence to recover their rules, mapping review is required. Schedule edits, copies, and repeats retain the rules; a different printer or plate requires a new answer for a manual mapping. See [Editing and repeats](filament-routing.md#editing).

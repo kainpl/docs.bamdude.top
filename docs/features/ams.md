@@ -212,30 +212,74 @@ Click the badge to jump straight to the AMS Settings dialog where the toggle liv
 
 ---
 
+## :material-shuffle-variant: AMS Backup compatibility emulation
+
+AMS filament backup only merges slots the printer considers interchangeable, and it judges that from what each slot says it holds — same filament profile, same colour. Two rolls of the same PLA in slightly different shades, or the same material from two brands, are never grouped, so a runout stops the print even though the next slot holds something you would happily have finished the plate with.
+
+**AMS Backup compatibility** is a per-printer, **off-by-default** policy that lets BamDude tell the printer a deliberately different filament profile for **manually assigned** spools, so its firmware treats several compatible spools as one auto-refill backup group. The controls live in **Edit Printer** on the Printers page:
+
+| Control | What the printer is told |
+|---|---|
+| **Advertise one canonical colour to the AMS** | Every eligible slot is reported as one colour you pick — an opaque colour, so there is no transparency for the firmware to disagree about. |
+| **Advertise the Generic family of the base material** | Every eligible slot is reported as the Generic family of its material — **PLA**, **PETG**, **ABS**, **ASA** or **TPU**. |
+
+Either switch works on its own; together they group the widest set.
+
+!!! warning "Only what the printer is told changes — your inventory is untouched"
+    The spool in BamDude keeps its real colour, brand, material and accounting. [Filament routing](filament-routing.md), dispatch, [Auto-Queue](auto-queue.md) and filament consumption all keep matching the **real** spool. The advertised profile exists on the wire to the printer and nowhere else — nothing in your inventory is rewritten, and no statistic changes.
+
+### What is never advertised differently
+
+- **RFID-tagged spools.** The tag is the spool's identity and the firmware trusts it, so a spool the reader recognises is always reported as itself.
+- **External spool slots.** They sit outside the AMS's backup logic entirely.
+
+Both are skipped silently — those slots keep advertising the real spool whatever the policy says.
+
+### Applying it to slots already assigned
+
+Switching the policy on does not go back and rewrite slots that were configured earlier; it applies to assignments made from then on. To bring existing slots in line, open the **AMS Backup** dialog on the printer card and use **Apply to assigned slots**.
+
+It previews before it acts. Every slot is listed with the reason it got:
+
+| Preview line | Meaning |
+|---|---|
+| **Will apply** | the slot is eligible and what the printer would be told differs from what it is told now |
+| **Will revert to the real spool** | the policy no longer covers this slot, so it goes back to advertising the real spool |
+| **Not sent — printer refused or offline** | the change did not reach the printer; that slot is left exactly as it was |
+
+Nothing is sent until you confirm, and the button refuses to run while a print is in progress.
+
+!!! tip "The same button is the rollback"
+    There is no separate undo: switch the policy off, run **Apply to assigned slots** again, and every slot returns to advertising its real spool.
+
+### Seeing the difference
+
+Where the advertised profile differs from the real spool, the slot card carries an **AMS sees: …** badge showing what the printer was told. That badge is the only place in the interface where the divergence is visible — everywhere else you see the spool as it really is, which is what you want when you are counting grams and colours.
+
+### Proof that it worked
+
+**The printer decides the grouping, not BamDude.** All the policy does is describe the slots; the firmware then applies its own rules to the description.
+
+!!! note "An acknowledgement is not a group"
+    The printer accepting the setting only proves it accepted a value. The **only** proof that a backup group actually formed is the grouping the firmware itself reports back. If it declines to merge the slots, the dialog says so — RFID identity and the firmware's own compatibility rules still apply on top of anything we advertise.
+
+---
+
 ## :material-lan: AMS Discovery & Wiring
 
 BamDude auto-discovers AMS units when a printer connects — no manual configuration. Updates flow in whenever the AMS configuration changes (a unit added / removed / re-cabled).
 
-### Dual-nozzle wiring (H2D / H2D Pro)
+### Dual-nozzle wiring {#dual-nozzle-wiring-h2d-h2d-pro}
 
 On dual-nozzle printers each AMS unit is physically wired to either the left or right nozzle. BamDude shows the wiring diagram on the printer card so you can plan multi-material prints.
 
 ### Nozzle-aware filament mapping
 
-When a 3MF assigns filaments to specific nozzles, BamDude constrains matching to AMS trays connected to the correct nozzle:
+For a sliced 3MF, BamDude matches the selected plate's used-channel nozzles against current physical AMS and external-feed bindings. If no suitable source exists, the job does not fall back to an arbitrary slot on the other nozzle.
 
-1. The 3MF carries `filament_nozzle_map` + `physical_extruder_map` in `project_settings.config`, mapping each filament slot to a target nozzle (`0` = right, `1` = left).
-2. The printer reports `ams_extruder_map` over MQTT, indicating which AMS feeds which nozzle.
-3. The matcher only considers trays on the correct nozzle — if no trays match, falls back to the full tray list.
+**L / R** badges in the dialog show bindings. The check before start applies to Auto-Queue, specific-printer queues, and repeats. It covers supported dual-nozzle models generally, including mixed AMS + external and separate external feeds when the file and printer permit them.
 
-The filament-mapping UI shows **L** / **R** badges next to each filament requirement so you can see at a glance which nozzle is involved. This applies to:
-
-- The print scheduler's auto-mapping
-- The reprint modal
-- The Add-to-Queue modal
-- Multi-printer selection (per-printer mapping for farms)
-
-Single-nozzle printers (X1C, P1S, A1, A1-mini, P2S, etc.) skip the nozzle filter — every AMS tray is available.
+Unknown AMS state is different from confirmed absence of AMS. Fresh information is required after reconnecting. See [Filament Routing](filament-routing.md) for complete examples and color rules.
 
 ### Filament Track Switch (FTS)
 

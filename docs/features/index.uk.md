@@ -14,6 +14,11 @@ BamDude має безліч функцій для керування вашою 
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
+### [:material-monitor: Монітор стану](status-monitor.md)
+50 однакових плиток на Full HD, порядок за увагою та ETA, подання принтерів і черги й обмежений ТВ-доступ.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-monitor-dashboard: Моніторинг у реальному часі](monitoring.uk.md)
 Статус принтерів у реальному часі, температури, прогрес друку та відстеження помилок HMS через WebSocket.
 </div>
@@ -99,7 +104,7 @@ G-code макроси, що активуються подіями друку, з
 
 <div class="feature-card" markdown>
 ### [:material-bell-ring: Сповіщення](notifications.uk.md)
-Вісім каналів доставки — Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, власні webhook. Тихі години, щоденний digest і шаблони — кожному провайдеру свої.
+Десять каналів доставки — Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, власні webhook. Тихі години, щоденний digest і шаблони — кожному провайдеру свої.
 </div>
 
 <div class="feature-card" markdown>
@@ -152,7 +157,7 @@ G-code макроси, що активуються подіями друку, з
 
 ---
 
-## :material-folder-multiple: Бібліотека, інвентар і проєкти
+## :material-folder-multiple: Бібліотека, інвентар і замовлення
 
 <div class="feature-grid" markdown>
 
@@ -167,8 +172,8 @@ G-code макроси, що активуються подіями друку, з
 </div>
 
 <div class="feature-card" markdown>
-### [:material-folder-multiple: Проєкти та print plan](projects.uk.md)
-Групуй друки в проєкти зі впорядкованим print plan. Stepper копій на файл, live-обчислення пластику/часу/ціни, експорт ZIP / JSON.
+### [:material-clipboard-list: Замовлення, вироби та залишок](projects.uk.md)
+Замовники, замовлення з рядків «виріб × кількість» і вироби з друкованих та купівельних деталей. План каже, що друкувати далі, друки підшиваються під замовлення, якому їх бракує, зайві деталі лягають у вільний залишок, а вкладка «Склад» показує всі полиці ферми одразу.
 </div>
 
 <div class="feature-card" markdown>

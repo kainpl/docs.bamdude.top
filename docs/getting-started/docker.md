@@ -113,7 +113,8 @@ volumes:
 | `DEBUG` | `false` | Enable debug logging |
 | `LOG_LEVEL` | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `LOG_TO_FILE` | `true` | Write logs to `/app/logs/bamdude.log` |
-| `DATABASE_URL` | unset (SQLite) | PostgreSQL URL, e.g. `postgresql+asyncpg://user:pass@host:5432/bamdude` |
+| `DATABASE_URL` | unset (SQLite) | A URL such as `postgresql+asyncpg://user:pass@host:5432/bamdude` uses your own server; for a separate PostgreSQL container use the shipped `docker-compose.postgres.yml` override — mind the host-networking note in [PostgreSQL Support](../features/postgresql.md). `embedded` (the PostgreSQL bundled with BamDude) is **not** available in Docker: the image runs as root and `initdb` refuses to run as root. |
+| `EMBEDDED_PG_PORT` | picked once, remembered | Pin the bundled server's port (e.g. `6432`). |
 | `TRUSTED_PROXY_IPS` | empty | Comma-separated reverse-proxy IPs trusted for `X-Forwarded-For` (set this when fronting BamDude with nginx / Caddy / Traefik) |
 | `AUTH_REFRESH_COOKIE_SECURE` | unset (auto) | Force the refresh-cookie `Secure` flag. Auto-detect from request scheme by default. |
 | `MFA_ENCRYPTION_KEY` | unset | URL-safe base64 Fernet key for at-rest encryption of TOTP / OIDC secrets. |
@@ -241,6 +242,30 @@ services:
 !!! warning "DEBUG=true on first boot of a big install"
     Setting `DEBUG=true` causes BamDude to re-run the latest migration on every boot. With several thousand archives that means walking every 3MF on disk before the API comes up — startup goes from seconds to minutes. Switch DEBUG off after the migration cycle settles.
 
+### Signal notifications sidecar { #signal-notifications-sidecar }
+
+The **Signal CLI API** notification provider talks to a [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) server. If you do not run one already, the shipped `docker-compose.signal.yml` override adds it next to BamDude; `docker-install.sh` offers it as a question (or `--signal`). By hand, list the override in `.env`:
+
+```env
+COMPOSE_FILE=docker-compose.yml:docker-compose.signal.yml
+SIGNAL_API_PORT=8081
+```
+
+(With the PostgreSQL sidecar too, list all three files.) Then `docker compose up -d`. Two things remain yours to do:
+
+1. **Link a number.** Open `http://127.0.0.1:8081/v1/qrcodelink?device_name=BamDude` in a browser on the server (from another machine: `ssh -L 8081:127.0.0.1:8081 user@server`, then the same URL on your laptop) and scan the QR code in Signal → Settings → Linked devices. Registering a brand-new number is possible too, but needs SMS/voice verification and usually a captcha — see [Notifications](../features/notifications.md#signal-cli-api).
+2. **Create the provider** under Settings → Notifications → Add → Signal CLI API, with the linked number as the sender and the URL for your platform:
+
+| Platform | Signal API URL |
+|---|---|
+| Linux, host networking (the default) | `http://127.0.0.1:8081` |
+| Docker Desktop, bridge networking | `http://signal-api:8080` |
+
+!!! warning "Loopback only"
+    signal-cli-rest-api has no authentication of its own — whoever reaches the port can send from your number. The override publishes it on `127.0.0.1` only; do not change that to `0.0.0.0`. The loopback publish is kept on Docker Desktop as well, because your **browser** needs it for the QR page.
+
+The account's keys live in the `bamdude_signal` volume and are **not** part of BamDude's backup — lose the volume and you link again. The sidecar runs signal-cli in its `json-rpc` mode (one long-lived daemon, about 160 MB resident before an account is linked) and is pinned to a release rather than `latest`, because a signal-cli upgrade can require re-linking.
+
 ---
 
 ## :material-help-circle: Troubleshooting
@@ -267,7 +292,7 @@ If using bridge network mode, try `network_mode: host`.
 
 [:material-printer-3d: **Add Your Printer**<br><small>Connect your first printer</small>](first-printer.md)
 
-[:material-arrow-up-circle: **Upgrading**<br><small>Migrate from Bambuddy</small>](upgrading.md)
+[:material-arrow-up-circle: **Upgrading**<br><small>Upgrade and roll back safely</small>](upgrading.md)
 
 [:material-help-circle: **Troubleshooting**<br><small>Having issues?</small>](../reference/troubleshooting.md)
 

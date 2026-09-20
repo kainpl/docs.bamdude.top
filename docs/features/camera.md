@@ -37,9 +37,20 @@ The Printers page has two layouts, switched with the **Cards / Cam wall** toggle
 To conserve bandwidth and `ffmpeg` processes, the wall streams intelligently rather than opening every camera at once:
 
 - **Only on-screen tiles go live.** An `IntersectionObserver` marks a tile "visible" once ≥40% of it is on screen — the 40% floor stops a scroll-boundary sliver from spinning up a stream.
-- **Live is capped.** Up to **4** visible tiles stream live MJPEG at once (the *max live* setting, default 4 — the documented Raspberry Pi 4 ceiling), assigned in list order so the choice is stable. Visible tiles past the cap fall back to snapshots.
+- **Live is capped by the browser transport.** The saved *max live* preference defaults to 4. HTTP/1.x or an unknown protocol permits at most **2 live streams per tab**, shared with the floating camera. Confirmed HTTP/2 or HTTP/3 permits the chosen maximum (up to 16). Extra visible tiles show snapshots; off-screen tiles pause. The UI explains a lower effective limit without changing your saved preference.
 - **Snapshots for the rest.** Over-cap tiles refresh a still frame every **8 seconds** by default (the *snapshot interval* setting).
 - **Off-screen tiles pause.** Scroll a tile out of view and it stops all network activity until it returns. Disconnected printers also render paused — no live slot is burned on a camera that has nothing to stream.
+
+
+The protocol comes from completed browser API requests, including the browser-facing
+hop through a reverse proxy. HTTPS alone does not prove HTTP/2. Missing browser
+timing data keeps the two-stream cap. Separate tabs/windows do not share this
+frontend budget, so it is not a browser-wide connection guarantee.
+
+Snapshots share a two-request queue, cancel on exit and keep the last decoded
+image while a replacement arrives. The bottom-right time is when this tab last
+successfully updated the snapshot, not the printer's capture time. Failed refreshes
+retain the previous frame and retry. Live streams keep the LIVE badge.
 
 ### Per-tile
 
@@ -48,7 +59,7 @@ Each tile shows:
 - an **offline chip** when the printer isn't connected;
 - an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
 - an **HMS-error badge** when the printer has active (non-noise) HMS errors;
-- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings.
+- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
 
 ### Wall settings
 
@@ -175,6 +186,60 @@ BamDude enforces that on two axes:
 
 ---
 
+## :material-application-cog: Experimental isolated camera process
+
+The default `inline` runtime keeps camera transport in the BamDude server
+process. Advanced operators can set this environment variable before starting
+the service:
+
+```text
+CAMERA_RUNTIME=worker
+```
+
+It starts one supervised local child process for camera work. One-shot captures,
+built-in Bambu chamber/RTSPS live view, and external MJPEG, RTSP and snapshot
+live views use an authenticated local JPEG relay; browser URLs, tokens, and the
+normal shared-viewer behaviour do not change. A disconnected browser relay
+releases the child-side producer instead of leaving a camera or `ffmpeg` process
+held open. The relay accepts at most 64 active sources and drops JPEGs over
+2 MiB, bounding queued live frames to 128 MiB per process.
+
+!!! warning "Experimental: verify before using on a production farm"
+    `worker` fails closed. If its process containment or local connection cannot
+    start, BamDude does not switch that request back to `inline` transport.
+    Built-in Bambu live view is worker-owned too; its RTSPS path uses the same
+    per-model probe and reconnect profile as the inline view. Virtual Printer
+    camera passthrough is a worker-owned, byte-for-byte raw TCP lease. Keep the
+    default `inline` setting unless you specifically test the camera and Virtual
+    Printer paths on your host first.
+
+The setting does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
+and hardware-decoder behaviour still depend on the host and the camera model.
+
+---
+
+### Restart and INFO diagnostics
+
+Set the variable in the environment used to launch the backend (or its `.env`)
+and restart BamDude. Removing it or setting `CAMERA_RUNTIME=inline` takes effect
+on the next restart. A development reloader can add a Python launcher process;
+count worker-ready log entries and child PIDs, not just all Python processes.
+
+The normal backend log includes worker ready/stopped records, viewer attach/detach,
+relay start/first frame/end, and completed-session metrics. Match the printer and
+session/identity fields; they connect parent records to the child. First-frame
+latency and frame counts describe backend delivery, not proof of browser rendering.
+`viewers_gone` after close is normal. `subscribers=0` confirms that no browser viewer
+remains on that relay; another viewer legitimately keeps the shared source alive.
+
+Download the current log from **System Info**. DEBUG is not required for this
+basic diagnosis. Worker forwarding bounds record size and rate and redacts
+credentials/URLs; it does not log each video frame. Keep an issue's time and
+printer name when sending a log to support. Isolation does not automatically
+enable VAAPI/D3D11 or remove HTTP/1 browser connection limits.
+
+---
+
 ## :material-magnify: Zoom & Pan
 
 | Method | Action |
@@ -236,7 +301,7 @@ The 60-min UI-side token is the wrong shape for a wall-mounted dashboard, a Home
 Assistant camera entity, or a Frigate front-end that re-fetches the same URL for
 months. BamDude mints **long-lived tokens** for those cases.
 
-**Settings → API Keys → Camera API Tokens → Create new token.** Give it a name,
+**Settings → API Keys → Camera and monitor tokens → Create new token.** Give it a name,
 pick a **scope** (below) and a lifetime (1–365 days, default 90), and click
 Create. The token is shown **exactly once**.
 
@@ -263,6 +328,8 @@ bed, so folding the two together would silently widen every wall token already
 handed out) and vice versa. **None** of them exposes a printer's IP address,
 serial number or access code, or reaches any other BamDude API.
 
+**Status monitor** is a separate, metadata-only scope in the same panel. It opens the [operator monitor](status-monitor.md) for all non-archived printers, with no cameras, filenames or printer control. It cannot be used as a camera token, and camera scopes cannot open the status monitor.
+
 #### Token properties
 
 | Property | Detail |
@@ -279,10 +346,11 @@ Administrators see an extra **All users** section listing every active token in
 the install — useful for triage if one is suspected of being leaked, or to
 enforce farm-wide hygiene.
 
-Creating and managing these tokens needs the `camera:view` permission — the same
-one already required for the ordinary browser-side stream tokens. Default Viewers
-and Operators groups have it. To delegate management to a non-admin, put them in
-a group with both `camera:view` and `settings:read` (so they can reach Settings).
+Camera scopes require `camera:view`, plus the API-key permission for the action:
+`api_keys:create`, `api_keys:read` or `api_keys:delete`. Access to the Settings UI
+also needs `settings:read`. A **Status monitor** token instead needs printer and
+queue read permissions along with the API-key permissions; it does not require
+camera access. See the [monitor setup guide](status-monitor.md).
 
 URL shape: `/api/v1/printers/{id}/camera/stream?token=<token>` — the same
 query-param contract as the short-lived flow, so Home Assistant's generic camera
@@ -343,7 +411,7 @@ browser, so opening a kiosk link once won't overwrite your own wall preferences.
 
 ### Revoking a token
 
-1. **Settings → Long-lived Tokens**.
+1. **Settings → API Keys → Camera and monitor tokens**.
 2. Find the row by name or by `lookup_prefix`.
 3. Click **Revoke**, confirm in the modal.
 
@@ -373,13 +441,13 @@ When using embedded mode, the camera appears as a floating window with the follo
 - **Draggable** — click and drag the header to reposition.
 - **Resizable** — drag the bottom-right corner to resize.
 - **Persistent position** — position and size are remembered per printer across sessions.
-- **Navigation persistence** — open cameras stay open when you navigate away from the Printers page and back.
-- **Minimize** — click the minimize button to collapse to the title bar.
+- **Navigation persistence** — leaving Printers closes its media requests; returning restores the last selected camera.
+- **Minimize** — collapse to the title bar and stop the live request; expand to start it again.
 - **Close** — click X to close the viewer.
-- **Multi-viewer** — open cameras for multiple printers simultaneously, each with its own remembered position and size.
+- **One viewer** — clicking another printer replaces the current camera and cancels the old stream. Old saved multi-camera lists restore only the last camera.
 
 !!! tip "Embedded mode for the whole farm"
-    Embedded mode keeps you on the main screen while monitoring prints — no need to switch between browser windows. Open multiple viewers to monitor your entire print farm at once.
+    Use the single floating viewer to inspect a printer; use Camera Wall for the whole fleet.
 
 ---
 
@@ -435,6 +503,11 @@ When a stall is detected:
 3. Reconnects automatically.
 4. Resumes streaming.
 
+For a brief break, the first RTSP reconnect is immediate. Repeated failures use a
+short, capped exponential delay with per-stream jitter, so a whole farm does not
+retry in one burst when an access point or switch returns. Closing the viewer
+interrupts that wait; it does not leave a reconnect task behind.
+
 !!! tip "Network blips"
     If your network briefly drops, the stream will automatically recover once the connection is restored — no manual intervention needed.
 
@@ -456,7 +529,12 @@ It calls `POST /api/v1/printers/{id}/camera/diagnose` and shows the results inli
 !!! note "Live-stream shortcut"
     If a viewer is already watching the camera **and** the buffered last frame is fresher than 10 seconds, the diagnostic skips the real test and reports the stream as live / healthy. Opening a fresh socket would kick the live viewer off on firmwares that allow only a single camera connection — so when there's already proof the camera works, BamDude doesn't disturb it.
 
-The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), and a summary code.
+The result also carries metadata for support triage: the protocol (`rtsp` / `chamber_image`), the port, the profile in use (`default` or a model-specific name), the mirrored Bambu Studio catalog resolution when known, and a summary code. The catalog is descriptive only; it never chooses a camera transport over live evidence.
+
+If the `first_frame` check joined a camera capture that was already in progress,
+the dialog says **Shared concurrent capture**. That is a successful result which
+avoided opening a second socket to a printer that allows only one reader; **New
+camera capture** means this diagnostic opened the capture path itself.
 
 ---
 
@@ -468,7 +546,10 @@ BamDude can automatically capture a camera snapshot when prints complete:
 2. Enable **Capture snapshot on print complete**.
 3. Snapshots are saved to the print's archive folder and surface in the archive's photo gallery.
 
-This creates a visual record of every completed print — paired with the timelapse and finish photo, you've got a full visual log of farm output.
+This creates a visual record of every completed print. It is **off by default**:
+an installation with no explicit saved setting does not keep background frames,
+take finish photos, or add notification images. Enabling it does not enable the printer's own timelapse;
+that remains the per-print choice made by the slicer or printer.
 
 !!! note "How BamDude picks the moment"
     The ideal moment is the last object layer, while the print is still on the bed and before the End G-code parks the toolhead, swaps the plate or clears it. BamDude tries three sources in order of quality:
@@ -478,6 +559,58 @@ This creates a visual record of every completed print — paired with the timela
     3. a rolling snapshot taken **while the print was still running** — the fallback for firmware that reports neither (the A1 Mini is the known case).
 
     That third source is why a photo of an auto-swapped plate no longer comes back empty. The rolling snapshot refreshes at most every 25 seconds and stops updating the instant printing ends, so what it holds is the finished print rather than the aftermath. It's only taken when finish photos are enabled, never carries over between prints, and is skipped while you're watching the live camera so the stream isn't interrupted.
+
+---
+
+## :material-cctv: Other cameras (not tied to a printer)
+
+An external camera above is a **replacement** for one printer's camera: that printer's live view, finish photo, plate check and Obico frames all come through it. A camera that watches a room, a shelf or a filament dryer is a different thing, and lives in its own list.
+
+1. **Settings → Printing → Camera → Other cameras → Add camera.**
+2. Give it a **name** (it is what the tile, the button and the window title say, so it must be unique), pick the **type** — MJPEG, RTSP, Snapshot or USB — and enter the **URL** or device path. The same optional **Snapshot URL** override and **rotation** as above are available.
+3. Optionally pick a **Location** — the same places printers and Zigbee sensors are filed under.
+4. **Test** opens the source once and confirms a frame, exactly as it does for a printer's camera.
+
+Where it then appears:
+
+- **The camera wall**, after the printers and in name order, on both the signed-in wall and a `?token=` kiosk wall. The tile can go live like any other and counts against the same live budget; it carries no print status, because there is no print.
+- **The Printers page**, as a button on the heading of the location you filed it under, beside that location's sensor readings. Clicking it opens the floating window or a browser window, following the same **Camera view mode** setting the printer cards use.
+
+**Show on the wall** switches a camera off without deleting it: the tile and the button disappear and its stream and snapshot routes stop answering, while the settings stay for later.
+
+!!! note "What a standalone camera never does"
+    It does not take finish photos, check the build plate, feed Obico's failure detection, record a layer timelapse, or switch a chamber light on: every one of those belongs to a printer, and this camera has none. It also never replaces a printer's camera — if you want that, use **External Cameras** above.
+
+!!! tip "One connection per camera"
+    Everyone watching the same standalone camera shares one upstream connection, so a USB camera — which allows exactly one reader — does not drop the first viewer when a second opens it. A snapshot taken while somebody is watching reuses the live frame rather than opening a competing reader.
+
+!!! warning "The kiosk list carries no URL"
+    A kiosk wall authenticates with a token in its URL, and an RTSP camera's credentials live inside its own URL. The kiosk feed therefore serves a name, a rotation and a location and nothing else — the same reason it never serves a printer's serial number.
+
+---
+
+## :material-lightbulb-on: Light for the camera
+
+A dark chamber makes a dark photo. BamDude can switch the chamber light on for the camera and off again afterwards — for every use of it: a photo in Telegram, a browser stream, the Camera Wall, the finish photo, the plate check, the camera diagnostics. (A standalone camera above has no printer, so none of this applies to it.)
+
+1. **Settings → Printing → Camera → Light for the camera.** Off by default — nothing changes for a farm that does not switch it on. This is the master switch: with it off, nothing below applies.
+2. In the same card, the **External cameras** list, per printer: **Light for the camera** — *As on the farm* / *No*. The printer that must not glow towards the window says *No*. The selector is shown only while the farm toggle is on, and not for a connected printer that has reported no controllable light.
+3. **Also for Obico failure detection** — a separate toggle, off by default, shown only when the farm toggle is on and Obico detection is enabled. Obico looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
+
+Two rules make it safe to leave on:
+
+- **Only a light that is off is switched on.** A light that was already on — you switched it, or the firmware did at print start — is never touched, before or after.
+- **Only a light BamDude switched on is switched off**, and only once nobody is using the camera any more. If you switch the light off yourself during a stream, BamDude does not switch it back on; if you switch it on yourself, BamDude does not switch it off after.
+
+How it behaves in practice: a one-off photo waits for the printer to confirm the light before the frame is taken (no fixed pause, no dark first photo), and the light goes off about ten seconds after the last use, so two photos in a row do not blink it. Several browser tabs on one printer are one switch-on and one switch-off. The Camera Wall in snapshot mode keeps the light on for as long as the wall is open, and lets it go within one refresh interval after the wall is closed. The layer-based timelapse deliberately does not take the light — it would flash on every layer; leave the light on yourself if the timelapse needs it. The printer's own timelapse lights itself.
+
+One use does not wait for the toggle: the **build plate check** (below) lights the plate for its comparison whatever the settings say, as it always did — its reference was calibrated with the light on, and a check in the dark would pause a print for nothing. It now does so through the same mechanism: confirmed by the printer instead of a fixed pause, and never touching a light that was already on.
+
+!!! note "A1 / A1 mini"
+    These printers do not switch their light on at print start the way the X1 and P1 series do, so a photo from the bot on a dark A1 was always dark. This setting is what fixes that.
+
+!!! note "After a restart"
+    Nothing here is remembered across a BamDude restart. A light switched on for a stream that was open when BamDude restarted stays on; the next use finds it on and, by the second rule, leaves it alone.
 
 ---
 
@@ -549,7 +682,7 @@ The green box in the preview shows the detection area. Focus it on the build pla
 | Requirement | Details |
 |-------------|---------|
 | **OpenCV** | `opencv-python-headless` (already installed in the Docker image). |
-| **Chamber light** | Should be ON for reliable detection. |
+| **Chamber light** | Switched on for the check by BamDude if it is off, whatever the *Light for the camera* setting says, and off again after. Calibrate with it ON. |
 | **Calibration** | At least one reference image required. |
 
 ### Troubleshooting
@@ -660,7 +793,7 @@ http://your-bamdude:8000/overlay/{printer_id}
 
 ### Streaming Overlay token
 
-1. **Settings → API Keys → Camera API Tokens.**
+1. **Settings → API Keys → Camera and monitor tokens.**
 2. Create a token with the **Streaming Overlay** scope and copy it.
 3. Append it to the overlay URL, with the printer number matching the printer's
    own URL on the Printers page (`/overlay/1` is printer 1, and so on):
@@ -744,7 +877,7 @@ When no print is running, the overlay still works — it shows the camera feed p
 ## :material-lightbulb: Tips
 
 !!! tip "Multiple Cameras"
-    In embedded mode, open multiple camera viewers simultaneously -- each remembers its own position and size.
+    Use Camera Wall for multiple cameras. Embedded mode keeps one viewer and switches it when you select another printer.
 
 !!! tip "Bandwidth Conservation"
     Close camera windows when not actively watching to save server resources.

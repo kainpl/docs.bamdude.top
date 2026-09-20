@@ -174,7 +174,7 @@ Failure Analysis каже вам, *що вже зламалося*. Щоб зу�
 
 ## :material-export: Експорт
 
-Ті самі числа годують сторінку [Export](export.md). `GET /api/v1/archives/stats/export` повертає CSV/XLSX з summary, розбивкою per-reason / per-filament / per-printer і тижневим trend'ом — зручно для monthly reporting або для подачі у BI tool.
+Ті самі числа годують сторінку [Export](export.md). `GET /api/v1/statistics/export` повертає CSV/XLSX з summary, розбивкою per-reason / per-filament / per-printer і тижневим trend'ом — зручно для monthly reporting або для подачі у BI tool.
 
 ---
 

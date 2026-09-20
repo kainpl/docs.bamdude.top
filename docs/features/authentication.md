@@ -152,7 +152,10 @@ System groups (Administrators / Operators / Viewers) cannot be deleted, and thei
 
 ## :material-email-fast: Advanced Auth via Email
 
-Optional SMTP layer that enables passwordless onboarding, self-service password reset, and per-user print notifications. Toggle independently of basic auth.
+Optional SMTP layer that enables passwordless onboarding, admin-triggered password resets, and per-user print notifications. Toggle independently of basic auth.
+
+!!! info "Self-service password reset does **not** need this toggle"
+    Recovery needs a mail server, and that is all it checks. Configuring SMTP is enough --- see [Self-service password reset](#self-service-password-reset). Until 0.5.6 recovery was tied to this switch, so an operator who set up SMTP, sent a test message and never guessed there was a second one got *"Advanced authentication is not enabled"* from a link the login page kept showing.
 
 ### Configure SMTP
 
@@ -174,21 +177,30 @@ Click **Test email** before flipping the toggle on -- it sends a one-shot to you
 Editable under **Settings -> Email -> Templates**:
 
 - **Welcome** -- new account with auto-generated password
-- **Password reset** -- self-service or admin-triggered, includes one-time token (defaults to 1-hour expiry)
+- **Password reset link** -- self-service recovery; carries a one-time link, never a password
+- **Password reset** -- admin-triggered reset; carries the new password itself
 - **Two-Factor code** -- email OTP delivery
 - **Printer error** -- per-user mail when their print errors out
 - **Print complete / failed / stopped** -- per-user lifecycle mails
 
 Templates are i18n-aware (en + uk); each template carries a subject line and a body with substitution variables like `{username}`, `{printer_name}`, `{archive_url}`.
 
-### Self-service password reset flow
+### Self-service password reset
 
-1. User clicks **Forgot your password?** on the login page.
-2. Enters username or email. Endpoint returns success either way (anti-enumeration), but only mails the link if the address exists.
-3. Email contains a one-shot token URL valid for 1 hour. Token is single-use.
-4. User clicks, sets a new password (subject to the password policy), and is signed in.
+**Available when SMTP is configured and local login is enabled.** When it is not, the login page shows a plain *"ask your administrator"* line in place of the link, rather than a form that collects an address and silently fails --- and the admin recovers the account [from the server console](#reset-a-password-from-the-console).
 
-Admins can also fire the same flow with one click from the Users page -- handy when a team-mate's authenticator just died and they're locked out of TOTP-protected reset.
+1. User clicks **Forgot your password?** on the login page and enters their **email address**.
+2. The endpoint answers the same either way (anti-enumeration), and only sends anything if the address belongs to an active local account.
+3. The email carries a **one-time link**, good for **1 hour**. Asking again invalidates the previous link.
+4. Opening it shows the *Set new password* form. The new password is subject to the [password policy](#password-policy).
+5. On success the user is returned to the sign-in form and signs in with the new password. Every session that was signed in on the old one is signed out.
+
+!!! success "The account is untouched until the link is used"
+    Requesting a reset changes nothing. Before 0.5.6 the request itself generated a new password and mailed it, which meant anyone who knew your address could rotate your password and lock you out of a session you were happily using --- without you ever seeing the message that did it. Now the password changes only when somebody proves they read the mail.
+
+    The link's token is stored as a hash only, so a copy of the database is not a set of working reset links.
+
+Admin-triggered resets are a **different** flow: **Settings -> Users -> Reset password** mails the user a newly generated password, and that one does require the Advanced Auth toggle.
 
 ### Per-user email notifications
 
@@ -548,6 +560,7 @@ Sliding-window buckets sit in front of password-bearing endpoints. Buckets are s
 |----------|--------------|--------|
 | `POST /auth/login` | 10 / 15 min | 20 / 15 min |
 | `POST /auth/forgot-password` | 3 / 15 min (per email) | 10 / 15 min |
+| `POST /auth/forgot-password/confirm` | -- | 10 / 15 min |
 
 Forgot-password records the attempt **eagerly** -- the endpoint always returns success (anti-enumeration), so the rate limit is the only thing pacing brute-force email guessing.
 
@@ -581,6 +594,24 @@ Aligned with [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html). 
 
 No special-character requirement (dropped in 0.4.0.1 -- previously enforced, now considered noise that pushes users to predictable substitutions).
 
+### How the rules show up on the form
+
+Every field where you set a **new** password --- first-boot setup, create user, edit user, change your own password, and the reset-link page --- lists the four requirements underneath and ticks them off in green as you type. They appear the moment you click into the field, so you can see what is wanted before the password is refused rather than after.
+
+Every password field also has an eye at its right-hand end to reveal what you typed.
+
+!!! note "Fixed in 0.5.6"
+    Before this, the requirements were nowhere on screen: the forms disabled their submit button on the rules, while the message naming the unmet one was written to fire when you pressed the button that rule had just disabled. A password that was merely too short produced a grey button and no explanation anywhere. Two forms were also checking for **6** characters while the API has wanted 8 and a character mix for a long time, so they accepted passwords the server then refused --- and the API itself never applied the 8-character floor when an admin created or edited a user, only on setup and password change.
+
+### How the rules show up on the form
+
+Every field where you set a **new** password --- first-boot setup, create user, edit user, change your own password, and the reset-link page --- lists the four requirements underneath and ticks them off in green as you type. They appear the moment you click into the field, so you can see what is wanted before the password is refused rather than after.
+
+Every password field also has an eye at its right-hand end to reveal what you typed.
+
+!!! note "Fixed in 0.5.6"
+    Before this, the requirements were nowhere on screen: the forms disabled their submit button on the rules, while the message naming the unmet one was written to fire when you pressed the button that rule had just disabled. A password that was merely too short produced a grey button and no explanation anywhere. Two forms were also checking for **6** characters while the API has wanted 8 and a character mix for a long time, so they accepted passwords the server then refused --- and the API itself never applied the 8-character floor when an admin created or edited a user, only on setup and password change.
+
 Other length caps across auth endpoints: email **254** (RFC 5321), username **150**, forgot-password token **128**.
 
 ### Password change kills sessions
@@ -591,25 +622,51 @@ Changing your password (or having an admin reset it) stamps `users.password_chan
 
 ## :material-tools: Admin Recovery
 
-If you somehow lose access to every admin account -- forgotten password, lost MFA device with no backup codes, deleted the only admin user -- you can reset the setup gate from a shell on the host.
-
-```bash
-# Stop the running server first.
-docker compose stop bamdude
-# OR for native installs:
-systemctl stop bamdude
-
-# Run the reset CLI against the same DB the server uses.
-python -m backend.app.cli reset_admin
-
-# Restart.
-docker compose start bamdude
-```
-
-`reset_admin` clears the setup-complete flag and orphan `user_groups` rows so the next boot re-enters the **first-boot setup form**. You'll create a new admin from scratch -- and **all your existing data (printers, archives, queue, users, library) is preserved**. Only the admin account itself is recreated.
+Two commands, for two different situations. Both run from a shell on the host, against the same database the server uses.
 
 !!! warning "Run with the server stopped"
     Both the CLI and the server hold the SQLite WAL. Running them simultaneously can corrupt the database. Stop the server first.
+
+    ```bash
+    docker compose stop bamdude     # OR: systemctl stop bamdude
+    ```
+
+### Reset a password from the console
+
+Use this when the account still exists but nobody can get into it --- a forgotten password on an install with **no mail server**, where self-service recovery does not exist at all. Whoever owns the machine has a shell on it, and that is the same person the reset email would have gone to.
+
+```bash
+# Who is there?
+python -m backend.app.cli list_users
+
+# Prompt for a new password (typed twice, never echoed).
+python -m backend.app.cli reset_password --username admin
+
+# Or have one generated and printed once.
+python -m backend.app.cli reset_password --username admin --generate
+
+# Second factor lost along with the password? Clear it too.
+python -m backend.app.cli reset_password --username admin --clear-2fa
+```
+
+- The new password goes through the **same rules** the web form applies, so the console cannot set one the account could never set again through the UI.
+- Every session signed in on the old password is **signed out**.
+- `--clear-2fa` removes TOTP, email OTP and backup codes. Without it, an admin who lost both their password and their authenticator still cannot get in.
+- LDAP accounts are refused with a message: their passwords live at the directory server, so setting one here would change nothing.
+- A deactivated account is reported as such --- the password is set, but the account still needs re-enabling before anyone can sign in with it.
+
+### Re-run first-boot setup
+
+Use this when there is **no admin account left at all** --- the last one was deleted.
+
+```bash
+python -m backend.app.cli reset_admin
+```
+
+`reset_admin` clears the setup-complete flag so the next boot re-enters the **first-boot setup form**, where you create a new admin from scratch. **All your existing data (printers, archives, queue, users, library) is preserved.**
+
+!!! note "It refuses while any admin still exists"
+    That is deliberate --- it would be a way to walk past a login you simply forgot. If an admin account is still there and you have lost its password, use `reset_password` above instead.
 
 ---
 
@@ -634,7 +691,15 @@ The setup-gate cache thinks no admin exists. Restart the container -- the gate i
 
 ### Forgot password (no SMTP)
 
-Without Advanced Auth, the **Forgot password** link is hidden. Ask an admin to reset your password from **Settings -> Users -> Edit -> set new password**. With Advanced Auth, just use **Forgot password?** on the login page.
+With no mail server configured there is no self-service recovery, so the login page shows *"ask your administrator"* instead of a link. An admin sets a new one from **Settings -> Users -> Edit**, or --- if the admin is the one locked out --- [from the server console](#reset-a-password-from-the-console).
+
+### "Forgot your password?" is missing on the login page
+
+It is shown only when a reset email can actually be sent: **SMTP configured** and **local login enabled**. Check **Settings -> Email** first, and use **Test email** --- the link appears as soon as the server can send. It does **not** depend on the Advanced Auth toggle.
+
+### The reset link says it is invalid or expired
+
+Links last **1 hour** and work **once**. Requesting a new one also retires the previous link, so an older email in the inbox will report exactly this. Ask for a fresh one. If every link fails immediately, check that **External URL** under **Settings -> Email** is the address users actually reach --- the link is built from it.
 
 ### LDAP users can't log in but local admin can
 

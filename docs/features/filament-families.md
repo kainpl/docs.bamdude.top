@@ -17,7 +17,7 @@ On top of it, **your own cloud presets are mirrored server-side** from both Bamb
 
 ## :material-form-dropdown: The family picker
 
-One control serves the spool form, the AMS slot dialog and the K-profile editor. It shows names, never id codes; custom families carry a badge saying which cloud they came from (Bambu / Orca) or that they are local. Browsing lists **your** filaments — the families behind your own presets, spools and calibrations, the analogue of Bambu Studio's "installed filaments" — while typing searches the entire catalog of both ecosystems, deduplicated.
+One control serves the spool form, the AMS slot dialog and the K-profile editor. It shows names, never id codes; custom families carry a badge saying which cloud they came from (Bambu / Orca) or that they are local. Browsing lists **your** filaments — the families behind your own presets, spools and calibrations, the analogue of Bambu Studio's "installed filaments" — plus **every Generic family**, always, so the first spool of a material you have never printed can still find its generic before anything references it. Typing searches the entire catalog of both ecosystems, deduplicated.
 
 Spools link to a family directly, and existing spools are migrated automatically on first start after upgrading: whatever the old preset field held is resolved into a family, and anything unresolvable is left honestly unlinked rather than guessed. K-profile auto-matching keys on the family too — which is what finally makes **custom filaments match their own calibration profiles** instead of collapsing onto Generic.
 

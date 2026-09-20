@@ -55,7 +55,7 @@ Defaults seed once on first boot. Hidden defaults can be restored later via **Re
 
 ### Custom Types
 
-Create your own maintenance tasks in **Settings** > **Maintenance**.
+Create your own maintenance tasks on the **Maintenance** page, under **Maintenance Types** → **Add Custom Type**.
 
 ### Hiding Default Types
 
@@ -76,7 +76,7 @@ Remove irrelevant default types by clicking the delete icon. Restore all default
 
 1. Go to **Maintenance** page
 2. Find the due/overdue item
-3. Click **Mark Complete**
+3. Click **Reset** on the task
 4. Add notes (what you did, parts replaced)
 5. Counter resets
 

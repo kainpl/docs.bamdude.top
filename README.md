@@ -9,7 +9,7 @@ The companion code repository lives at [kainpl/bamdude](https://github.com/kainp
 - `docs/` — Markdown pages, structured by topic (`getting-started/`, `features/`, `reference/`). Each English page has a sibling `*.uk.md` with the Ukrainian translation.
 - `overrides/` — small theme overrides (custom partials).
 - `mkdocs.yml` — site config (theme, navigation tree, i18n plugin, markdown extensions).
-- `requirements.txt` — pinned mkdocs + plugin versions; mirrors the dev-requirements pins on the main repo so local + CI builds match.
+- `requirements.txt` — MkDocs and plugin version ranges used by local and CI builds; this repo owns these requirements.
 
 ## Local development
 

@@ -25,14 +25,14 @@ The Inventory page opens with five summary cards above the spool list, each clic
 
 The toolbar above the list combines a free-form search box with chip strips and view-mode toggles:
 
-- **Search box** — matches on name, brand, material, or hex colour. Press `/` from anywhere on the page to focus it.
+- **Search box** — matches the spool **name your display-name template composes**, not just the raw columns behind it, so anything the list shows is findable: with a template of `{brand}/{material}`, typing `LU/PET` finds it. Brand, material, colour, subtype, note and slicer preset are always matched too, as are the spool's **id** and **lot number** — those two whatever your template says, because they are the numbers written on the reel. Every token has to match something, so `SUN Bl` finds a SUNLU Black spool. Press `/` from anywhere on the page to focus it.
 - **Material dropdown** — single-select.
 - **Colour dropdown** — single-select. Options are the colours you actually have in stock — built from your existing (non-archived) spools — and grouped by the resolved colour-catalog name, so two near-identical hexes that both read as "Cobalt Blue" filter together regardless of brand. The dropdown only appears once at least one in-stock spool has a resolvable colour.
 - **Storage Location chip** — narrows the spool list to a single storage location from the [managed locations catalog](#storage-locations-catalog), so you can see just the spools kept in one box / shelf / dry-box.
 - **Status tabs** — Active / Archived / All, plus quick filters Used / New, plus stock filter All / Stock (no slicer profile) / Configured (has slicer profile).
 - **Brand dropdown** — single-select.
-- **View modes** — **Table** (data-focused, sortable columns) or **Cards** (visual swatches).
-- **Group similar** — toggle that visually collapses identical unused / unassigned spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label_weight + subtype + lot` — because lot is part of the key, a batch created with **auto-numbered lots** (see below) stays as distinct cards rather than collapsing; only same-lot (or lot-less) copies merge. Used or AMS-assigned spools always appear individually so you can tell which physical spool is in which slot. Group state persists across sessions.
+- **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches), or **[History](#history)** (every consumption record on the farm). *Forecast* sits beside them when you have permission for it.
+- **Group similar** — toggle that visually collapses identical spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label weight + subtype`; lot is deliberately **not** part of it, so a batch created with **auto-numbered lots** (see below) still collapses into one row, and a group may span several lots. A spool that is loaded in a printer always appears individually, so you can tell which physical spool is in which slot; a started spool back on the shelf groups with its twins, and the row's remaining weight is the exact sum over the members. Group state persists across sessions.
 
 ## :material-package-variant: Adding spools
 
@@ -144,7 +144,7 @@ The **Quantity** field is only shown in Quick Add and creates that many spools i
 - **Auto-number unticked** — every copy shares the single Lot value you typed (or no lot at all).
 
 !!! tip "Bulk buying"
-    A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, shown as five distinct cards (lot is part of the grouping key). Want them collapsed into one *5 identical spools* row instead? Leave the lot empty (or auto-number off) so the copies are truly identical, then use the **Group similar** toggle.
+    A 5-pack of PLA from the same batch → Quantity = 5, Lot = 1, **Auto-number lots** on → five spools with lots 1–5, each traceable by its lot, and still one *5 identical spools* row under the **Group similar** toggle — lot is not part of the grouping key, so numbering the lots costs you nothing in the list.
 
 #### Where families come from
 
@@ -255,6 +255,7 @@ A third inventory tab next to **Table** / **Cards** that turns the raw `spool_us
 - **Daily-consumption rate** — exponentially-weighted moving average with a 30-day half-life, computed per **colour group** (material / subtype / brand / colour name). Five colours of the same PLA Basic become five independent forecast rows, each with its own runway and reorder date — so running low on black doesn't hide behind a full spool of white. One spool of recent prints weighs more than a year-old burst.
 - **Days-left projection** — current stock divided by daily rate, with a 95%-service-level safety stock factored in (`σ × √lead_time × 1.65`).
 - **Reorder-by date** — when to place the order so the new spool arrives *before* you run out, given the configured lead time.
+- **Reserved by orders** — how many grams of that colour your active orders still have to take off the shelf: the plan they have not printed yet plus what is already waiting in the queues, counted exactly as the order pages count it and projected onto the SKUs that can serve it (split by remaining weight when several brands match). Beneath it sits what is left to promise, and **Reorder by** counts down from *that* rather than from everything on the shelf — **Empty by** deliberately does not, because the consumption rate already contains those orders being printed. Promise more than the shelf holds and the row reads **Over-committed**, which counts as an alert even before the SKU has a consumption rate. Need in a colour you do not stock is listed under the table instead of being spread over the colours you do.
 - **Filter + count controls** — **Material** and **Brand** dropdowns narrow the table; a dedicated **Spools** column shows how many physical spools back each colour row. Every column is sortable.
 - **Per-colour expanded editors** — lead-time-days, safety-margin (dual-unit days|grams), alert-snooze toggle. Each setting persists across sessions in the `filament_sku_settings` table; colours with no settings yet fall back to the global lead-time floor (Settings → Inventory → **Forecast global lead time**). Overrides you saved before the colour split are carried onto the matching colour rows on first load, so no per-SKU tuning is lost in the migration.
 - **Top-5 chart** — stacked-area, multi-series projection of the five fastest-burning colours with ROP reference lines. Timeframe toggle: 1W / 1M / 6M.
@@ -274,6 +275,12 @@ You can assign a spool to a slot **before** loading the filament — useful when
 - Surfaces this in the confirmation toast: *"Spool assigned. The slot will be configured when you insert the filament."*
 - Replays the full configuration automatically the moment the slot transitions to loaded. The "loaded" signal is the AMS state code (`state == 11`, "filament fed to extruder"), not the tray's material string — so 3rd-party spools without readable RFID (which report state=11 but keep `tray_type=""`) trigger the replay too. After the replay the assignment fingerprint is stamped, so subsequent AMS pushes don't re-fire.
 
+### Replacing the spool on an assigned slot
+
+You do not have to unassign first. Hover an assigned slot and pick **Replace spool** (next to **Unassign**): the dialog shows what is currently assigned, lists only spools that are free — the current one and anything assigned to another slot stay hidden, so you can never pull a spool out of a different printer by mistake — and one confirm swaps the assignment. This works the same on AMS, AMS HT and external slots, with the built-in inventory or Spoolman.
+
+Nothing about accounting changes: a replace runs exactly the code path an unassign followed by an assign did. Mid-print, the same prompt appears — while the printer is paused, or after a pause — asking whether this is a physical spool change (filament usage is split at the pause layer) or a correction of a wrong link (the new spool owns the whole print).
+
 ## :material-water-percent: Automatic consumption tracking
 
 Every print BamDude dispatches reads the per-filament `weight` from the source 3MF. On `print_complete`, the dispatched grams are deducted from the spool that was assigned to the matching AMS slot at the time the print started:
@@ -282,7 +289,7 @@ Every print BamDude dispatches reads the per-filament `weight` from the source 3
 - `spool.used_grams` is the running total.
 - `spool.weight - spool.used_grams` is what's left.
 
-The inventory page colour-codes each spool by remaining percentage, with a configurable **low-stock threshold** (Settings → Inventory). When a spool drops below the threshold, the matching `filament_low` notification fires (subscribe to it under whichever providers you care about).
+The inventory page colour-codes each spool by remaining percentage, with a configurable **low-stock threshold** (Settings → Inventory). When a spool drops below the threshold, the matching `filament_low` notification fires (subscribe to it under whichever providers you care about). A Spoolman-bound slot is judged by Spoolman's figure against the same threshold. A slot with no inventory binding is not judged at all: the printer's own counter reads 0 % for any spool without an RFID tag, and that is no answer — assign the spool, and BamDude knows what is on it.
 
 If a print fails partway through, the deducted amount is the slicer-estimate × completion ratio (best effort) rather than the full estimate. External-print fallback archives — the ones from prints started directly on the printer touchscreen — get reconciled the same way once their 3MF is recovered.
 
@@ -341,9 +348,26 @@ Each spool has an eraser action — **Reset counter** — that zeroes the displa
 
 The backing API endpoints were renamed accordingly — the per-spool and reset-all paths now end in `.../reset-consumed-counter` (previously `.../reset-usage`).
 
+### The History view — every consumption record at once {#history}
+
+The inventory's third view mode, **History**, between Cards and Forecast, lists the whole farm's usage records rather than one spool's: what was printed, off which spool, on which printer, how many grams, what it cost, and how it ended — newest first.
+
+A spool's own tab answers "where did this reel go". This answers "where did the filament go", which is usually the question you start from. It is the same records either way; only the entry point differs.
+
+Every part of the list is computed by the **server** — the page, the sort order, the filters, the search and the totals. A farm with a year of prints has six figures of records here and the browser never downloads them.
+
+- **Search** — the page's own search box serves this view too. Same box, same place; it just searches events, reaching the print's name, the spool and the printer at once.
+- **Filters** — printer (including *No printer*, for records charged to no machine), material, brand, outcome, and a date range. Plus the spool's own state: **All / Active / Archived** and **All / In Printer / On the shelf**. Those last two carry an *All* setting the spool table has no equivalent of, and it is the default: retiring or unloading a reel does not un-burn what it printed, so nothing here is hidden until you ask for it to be.
+- **Sorting** — any column: date, spool, print, printer, grams, percent, cost, outcome.
+- **Totals** — the grams (and money) beside the filters are for the **whole filter**, not the page on screen. "What did August cost me" is one date range away.
+
+Spools you have since archived or deleted keep their rows, marked rather than hidden — the grams they carry were still printed, and dropping them would make these totals disagree with the [archives](archiving.md). Spool names follow your [display-name template](#display-name-follows-your-template) and a retired printer reads as *Printer 5 (Archived)*, exactly as everywhere else. Clicking a spool opens it.
+
+The view is **hidden in Spoolman mode**, where Spoolman keeps this record instead.
+
 ### Removing usage records
 
-Each row in a spool's **Usage History** has a hover **×** to delete just that entry; the bulk **Clear** button does the same for the whole list. Removing a record treats that consumption as if it never happened: its weight is **returned to the spool** (`weight_used` drops, so remaining weight goes back up) and the same amount is subtracted from the linked print's recorded filament, so the [Stats](stats.md) page stays in step with inventory. For a multi-colour print the deduction is per-record — removing one colour's entry only reclaims that colour's share and leaves the rest of the print intact. Handy for un-counting a mistaken or test print against a roll.
+Each row has a hover **×** to delete just that entry — in a spool's own **History** tab and in the farm-wide History view alike; the spool tab's bulk **Clear** button does the same for that spool's whole list. Removing a record treats that consumption as if it never happened: its weight is **returned to the spool** (`weight_used` drops, so remaining weight goes back up) and the same amount is subtracted from the linked print's recorded filament, so the [Stats](stats.md) page stays in step with inventory. For a multi-colour print the deduction is per-record — removing one colour's entry only reclaims that colour's share and leaves the rest of the print intact. Handy for un-counting a mistaken or test print against a roll.
 
 ---
 
@@ -467,7 +491,7 @@ The relevant settings keys (all under Settings → Inventory):
 |---|---|---|
 | `low_stock_threshold` | `20` | Spool remaining percentage at which the `filament_low` notification fires (range 0.1 – 99.9). |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
-| `prefer_lowest_filament` | `false` | When auto-assigning a spool to a print, prefer the spool with the lowest remaining percentage to use up odd ends first. |
+| `prefer_lowest_filament` | `true` | When automatically assigning a source, after compatibility and exact-colour preference favour the lowest remaining source to use up odd ends first. Tracked AMS grams and firmware percentages are separate tiers. |
 | `default_filament_cost` | `25` | Per-kg fallback cost when a spool's `cost` field is unset. |
 | `spoolman_enabled` | `false` | Toggle the Spoolman integration. See [Spoolman](spoolman.md). |
 

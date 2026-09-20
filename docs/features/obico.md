@@ -124,7 +124,7 @@ The detection panel under **Settings → Integrations → Obico AI** is split in
 
 **Status card**
 
-- Background-service running flag (green / red).
+- **Detection active** flag (green / red) — green only while Obico is enabled with an ML URL. The background loop itself starts with BamDude and merely sleeps while the feature is off; the flag used to report that loop, and said Yes with the toggle off.
 - Active threshold values after sensitivity scaling (so you can sanity-check Low / Medium / High really did adjust the numbers).
 - For each currently-printing monitored printer:
     - Live classification — `safe` / `warning` / `failure`

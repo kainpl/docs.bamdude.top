@@ -55,7 +55,7 @@ The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in
 
 [:material-printer-3d: **Add Printer**<br><small>Connect your first printer</small>](getting-started/first-printer.md)
 
-[:material-arrow-up-circle: **Upgrading**<br><small>Migrate from Bambuddy</small>](getting-started/upgrading.md)
+[:material-arrow-up-circle: **Upgrading**<br><small>Upgrade and roll back safely</small>](getting-started/upgrading.md)
 
 </div>
 
@@ -67,7 +67,7 @@ The fleet-first flow flips it: **slicer → BamDude → printers.** Hit Print in
 
 <div class="feature-card" markdown>
 ### :material-monitor-dashboard: [Real-time Monitoring](features/monitoring.md)
-Live printer status via WebSocket, MJPEG camera streaming, HMS error tracking, and AMS humidity/temperature monitoring.
+Live printer status via WebSocket, shared MJPEG camera streaming with built-in diagnostics, HMS error tracking, and AMS humidity/temperature monitoring.
 </div>
 
 <div class="feature-card" markdown>
@@ -92,7 +92,7 @@ G-code macros triggered by print events (start, end, pause). Built-in editor wit
 
 <div class="feature-card" markdown>
 ### :material-bell-ring: [Notifications](features/notifications.md)
-Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
+Multi-provider alerts via Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, and custom webhooks. Per-provider quiet hours and daily digest.
 </div>
 
 <div class="feature-card" markdown>

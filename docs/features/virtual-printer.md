@@ -14,7 +14,7 @@ The Virtual Printer (VP) makes BamDude appear as one or more Bambu Lab printers 
 Each VP:
 
 - Advertises itself over **SSDP** with a real Bambu model code (X1C / P1S / A1 Mini / H2D / …) so slicers discover it automatically.
-- Runs its **own FTPS + MQTT + SSDP servers**. By default they listen on `0.0.0.0` (the host's all interfaces); when you want multiple VPs side-by-side, give each a dedicated `bind_ip` so they don't fight for the same ports.
+- Runs its **own FTPS + MQTT + SSDP servers** on its Bind IP. Each simultaneously enabled VP needs a different local IP because the service ports are fixed. Add IP aliases when the host does not already have enough suitable addresses.
 - Carries an **access code** like a real printer — slicers prompt for it on first use and cache it afterwards.
 - Has a **serial number** and **model code** that match Bambu's real format, so the slicer's compatibility checks pass.
 
@@ -28,7 +28,7 @@ A VP runs in **exactly one mode**. The mode is set per-VP and validated server-s
 |------|-------------------------|----------|
 | **`file_manager`** (default) | Upload is saved to the **[File Manager](file-manager.md) library** and nothing else happens — no print, no queue entry. An operator prints it from there when ready. | Multi-user / multi-machine inbox where every upload gets a look before printing — also the right mode if you only want to **keep** the file without printing. |
 | **`print_queue`** | Upload is archived **and** queued on a **specific** target printer. With `auto_dispatch=true` the queue item starts immediately; with `auto_dispatch=false` it waits for an explicit Start click. | You always print this VP's uploads on the same machine. |
-| **`auto_queue`** | Upload is archived and dropped into the **[auto-queue router](auto-queue.md)** — no fixed target. The scheduler picks any eligible idle printer (model + filament + color match). Per-VP **Force colour match** toggle pins per-slot `(type, colour, weight)` matching instead of the looser type-only set, so a "Yellow PLA" job won't dispatch to a printer with only "Black PLA" loaded. | Hands-off load-balancing across a multi-printer farm. |
+| **`auto_queue`** | The file is saved to the library and, after plate validation, added to [Auto-Queue](auto-queue.md). The machine is chosen by exact model and the complete filament, feed, and nozzle requirements. **Force colour match** requires the colors of every used channel. | Load-balancing across a farm. |
 | **`proxy`** | The slicer's TLS session is TCP-proxied to a real `target_printer_id` — BamDude is just the public endpoint. | Remote printing — slicer reaches BamDude over LAN/VPN, BamDude reaches the printer. |
 
 !!! info "There is no separate ‘archive only’ mode"
@@ -71,7 +71,7 @@ How it works (operator-relevant subset):
 |-------|-------|
 | Name | Display label (e.g. `Studio inbox`). |
 | Model | SSDP model code — pick the printer model you want the VP to impersonate so slicer compatibility checks pass. |
-| Bind IP | Optional. Leave empty to listen on `0.0.0.0` (host's all interfaces) — fine if you only need one VP on the standard ports. Set a dedicated IP only when running **multiple VPs side-by-side** so each gets its own FTPS / MQTT / SSDP listener. On Linux the easiest way to provision extra IPs is a virtual interface (alias) on the host. |
+| Bind IP | **Required to enable the VP.** A local IP assigned to the machine running BamDude, reachable by the slicer. Each enabled VP needs a different IP. Entering an address here does **not** add it to Windows/Linux; configure the address first using the alias instructions below. |
 | Access code | 8-character code the slicer authenticates with. |
 | Mode | One of the four above. |
 | Auto-dispatch | Active in `print_queue` and `auto_queue` modes — see below. |
@@ -103,7 +103,7 @@ Each VP uses these ports on its bind IP:
     Different versions of Bambu Studio and OrcaSlicer use different ports for the bind handshake. BamDude listens on **both 3000 and 3002** so any slicer build connects.
 
 !!! note "Privileged port 990"
-    Port 990 is privileged (<1024). The process needs `CAP_NET_BIND_SERVICE` or root to bind it. The shipped Docker image and the systemd unit already grant the capability — no manual action needed for either of those install paths.
+    On Linux, port 990 is privileged (<1024). The process needs `CAP_NET_BIND_SERVICE` or root to bind it. The shipped Docker image and the systemd unit already grant the capability. This Linux capability requirement does not apply to native Windows.
 
 !!! note "FTP passive ports are sliced per VP"
     Each **non-proxy** VP gets its own **10-port passive-data slice**, allocated from its database id: VP 1 → `50000–50009`, VP 2 → `50010–50019`, and so on (the slot wraps after 100 VPs, so every slice stays inside `50000–50999`). This replaced the old flat `50000–50100` pool — under Docker's default userland proxy that wide range spawned ~2000 host processes (~3.5 GB host RAM). Open only the slices your VPs actually use, and add 10 ports for each extra VP. To see a running VP's exact slice, check its startup log line `FTP passive data port range: <min>-<max>`. **Proxy-mode** VPs are the exception — they forward the *target printer's* full passive range (roughly `50000–50100`).
@@ -271,7 +271,13 @@ When switching slicer focus to a different BamDude host, remove the old BamDude 
 
 ## :material-ip-network: Dedicated bind IPs (multiple VPs)
 
-Each VP that runs on the standard ports needs its own IP — the FTPS / MQTT / SSDP listeners can't share a port across VPs on the same address. With one VP on `0.0.0.0` the host's primary IP is enough; for two or more VPs you give each its own bind IP via interface aliases (extra IPs on the same NIC).
+**Each simultaneously enabled VP needs its own local IP.** They use the same fixed ports, so several VPs cannot share one IP. An IP alias is an additional address on an existing network adapter; it does not require another physical adapter.
+
+- **One VP:** the host's primary LAN IP can work if the required ports are free. An extra alias is not an absolute requirement, although a dedicated VP address makes the setup easier to manage.
+- **Several VPs:** provision enough distinct local IPs, normally one alias per VP. Existing suitable addresses on other adapters can also be used. Additional addresses are a functional requirement when the host has too few, not merely a performance recommendation.
+- **BamDude does not create aliases.** An unused address in the subnet, a router reservation, or an entry in Bind IP is insufficient: the OS must actually own that address before the VP starts. Use the VP address, not the physical target printer's address.
+
+Specify a concrete local address in Bind IP. `0.0.0.0` means all interfaces, is not an alias or an address to enter in the slicer, and can conflict with other VPs. In a container, the address must belong to the container's network namespace; see the platform tabs below.
 
 Example layout:
 
@@ -283,9 +289,49 @@ Example layout:
 | VP 3 | `192.168.1.103` |
 
 !!! warning "Pick free IPs"
-    Use addresses **outside your DHCP range**, or reserve them on the router. Verify with `ping 192.168.1.101` before adding — if anything answers, pick another.
+    Exclude the chosen addresses from DHCP allocation and check the router's leases/reservations and your static-address inventory. A ping reply means the address is occupied; no reply does **not** prove it is free. Use the correct subnet/prefix and an adapter reachable by the slicer.
 
 ### Adding interface aliases
+
+=== "Windows (native install/service)"
+
+    Windows supports several IPv4 addresses on one adapter. Run **PowerShell as Administrator on the BamDude PC**. This is for the native Windows installation, not a container in Docker Desktop.
+
+    Inspect the current configuration:
+
+    ```powershell
+    Get-NetIPConfiguration
+    Get-NetIPInterface -AddressFamily IPv4 | Format-Table InterfaceIndex,InterfaceAlias,ConnectionState,Dhcp
+    ```
+
+    !!! warning "Check DHCP before adding an address"
+        `New-NetIPAddress` disables DHCP on the selected adapter if it is enabled. First arrange a static primary IP, subnet, gateway and DNS with the network administrator; changing these over a remote session can disconnect it. A router DHCP reservation does not change the adapter's DHCP mode. The example below refuses to run on a DHCP adapter.
+
+    Replace index `12`, IP and prefix with your LAN values. Keep the primary address; add only the extra VP address:
+
+    ```powershell
+    $vpInterface = Get-NetIPInterface -InterfaceIndex 12 -AddressFamily IPv4 -ErrorAction Stop
+    if ($vpInterface.Dhcp -ne 'Disabled') {
+        throw 'Configure a static primary IPv4 address, gateway and DNS before adding a VP alias.'
+    }
+    New-NetIPAddress -InterfaceIndex $vpInterface.InterfaceIndex -IPAddress 192.168.1.101 -PrefixLength 24 -SkipAsSource $true -ErrorAction Stop
+    ```
+
+    Repeat the last command with `.102`, `.103`, etc. for additional VPs. Do **not** add a second default gateway. `SkipAsSource` keeps the alias out of automatic source-address selection and DNS registration. With `PolicyStore` omitted, the address is saved across restarts. See [Microsoft's command reference](https://learn.microsoft.com/en-us/powershell/module/nettcpip/new-netipaddress).
+
+    Verify that each alias reaches `AddressState = Preferred` (duplicate-address detection can take a moment):
+
+    ```powershell
+    Get-NetIPAddress -InterfaceIndex 12 -AddressFamily IPv4 | Format-Table IPAddress,PrefixLength,AddressState,SkipAsSource
+    ```
+
+    Set that exact IP in **Settings → Virtual Printer → Bind IP**, enable the VP, and allow its required inbound ports through Windows Firewall for the slicer's network. Check the VP's running status; from the slicer PC, `Test-NetConnection 192.168.1.101 -Port 8883` checks TCP reachability, not authentication or all VP services.
+
+    To remove an alias later, first disable the VP and remove **only that extra address**, leaving the primary IP intact:
+
+    ```powershell
+    Remove-NetIPAddress -InterfaceIndex 12 -IPAddress 192.168.1.101 -Confirm
+    ```
 
 === "Linux (native or Docker host mode)"
 
@@ -397,11 +443,11 @@ Example layout:
 
 === "Docker Desktop (macOS / Windows)"
 
-    !!! warning "One VP only"
-        Docker Desktop runs everything inside a Linux VM and doesn't let you add host interface aliases reachable from inside the container. With bridge networking you're capped at **one VP** per host. For multiple VPs, use Linux (native or a VM with host networking).
+    !!! warning "Windows aliases are not container addresses"
+        The bridge recipe on this page exposes one VP. Adding aliases to Windows does not make them bindable inside the container. Docker Desktop 4.34+ has optional host networking, but it still does not give a container direct access to host interfaces or their IPs. For the multi-VP alias setup described here, use native Windows or Linux / Linux Docker host networking. See [Docker's limitations](https://docs.docker.com/engine/network/drivers/host/#limitations).
 
 !!! tip "Docker host mode"
-    With `network_mode: host` add the aliases on the **Docker host**, not inside the container — host mode shares all the host's IPs into the container automatically.
+    On **Linux Docker Engine**, with `network_mode: host`, add the aliases on the **Docker host**, not inside the container — they share the network namespace. This does not describe Docker Desktop's host networking.
 
 ---
 
@@ -528,7 +574,7 @@ Open the [ports listed above](#required-ports) in your firewall.
 === "Docker Desktop (macOS / Windows)"
 
     !!! warning "Limited support"
-        No `network_mode: host` on Docker Desktop — SSDP **will not work**, you must add the VP manually by IP. Bridge mode also caps you at **one VP** (no interface aliases inside the VM).
+        The bridge configuration below exposes one VP; add it manually by IP instead of relying on SSDP. Docker Desktop's optional host networking does not make Windows/macOS interface aliases bindable inside the container; see [the alias section](#dedicated-bind-ips-multiple-vps).
 
     Bridge mode compose:
 
@@ -663,25 +709,13 @@ Use it when a VP always feeds one model that needs a fixed chamber-heat-soak / p
 
 ## :material-swap-vertical-variant: Use the slicer's AMS slots {#save-ams-mapping}
 
-**Off by default, per Virtual Printer**, on the VP card next to the other Queue-mode toggles.
+Off by default. In queue mode with a **specific target printer**, this option preserves the physical slots selected in the slicer. It lets you distinguish two spools of the same material and color.
 
-When a slicer sends a job through a Queue-mode VP, BamDude normally ignores the slot numbers the slicer resolved and picks the trays itself, by filament type and colour. That is the right default almost always — but **two spools of the same red PLA are identical as far as the file is concerned**, so matching by type and colour cannot tell them apart. Whichever one you chose in Bambu Studio, BamDude might load the other.
+That selection prevents automatic matching from replacing the chosen spool with one holding less filament or another suitable spool. Complete mapping, material, nozzle, and current-source validation still runs before start. An incomplete or stale physical mapping needs review; it is not sent blindly. An entirely unresolved slot list from the slicer is not treated as a physical selection.
 
-Turn this on and the slots the slicer resolved are used exactly as sent.
+In **Auto-Queue** mode, no printer is pinned: sources are resolved for the machine selected by the router. Saving slicer slots does not transfer one printer's AMS numbers across the farm.
 
-!!! warning "It is a trade — understand it before turning it on"
-    For jobs from this VP, BamDude stops choosing slots, which also switches off:
-
-    | What you lose | Normally does |
-    |---|---|
-    | **Lowest spool first** | Burns down a partly-used spool before opening a fresh one |
-    | **The AMS-Backup gate** | Stops "lowest first" stranding a print when AMS filament backup is off |
-    | **Inventory remaining-weight** | Skips a tray your inventory says can't finish the job |
-    | **Flow-Through-System routing** | Routes an FTS-bound slot to the external spool holder |
-
-    With the setting **off**, all of that works exactly as it does today. A mapping the slicer left entirely unresolved is ignored, so an empty answer never becomes a wrong one.
-
-Turn it on for a VP that feeds one printer whose trays you load deliberately; leave it off for a VP feeding a farm, where BamDude choosing is the point.
+In both queue modes, explicitly disabling **Use AMS** in the slicer's job retains an external-only restriction. Enabling it permits automatic selection of supported feeds; it does not assume an AMS exists on a printer without one. The plate, used channels, and nozzle bindings are validated from the file itself. See [Filament Routing](filament-routing.md).
 
 ---
 
@@ -779,6 +813,14 @@ The FTPS server boots, logs `FTP PASV address override: 192.168.1.100`, and from
    ```
 4. **Firewall**: 3000/tcp, 3002/tcp, 2021/udp must be open between slicer and BamDude.
 5. **Multiple NICs?** Use [Network Interface Override](#network-interface-override) to pin SSDP to the right interface.
+
+### VP fails to start: missing local IP or occupied ports
+
+- **Windows `WinError 10049` / Linux `Cannot assign requested address`:** the configured Bind IP is not available locally. Check `Get-NetIPAddress -AddressFamily IPv4` on native Windows, or `ip -br addr` on Linux. Add the alias to the correct adapter and wait for it to become usable. A router reservation or Network Interface Override does not create an alias.
+- **Address already in use:** another VP or service owns the required IP/port. Check `Get-NetTCPConnection -State Listen` on Windows or `ss -ltnp` on Linux. Give simultaneous VPs distinct local IPs; do not stop an unrelated service without identifying it.
+- After correcting the address/port, **disable and re-enable the affected VP**. This retries startup without restarting all of BamDude. Check its running status and the log, then test from the slicer PC.
+
+On builds with the startup-cleanup fix, a failed non-proxy VP releases its partially started listeners and MQTT bridge and stays stopped. Older builds could log `services started` immediately after bind errors; that line was not proof of success. Bind failures and certificate-trust failures are separate issues. See [Windows socket error meanings](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2).
 
 ### "Failed to connect" / TLS error -1 / cert untrusted
 
@@ -885,7 +927,7 @@ Large 3MFs over slow uplinks. Either run a VPN (Tailscale / WireGuard) so the da
 - **SSDP works only on the same LAN / routed subnets**. VPN tun mode and Docker bridge networks need manual add by IP.
 - The slicer must trust BamDude's self-signed CA — see [Certificate Installation](#certificate-installation).
 - **FTP data channel is unencrypted** on the slicer side — VPN if you need full encryption.
-- **Docker Desktop on macOS / Windows = one VP only** (no interface aliases inside the VM).
+- **Docker Desktop:** the bridge recipe above exposes one VP. Host OS aliases are not directly bindable inside its container; native Windows supports the multi-VP alias setup above.
 
 ---
 

@@ -15,17 +15,26 @@ The on-demand and scheduled local backups produce the same ZIP layout. Top-level
 
 | Entry | Contents |
 |-------|----------|
-| `bamdude.db` | The full database, **always exported as portable SQLite** — even when your runtime is PostgreSQL the dump goes through `dump_to_sqlite()` so the same ZIP restores onto either backend. |
-| `archive/` | Every per-print archive directory: `.3mf`, thumbnail PNG, plate-N.png, and the per-archive folder. |
-| `virtual_printer/` | Pending uploads + virtual-printer working state. |
-| `plate_calibration/` | Reference frames + ROI definitions used by plate detection. |
-| `icons/` | Custom icons uploaded for printers / projects. |
-| `projects/` | Project attachments. |
+| `bamdude.db` | Full database in portable SQLite format, including migration history. Works for restore onto SQLite or PostgreSQL. |
+| `archive/` | Print files and thumbnails, one folder per run, plus the 3MF download staging. |
+| `library/` | File Manager storage: files, thumbnails, MakerWorld covers. |
+| `virtual_printer/` | Virtual-printer working files. |
+| `queue-sources/` | Verified immutable copies owned by ready queued jobs. The ZIP includes exactly the files named by its database snapshot; unfinished `staging/` files are excluded. |
+| `plate_calibration/` | Plate-detection reference frames. |
+| `icons/` | Custom icons. |
+| `projects/` | Order attachments. |
+| `products/` | Product attachments. |
+| `certs/` | Virtual-printer TLS certificates and keys. |
+| `.mfa_encryption_key` | Encryption key, when the source install stores it in a file. |
+| `zigbee/zigbee.db` | Zigbee driver database, including network state, when present. |
+| `.install_id` | Existing anonymous telemetry identity, when present. |
+| `backup-manifest.json` | File sizes, SHA-256 checksums and the complete directory list, including empty directories. |
 
-Excluded by design: `logs/`, caches, temp files, the bundled frontend (it ships with the image / repo). Some sensitive fields are also filtered before the database dump — LDAP bind password is never returned in API responses, and API keys are stored as one-way hashes.
+The ZIP contains sensitive database values and key files. API response filtering does **not** remove secrets from this database backup. Keep it private. If the encryption key is supplied only through `MFA_ENCRYPTION_KEY`, configure the same key on the destination; an environment-only key is not added to the ZIP.
 
-!!! note "PostgreSQL → SQLite → PostgreSQL"
-    Even on a PostgreSQL runtime, `dump_to_sqlite()` normalises the export. Restoring on a fresh PostgreSQL install runs the inverse `import_sqlite_to_postgres()` and re-creates rows in the live database. The same ZIP also restores onto a SQLite install with no extra steps.
+PostgreSQL export reads one consistent database snapshot and preserves column types, defaults, constraints, indexes and migration history. Archive search is rebuilt for the destination backend. SQLite backups include committed data still in its WAL. An export or ZIP-writing failure does not publish a partially written backup over an existing file.
+
+The database snapshot does not freeze the accompanying directories. For a complete copy of files while they are changing, pause uploads, deletion and other file-changing work during backup. Logs, runtime caches, temporary files and the application itself are excluded. An unreadable file, a detected source change or a failed copy fails the backup; it never reports success with skipped files. This includes an existing but unreadable Zigbee database. The configured archive and plate-calibration paths are used in both directions. Symlinks, Windows junctions and special files are rejected rather than followed.
 
 ---
 
@@ -55,7 +64,7 @@ Set under **Settings → System → Local Backup Schedule**. The scheduler ticks
 
 The settings page shows last-run timestamp + outcome (`success` / `failed`), the next scheduled run, and a list of currently retained backups with file sizes. Manual "Create Backup" runs are stored in the same directory and counted toward retention.
 
-Legacy `bambuddy-backup-*.zip` files (from upstream installs) are still listed and restorable so an upgrade doesn't strand pre-existing snapshots.
+Legacy filenames from older BamDude backups remain supported. This does not provide migration from the separate upstream Bambuddy application.
 
 ### When the output folder is not writable
 
@@ -236,18 +245,19 @@ Push frequency, content checkboxes, and credentials can all be edited live witho
 
 ## :material-upload: Restoring a Backup ZIP
 
-1. **Stop BamDude** before restoring (or the upload below replaces files under a running process — risky).
-2. Either drop the ZIP into the data directory and let BamDude detect it on next boot, or use **Settings → System → Restore** and upload through the form.
-3. On boot / form submission, BamDude:
-   - Extracts the ZIP into a temp dir
-   - Closes the current DB connections
-   - Replaces the database (`bamdude.db` import on SQLite, `import_sqlite_to_postgres` on PG)
-   - Replaces `archive/`, `virtual_printer/`, `plate_calibration/`, `icons/`, `projects/`
-   - Re-initialises the database (runs pending migrations on the restored data)
-   - Deletes the source ZIP after success
+1. Keep a backup of the current installation if you may need to return to it. Use the same or a newer BamDude version than the one that created the backup.
+2. While BamDude is running, open **Settings → System → Restore** and upload the ZIP. Placing a ZIP in the data directory does not start a restore automatically.
+3. BamDude checks ZIP paths, CRC, the manifest (when present), the application database and any included Zigbee database before stopping background services. Unsafe entries, corrupt or missing files, missing application tables and unknown migration versions are rejected before changing live data.
+4. Restore prepares and verifies all incoming files on their destination filesystems. It retains the old contents, replaces the files, then replaces the database. Directory roots and Docker mount points stay in place. Pending migrations run after the replacement; recorded migrations are not replayed.
+5. **Restart BamDude after restore**, then verify printers, archive search, File Manager files and sign-in. If restore failed after services were paused, restart before returning to normal work as well.
 
-!!! danger "Restore replaces current state"
-    The restore overwrites the live DB and the data directories listed above. **Take a fresh backup of the current state first** if you might want to roll back the restore itself.
+A preparation or file-replacement failure aborts before the database swap. If replacement of the database fails, all replaced directories, the MFA key, telemetry identity and Zigbee database/sidecars are rolled back. PostgreSQL schema, rows, sequences and foreign keys still use one database transaction. Zigbee is shut down before its database is replaced; an unsuccessful shutdown aborts restore.
+
+New backups preserve empty directories: restoring one removes old contents there. Older ZIPs without a manifest remain supported; a directory or optional file absent from an older ZIP leaves the destination unchanged. Manual backups, scheduled backups and restores cannot overlap in one running BamDude process (API returns HTTP 409 for a second request).
+
+Allow space for the extracted ZIP in the system temporary directory and for the incoming files alongside the existing files on every destination volume. Old contents are retained until the database replacement succeeds. If a file lock or external write also prevents rollback, BamDude reports failure and retains recovery copies in `.bamdude-restore-*` directories named in server logs: keep them for recovery. A failure to remove staging after a successful restore is logged and leaves the restored files usable.
+
+Perform restore during a maintenance window, without uploads or other file-changing work. This is a reversible file replacement, not an operating-system snapshot or a distributed transaction: power loss, external writers and loss of the database connection during commit can still require recovery. A later migration failure keeps the newly restored database and its matching files together.
 
 API: `POST /api/v1/settings/restore` (multipart `file=…`, requires `settings:restore`).
 
@@ -259,13 +269,13 @@ The portable SQLite dump means you can:
 - Take a backup from a **PostgreSQL** install → restore onto **SQLite** (DB was already exported as SQLite).
 - Take a backup from PG → restore onto a fresh PG (loader re-imports SQLite into PG).
 
-Conflicting primary keys are merged or skipped per row depending on the table — referential integrity is preserved across the migration.
+Restore replaces the destination data; it does not merge databases or silently skip conflicting rows. Schema mismatches during export fail explicitly rather than omitting unknown data. Legacy BamDude SQLite backups retain their own schema and migration level during PostgreSQL import.
 
 ---
 
 ## :material-folder-download: Bulk archive export
 
-3MF files and thumbnails aren't included in the default Backup ZIP layout (they live in `archive/` only when explicitly opted-in). For dedicated archive export:
+The Backup ZIP already includes files stored under `archive/`. To export only selected print archives instead of the installation database:
 
 1. Go to **Archives**.
 2. Click **Export**.

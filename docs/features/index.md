@@ -14,6 +14,11 @@ BamDude is packed with features to manage your 3D print farm. Explore them all b
 <div class="feature-grid" markdown>
 
 <div class="feature-card" markdown>
+### [:material-monitor: Status Monitor](status-monitor.md)
+50 uniform tiles on Full HD, attention and ETA sorting, printer/queue views and scoped TV access.
+</div>
+
+<div class="feature-card" markdown>
 ### [:material-monitor-dashboard: Real-time Monitoring](monitoring.md)
 Live printer status, temperatures, print progress, and HMS error tracking via WebSocket.
 </div>
@@ -99,7 +104,7 @@ G-code macros triggered by print events with a built-in editor.
 
 <div class="feature-card" markdown>
 ### [:material-bell-ring: Notifications](notifications.md)
-Eight delivery channels — Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant, custom webhooks. Per-provider quiet hours, daily digest, customisable templates.
+Ten delivery channels — Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, custom webhooks. Per-provider quiet hours, daily digest, customisable templates.
 </div>
 
 <div class="feature-card" markdown>
@@ -152,7 +157,7 @@ Full database backup and restore for data protection.
 
 ---
 
-## :material-folder-multiple: Library, Inventory & Projects
+## :material-folder-multiple: Library, Inventory & Orders
 
 <div class="feature-grid" markdown>
 
@@ -167,8 +172,8 @@ Draw label designs with the mouse — text, QR, barcode and a colour swatch — 
 </div>
 
 <div class="feature-card" markdown>
-### [:material-folder-multiple: Projects & Print Plan](projects.md)
-Group prints into projects with an ordered print plan. Per-file copies stepper, live filament / time / cost totals, ZIP / JSON export.
+### [:material-clipboard-list: Orders, Products & Stock](projects.md)
+Customers, orders of product × quantity, and products made of printed and purchased parts. A plan says what to print next, prints are filed under the order that needs them, spare parts go onto a free stock shelf, and the Stock tab shows every shelf on the farm at once.
 </div>
 
 <div class="feature-card" markdown>

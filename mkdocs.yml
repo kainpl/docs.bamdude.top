@@ -25,8 +25,8 @@ validation:
 theme:
   name: material
   custom_dir: overrides
-  logo: assets/logo.png
-  favicon: assets/favicon.png
+  logo: assets/logo.svg
+  favicon: assets/favicon.ico
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
@@ -56,7 +56,15 @@ theme:
     - navigation.footer
     - search.suggest
     - search.highlight
-    - search.share
+    # `search.share` is deliberately absent. Material rewrites the share
+    # button's href to `<page>?q=<query>` on every query emission — including
+    # the empty one fired the moment the dialog mounts — so every rendered page
+    # carries an `<a href="…?q=">`. Googlebot executes the JS and harvested one
+    # such URL per page (Search Console 2026-09-06: eight of them, filed as
+    # "alternate page with proper canonical"). The canonical kept them out of
+    # the index, but each was a crawl spent on nothing. Deep links (`?q=term`)
+    # still open the dialog pre-filled without the button; only the copy-link
+    # icon is gone.
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
@@ -76,6 +84,7 @@ plugins:
         - locale: uk
           name: Українська
           build: true
+          site_description: Самостійно хостоване керування фермою 3D-друку для принтерів Bambu Lab
           nav_translations:
             Home: Головна
             Why BamDude: Чому BamDude
@@ -89,6 +98,7 @@ plugins:
             Features: Функції
             "Printers & Monitoring": "Принтери та моніторинг"
             Real-time Monitoring: Моніторинг у реальному часі
+            Status Monitor: Монітор стану
             "Printer Control": "Керування принтером"
             "Archived Printers": "Архівовані принтери"
             "Firmware Updates": "Оновлення прошивки"
@@ -97,6 +107,7 @@ plugins:
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
             Auto-Queue Routing: Авто-черга
+            Filament Routing: Призначення філаменту
             "Slice settings": "Налаштування слайсингу"
             "Preheat & Heat Soak": "Прогрів і heat-soak"
             Staggered Start: Поетапний запуск
@@ -122,9 +133,9 @@ plugins:
             "G-code Injection": "Інжекція G-code"
             Notifications: Сповіщення
             "Obico AI Failure Detection": "AI-детекція фейлів Obico"
-            "Library, Inventory & Projects": "Бібліотека, інвентар і проєкти"
+            "Library, Inventory & Orders": "Бібліотека, інвентар і замовлення"
             "Spool Inventory": "Інвентар котушок"
-            "Projects & Print Plan": "Проєкти та print plan"
+            "Orders, Products & Stock": "Замовлення, вироби та залишок"
             "Filament Calibration": "Калібровка філаменту"
             "K-Profiles": "K-профілі"
             "Stats & Energy": "Статистика і енергія"
@@ -153,6 +164,17 @@ plugins:
             API Reference: Довідка API
             "Keyboard Shortcuts": "Гарячі клавіші"
             Troubleshooting: Усунення неполадок
+            Scenarios: Сценарії
+            "Three phases, one bed heating per phase": "Три фази — по одному нагріву столу на фазу"
+            "An urgent print ahead of the queue": "Терміновий друк поперед черги"
+            "A hundred parts across five printer models": "Сто деталей на п'ять моделей принтерів"
+            "The customer asks when fifty will be ready": "Замовник питає, коли буде п'ятдесят"
+            "Recording scrap": "Облік браку"
+            "Surplus on the shelf, reused by the next order": "Надлишок на полиці, який бере наступне замовлення"
+            "A night shift with nobody in the shop": "Нічна зміна без людини в цеху"
+            "Maintenance across fifty printers": "Обслуговування п'ятдесяти принтерів"
+            "Keeping the breaker and the power bill in check": "Тримати автомат і рахунок за світло під контролем"
+            "A camera wall on the workshop TV": "Стіна камер на телевізорі в цеху"
             Privacy: Приватність
 
 markdown_extensions:
@@ -215,6 +237,15 @@ extra:
       name: Support BamDude
   generator: false
 
+# hreflang must be a fully-qualified URL for Google to read it; the i18n
+# plugin + Material's `url` filter emit page-relative ones. See the hook.
+hooks:
+  - hooks/absolute_hreflang.py
+  # sitemap <lastmod> from git, printed by overrides/sitemap.xml; see the hook.
+  - hooks/sitemap_lastmod.py
+  # Open Graph / Twitter / JSON-LD per page, printed by overrides/main.html.
+  - hooks/seo_head.py
+
 extra_css:
   - stylesheets/extra.css
 
@@ -236,6 +267,7 @@ nav:
     - features/index.md
     - Printers & Monitoring:
       - Real-time Monitoring: features/monitoring.md
+      - Status Monitor: features/status-monitor.md
       - Printer Control: features/printer-control.md
       - Archived Printers: features/archived-printers.md
       - Firmware Updates: features/firmware-updates.md
@@ -244,6 +276,7 @@ nav:
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
       - Auto-Queue Routing: features/auto-queue.md
+      - Filament Routing: features/filament-routing.md
       - Slice settings: features/slicer-pipelines.md
       - Preheat & Heat Soak: features/preheat.md
       - Staggered Start: features/staggered-start.md
@@ -270,10 +303,10 @@ nav:
       - G-code Injection: features/gcode-injection.md
       - Notifications: features/notifications.md
       - Obico AI Failure Detection: features/obico.md
-    - Library, Inventory & Projects:
+    - Library, Inventory & Orders:
       - Spool Inventory: features/inventory.md
       - Spool Labels: features/labels.md
-      - Projects & Print Plan: features/projects.md
+      - Orders, Products & Stock: features/projects.md
       - Filament Calibration: features/filament-calibration.md
       - K-Profiles: features/kprofiles.md
       - Stats & Energy: features/stats.md
@@ -298,6 +331,18 @@ nav:
       - Backup & Restore: features/backup.md
       - Bug Report: features/bug-report.md
 
+  - Scenarios:
+    - scenarios/index.md
+    - Three phases, one bed heating per phase: scenarios/three-phases.md
+    - An urgent print ahead of the queue: scenarios/urgent-print.md
+    - A hundred parts across five printer models: scenarios/one-part-five-models.md
+    - The customer asks when fifty will be ready: scenarios/when-will-it-be-ready.md
+    - Recording scrap: scenarios/recording-defects.md
+    - Surplus on the shelf, reused by the next order: scenarios/spare-parts-on-the-shelf.md
+    - A night shift with nobody in the shop: scenarios/unattended-night.md
+    - Maintenance across fifty printers: scenarios/maintenance-at-scale.md
+    - Keeping the breaker and the power bill in check: scenarios/power-budget.md
+    - A camera wall on the workshop TV: scenarios/camera-wall-tv.md
   - Add-ons:
     - addons/index.md
     - BamDude Bridge: addons/bridge.md

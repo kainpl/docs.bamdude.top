@@ -207,6 +207,8 @@ Notifications sent to Telegram include inline action buttons:
 | **Maintenance Due** | Mark done |
 | **Print Progress** | Pause / Stop |
 
+**Defects…** on the completion message, and after *Plate cleared* / *Repeat print*: one message per part with buttons 0–5 (*other…* to type a number), *no defects, done* ends it. Needs the plate-clear permission and the printer in the chat's scope.
+
 ---
 
 ## :material-account-multiple: Multi-Chat Roles & Authorization
@@ -253,6 +255,26 @@ chat can subscribe to everything.
 `should_notify(event_type)` runs on every notification: the chat must be
 **active**, **outside quiet hours**, and the event must be in its enabled
 list before a message is sent.
+
+### Progress-milestone floor
+
+Beside the Progress Milestones checkbox each chat carries a **minimum
+duration**: 25/50/75% messages are muted for prints estimated shorter than
+that many minutes (empty or `0` = always send). Per chat — an admin's
+60-minute floor doesn't decide for an operator's chat that wants 10. See
+[Notifications](notifications.md) for how the duration is estimated.
+
+### Printer scope
+
+A chat can be limited to specific printers — all, one, or several — in the
+chat's settings. The scope covers **both directions**: notifications arrive
+only from the chat's printers, and the bot itself lists, snapshots and
+commands only them (printer list, cameras, queue view, controls; a button
+from an old message aimed at an out-of-scope printer is refused). Events
+that name no printer (test messages, farm-wide news) still reach every
+chat. This replaced the old provider-level printer filter — for telegram
+the provider binding is migrated onto existing chats and then cleared, like
+every other provider-level knob.
 
 ### Quiet hours
 

@@ -16,7 +16,7 @@ description: Bulk-експорт метаданих архіву та стати
 | Endpoint | Що повертає |
 |----------|-------------|
 | `GET /api/v1/archives/export` | Один рядок на архів (the print log) |
-| `GET /api/v1/archives/stats/export` | Failure-analysis summary + кореляційні breakdown'и + weekly trend |
+| `GET /api/v1/statistics/export` | Failure-analysis summary + кореляційні breakdown'и + weekly trend |
 
 Обидва видають CSV за замовчуванням і приймають `?format=xlsx` для native Excel `.xlsx`.
 
@@ -108,7 +108,7 @@ Stats workbook — це single sheet з парами Metric / Value та weekly-
 
 ## :material-chart-bar: Layout Stats-експорту
 
-`GET /api/v1/archives/stats/export?days=30` дає:
+`GET /api/v1/statistics/export?days=30` дає:
 
 ```
 Metric                 | Value
@@ -167,7 +167,7 @@ Auth: дозвіл `archives:read`. Шліть JWT у `Authorization: Bearer …
 ### Stats export
 
 ```
-GET /api/v1/archives/stats/export
+GET /api/v1/statistics/export
 ```
 
 | Query param | Type | Default | Нотатки |

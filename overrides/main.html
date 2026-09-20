@@ -1,5 +1,46 @@
 {% extends "base.html" %}
 
+{#
+  x-default beside the en/uk pair: the page Google shows when neither
+  language matches. It cannot live in `config.extra.alternate` — the language
+  switcher renders that list verbatim and would grow a third, bogus entry —
+  so it is emitted here from the English link, absolute by then thanks to
+  hooks/absolute_hreflang.py.
+#}
+{% block extrahead %}
+  {{ super() }}
+  {% for alt in config.extra.alternate %}
+    {% if alt.lang == "en" %}
+      <link rel="alternate" hreflang="x-default" href="{{ alt.link | url }}">
+    {% endif %}
+  {% endfor %}
+  {#- Open Graph / Twitter / JSON-LD: values computed in hooks/seo_head.py. #}
+  {% if seo %}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="{{ config.site_name }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ seo.url }}">
+    <meta property="og:image" content="{{ seo.image }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="{{ seo.image_alt }}">
+    <meta property="og:locale" content="{{ seo.og_locale }}">
+    <meta property="og:locale:alternate" content="{{ seo.og_locale_alt }}">
+    {% if seo.modified %}
+      <meta property="article:modified_time" content="{{ seo.modified }}">
+    {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <meta name="twitter:image" content="{{ seo.image }}">
+    <meta name="twitter:image:alt" content="{{ seo.image_alt }}">
+    <script type="application/ld+json">{{ seo_jsonld | tojson }}</script>
+  {% endif %}
+{% endblock %}
+
 {% block announce %}
 <a href="https://github.com/kainpl/bamdude" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
   <span><strong>BamDude</strong> - Self-hosted 3D print farm management</span>

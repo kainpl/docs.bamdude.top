@@ -9,6 +9,9 @@ Queue and schedule prints with independent per-printer queues, drag-and-drop ord
 
 ---
 
+!!! tip "Keep the queue on a second screen"
+    Select **Open monitor** for the [status monitor](status-monitor.md). Its Queue view shows the current print, queue pause or waiting reason, next job and queue ETA in uniform tiles. The monitor is read-only; keep this page open to manage jobs.
+
 ## :material-playlist-plus: Overview
 
 The print queue lets you:
@@ -19,7 +22,10 @@ The print queue lets you:
 - **Drag-and-drop** ordering
 - **Scheduled** start times
 - **Timeline view** -- production schedule with estimated completion times
-- **Model-based assignment** -- queue to "any printer of matching model" (legacy single-tier router; for filament/color-aware routing see [Auto-Queue Routing](auto-queue.md))
+- **Card size** -- the same S / M / L / XL switch as the printers page, shown in the cards view; it sets how many queue cards share a row and is remembered per browser
+- **Sort by ETA** -- the two orders the printers page has, under the same names: *ETA (job)* and *ETA (queue)*, the second from the server's forecast of every queue (see [Sort by ETA](monitoring.md#sort-by-eta-two-orders))
+- **Sort by Tag** -- the queue cards grouped under each printer's [tags](monitoring.md#status-sorting-collapsible-groups), a printer with several tags under each of them, *No tag* last, the tag's colour on the section dot
+- **Model-based assignment** -- queue to "any printer of matching model" and let the [auto-queue](auto-queue.md) pick the machine
 - **Smart plug automation** -- auto power-on/off
 
 !!! tip "Slice-and-queue in one click, and warm the bed first"
@@ -39,27 +45,51 @@ The print queue lets you:
 
 ## :material-list-status: Queue states
 
-Every queue item carries one of these statuses (visible on the queue card chip):
+Two different things carry a status here, and they are easy to confuse. The **queue** belongs to the printer — every printer has exactly one, and the queue's id *is* the printer's id. The **items** are the jobs sitting in it. They have separate state sets that do not overlap.
+
+### The queue
 
 | State | Meaning |
 |-------|---------|
-| `pending` | In line, will start when the printer is free + scheduled time hits |
-| `printing` | Currently dispatched + running |
-| `paused` | Print is paused on the printer (operator paused, filament runout, AMS issue) |
-| `waiting_for_filament` | Held back because the required filament/colour isn't loaded |
-| `waiting_for_plate_clear` | Print finished, waiting on plate-clear confirmation before next dispatch |
-| `waiting_for_stagger` | Multi-printer batch — waiting for the staggered-start tick |
-| `waiting_for_dispatch` | Dispatcher is in flight (FTP upload + MQTT start_print) |
-| `failed` | Dispatch or print failed; verbose `error_message` on hover |
-| `cancelled` | Cancelled before completion — by the user, or automatically with reason "Source archive deleted" when a still-pending item's source archive is moved to trash (it can no longer dispatch, so it's cancelled rather than left stuck pending) |
-| `skipped` | Auto-skipped after a previous failure on the same job |
-| `completed` | Print finished — auto-deletes once the matching archive lands (m019) |
+| `idle` | Nothing is dispatched here; the scheduler may pick this queue's next item. |
+| `printing` | A print is running or imminent on this printer. This is the **authoritative busy marker** — the scheduler builds its "busy" set straight from these rows, which is what keeps the queue claimed across the whole post-print swap macro no matter what the live MQTT says. |
+| `paused` | Set automatically after a **cancel during dispatch**. Nothing failed — the operator aborted one item, so the rest of the queue waits instead of racing on. |
+| `error` | Set automatically after a dispatch **failure**. |
 
-The queue card header shows live counters (Total / Pending / Printing / Completed / Failed / Cancelled) recomputed from `print_archives` on every read.
+`is_paused` is a **separate column, orthogonal to `status`** — the operator's own pause toggle. A queue can be `printing` and `is_paused` at the same time (a pause taken mid-print): the running job finishes normally, the next item simply doesn't dispatch until you resume. The scheduler skips a queue when **either** signal is set, which is why one **Resume** control clears both at once.
+
+!!! info "A paused queue still accepts work"
+    Neither `is_paused` nor a `paused` / `error` status stops you adding to the queue, from any dialog. Only the scheduler reads them — a job put on a parked printer just waits there, visibly.
+
+### The items
+
+Every queue item carries one of exactly six statuses (visible on the queue card chip):
+
+| State | Meaning |
+|-------|---------|
+| `pending` | In line. Starts when the printer is free, the scheduled time has passed and nothing else is holding it. |
+| `printing` | Dispatched. Set the moment the queue row is claimed, **before** the FTP upload begins. |
+| `completed` | The print finished. The row normally goes immediately — its history lives on in the archive — but where the plate-clear gate will arm, it stays until you answer: **Clear Plate** drops it, **Repeat print** re-arms the same row for another copy. |
+| `failed` | Dispatch or print failed; verbose `error_message` on hover. |
+| `skipped` | The `require_previous_success` gate refused it because the last print on that printer failed. `error_message` reads *"Previous print failed"*. **Unskip** clears the gate for it. |
+| `cancelled` | Cancelled before completion — by you, or automatically when the source disappears: trashing an archive cancels its still-`pending` items with the reason *"Source archive deleted"*, and trashing a library file does the same with *"Source file deleted"*. The row stays visible with its reason rather than vanishing, because a job that disappeared silently is indistinguishable from one that was never queued. |
+
+There is **no `paused` item status.** A print paused *on the printer* — operator pause, filament runout, an AMS issue — is a printer state, read live off the machine; the queue item stays `printing` throughout.
+
+**Waiting is not a state of its own either.** An item the scheduler looked at and decided not to start yet stays `pending` and carries a separate `waiting_reason` text, shown on the row — *"Printer offline"*, *"Drying in progress"*, *"Plate not cleared"*, a staggered-start line naming what it is waiting behind, or *"Swap macro failed: …"*. The reason is rewritten on every pass and cleared the moment the printer is ready, so it always reflects the most recent tick rather than a status the row is stuck in.
+
+The queue card header shows counters in two flavours. **Pending** and **Skipped** are cached on the queue row and recounted whenever it changes; **Total / Completed / Failed / Cancelled** are computed from `print_archives` through `archive.queue_id` at read time, so they stay right even after the live rows auto-clean.
 
 ---
 
 ## :material-plus: Adding to Queue
+
+!!! tip "Queueing a library file asks which order it is for"
+    The dialog carries an **Order** field listing the open orders that still need this plate,
+    how many prints each of them is short, and the product each is for — with the first one
+    that needs it already chosen and **Without an order** always on the list. What you pick is
+    counted by that order's plan straight away. See
+    [Filing a print under its order](projects.md#filing-a-print-under-its-order).
 
 ### From Archive
 
@@ -75,9 +105,17 @@ The queue card header shows live counters (Total / Pending / Printing / Complete
 2. Click **Add to Queue** in toolbar
 3. Choose target printer
 
+### Run next on a selected printer
+
+When an urgent job arrives, choose its printer in the **Schedule Print** dialog, leave **ASAP** selected, then tick **Run next**. The new job goes before the other **pending** jobs on that printer. It does not interrupt a print that has already started or been claimed for dispatch.
+
+For a multi-plate file, every selected plate and its requested copies are inserted together in the order shown in the dialog. If you selected several printers, each queue is handled independently: one unavailable printer does not undo work accepted by another.
+
+**Run next** is intentionally unavailable for **Queue Only**, scheduled work, and the **Auto-Queue**. Those modes have their own dispatch semantics; the option does not reserve a printer or choose the first printer that will become free.
+
 ### Drag-and-drop on a Queue Card
 
-On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root and then walked through the Add-to-Queue modal one at a time, with a `2 / 5` counter beside the title. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
+On the **Queue** page each printer's queue card is a drop target, and so is each card on the **Printers** page. Drop **as many files as you like**: each is uploaded into the library root, and then the files that would be answered the same way are **grouped** — one dialog per group, with a `group 1 of 3 · 12 items` badge beside the title telling you how many plates that one answer covers. The modal is locked to that printer — no specific/auto toggle, and the printer shown ticked and not untickable, because the drop target *is* the choice. The card's printer status (idle / printing / paused / error) is **not** checked: queueing is always allowed regardless of what the printer is currently doing.
 
 Each file gets a **fresh** modal. Plate selection, filament mapping and per-printer options belong to one file; carrying them to the next would be wrong rather than convenient, since plate 3 of one file need not exist in the next.
 
@@ -97,58 +135,67 @@ A `sliced_for_model` mismatch with the card's printer model aborts the upload be
 
 Permission-gated on `queue:create` — viewers without that right see no overlay and a drop is a no-op.
 
+### One dialog per group
+
+When adding several files from the library, a drop, or a queue copy, files sharing the printer model, nozzle, build plate, and set of filament types are grouped into one dialog.
+
+| Shared answer for the group | Checked for each file and plate |
+|---|---|
+| Printer or Auto-Queue, target model and location | Selected plates and their actual numbers |
+| Schedule, quantity, print options, and macros | Used channels and a complete source mapping |
+| General feed and exact-color rules | Individual channel choices and manual physical selections |
+
+Color alone does not split a group, but color rules are checked for each file. The grouping checkbox does not permit replacing a pinned color or transferring a channel choice between files. If you change a channel for the current file, the next file opens for review; the form explains this.
+
+A missing material on the selected printer can bring back the dialog for that file. Auto-Queue can accept a valid file to wait, but neither grouping nor selecting multiple printers bypasses source validation and complete mapping before start. See [Filament Routing](filament-routing.md).
+
+### Declining a group
+
+Every group's dialog carries an **Apply to the rest of this group** tick, on by
+default. Untick it and that group alone goes back to one dialog per file — each
+one already filled in with the answer you just gave, so you are confirming
+rather than starting over.
+
+The tick belongs to the group, not to the run: the next group opens with it back
+on. Answering the first group as a group, looking through the second file by
+file, and letting the third go as a group again is an ordinary run.
+
+!!! warning "A multi-plate file contributes every plate"
+    Each plate is a unit in its own right, so a single 3-plate file opens with
+    all three of its plates ticked and queues three items where it used to queue
+    one. The ticks are on screen and you can untick the plates you do not want,
+    but the dialog no longer starts on the first plate alone.
+
 ### AMS Filament Mapping
 
-When adding multi-color prints, configure which AMS slot to use for each filament. Auto-matching by type and color is available, with manual override.
+Choose a source for every used channel of the selected plate: AMS or a supported external feed. Auto-matching considers material, colour, and nozzle. **Allow match by base material** is on by default: a resolvable family contributes its `filament_type` (such as `PETG`) rather than the profile name or vendor; with it off, a known profile variant remains a restriction. A manual physical slot choice is saved as a restriction and checked again before start. See [material matching](filament-routing.md#material).
 
-!!! tip "Stored Mappings"
-    AMS mappings are saved with the queued print. When it starts, BamDude uses your configured mapping.
+On supported dual-nozzle printers, **[L] / [R]** badges show nozzle bindings. Support is not limited to H2D or X2D: it follows the model's capabilities and current configuration. Mixed AMS + external feeds or two separate external feeds are allowed only with the selected plate's correct bindings.
 
-**Dual-nozzle printers (H2D / H2D Pro)** show **[L] / [R]** badges next to each AMS slot so you can see which extruder a slot feeds. The auto-matcher uses the slicer's `sliced_for_model` + per-slot filament metadata; falling back to manual when the printer doesn't have an exact filament match for what the gcode wants.
+The job retains its feed and color rules through schedule edits, repeats, and cloning. A manual mapping needs a new answer for another printer or plate. [Complete rules and waiting reasons](filament-routing.md#editing).
 
-**Prefer lowest remaining filament** (Settings → Workflow): when the auto-matcher has more than one candidate slot for the same filament, BamDude picks the slot with **the lowest tracked remaining grams** so you burn down nearly-empty spools first instead of always using slot 1.
+**Prefer lowest remaining filament** (`prefer_lowest_filament`): this farm setting is **on by default** under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. After compatibility and the exact-colour preference, it picks the lower remaining otherwise-equivalent source so near-empty spools are used first. Tracked AMS spools use BamDude/Spoolman grams; firmware-only sources use their reported percentage in a separate, lower-priority tier. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping. See [the complete ranking](filament-routing.md#selection).
 
 This is gated by **AMS Filament Backup**. With backup **off**, the printer won't auto-switch between same-material spools mid-print, so BamDude skips prefer-lowest and matches normally — otherwise a job could strand when the chosen near-empty spool runs out with nothing to fall back to. With backup **on** it behaves as described above; an *unknown* backup state (e.g. older A1 protocol) preserves the prefer-lowest behaviour. The gate applies to **both** dispatch paths — the queue scheduler and the auto-queue router.
 
 
-!!! warning "Several plates at once get one mapping each"
-    Ticking more than one plate used to hide the Filament Mapping panel — but the
-    dialog still sent a mapping, built from the *union* of every selected plate's
-    filaments. Tray assignment is stateful, so where plate 1 prints red on slot 1
-    and plate 2 prints red on slot 2, slot 1 claimed the only red spool and slot 2
-    fell through to whatever else was loaded. That single mapping then went out
-    with **every** plate, and the queue uses a stored mapping verbatim.
+!!! info "Each plate has its own mapping"
+    Several selected plates get separate panels and separate mappings. Channels used by one plate are not combined with another's. For multiple printers, requirements are checked against the actual destination. Remaining filament is a source-ranking input, not a reservation or a grams-sufficiency gate: a mapped source is rechecked for identity and compatibility before start, but BamDude does not promise that its reported remainder covers the slicer's estimated grams.
 
-    Each selected plate now gets its own panel (named after the plate), its own
-    tray overrides, and its own mapping on its own queue item. Fanning several
-    plates across several printers ships no mapping at all, so the scheduler maps
-    each plate against the printer it actually picks.
-
-    A manual tray pick no longer survives a change of printer (a tray number means
-    a different spool on a different machine), the "not enough filament" check
-    follows what each plate actually dispatches and sums demand per spool (60 g
-    left doesn't cover two plates of 40 g even though it covers either one), and a
-    plate whose filaments can't be read is named and blocks **Print** instead of
-    being queued unmapped.
-
-!!! tip "Nozzle mismatch is caught before upload"
-    A file sliced for one nozzle size sent to a printer with a different nozzle
-    fitted used to fail *on the printer*, after the whole upload, with a cryptic
-    HMS error. The queue now checks before uploading and fails the item with an
-    actionable message. It only ever blocks on a positive mismatch: a file with no
-    recorded nozzle size, or a printer that hasn't reported its nozzles, dispatches
-    exactly as before, and on a dual-nozzle printer a match against either hotend
-    passes.
+!!! info "Nozzle information is checked before starting"
+    The required nozzle and its known diameter requirement are checked. A match against the other hotend does not replace the required binding. If necessary printer state is not available yet, the job waits; if required information is missing from the file, fix the source. An earlier preview does not permit an incompatible mapping to start.
 
 ### Plate selection (multi-plate 3MF)
 
 Multi-plate sliced 3MFs ship every plate inside one file. The Add-to-Queue modal renders a plate grid:
 
-- Click a single plate to dispatch just that plate (queue row gets `plate_index = N`).
+- Click a single plate to dispatch just that plate (the queue row records it as `plate_id`).
 - Multi-select plates → one queue row per plate, queued in order.
-- The thumbnail + per-plate filament list comes from the m023 plate cache (no re-parse on each render).
+- The preview shows the thumbnail and filament list for each plate; the server validates the selected plate against the source before queueing.
 
 Plate index is preserved across restart-recovery + reprint flows. See [archiving](archiving.md) for chain-of-custody on multi-plate dispatches.
+
+**Whole file** is accepted only for one unambiguous printable plate. Its actual number is retained, even when it is not 1; a multi-plate file needs an explicit choice. [Source validation](filament-routing.md#plates).
 
 ### Build-plate type on queue items + print dialog
 
@@ -162,23 +209,27 @@ When adding to queue, expand **Print options**:
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| **Use AMS** | `on` | Route filament from AMS instead of external spool. Off = printer expects manually-fed filament. |
 | **Bed levelling** | `on` | Run the auto-bed-level cycle before the print. Off speeds up restarts on a known-stable bed. Three-position (off / auto / on) on firmware that supports it — see the note below. |
-| **Flow calibration** | off | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. Three-position on supported models. |
-| **Vibration calibration** | off | Run vibration-resonance cal. Disabled for fast iteration on identical jobs. |
-| **Mesh-mode fast check** | off | Skip the M970 vibration-probe G-code via the [3MF gcode patcher](archiving.md). Disk file stays unpatched; only the bytes shipped to the printer are modified. |
-| **Layer inspection** | `on` | Per-layer first-layer inspection AI (X1 + H2 series). |
+| **Flow calibration** | `on` | Run extrusion-flow cal at print start. Print-quality first vs throughput trade-off. Three-position on supported models. |
+| **Nozzle-offset calibration** | `on` | Dual-nozzle machines only (H2D / H2D Pro / H2C / X2D); the MQTT layer forces "skip" on single-nozzle printers regardless of what is stored. Three-position on supported models. |
+| **Mesh-mode fast check** | `on` | Leave it on and the plate's `M970` vibration-probe G-code runs as sliced. Turn it **off** and the [3MF gcode patcher](archiving.md) comments those lines out on the way to the printer. The disk file stays unpatched; only the bytes shipped to the printer are modified. |
+| **Layer inspection** | off | Per-layer first-layer inspection AI (X1 + H2 series). |
 | **Timelapse** | off | Record a built-in timelapse on the printer. |
-| **Record to** | Internal storage | Which medium keeps the recording, the same choice Bambu Studio offers. Shown only where the printer has **both** built-in storage and a healthy SD card; with one medium there is nothing to choose and BamDude uses it. Re-checked at dispatch — a card removed after queueing means the recording falls back to internal storage rather than the print failing. |
+| **Record to** | whatever the machine does | Which medium keeps the recording, the same choice Bambu Studio offers. Shown only where the printer has **both** built-in storage and a healthy SD card; with one medium there is nothing to choose and BamDude leaves the printer's own default alone. Re-checked at dispatch — a card removed after queueing means the recording falls back to internal storage rather than the print failing. |
+| **G-code injection** | off | Splice operator-defined snippets into the plate G-code at dispatch — see [below](#auto-print-g-code-injection). |
+| **Preheat / heat-soak** | inherit | `inherit` follows the farm-wide [preheat](preheat.md) toggle; `on` / `off` decide it for this job alone, with an optional explicit chamber target. |
+
+!!! note "Use AMS is not one of these toggles"
+    Choose feeds in the mapping panel or the Auto form's **Filament source** field. There is no separate switch in Print options. API and bulk-edit `use_ams` choices are reconciled with the saved routing rules; the actual start command follows the validated source mapping. A boolean does not override a physical slot selection or supply missing AMS hardware.
 
 !!! tip "Auto calibration (off / auto / on)"
     On models whose firmware supports it — the **X2D** and the **H2** family (H2D, H2D Pro, H2C, H2S), plus the **P2S** and **A2L** for bed levelling + flow calibration — Bed levelling, Flow calibration and (on dual-nozzle machines) Nozzle-offset calibration are **three-position**: **Off**, **Auto** (the printer itself decides whether the step is needed for the job), or **On** (always run). Models without firmware support keep the plain **Off / On** toggle. The choice is remembered per printer model, and Off/On behave exactly as before — the new Auto position only reaches a printer that advertises it.
 
-Defaults are install-wide and configurable in **Settings → Workflow → Default print options**. Per-printer overrides live on each printer's settings card. Per-job overrides on the Add-to-Queue modal trump everything.
+Defaults are remembered **per operator and per printer model**: the toggles you set in the Print dialog can be saved as that pair's profile, and the dialog loads it next time you queue for that model. An admin sees every saved profile under **Settings → Printing → Saved Print Profiles**, can edit or delete any of them, can copy one operator's profile to another (handy when onboarding), and can set the per-model **System** row that applies to anyone with no profile of their own. Whatever you change in the dialog for one job trumps all of it, for that job only.
 
 ### Auto-print G-code injection
 
-Sometimes you need to mutate the gcode at dispatch — chamber heat-soak, custom purge, swap-mode setup — without re-slicing. Toggle **G-code injection** on the queue item; configure snippets + placeholders (`{max_layer_z}`, `{first_layer_temp}`, etc.) in **Settings → Workflow → G-code injection**.
+Sometimes you need to mutate the gcode at dispatch — chamber heat-soak, custom purge, swap-mode setup — without re-slicing. Toggle **G-code injection** on the queue item; configure the snippets, which are kept **per printer model**, in **Settings → Printing → G-code Injection**. Snippets take `{placeholder}` substitutions resolved against the 3MF's own gcode header block, with Prusa→Bambu aliases so a snippet copied from a PrusaSlicer library (`{max_layer_z}`) still resolves.
 
 Full reference: [G-code injection](gcode-injection.md). Reads + applies at dispatch time so different jobs can carry different injections.
 
@@ -199,7 +250,7 @@ The printer card, the per-printer queue card and the auto-queue panel each carry
 - **Search covers the whole library**, not the folder you happen to have open. Searching inside one folder would not answer the question the search box is there for.
 - **Only files that can actually run are offered** — sliced files with a recorded printer model, and on a printer only those sliced for that machine. A picker that offered a file the Schedule dialog would then refuse would be worse than no picker.
 
-Pressing **Add to queue** hands the selection to the same per-file Schedule dialog the drops use, with the same `2 / 5` counter. The picker asks nothing about the print itself: plates, AMS mapping, quantity and scheduling stay per file.
+Pressing **Add to queue** hands the selection to the same grouped Schedule dialog the drops use, with the same group badge. The picker asks nothing about the print itself, and grouping does not change what belongs to a file: plates and AMS mapping are still resolved per file, while the answer you give — printer, schedule, copies, print options — covers the whole group.
 
 Gated on `queue:create`. On the printer card the button is **not** hidden while the machine prints — loading a queue is exactly what you do then.
 
@@ -219,10 +270,16 @@ Both sides have select-all and clear. The printer list is in the order and group
 
 **Each item keeps the plate it was queued with** — it is literally the same file on the same model, so that plate exists there too. Copies go to the end of each target queue, so a printer mid-job finishes first.
 
-Then the ordinary Schedule dialog opens **once per item**, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why three items onto four printers is three dialogs and not twelve.
+**Ready queued items copy from their saved file, not from the original.** The copy reuses the verified immutable object already held in `data/queue-sources/`, so it still works after the archive, library record, laptop folder or SMB share has gone away. It asks for fresh target-printer, AMS-mapping, schedule and print-option choices. Legacy rows retain their original-file behavior; a missing or broken saved source stays visible but cannot be copied.
+
+Then the ordinary Schedule dialog opens **once per group** of items that would be answered the same way, with every chosen printer ticked and locked. Filament is mapped per printer inside that one dialog, which is why items onto four printers is never four times the dialogs.
+
+**A copied item keeps what the queue already decided.** Its plate rides with it, so a copy of one plate of a five-plate file is one item and not five, and two copies of the same plate stay two. The order it was filed under rides along as well — including the answer *no order* — so the Schedule dialog does not ask about it again; the copy dialog names the order next to each item's plate, where the item can still be unticked. Any items you had grouped into a block in the source queue come out as a block on the target.
 
 !!! tip "A print started outside the queue counts too"
     A job sent from the printer's screen or straight from a slicer leaves no queue entry — the card shows it because it reads the printer directly, and the copy reads it from the same place.
+
+A copy also retains feed and color rules. The form identifies a source with manual mapping and asks you to check it for the destination printer. Channel choices for another file require individual review even in a grouped addition.
 
 ## :material-drag: Drag and Drop Ordering
 
@@ -241,28 +298,22 @@ Default. Job starts as soon as the printer is idle and the dispatcher reaches it
 
 ### Scheduled
 
-Pick a future date + time. The job stays in `pending` until the scheduled clock hits, then enters dispatch. Works in combination with smart-plug power-on schedules — the plug fires N minutes before the scheduled start so the printer's warm by the time dispatch hits.
+Pick a future date + time. The job stays in `pending` until the scheduled clock hits, then enters dispatch. If the printer is off and one of its smart plugs has auto-on set, the scheduler powers it on and waits for it to come up **at that moment** — there is no pre-warm offset that fires ahead of the clock.
 
-### Schedule priority
-
-When two scheduled jobs hit overlapping times, BamDude orders them by:
-
-1. Manually-pinned `position` (drag-and-drop)
-2. Earliest `scheduled_at`
-3. Insertion order (FIFO)
+!!! note "`scheduled_time` is a gate, not a sort key"
+    A queue is walked strictly in `position` order — drag-and-drop, the up / down / bump buttons and the copy/clone paths are the only things that decide who is next. A future `scheduled_time` makes the scheduler skip that row and move on to the one below it; it never reorders the queue around it.
 
 ### Queue only (staged)
 
 Sets `manual_start = true` on the row — the dispatcher ignores it until you click Start. Useful for staging an entire batch upfront and then releasing it in one go (or for slicer-uploads-to-VP that you want to hold until you've reviewed them).
 
-### Shortest job first (SJF)
+### Shortest job first — an auto-queue setting
 
-**Settings → Workflow → Job ordering = Shortest first** flips the dispatcher to pick the shortest pending job (by predicted print time) instead of the highest-priority one. Comes with a **starvation guard**:
+**Settings → Printing → Auto-Queue Routing → Shortest job first** (off by default) changes the order the **auto-queue distributor** works through its *unassigned* jobs. It does not touch a per-printer queue, which is always walked by `position`.
 
-- Each pending job gains an `aging_score` over time
-- Once a job has been waiting > **N hours** (default 6, configurable), it's promoted to top of the dispatch queue regardless of duration
+With it on, pending auto-queue items are read grouped by target model, then shortest predicted print time first, then position — and the **starvation guard** is a sticky flag, not a clock: after a job is assigned, every longer (or unknown-length) peer ahead of it in the same model group is marked as having been jumped, and a jumped item then sorts *ahead* of everything on the next pass. There is no ageing score and no "promote after N hours"; a job needs only to be skipped once to stop being skippable.
 
-This keeps a long farm-printable from sitting forever behind a stream of short jobs while still letting fast jobs slip in between long ones during the day.
+Full priority chain: [Auto-Queue Routing](auto-queue.md).
 
 ---
 
@@ -270,21 +321,26 @@ This keeps a long farm-printable from sitting forever behind a stream of short j
 
 ### Clear Plate Confirmation
 
-After a print finishes, the next print does **not** start automatically. A **"Clear Plate & Start Next"** button appears on the printer card.
+After a print finishes, the next print does **not** start automatically. The printer card offers two answers: **Clear Plate & Start Next** drops the finished row and lets the queue move on, **Repeat print** re-arms that same row for another copy (the same row, so every print option rides along).
 
-Disable this in **Settings > Queue > Require plate-clear confirmation** for automated workflows.
+This is a **per-printer** setting, not a farm-wide one — **Require plate-clear confirmation** sits on each printer's edit form, so an automated cell can run without it while the bench next to it still asks. Swap-mode printers force it off: the swapper is the plate-clear.
+
+**Defects with the answer.** When a finished print waits for *Clear plate*, its parts appear beside the two buttons with a counter each; fill in what came out bad and press either answer — the count is written to that print, under the same permission. Untouched counters send nothing.
 
 ### Bulk Editing
 
-Select multiple queue items via the toolbar checkboxes to apply a bulk edit:
+Select multiple queue items via the toolbar checkboxes to apply a bulk edit. **Only `pending` rows are touched** — anything already printing or finished is counted as skipped and reported back, and without `queue:update_all` so is anything you didn't queue yourself.
 
-| Field | Tri-state on bulk | Notes |
-|-------|-------------------|-------|
-| Target printer | ✓ | Reassigns rows. Filament/colour validation runs against the new target. |
-| Use AMS | ✓ | Tri-state — leave indeterminate to preserve per-row settings. |
-| Bed levelling / Flow / Vibration / Layer inspect / Timelapse | ✓ | Same tri-state semantics. |
-| Scheduled-at | ✓ | Bulk-shift schedules forward by an offset, or pin a fixed clock. |
-| Cancel | — | Bulk-cancel marks all selected as `cancelled` (no force on currently `printing` rows — those need an explicit per-row Cancel). |
+Every field is optional: leave one out and each row keeps what it had.
+
+| Field | Notes |
+|-------|-------|
+| Target queue | Moves the rows to another printer's queue. The queue must exist; there is no filament re-check at this point — the scheduler maps each row against whatever printer it ends up on. |
+| Scheduled time | Pins one fixed clock across the selection. There is no "shift everything forward by N hours" form. |
+| Manual start · Auto power-off · Require previous success | The three scheduling flags. |
+| Use AMS · Bed levelling · Flow · Nozzle offset · Layer inspect · Timelapse · Record to · Mesh-mode fast check · G-code injection · Preheat | Every print option, plus swap-macro and selected-macro choices. |
+
+Cancelling in bulk is a **separate action**, not a field on this edit — and batch-level cancel / skip / reorder have endpoints of their own that act on a whole `batch_id` at once.
 
 ### Group, collapse, and reorder batches
 
@@ -300,12 +356,9 @@ Selection is scoped to a single card — a batch is per-queue, so a selection ca
 
 ## :material-printer-3d-nozzle-alert: Multi-printer queue + staggered start
 
-When you submit one job to **N printers** at once (multi-select in Add-to-Queue), each gets its own queue row. By default they all dispatch immediately — N concurrent FTP uploads, N near-simultaneous start commands. For overhead-constrained farms (single network uplink, single power circuit, shared MQTT broker), enable **Staggered batch start**:
+When you submit one job to **N printers** at once (multi-select in Add-to-Queue), each gets its own queue row. By default they all dispatch immediately — N concurrent FTP uploads, N near-simultaneous start commands.
 
-| Setting | Effect |
-|---------|--------|
-| **Group size** | How many printers fire per wave (e.g. 3 = three at a time, then a pause) |
-| **Interval** | Seconds between waves |
+Spreading those starts out is a **farm setting**, not a per-batch option — there is nothing to tick in the Print or Add-to-Queue dialog. Turn it on once under **Settings → Printing → Staggered Start**, and from then on every print start — queued, Print Now, or begun on the printer's own screen — takes one of a limited number of slots, so only so many beds are heating at a time. The cap can be farm-wide, or split per electrical phase (printer tags) and per room (locations), with its own number for each group.
 
 Cross-link: full deep-dive in [Staggered start](staggered-start.md).
 
@@ -315,19 +368,15 @@ Per-printer **AMS mappings** are configured per row — the multi-printer modal 
 
 ## :material-router-network: Model-based queue assignment ("Any X1C")
 
-Instead of pinning a job to a specific printer, queue it under **Any [model]**:
+Instead of pinning a job to a specific printer, queue it under **Any [model]**. That job does **not** land in a per-printer queue: a per-printer item is always bound to one machine and has no notion of a target model. It goes to the second tier — the **auto-queue**, a holding area of work that has not been given a printer yet:
 
-- Filament-aware: the scheduler refuses to dispatch onto a printer whose AMS doesn't have the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#auto_queue) is on)
-- Location-aware: optional location filter ("any printer in Workshop A")
-- **Manual filament override**: if no eligible printer matches automatically, set a manual mapping that the queue uses regardless
+- Filament-aware: the router only offers a printer whose AMS has the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#auto_queue) is on)
+- Location-aware: optional location filter ("any printer in Workshop A") — a link to the locations directory, not a free-text string
+- **Manual filament override**: if no eligible printer matches automatically, set a manual mapping the router uses regardless
 
-When no eligible printer is free, the row sits as `waiting_for_filament` until either:
+While nothing matches, the item stays `pending` **in the auto-queue** and carries its own `waiting_reason` naming what it is short of — there is no `waiting_for_filament` status. It leaves that state when an eligible printer appears (the router then *creates* a real item in that printer's queue), or when you assign it to a specific printer yourself. Routing asks only routing questions: whether the machine can start *right now* — plate gate, drying, stagger — is asked again at dispatch, so an item routed to a busy printer just waits in that printer's queue where you can see it.
 
-- An eligible printer goes idle
-- You manually reassign the row to a specific printer
-- You acknowledge the warning and force-dispatch onto a non-matching printer
-
-For multi-tier filament + colour routing across the whole farm, prefer the **auto-queue router** — see [Auto-Queue Routing](auto-queue.md) for the full priority chain.
+Full priority chain: [Auto-Queue Routing](auto-queue.md).
 
 ---
 
@@ -348,9 +397,9 @@ ETA chaining is a planning tool — it doesn't account for clear-plate confirmat
 
 When a printer has an associated smart plug, the queue can drive power state:
 
-- **Auto power-on** — plug turns on N minutes before the next scheduled job (configurable in **Settings → Smart Plugs → Pre-warm offset**)
-- **Auto power-off** — plug turns off N minutes after a printer goes idle with an empty queue + cooldown (default 30 min, configurable)
-- **Cooldown awareness** — the plug stays on while the printer reports `bed_temp` or `nozzle_temp` above threshold even after the last job ends
+- **Auto power-on** (`auto_on`, on by default) — when the scheduler reaches an item on a printer that is offline, it switches the plug on **then** and waits for the printer to connect before dispatching. There is no offset that fires ahead of a scheduled clock; if you want the machine up earlier, the plug's own **schedule** (a plain on/off time of day) is the tool for that.
+- **Auto power-off** (`auto_off`, on by default) — fires after the print finishes or fails, then waits out a delay. Two delay modes: **time** (default 5 minutes) or **temperature** — hold until the printer cools below a threshold (default 70 °C). A separate toggle does the same after an **AMS drying** cycle, with its own longer delay (default 10 minutes), because the chamber is hot afterwards.
+- **Per-job** — the Add-to-Queue dialog's `auto_off_after` asks for a power-off after *this* job specifically.
 
 Full setup + per-printer linking → [Smart plugs](smart-plugs.md).
 
@@ -358,7 +407,7 @@ Full setup + per-printer linking → [Smart plugs](smart-plugs.md).
 
 ## :material-bell-outline: Queue history
 
-Once a job's archive lands, the queue row auto-deletes (m019). To find old queue items:
+Once a job finishes, its queue row is dropped — its history lives on in the archive. To find old queue items:
 
 - **Archives** page filtered by printer — every archive carries `queue_id` + optional `batch_id`
 - Failed dispatches surface their verbose `error_message` on hover
@@ -372,13 +421,23 @@ Programmatic queue control via REST:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/v1/queue/` | List all queue items (filterable by printer, status) |
-| `POST /api/v1/queue/` | Add a new queue item from an archive or library file |
+| `GET /api/v1/queue/` | List queue items (filterable by printer, status) |
+| `GET /api/v1/queue/{id}/copy-source` | Read the saved source profile used by Copy Queue |
+| `POST /api/v1/queue/` | Add a new queue item from an archive, library file, or saved queue-job source |
 | `PATCH /api/v1/queue/{id}` | Edit position, schedule, AMS, options |
-| `DELETE /api/v1/queue/{id}` | Cancel + remove |
-| `POST /api/v1/queue/{id}/start` | Force-start a `manual_start` or `pending` item |
-| `PATCH /api/v1/queue/bulk` | Bulk submit / edit / cancel |
-| `POST /api/v1/queue/reorder` | Drag-and-drop reorder via API |
+| `DELETE /api/v1/queue/{id}` | Remove the row outright |
+| `POST /api/v1/queue/{id}/cancel` · `/stop` | Cancel a pending item · stop a running one |
+| `POST /api/v1/queue/{id}/start` | Release a staged (`manual_start`) item — ownership-scoped |
+| `POST /api/v1/queue/{id}/retry` | Put a `failed` **or** `cancelled` item back to `pending`, appended to the end |
+| `POST /api/v1/queue/{id}/skip` · `/unskip` | Skip a row, or clear the previous-failure gate on one |
+| `PATCH /api/v1/queue/{id}/manual-start` | Toggle "queue only" on a row |
+| `POST /api/v1/queue/{id}/clone` | One more copy of an existing row |
+| `PATCH /api/v1/queue/bulk` | Bulk edit — `pending` rows only |
+| `POST /api/v1/queue/reorder` · `/{id}/reorder` · `/{id}/bump` · `/{id}/bump-bottom` | Ordering, whole-queue or one row at a time |
+| `POST /api/v1/queue/batch` · `/batch/{batch_id}/…` | Group rows into a batch, then ungroup / cancel / skip / reorder / bump / clone / edit it as one |
+| `GET /api/v1/queue/stagger-state` | What the staggered-start gate is currently holding |
+
+Queue **state** lives on its own router: `GET` / `PATCH /api/v1/queues/{id}` reads a queue and sets it. `status` accepts only `idle` or `paused` — `printing` and `error` are set by the system, never by a client — and a queue cannot be moved to `paused` while it is `printing` (stop the print first). `is_paused`, being orthogonal, is allowed in **any** state including mid-print.
 
 Full schema + auth details: [API reference](../reference/api.md).
 
@@ -399,11 +458,13 @@ Send the same print to multiple printers at once:
 
 When you set quantity to **N**, **all N copies** are added to the queue at once. They share a `batch_id` (a UUID stamped on every copy) so you can still answer "how many of this batch finished?" after the live queue rows clean up.
 
+**With several printers picked, N is per printer by default.** Three printers at 4 make twelve prints — the dialog says so in a line under the field («4 × 3 printers = 12 in total»). Switch the toggle beside the field to **Total** and the number is dealt across the picked printers one copy at a time, in the order the picker lists them, so 13 on three printers becomes 5 / 4 / 4 and the line names who gets what; a printer dealt nothing is simply not asked. The choice is remembered in your browser. The auto-queue's quantity was always a total and has no toggle.
+
 - You can reorder, edit AMS, or cancel each copy individually before it starts.
 - The very first copy doesn't get "direct dispatched" any more — every copy goes through the same queue path. This eliminates the historical "first archive lands ahead of N-1 copies still in queue" inconsistency.
 - The endpoint response status is `"queued"` for the whole N-copy submission; `dispatch_job_id` and `dispatch_position` are nullable in this path.
 
-`quantity == 1` direct dispatch (Print Now from a single archive) keeps the legacy behaviour — one queue item, one immediate dispatch.
+`quantity == 1` from a single archive is a **direct dispatch** — it goes straight out rather than waiting its turn. It still takes a queue row: since 0.5.4 *every* print holds one while it runs, a direct print claiming it at dispatch and a print started on the printer's own screen getting one made at print start. Before that a "print now" claimed nothing until the printer had already begun, so the queue saw an idle printer for the whole upload and could dispatch straight over the job. The row records where it came from (`origin`), which is how queue-completed notifications avoid firing for prints nobody scheduled.
 
 ---
 
@@ -424,11 +485,13 @@ The earlier "one job at a time across the whole farm" gate that landed in mid-0.
 
 Cancelling a print **while the dispatcher is still uploading the 3MF or sending `start_print`** (the brief window between you clicking Print Now / queue dispatch firing and the printer reporting `RUNNING`) is treated as an explicit operator action — not a dispatch failure.
 
-| Slice | Queue item status | Queue state | Archive status |
+This is the one place a **queue** ends up `paused` on its own — the two columns below are the two state sets from [Queue states](#queue-states), not one status seen twice.
+
+| Slice | Item status | Queue status | Archive status |
 |---|---|---|---|
 | Cancel arrives during FTP upload / MQTT start | `cancelled` | `paused` | `cancelled` |
 | Dispatcher hits an actual error (FTP timeout, start-print refused) | `failed` | `error` | `failed` |
-| Cancel arrives after print is `RUNNING` on the printer | n/a (handled by stop-print path) | running | per stop-print outcome |
+| Cancel arrives after print is `RUNNING` on the printer | n/a (handled by stop-print path) | `printing` | per stop-print outcome |
 
 The semantic distinction matters: the queue moving to `paused` (not `error`) tells the operator that **nothing failed** — the rest of the queue is fine, they decided to abort one item. They can inspect the remaining items and resume the queue when ready. Before this distinction was wired in, a cancel during the dispatch window left the queue in `error` with the just-cancelled row marked `failed`, which was misleading.
 
@@ -450,11 +513,11 @@ The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Re
 
 In 0.4.0 the live queue and the durable history were split apart (migration `m019`).
 
-- The **live queue** only shows unfinished items: `pending`, `printing`, `paused`, `waiting_*`, plus failed / cancelled / skipped rows kept around so the "Issues" section retry/unskip/remove UI keeps working.
-- Completed queue items **auto-delete** once their archive lands. `on_print_complete` removes the queue row after the corresponding archive transitions to `completed`.
+- The **live queue** only shows unfinished items: `pending` and `printing`, plus failed / cancelled / skipped rows kept around so the "Issues" section retry / unskip / remove UI keeps working.
+- Completed queue items **auto-delete** the moment the print ends — unless that printer's plate-clear gate arms, in which case the row waits for your **Clear Plate** or **Repeat print** answer and goes then. Two code paths can close a print (the live completion handler and the reconciliation sweep), and the clean-up sits where both of them reach it, because when the sweep won the race the row used to be completed by one and cleaned by neither.
 - Past queue items live on as **archives** — every archive row carries `queue_id` (which queue dispatched it) and optional `batch_id` (which N-of-M batch it belongs to). External / direct-dispatch / Print-Now archives fall back to the printer's default queue id so they're attributable too.
 
-The queue counters in the printer queue header (Total / Pending / Printing / Completed / Failed / Cancelled) are **recomputed from `print_archives` on every read**, not stored on the queue. They stay consistent even when archives are renamed or moved between projects, and they don't drift when the queue auto-cleans.
+The terminal counters in the printer queue header (Total / Completed / Failed / Cancelled) are **computed from `print_archives` on every read**, not stored on the queue, so they don't drift when the queue auto-cleans; only Pending and Skipped — which describe live rows nothing cleans up — stay cached on the queue itself.
 
 To see archived queue items, open the **Archives** page and filter by printer. Failed dispatches show the verbose `error_message` on hover (short cause codes continue to live in the existing `failure_reason` field).
 
@@ -465,32 +528,40 @@ To see archived queue items, open the **Archives** page and filter by printer. F
 
 ## :material-link-variant-off: Library file deletion — what happens to queue items
 
-The `print_queue.library_file_id` foreign key is `ON DELETE SET NULL` (migration `m018`). On top of that, the `DELETE /library/files/{id}` endpoint applies extra in-app logic so SQLite installs (where `PRAGMA foreign_keys` is off by default) get the same behaviour as PostgreSQL:
+The `print_queue.library_file_id` foreign key is `ON DELETE SET NULL` (migration `m018`). On top of that, deleting a library file applies extra in-app logic so SQLite installs (where `PRAGMA foreign_keys` is off by default) behave the same as PostgreSQL:
 
 | Queue item references the file | Result |
 |---|---|
-| Currently `status='printing'` | API returns **409 `file_in_use`** with `queue_item_ids[]`. Cancel or finish those prints first, then retry the delete. |
-| Anything else (`pending`, `paused`, `waiting_*`, etc.) | BamDude **cascade-deletes** the queue items along with the library file. |
+| Currently `status='printing'` | The API returns **409 `file_in_use`** naming the offending `queue_item_ids`. Cancel or finish those prints first, then retry the delete. |
+| `pending` | The item is **cancelled**, with `waiting_reason` set to *"Source file deleted"*. |
+| Anything terminal | Untouched — it is history. |
+
+**The row is cancelled, not deleted.** A pending job that disappeared silently is indistinguishable from one that was never queued, so it stays in the Issues section saying what happened to it. (Trashing an **archive** does the same thing, with the reason *"Source archive deleted"*.)
+
+Deleting a library file is itself a soft delete — the file goes to the trash and can be restored, but the queue items it backed are already cancelled by then.
 
 Archives keep their separate 3MF copy (the dispatch flow copies the bytes into the archive directory at print start) and survive — `print_archives.library_file_id` is set to NULL on delete instead of cascading.
 
 `POST /library/bulk-delete` applies the same logic per file: blocked-by-printing files are reported under `skipped_files` instead of failing the whole batch.
 
 !!! note "Pre-0.4.0 behaviour was different"
-    Earlier versions used a SET NULL FK without the in-app cascade — deleting a library file left orphan queue items pointing at nothing, which the queue couldn't dispatch. Those rows had to be manually cleaned. m018 + the in-app cascade close that hole.
+    Earlier versions used a SET NULL FK with no in-app follow-up — deleting a library file left orphan queue items pointing at nothing, which the queue couldn't dispatch and nobody could explain. Those rows had to be cleaned by hand.
 
 ---
 
 ## :material-bell-ring: Queue Notifications
 
-| Event | Description |
-|-------|-------------|
-| **Job Waiting** | Job waiting for filament |
-| **Job Skipped** | Job skipped due to previous failure |
-| **Job Failed** | Job failed to start |
-| **Queue Complete** | All queued jobs finished |
+| Event | Fires when |
+|-------|------------|
+| **Queue Job Added** | Something was put in a queue. |
+| **Queue Job Started** | A queued job started printing; carries the estimate. |
+| **Queue Job Waiting** | The auto-queue could not place a job — once per distinct reason, so a stuck farm says so instead of going quiet. Carries the `waiting_reason`. |
+| **Job Skipped** | The `require_previous_success` gate refused a job after a failure on that printer. |
+| **Job Failed to Start** | Dispatch failed. |
+| **Queue Complete** | Every queued job across the farm has finished. |
+| **Printer Queue Complete** | One printer's queue ran dry. |
 
-Configure in **Settings > Notifications**.
+Every template is editable in both locales. Configure in **Settings → Notifications**.
 
 ---
 
@@ -498,7 +569,9 @@ Configure in **Settings > Notifications**.
 
 H2D Pro firmware (01.01.00.00 series) keeps `gcode_state=FINISH` for 48–55 seconds after accepting a new file before transitioning to `PREPARE`. The scheduler watchdog used to revert queue items to `pending` at 45 s if the state hadn't moved — and the next scheduler tick re-dispatched the job as a "reprint" the printer was already physically running.
 
-The dispatcher now waits up to **90 s** for `subtask_id` to advance past the pre-dispatch value (the printer echoes the `submission_id` BamDude minted in its next `push_status` — that signal lands long before `gcode_state` does on slow firmware) before failing the dispatch. The watchdog also short-circuits as soon as the new `subtask_id` shows up, regardless of whether `gcode_state` has caught up.
+The watchdog now waits up to **90 s** and exits early on **either** signal: `gcode_state` moving past its pre-dispatch value, or `subtask_id` advancing past it (the printer echoes the `submission_id` BamDude minted in its next `push_status`, and on slow firmware that lands long before `gcode_state` does).
+
+If the window really does pass with neither signal, the item goes back to `pending` for another attempt rather than failing outright — and only after **three** such attempts is it failed, with a message naming what was actually observed (an AMS that was drying throughout gets said so, because that is a common reason a printer accepts a file and never starts). One exception: where a swap-mode start macro already ran on the physical machine the item is *left* in `printing` and the log asks for a human instead, because a retry would swap the plate a second time.
 
 You won't see "queue stuck" reports from this any more, including immediately after a print completes on H2D / H2C / H2S models.
 

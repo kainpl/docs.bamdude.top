@@ -5,7 +5,7 @@ description: Multi-provider push notifications for print events
 
 # Notifications
 
-Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language.
+Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a tenth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
 
 ---
 
@@ -20,6 +20,7 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 | **ntfy** | Easy | Topic-based, optional bearer token, image attachments. |
 | **Bark** | Easy | iOS-only, no account. Interruption levels — **Critical** delivers through Silent mode and Focus. Public relay or your own `bark-server`. |
 | **CallMeBot** | Easy | WhatsApp / Signal bridge — phone + API key, URL-encoded message. |
+| **Signal CLI API** | Medium | Self-hosted [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) — recipient numbers or one group, image attachments. |
 | **Home Assistant** | Easy | `persistent_notification.create` or any `notify.*` service. Single global HA URL/token from Settings (or `HA_URL` / `HA_TOKEN` env). |
 | **Webhook** | Flexible | Generic JSON or Slack-format POST, custom field names, base64 image, optional bearer token. |
 
@@ -33,6 +34,10 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 4. Click **Send Test** to verify
 5. Configure event triggers
 6. Click **Add**
+
+---
+
+Every provider subscribes to events on its own, and the form offers all of them, grouped exactly as the notification centre groups them — print, printers, filament, AMS, queue, inventory, sensors. What you see ticked when you add a provider is what it will be saved with.
 
 ---
 
@@ -173,6 +178,24 @@ The **Data** field is what makes an Android push behave. HA's mobile-app integra
 !!! tip "Forward HA notifications to other channels"
     Use HA automations to mirror these persistent notifications to the HA Companion app, Telegram, ntfy, etc. — gives you a single audit log in HA plus your usual mobile push.
 
+### Signal CLI API
+
+Signal messages through a [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) instance you host yourself. The provider is named for what it talks to: there is no official Signal API, and BamDude does not pretend to be one. Register a number with signal-cli first (that project's README walks through it); BamDude then sends from that number.
+
+| Field | Value |
+|---|---|
+| **Signal API URL** | The base URL of your signal-cli-rest-api, e.g. `http://192.168.1.50:8080`. Pasting the full `/v2/send` endpoint from its docs is tolerated — BamDude strips it back to the base. |
+| **Sender Number** | The number registered with signal-cli, in E.164 form (`+15551234567`) |
+| **Recipient Type** | **Phone Numbers** — one or more recipients, added row by row — or **Group ID** — a single Signal group. signal-cli-rest-api cannot mix the two in one request, so a provider is one or the other; add a second provider if you want both. |
+| **Group ID** | The group's id as signal-cli lists it; a bare id gets the `group.` prefix for you |
+| **Authorization** | Optional — the `Authorization` header value when the API sits behind an authenticating reverse proxy (`Bearer …`, or just the token) |
+
+Print-finish photos attach to the message. The URL is subject to the same address rules as a self-hosted ntfy or `bark-server`: your own network is fine, anything that is not a real HTTP service is refused.
+
+Running BamDude in Docker with no signal-cli-rest-api yet? The shipped `docker-compose.signal.yml` runs one next to BamDude and `docker-install.sh` offers it — see [Docker → Signal notifications sidecar](../getting-started/docker.md#signal-notifications-sidecar).
+
+---
+
 ### Generic Webhook
 
 For everything else — n8n, Node-RED, custom HTTP endpoints, Slack-format integrations.
@@ -274,7 +297,7 @@ Each provider subscribes independently. Toggling an event off on one provider do
 |-------|------------|
 | `print_start` | Print starts on a printer |
 | `first_layer_complete` | Layer 1 finishes (catch first-layer fails fast) |
-| `print_progress` | At configurable progress milestones |
+| `print_progress` | At 25% / 50% / 75% progress. A **minimum duration** floor can mute these for prints estimated shorter than N minutes — and the value belongs to each recipient: every Telegram chat carries its own (beside the Progress Milestones checkbox in the chat's settings) and every other provider carries its own (on its card, beside the same toggle). Empty or `0` = always send; there is no shared global value. The duration is estimated from the printer's own remaining-time report at each milestone, and an unknown estimate sends rather than guesses away. |
 | `print_paused` | Printer transitioned RUNNING→PAUSE — body carries a normalised `{reason}` (door open / filament runout / presence-check / file-pause-command / AI defect / plate-objects / paused by user / HMS-other) plus the underlying `{hms_code}` for forensics. Default ON for new providers + included in the default Telegram-chat event set. |
 | `print_resumed` | Printer transitioned PAUSE→RUNNING — body carries `{paused_for}` (mm:ss) computed from the matching pause edge. Default ON for new providers; opt-in for Telegram chats. |
 
@@ -290,7 +313,7 @@ The pause-state is also visualised on the Printers page in real time — a pause
 | Event | Fires when |
 |-------|------------|
 | `print_missing_spool_assignment` | Print started without complete spool→AMS mapping |
-| `filament_low` | Spool remaining below `low_stock_threshold` |
+| `filament_low` | Spool remaining below `low_stock_threshold` (or the spool's own override). A spool bound to your inventory is checked when a print's consumption lands, once per run-down; a Spoolman-bound slot is checked on every AMS change, once per spool in a slot. A slot with no inventory binding is never judged by the printer's own counter — a spool without an RFID tag reports 0 %, which is no answer — so an unbound slot stays silent. |
 | `ams_humidity_high` / `ams_temperature_high` | AMS exceeds its threshold |
 | `sensor_above_max` / `sensor_below_min` | A [sensor](sensors.md) reading left the limits set for it |
 | `sensor_back_in_range` | …and came back |
@@ -368,7 +391,7 @@ This is independent of the daily digest / quiet hours pipeline below — a quiet
 
 Configuration shape varies by provider type — the Telegram bot is special.
 
-**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot)** carry both settings on the provider row itself:
+**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal)** carry both settings on the provider row itself:
 
 | Setting | Where | Effect |
 |---|---|---|
@@ -398,7 +421,7 @@ The Templates tab groups the default templates by purpose so a glance tells you 
 
 Each card carries a small UPPERCASE channel badge:
 
-- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot). The entries in the first 4 groups.
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal). The entries in the first 4 groups.
 - **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
 - **Amber `TEST`** — internal test-button helper.
 
@@ -503,7 +526,7 @@ The toggle does not delete digests-in-progress — events that fired into the di
 
 ## :material-printer: Per-Printer Filtering
 
-Each provider has a **Printers** scope picker — select **All** to subscribe to every printer (default) or pin the provider to a subset. Events from printers outside the picked set never reach this provider, regardless of event toggles. Useful patterns:
+Each non-telegram provider has a printer scope — **All** (default), one, or any subset, ticked on the provider form. Events from printers outside the picked set never reach that provider, regardless of event toggles. **For Telegram the scope lives on each chat instead** (see [Telegram Bot → Printer scope](telegram-bot.md)), where it also scopes the bot itself — lists, cameras, queue and controls. Useful patterns:
 
 - One Discord webhook per workshop — each scoped to that workshop's printers
 - A "VIP printer" Telegram chat scoped to your one revenue-generating production unit
@@ -511,7 +534,65 @@ Each provider has a **Printers** scope picker — select **All** to subscribe to
 
 ---
 
-## :material-account-bell: Per-User Email Notifications
+## :material-inbox: The notification centre
+
+Every notification used to leave the farm — Telegram, e-mail, ntfy, Discord, whatever you had configured. An install with no provider at all had nowhere to put an alarm about its own hardware: the event fired, matched nobody, and was gone. The **Bell** in the sidebar now opens a per-user notification centre with three tabs, and **the inbox fills whether or not a single provider is set up**. That is the point of it — providers are how a notification reaches your phone, the inbox is how it reaches whoever logs in.
+
+Read and unread are **per person**. One operator opening an alarm does not clear it for anybody else. That is the difference between an inbox and a shared log: everyone subscribed to an event has to deal with it themselves.
+
+### Inbox
+
+The events you are subscribed to, newest first. Unread rows are marked; clicking a row marks it read and expands its full text. Every row carries:
+
+| Shown on the row | What it tells you |
+|---|---|
+| Severity | **info**, **warning** or **error** |
+| Printer | which printer the event came from |
+| Age | how long ago it happened |
+
+Four filters narrow the list — **severity**, **printer**, **unread only**, and the **period**: last 24 hours, last 7 days, last 30 days, or all time. A long history loads a page at a time behind a **Show more** button instead of all at once.
+
+!!! warning "Mark all read and Clear act on the filter, not on the whole inbox"
+    Both buttons apply to exactly what the filters currently select. With *error* + *one printer* + *last 7 days* picked, **Clear** deletes those rows and leaves everything else alone — and with no filters set at all, it deletes everything. **Clear** deletes; it asks for confirmation first. Single rows can also be deleted one at a time from the row itself.
+
+### Subscriptions
+
+A checkbox per event, grouped by area — print jobs, printers, filament, AMS, queue, inventory, sensors — each shown with the severity it carries, so you can see what a subscription will cost you before you tick it.
+
+**By default a person receives warnings and errors only.** The inbox stays quiet unless something actually wants attention, and **Reset to defaults** puts it back to exactly that after any amount of experimenting. Every change saves immediately — there is no Save button to forget.
+
+Subscriptions belong to the person, not to the farm: two operators on the same install can watch completely different things, and neither one's choices touch the other's inbox.
+
+### Email
+
+The four per-user e-mail switches that used to be this whole page, unchanged in behaviour — see [Per-User Email Notifications](#per-user-email-notifications) below for what they send and when.
+
+The tab appears only when Advanced Authentication is on, the **User Notifications** master switch is on, and you hold the `notifications:user_email` permission — the same three conditions as before.
+
+### The unread badge
+
+The sidebar Bell carries a live unread count. It updates over the WebSocket connection the rest of the interface already uses, so a new event lands on the bell without a page refresh and without polling for it. On narrow screens the compact header carries the same bell and the same badge.
+
+### Permission
+
+The notification centre requires the `notifications:inbox` permission.
+
+!!! warning "Upgrade note — a custom group does not get it on its own"
+    **Administrators**, **Operators** and **Viewers** all receive `notifications:inbox` on upgrade. A group you built yourself does **not** — an upgrade will not add permissions to a group somebody hand-made. Until an administrator grants it, that group's members lose the page entirely, **including the per-user e-mail switches they had before**. Walk your custom groups right after upgrading.
+
+### Retention
+
+**Settings** → **Data Management** carries **Inbox notifications (days)**.
+
+| Setting | Default | Range |
+|---|---|---|
+| Inbox notifications | **30 days** | 1–365 days |
+
+The daily cleanup removes anything older than the window, whether or not it was read — an inbox nobody opens does not grow forever. Deleting a user removes that user's inbox along with them.
+
+---
+
+## :material-email-outline: Per-User Email Notifications { #per-user-email-notifications }
 
 Separate from the provider system above, BamDude can email the **owner** of a print directly when it completes / fails / stops — useful in shared / multi-tenant deployments where each user wants their own prints' mail in their personal inbox.
 
@@ -522,6 +603,7 @@ Separate from the provider system above, BamDude can email the **owner** of a pr
 - **Settings** → **Notifications** → **User Notifications** toggled on
 - The user has an email address on their account
 - The user holds the `notifications:user_email` permission (granted to **Administrators** + **Operators** by default — see [Authentication](authentication.md))
+- The user holds the `notifications:inbox` permission — the switches are a tab of the [notification centre](#the-notification-centre), and without it the page cannot be opened at all
 
 ### Supported Events
 
@@ -532,7 +614,7 @@ Separate from the provider system above, BamDude can email the **owner** of a pr
 | `user_print_failed` | Their print errored |
 | `user_print_stopped` | They cancelled their own print |
 
-The user can opt in/out of each event individually under their personal **Notifications** sidebar entry. Operators / admins control the global "User Notifications" master switch under **Settings** → **Notifications**.
+Each user opts in and out of the four events individually on the **Email** tab of their own [notification centre](#the-notification-centre) — the Bell in the sidebar, which used to open this list of switches and nothing else. Operators / admins control the global **User Notifications** master switch under **Settings** → **Notifications**.
 
 ---
 

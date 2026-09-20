@@ -55,7 +55,7 @@ BamDude — це **фарм-менеджер**, а не пасивний бек�
 
 [:material-printer-3d: **Додати принтер**<br><small>Підключіть свій перший принтер</small>](getting-started/first-printer.uk.md)
 
-[:material-arrow-up-circle: **Оновлення**<br><small>Міграція з Bambuddy</small>](getting-started/upgrading.uk.md)
+[:material-arrow-up-circle: **Оновлення**<br><small>Безпечне оновлення та відкат</small>](getting-started/upgrading.uk.md)
 
 </div>
 
@@ -92,7 +92,7 @@ G-code макроси, що активуються подіями друку (с
 
 <div class="feature-card" markdown>
 ### :material-bell-ring: [Сповіщення](features/notifications.uk.md)
-Багатопровайдерні сповіщення через Telegram, Discord, Email, Pushover, ntfy, CallMeBot (WhatsApp), Home Assistant та власні webhook. Тихі години й щоденний digest на кожен провайдер окремо.
+Багатопровайдерні сповіщення через Telegram, Discord, Email, Pushover, ntfy, Bark, CallMeBot (WhatsApp), Signal CLI API, Home Assistant та власні webhook. Тихі години й щоденний digest на кожен провайдер окремо.
 </div>
 
 <div class="feature-card" markdown>

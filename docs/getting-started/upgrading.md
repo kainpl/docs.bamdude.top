@@ -157,7 +157,7 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 | Version | Title | What changes | Seed | First needed in |
 |---|---|---|---|---|
-| **m000** | `bambuddy_to_bamdude_301` | Imports a legacy `bambuddy.db` / `bambutrack.db` if found next to where BamDude expects to find `bamdude.db`. No-op when no legacy DB is present. The original Bambuddy file is **renamed**, not deleted, so rollback is possible. | yes (import) | Forks/upgrades from Bambuddy 2.2.2 |
+| **m000** | `bambuddy_to_bamdude_301` | **Inert since 0.5.6 — does nothing at all.** It used to import a legacy `bambuddy.db` / `bambutrack.db`. The version-0 record is kept because the bootstrap step stamps it on every existing install. Reporting a Bambuddy file is a startup check, not this migration: a migration runs once, and the notice has to repeat for as long as the file is there. | no | — |
 | **m001** | `bamdude_baseline` | Creates the FTS index for archive search (FTS5 on SQLite, tsvector + GIN on PostgreSQL) and seeds the initial reference data (printer model catalog, default groups, etc.). | yes | Fresh BamDude installs |
 | **m002** | `bamdude_311` | BamDude 3.0.1 → 3.1.1 schema bump. Adds `printer_queues`, `macros`, swap-mode columns, stagger config, maintenance history tables, queue rework (`queue_id`), `printer_models` on maintenance types. Drops the dead `filaments` table. | yes | Upgrading from BamDude 3.0.x |
 | **m003** | `enforce_admin_user` | Codifies the always-on auth model: stamps `auth_enabled=true` + `setup_completed=true` if at least one admin exists; otherwise clears both flags so the next boot routes the user through `/setup`. Schema unchanged. | yes | All installs |
@@ -188,90 +188,23 @@ Migrations marked **seed** include a DML step (data backfill / normalisation) an
 
 ### From Bambuddy HE 3.0.x → BamDude 0.4.x
 
-`m000` imports your data, `m002` adapts the schema, `m005`+ are BamDude-native.
+Your `bambuddy.db` is BamDude's own — the startup rename turns it into `bamdude.db`, `m002` adapts the schema, `m005`+ are BamDude-native. (This is unaffected by the removal of the Bambuddy 2.2.2 import in 0.5.6; that only ever concerned upstream's files.)
 
 !!! warning "Always upgrade to **0.4.0.1** or later"
     Going from a legacy 3.0.1 install straight to **0.4.0** crashed at `m005_swap_profiles.seed()` with `no such column: printers.awaiting_plate_clear` — the seed used ORM `select(Printer)` which loaded every column from the *current* model, including columns that don't exist yet at m005's point in the chain. Fixed in 0.4.0.1 by rewriting the seed to use raw SQL with explicit column lists.
 
 ---
 
-## :material-swap-horizontal: Scenario 1 — Migrating from Bambuddy 2.2.2
+## :material-swap-horizontal: Coming from Bambuddy
 
-Place a Bambuddy DB file next to where BamDude expects to find it. On first boot the `m000_bambuddy_import` migration detects it, imports every table BamDude still uses, and renames the file to `bamdude.db`.
+**Not supported since 0.5.6.** BamDude forked from Bambuddy at 2.2.2 and the two schemas have diverged far past the point where a one-time import could be trusted, so the importer was removed.
 
-The original Bambuddy file is **left in place** (not deleted) so you can roll back.
+Start BamDude with an empty data directory and re-add your printers and spools.
 
-### via Docker Compose (source checkout)
+A `bambuddy.db` left sitting in the data directory is **not read and not touched**. BamDude's startup names it in the log on every start, so you can see it was found and ignored; remove it yourself once you no longer need it.
 
-```bash
-# 1. Stop Bambuddy
-cd /path/to/bambuddy && docker compose down
-
-# 2. Clone BamDude
-git clone https://github.com/kainpl/bamdude.git
-cd bamdude
-
-# 3. Copy your Bambuddy DB + archives into the bamdude_data volume
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 4. Start — migrations run automatically on first boot
-docker compose up -d
-
-# 5. Follow startup logs, look for "Bambuddy → BamDude import complete"
-docker compose logs -f bamdude
-```
-
-### via `docker run` (GHCR image)
-
-```bash
-# 1. Stop Bambuddy (however you run it)
-
-# 2. Create the new volume and seed it with your Bambuddy data
-docker volume create bamdude_data
-docker run --rm \
-  -v /path/to/bambuddy/data:/from \
-  -v bamdude_data:/to \
-  alpine cp -a /from/. /to/
-
-# 3. Start BamDude from GHCR
-docker run -d \
-  --name bamdude \
-  --network host \
-  -e TZ=Europe/Kyiv \
-  -v bamdude_data:/app/data \
-  -v bamdude_logs:/app/logs \
-  --restart unless-stopped \
-  ghcr.io/kainpl/bamdude:latest
-```
-
-### via native / self-install
-
-```bash
-# 1. Stop the Bambuddy service
-
-# 2. Install BamDude
-curl -fsSL https://raw.githubusercontent.com/kainpl/bamdude/main/install/install.sh \
-  -o install.sh && chmod +x install.sh
-sudo ./install.sh --yes       # defaults to /opt/bamdude
-
-# 3. Drop your Bambuddy DB into BamDude's data dir BEFORE first start
-sudo cp /path/to/bambuddy/data/bambuddy.db /opt/bamdude/data/
-sudo cp -r /path/to/bambuddy/data/archives /opt/bamdude/data/   # if you have one
-
-# 4. Fix ownership (installer runs as the bamdude service user)
-sudo chown -R bamdude:bamdude /opt/bamdude/data/
-
-# 5. Start the service — import migration fires automatically
-sudo systemctl start bamdude
-sudo journalctl -u bamdude -f
-```
-
-!!! tip "The import is one-shot"
-    `m000_bambuddy_import` checks for `bambuddy.db` / `bambutrack.db` and only runs if BamDude's own `bamdude.db` does not yet exist. After a successful import the file is renamed to `bamdude.db` and the migration is marked applied in the `_migrations` table, so a subsequent restart won't re-import.
+!!! note "This is not the same as upgrading from Bambuddy HE / BamDude 3.0.x"
+    Those are BamDude's own lineage, and they are still supported — see [Notable upgrade paths](#5-notable-upgrade-paths) above. A `bambuddy.db` written by BamDude 3.0.1 is recognised as BamDude's own and renamed to `bamdude.db`, exactly as before.
 
 ---
 
@@ -423,13 +356,99 @@ The version you roll back to **must be the one that created the backup** — oth
 
 The DB file lives at `data/bamdude.db`. SQLite pragmas: WAL journal, 15 s busy timeout, NORMAL synchronous. WAL means there's also `bamdude.db-wal` and `bamdude.db-shm` next to the main file — back up all three together (or stop the service first so the WAL is checkpointed into the main file).
 
-If a legacy `bambuddy.db` (or `bambutrack.db`) exists in the data directory but `bamdude.db` does not, BamDude renames it on first boot before any migration runs. This is how the `m000_bambuddy_import` path takes effect for native installs that swap the binary in-place.
+If a `bambuddy.db` (or `bambutrack.db`) written by **BamDude 3.0.1** exists in the data directory but `bamdude.db` does not, BamDude recognises it as its own and renames it to `bamdude.db` on first boot, before any migration runs — that is how native installs swapping the binary in-place carry their data forward. An upstream *Bambuddy* file is neither renamed nor read; see [Coming from Bambuddy](#coming-from-bambuddy).
 
-### PostgreSQL
+### PostgreSQL — bundled or your own
 
-Set `DATABASE_URL=postgresql+asyncpg://user:pass@host/db` in your environment. On first startup with a **fresh, empty** PostgreSQL database, BamDude auto-migrates content from the SQLite file if both are present (one-shot SQLite → PG copy). After the copy, only PG is used; the SQLite file is left in place for safety but no longer touched.
+`DATABASE_URL` has three states, and switching between them is a migration in its own right:
 
-Existing PG installs run the same migration chain on every boot — same `_migrations` table, same versions, same sequencing. The dialect helpers route DDL through PG-native paths where SQLite needs `recreate_table` (FK changes, column drops). PG-side migrations also enforce FK constraints that SQLite lets pass silently — `m018` is a good example, where SET NULL only affects the live behaviour on PG.
+| `DATABASE_URL` | Backend |
+|----------------|---------|
+| *empty / unset* | SQLite at `data/bamdude.db` |
+| `embedded` | the PostgreSQL 18 bundled with BamDude, under `DATA_DIR/postgres/18` |
+| `postgresql+asyncpg://…` | your own server |
+
+Existing PostgreSQL installs run the same migration chain on every boot — same `_migrations` table, same versions, same sequencing. The dialect helpers route DDL through PG-native paths where SQLite needs `recreate_table` (FK changes, column drops), and PG enforces FK constraints SQLite lets pass silently (`m018` is a good example, where SET NULL only really bites on PG).
+
+---
+
+### Moving from SQLite to PostgreSQL
+
+This is a **one-shot automatic copy**, the same for the bundled server and your own.
+
+1. Back up first (see [Backup commands](#backup-commands)). This is the one step nothing does for you.
+2. Set `DATABASE_URL` — `embedded`, or your server's URL. For an external server the **database must already exist**; BamDude creates tables, not databases.
+3. Restart BamDude.
+
+On that start BamDude sees a PostgreSQL with **no printers table content** (i.e. a fresh database) next to an existing `bamdude.db`, and copies everything across. In the log:
+
+```text
+Found local SQLite database at .../bamdude.db, migrating to PostgreSQL
+...
+SQLite -> PostgreSQL migration complete (78 tables). Original renamed to bamdude.db.migrated
+```
+
+Then the normal migration chain runs against PostgreSQL and the app comes up. On a real farm's data the copy takes on the order of a minute or two; the schema chain afterwards is what you usually wait for.
+
+!!! info "What the copy does"
+    Every table and row moves, with type conversion (SQLite `0/1` → boolean, datetime strings → timestamps). Auto-increment sequences are reset to the right values, and the full-text index is rebuilt as PostgreSQL `tsvector` + GIN. FTS5 virtual tables, WAL/SHM files and the migrations bookkeeping are not copied — they are SQLite-specific or recreated.
+
+!!! warning "Orphan rows are dropped, and it is logged"
+    PostgreSQL enforces foreign keys that SQLite never did, so rows pointing at records that no longer exist cannot come across. The importer purges them and says exactly what it dropped, for example:
+
+    ```text
+    Purging 3 orphan label_jobs rows before import
+    Purging 5 orphan spool_usage_history rows
+    Purging 51 orphan smart_plug_energy_snapshots rows
+    ```
+
+    This is by design — those rows were already unreachable. Read the lines; if a count looks wrong for your install, stop and restore the backup rather than carrying on.
+
+!!! danger "A failed import aborts the start — it does not fall through"
+    If the copy fails part-way, BamDude stops with an error instead of continuing as a fresh install. PostgreSQL is left as it is and **`bamdude.db` is not renamed**, so your SQLite data is untouched and you can simply unset `DATABASE_URL` and restart to get back exactly where you were. (Older builds could silently continue with an empty database — hence the rename happening only after a fully successful copy.)
+
+### Going back to SQLite
+
+Unset `DATABASE_URL` (or set it empty) and rename the file back:
+
+```bash
+mv data/bamdude.db.migrated data/bamdude.db
+```
+
+Anything created after the switch lives only in PostgreSQL, so take a backup from the running PostgreSQL instance first if you want to keep it — the UI backup format is portable and restores onto either backend.
+
+### The bundled server (`DATABASE_URL=embedded`) on upgrades
+
+| Path | What it holds |
+|------|---------------|
+| `DATA_DIR/postgres/18/` | the cluster, in a directory named after the PostgreSQL major |
+| `DATA_DIR/postgres/password` | the generated password (mode 0600) |
+| `DATA_DIR/postgres/port` | the port it settled on, unless you pinned `EMBEDDED_PG_PORT` |
+
+Back these up together with the rest of `data/` — the cluster is just files in your data directory, so a `tar` of `data/` with the service **stopped** is a valid copy. For a portable copy that restores onto any backend, use **Settings → Backup** instead.
+
+!!! warning "The PostgreSQL major is pinned"
+    BamDude refuses to open a cluster created by a different PostgreSQL major and says so plainly rather than touching the data:
+
+    ```text
+    the data directory ... was created by PostgreSQL 17, but the bundled server is
+    PostgreSQL 18. Refusing to start: a major upgrade needs a migration step, not a
+    silent open.
+    ```
+
+    A future major ships as its own release with an explicit migration step. Routine BamDude upgrades within the same major need nothing from you.
+
+!!! tip "Upgrade with the server stopped"
+    On a native install, `pip install -r requirements.txt` cannot replace the bundled PostgreSQL package while a server from it is still running — stop BamDude (which stops the server) before updating dependencies. `install/update.sh` already stops the service first.
+
+### Windows: the two service layouts
+
+The Windows installer offers the bundled server either as **its own `BamDudePostgres` service** (started before BamDude by the service manager) or as a **child of BamDude**. Re-running the installer keeps whichever you already use — it reads the current backend from the installed service's environment and preselects it, so an upgrade never quietly moves you back to SQLite. Uninstalling stops and removes both services, and asks separately (defaulting to *No*) whether to delete your data.
+
+### Docker
+
+- `DATABASE_URL=embedded` runs the bundled server inside the BamDude container, with its cluster in the existing `bamdude_data` volume under `postgres/`. The shipped compose file allows 60 s on `docker compose down` so it checkpoints cleanly — don't shorten that.
+- For PostgreSQL in its own container, use the shipped `docker-compose.postgres.yml` override. Mind the host-networking note in [PostgreSQL Support](../features/postgresql.md): with the default `network_mode: host`, BamDude cannot reach another container by its Compose name.
 
 ---
 
@@ -659,7 +678,7 @@ volumes:
 
 ### Why our legacy-DB rename doesn't always fire
 
-BamDude's startup (`migrations/__init__.py`) renames `bambuddy.db` / `bambutrack.db` to `bamdude.db` if found in the data directory. This **only fires when the legacy file is inside the new container's `/app/data`** — i.e. when the volume mount is correct. If the new container is reading from a fresh empty volume (Scenarios A, C, D, E), there is no legacy file to rename in the first place; the rename logic is irrelevant.
+BamDude's startup (`migrations/__init__.py`) renames `bambuddy.db` / `bambutrack.db` to `bamdude.db` — but **only when the file is BamDude's own 3.0.1-era database**, which it recognises by the `telegram_chats` table inside it. A genuine upstream *Bambuddy* file is left untouched and merely named in the log; see [Coming from Bambuddy](#coming-from-bambuddy). For a 3.0.1 file the rename then **only fires when the legacy file is inside the new container's `/app/data`** — i.e. when the volume mount is correct. If the new container is reading from a fresh empty volume (Scenarios A, C, D, E), there is no legacy file to rename in the first place; the rename logic is irrelevant.
 
 The fix is always the same shape: get the new container reading from the volume that holds your data, by either pointing at the existing volume (`external: true`) or copying the data into the new one.
 
@@ -673,8 +692,8 @@ The fix is always the same shape: get the new container reading from the volume 
 **`no such column` / `no such table` on startup**
 : A migration didn't run. Check the log for the stack trace; usually it means the file permissions on `data/` don't allow the service user to write. Fix with `sudo chown -R bamdude:bamdude /opt/bamdude/data`.
 
-**Bambuddy import didn't fire**
-: Either `bamdude.db` already exists (so the file was never scanned) or the file is not named `bambuddy.db` / `bambutrack.db`. Rename and restart — the migration check re-runs on every boot until applied.
+**A Bambuddy database sits in `data/` and nothing happened to it**
+: That is now the expected behaviour. The import was removed in 0.5.6 — BamDude's startup names the file in the log on every start and leaves it alone. Nothing will import it; delete it when you no longer need it.
 
 **Docker volume copy fails with `device or resource busy`**
 : Stop both the source and the destination container first. The `--rm` alpine container mounting both volumes cannot share the filesystem with a running service holding open files.

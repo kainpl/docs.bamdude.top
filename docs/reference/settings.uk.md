@@ -100,7 +100,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `runout_purge_grams` | `0` | Грами на резервну котушку за продувку при автоперемиканні AMS. 0 — вимкнено. |
 | `usage_events_retention_hours` | `72` | Скільки годин тримати журнал usage-подій завершеного друку (таймлайн runout/лотків) для розбору. |
 | `disable_filament_warnings` | `false` | Master mute для low / out-of-filament алертів. |
-| `prefer_lowest_filament` | `false` | Auto-присвоєння віддає перевагу котушці з найменшим залишком. |
+| `prefer_lowest_filament` | `true` | Після сумісності й переваги точного кольору авто-призначення віддає перевагу джерелу з найменшим залишком. Відстежувані AMS-котушки використовують грами, джерела лише з прошивкою — відсоток в окремому рівні. |
 | `default_filament_cost` | `25.0` | Per-kg fallback-ціна, коли поле `cost` котушки не задано. |
 | `auto_add_unknown_rfid` | `true` | Авто-додавати котушку в інвентар, коли AMS читає невідомий RFID-тег. Off → замість тихого створення показується картка підтвердження (матеріал / колір префілені). Див. [Інвентар котушок](../features/inventory.uk.md). |
 | `ams_humidity_good` | `40` | Зелена-зона humidity-поріг (%) на AMS-картках (≤ це значення). |
@@ -109,7 +109,8 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
-| `log_retention_days` | `30` | Скільки днів ротованих архівів `bamdude.log.*.gz` тримати до видалення. Діапазон 1–365. Застосовується при старті та на кожній опівнічній ротації. Див. [System info → Ротація логів](../features/system-info.uk.md#ротація-retention-логів). |
+| `inbox_retention_days` | `30` | Скільки днів історії центру сповіщень зберігається в кожного користувача. Діапазон 1-365. Прибирається раз на добу, незалежно від прочитаності. |
+| `log_retention_days` | `7` | Ліміт зберігання добових архівів `bamdude-YYYY-MM-DD.log`. Діапазон 1–365. Зайві архіви видаляються під час наступної успішної ротації. Див. [System info → Ротація логів](../features/system-info.uk.md#ротація-retention-логів). |
 | `bed_cooled_threshold` | `35.0` | Температура столу (°C), при якій стріляє нотифікація `bed_cooled`. |
 
 ## :material-bolt: Energy & cost

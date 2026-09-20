@@ -100,7 +100,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `runout_purge_grams` | `0` | Grams charged to the backup spool for the purge of an AMS auto-switch. 0 disables it. |
 | `usage_events_retention_hours` | `72` | How long a finished print's usage-event journal (runout/tray timeline) is kept for troubleshooting. |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
-| `prefer_lowest_filament` | `false` | Auto-assignment prefers the spool with the lowest remaining percentage. |
+| `prefer_lowest_filament` | `true` | After compatibility and exact-colour preference, auto-assignment favours the lowest remaining source. Tracked AMS spools use grams; firmware-only sources use percentage in a separate tier. |
 | `default_filament_cost` | `25.0` | Per-kg fallback cost when a spool's `cost` field is unset. |
 | `auto_add_unknown_rfid` | `true` | Auto-add a spool to inventory when an AMS reads an unknown RFID tag. Off → a confirmation card (material / colour pre-filled) is shown instead of silent creation. See [Spool Inventory](../features/inventory.md). |
 | `ams_humidity_good` | `40` | Green-zone humidity threshold (%) on AMS cards (≤ this value). |
@@ -109,7 +109,8 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `ams_temp_good` | `28.0` | Green-zone temperature threshold (°C) on AMS cards. |
 | `ams_temp_fair` | `35.0` | Yellow-zone temperature threshold. Above is red. |
 | `ams_history_retention_days` | `30` | How many days of AMS history to keep before pruning. |
-| `log_retention_days` | `30` | How many days of rotated `bamdude.log.*.gz` archives to keep before deletion. Range 1–365. Enforced on startup + each midnight rollover. See [System info → Log rotation](../features/system-info.md#log-rotation-retention). |
+| `inbox_retention_days` | `30` | How many days of in-app notification-centre history each person keeps. Range 1-365. Swept once a day, read or not. |
+| `log_retention_days` | `7` | Retention limit for daily `bamdude-YYYY-MM-DD.log` archives. Range 1–365. Excess archives are removed at the next successful rotation. See [System info → Log rotation](../features/system-info.md#log-rotation-retention). |
 | `bed_cooled_threshold` | `35.0` | Bed temperature (°C) at which the `bed_cooled` notification fires. |
 
 ## :material-bolt: Energy & cost

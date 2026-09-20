@@ -16,7 +16,7 @@ Two endpoints, each backed by `ExportService` (`backend/app/services/export.py`)
 | Endpoint | Returns |
 |----------|---------|
 | `GET /api/v1/archives/export` | One row per archive (the print log) |
-| `GET /api/v1/archives/stats/export` | Failure-analysis summary + correlation breakdowns + weekly trend |
+| `GET /api/v1/statistics/export` | Failure-analysis summary + correlation breakdowns + weekly trend |
 
 Both produce CSV by default and accept `?format=xlsx` for native Excel `.xlsx`.
 
@@ -108,7 +108,7 @@ These are the default fields emitted for every archive row. You can narrow the s
 
 ## :material-chart-bar: Stats Export Layout
 
-`GET /api/v1/archives/stats/export?days=30` produces:
+`GET /api/v1/statistics/export?days=30` produces:
 
 ```
 Metric                 | Value
@@ -167,7 +167,7 @@ Auth: `archives:read` permission. Send your JWT in `Authorization: Bearer …` o
 ### Stats export
 
 ```
-GET /api/v1/archives/stats/export
+GET /api/v1/statistics/export
 ```
 
 | Query param | Type | Default | Notes |

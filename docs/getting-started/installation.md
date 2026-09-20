@@ -74,6 +74,9 @@ Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, a
 
 That's it — the service is already running.
 
+!!! note "SmartScreen: the installer is not code-signed"
+    Windows SmartScreen shows *"Windows protected your PC"* on first run — click **More info → Run anyway**. The upstream binaries bundled inside the installer (embedded Python, NSSM, ffmpeg) carry their own vendors' signatures or none. What the app sends out, and how to switch telemetry off: [Privacy & Telemetry](../privacy.md).
+
 ### :material-folder-cog: What the installer lays down
 
 | What | Where |
@@ -133,7 +136,11 @@ nano .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | unset (SQLite) | Postgres URL, e.g. `postgresql+asyncpg://user:pass@host:5432/bamdude`. See [PostgreSQL Support](../features/postgresql.md). |
+| `DATABASE_URL` | unset (SQLite) | `embedded` for the bundled PostgreSQL 18, or a URL such as `postgresql+asyncpg://user:pass@host:5432/bamdude` for your own server. Empty means SQLite. See [PostgreSQL Support](../features/postgresql.md). |
+| `EMBEDDED_PG_PORT` | picked once, remembered | Pin the bundled server's port (e.g. `6432`) so `psql` or DBeaver can reach it. |
+
+!!! tip "The installer asks for you"
+    `install.sh` offers SQLite, the bundled PostgreSQL, or an external server — interactively, or unattended with `--db sqlite|embedded|external` (plus `--database-url` for the last). Re-running over an existing install keeps the backend you already use.
 
 #### Auth & reverse-proxy
 

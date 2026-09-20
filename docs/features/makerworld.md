@@ -144,8 +144,8 @@ Migration **m056** introduces this table; it also best-effort backfills historic
 
 Cover images are **downloaded locally** at import time and served from BamDude, not hot-linked from MakerWorld's CDN. Two flavours per row:
 
-- **Model cover** — the design's hero image. Saved to `<archive_dir>/library/makerworld-covers/<library_file_id>-cover.<ext>`.
-- **Variant cover** — the plate-level image (if MakerWorld publishes one separately). Saved to `<archive_dir>/library/makerworld-covers/<library_file_id>-variant.<ext>`.
+- **Model cover** — the design's hero image. Saved to `<data_dir>/library/makerworld-covers/<library_file_id>-cover.<ext>`.
+- **Variant cover** — the plate-level image (if MakerWorld publishes one separately). Saved to `<data_dir>/library/makerworld-covers/<library_file_id>-variant.<ext>`.
 
 History-tab cards prefer the variant cover, fall back to the model cover, then fall back to the library file's regular thumbnail. The image endpoints are:
 

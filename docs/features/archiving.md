@@ -151,7 +151,7 @@ The reason: the dispatch pipeline can patch a 3MF before upload — for example,
 - Reprinting from an existing archive copies the unpatched file into a fresh archive directory — new `content_hash` if the new run patches differently, but the same `source_content_hash`, so reprint history stays linked to the original design.
 - External prints (started on the printer screen / cloud / manual SD start) get a one-SELECT lookup at archive creation: if any prior archive on **any** printer matches by `content_hash` or `source_content_hash`, the chain is inherited (cross-printer in 0.4.2 — was per-printer before).
 
-The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "оригінальний друк" / "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Consequence: a printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are grouped together in the badge **and** share one on-disk file (see below).
+The Archives page exposes a "duplicates" filter that groups rows by this effective hash. The "Original print" badge, the `original_archive_id` link, the detail-endpoint duplicates list, and library-file print counts all bind on `source_content_hash` with `content_hash` only as a defence fallback for legacy NULL rows. Consequence: a printer-A unpatched run + a printer-B mesh-mode-disabled run of the same library file are grouped together in the badge **and** share one on-disk file (see below).
 
 ### Cross-printer file-on-disk dedup *(0.4.2)*
 
@@ -209,7 +209,7 @@ There are four recovery triggers — no periodic polling, so short prints aren't
 3. **`on_print_complete` last-chance** — right before SD cleanup runs at print end, BamDude tries one more download. The file is still on SD and the printer is no longer busy writing — highest-probability success window.
 4. **Manual** — `POST /api/v1/archives/{id}/retry-download`. The frontend exposes a "Retry 3MF download" menu item on the archive card, visible only when `file_path` is empty.
 
-Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first.
+Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first. So does the download for a print BamDude adopts at start-up (below).
 
 While the row has no file yet:
 
@@ -221,6 +221,17 @@ When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing
 
 !!! tip "Archives-page banner — \"prints archived without thumbnails\""
     When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
+
+### A print that started while BamDude was off
+
+Until 0.5.6, a print begun from the printer's screen or the slicer while BamDude was down left no trace at all — no archive, no queue row — because the only place an external print's archive is created is the print-start event, and on a fresh start BamDude deliberately does not treat the first "running" it sees as a start (doing so would re-archive a print already under way). Now the print that is running when BamDude comes up is **adopted**: it gets the same row an external print gets at start, the queue row is claimed, the 3MF and thumbnails are fetched through the recovery path above, and the archive card appears like any other.
+
+Two figures on such a row are honest rather than exact, and are marked so:
+
+- **Start time** is reconstructed once the 3MF arrives, from the slicer's estimate and the remaining time the printer reported when BamDude joined (`estimate − remaining` before that moment). If the file never arrives, the start stays unknown rather than invented, and the print's duration is left out of the statistics.
+- **Energy** counts only from the moment BamDude joined — the plug's meter had no earlier reading — so the figure is marked approximate.
+
+There is no late "print started" notification, and only the print in progress at start-up can be recovered; prints that finished during the outage are gone.
 
 ---
 
@@ -336,32 +347,25 @@ The viewer URL carries the archive reference, so refreshing the page keeps you i
 
 ## :material-printer-3d: Re-print with AMS Mapping
 
-The **Reprint** button on an archive card opens a filament comparison modal that maps the slicer's required filaments to the AMS slots currently loaded on the target printer.
+**Reprint** opens the ordinary Print dialog with the archive's source file and plate. It compares the used channels with the destination printer's current sources — AMS or supported external feeds.
 
 ### What the modal shows
 
-| Required (from 3MF) | → | Loaded (in AMS) | Status |
-|---|---|---|---|
-| PLA Red (25 g) | → | PLA Red (AMS-A slot 1) | :material-check:{ style="color: #4caf50" } |
-| PETG Black (10 g) | → | PETG White (AMS-B slot 2) | :material-alert:{ style="color: #ff9800" } different colour |
-| PLA Blue (5 g) | → | TPU (external) | :material-close:{ style="color: #f44336" } different type |
+The selected plate's required materials and colors, available slots, and nozzle bindings. Several plates have separate requirements and mappings: unused colors from other plates do not become requirements for this print.
 
 ### Status indicators
 
-| Icon | Meaning |
-|---|---|
-| :material-check:{ style="color: #4caf50" } | Type and colour both match (exact or fuzzy hex tolerance) |
-| :material-alert:{ style="color: #ff9800" } | Same type, different colour |
-| :material-close:{ style="color: #f44336" } | Different filament type or slot empty |
+Material and colour matches, a different colour, and empty or incompatible sources help you review the selection. Allowing another colour does not relax material or nozzle requirements. **Allow match by base material**, on by default, may use a resolvable family's `filament_type` instead of a custom profile name; with it off, a known profile variant remains required. A preview does not reserve a spool: the server checks the complete mapping again before start.
 
 ### Auto-matcher + manual override
 
-- **Auto-match** runs first: BamDude pairs each required filament to the best AMS slot by type then colour, with a fuzzy hex tolerance so a slightly off RGB (5 D printed→batch shift) still resolves as a match.
-- **Manual override per slot** — click any row's dropdown to pick a different AMS slot. Manually-overridden slots get a **blue ring** indicator so you can see at a glance which rows you touched.
-- **Slot labels** include AMS unit + slot number (e.g. `AMS-B Slot 3`) and respect any [Custom AMS Labels](ams.md#custom-ams-labels) you've set.
-- **Colour names** come from the [`color_catalog`](inventory.md#colour-catalog) (Bambu Lab manufacturer wins for shared hex; HSL fallback for unknown hex).
-- **Re-read AMS** button at the top of the modal pulls a fresh AMS state from the printer if you've swapped a spool since the modal opened.
-- **Multi-plate archives** show a plate-grid selector first — only the filaments used by the chosen plate are displayed for mapping; this prevents the cross-plate mis-mapping that would otherwise pull every plate's filament into one list.
+- Auto-matching looks for a complete mapping of every used channel; one physical slot cannot supply two channels at once.
+- A manual slot choice preserves physical intent. Another printer or plate needs a new mapping review.
+- Slot labels respect [Custom AMS Labels](ams.md#custom-ams-labels); color names come from the catalog.
+- Refresh AMS state in the dialog after changing a spool. Stale information does not permit an incompatible mapping to start.
+- Repeats retain available feed and color rules. Actual sources are checked for the new attempt; old AMS numbers do not move arbitrarily between machines.
+
+See [Filament Routing](filament-routing.md) for AMS, external-feed, dual-nozzle, and waiting examples.
 
 ### Print options
 
@@ -520,7 +524,7 @@ Designer attribution is searchable via the archive search box, so "all prints by
 
 ## :material-card-text: Archive Cards & Actions
 
-Each card shows the thumbnail, filename, printer / model line, duration, status badge, filament, tags, and project badge. The project badge is clickable — it jumps to the project's detail page (the click doesn't bubble up to open the archive modal).
+Each card shows the thumbnail, filename, printer / model line, duration, status badge, filament, tags, and the order badge. The order badge is clickable — it jumps to that order's page (the click doesn't bubble up to open the archive modal).
 
 The printer / model line is **uniform across provenance**: archives tied to a real BamDude printer used to render `H2D-1 GCODE …` while slicer-only uploads rendered `Sliced for X1C GCODE …` — two different shapes on the same line. The `Sliced for ` prefix is gone, so both now read as `<name-or-model> [bed-icon] GCODE <hash>` and scan identically regardless of whether the archive came from a live printer or a slicer-only upload.
 
@@ -532,8 +536,17 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
 | **Schedule** | Add to the print queue. |
 | :material-cube-outline: | Open the 3D preview. |
 | :material-download: | Download the 3MF file. Disabled if `file_path` is empty. |
-| :material-pencil: | Edit archive details (tags, notes, project, cost, photos). |
+| :material-pencil: | Edit archive details (tags, notes, order and line, cost, photos). |
 | :material-cloud-download: | Retry 3MF download. Only visible when `file_path = ""`. |
+
+!!! tip "An archive can be filed under an order — or counted into stock"
+    The edit dialog carries an **Order** and a **Line** picker, and the Archives page's selection
+    mode offers **Assign to order** for a whole batch — which is how a print started from the
+    printer's own screen reaches the order it belongs to. A print that **finished successfully**
+    and is filed under no order also offers **Count into stock**, putting its good parts onto the
+    product's shelf; a failed or cancelled print made nothing to count. See
+    [Filing a print under its order](projects.md#filing-a-print-under-its-order) and
+    [Free stock of parts](projects.md#free-stock-of-parts).
 
 !!! tip "Action button labels hide on narrow card widths"
     Reprint / Schedule / Slice labels appear only at viewport ≥ 1280 px where the responsive grid (`md:2 lg:3 xl:4`) gives cards real horizontal room. Below that the buttons render icon-only and the existing `title=` attribute serves as the hover tooltip — fixes the previous `"Re..."` / `"Sc..."` label-truncation on narrow viewports.
@@ -588,7 +601,7 @@ Changing the page size returns you to the first page — staying on page 3 of a 
 | **Duplicates** | Toggle: groups rows by `effective_hash` so multi-printer reprints collapse into one card with a count badge. |
 
 !!! tip "Batch operations"
-    Enter selection mode to tag, assign projects, or compare multiple archives at once.
+    Enter selection mode to tag, assign an order, or compare multiple archives at once.
 
 !!! tip "Quick search"
     Press ++slash++ to jump to the search box from anywhere on the page.
@@ -600,6 +613,7 @@ Changing the page size returns you to the first page — staying on page 3 of a 
 - [Print Queue](print-queue.md) — how queue items become archives, batch tracking, and the post-m019 archive ↔ queue stats refactor.
 - [File Manager](file-manager.md) — the library side of the link, including per-file `print_count` and `last_printed_at`.
 - [Swap Mode](swap-mode.md) — swap macro events and `execute_swap_macros` flags carried in `extra_data`.
+- [Orders, Products & Stock](projects.md) — filing a print under an order, and counting an order-less print into free stock.
 
 ---
 

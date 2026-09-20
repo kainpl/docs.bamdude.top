@@ -113,7 +113,8 @@ volumes:
 | `DEBUG` | `false` | Увімкнення логування налагодження |
 | `LOG_LEVEL` | `INFO` | Рівень логування: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `LOG_TO_FILE` | `true` | Запис логів у `/app/logs/bamdude.log` |
-| `DATABASE_URL` | не задано (SQLite) | URL PostgreSQL, наприклад `postgresql+asyncpg://user:pass@host:5432/bamdude` |
+| `DATABASE_URL` | не задано (SQLite) | URL на кшталт `postgresql+asyncpg://user:pass@host:5432/bamdude` — власний сервер; для окремого контейнера PostgreSQL є штатний override `docker-compose.postgres.yml` — зверніть увагу на застереження про host-мережу в [Підтримці PostgreSQL](../features/postgresql.md). `embedded` (PostgreSQL у комплекті з BamDude) у Docker **недоступний**: образ працює від root, а `initdb` від root запускатися відмовляється. |
+| `EMBEDDED_PG_PORT` | обирається один раз і запам'ятовується | Запінити порт вбудованого сервера (наприклад `6432`). |
 | `TRUSTED_PROXY_IPS` | порожньо | Розділені комою IP реверс-проксі, що довіряються для `X-Forwarded-For` (встановлюйте, коли BamDude стоїть за nginx / Caddy / Traefik) |
 | `AUTH_REFRESH_COOKIE_SECURE` | не задано (auto) | Примусово встановити прапорець `Secure` для refresh-cookie. За замовчуванням -- автовизначення зі схеми запиту. |
 | `MFA_ENCRYPTION_KEY` | не задано | URL-safe base64 Fernet-ключ для at-rest шифрування TOTP / OIDC секретів. |
@@ -241,6 +242,30 @@ services:
 !!! warning "DEBUG=true на першому boot великої інсталяції"
     `DEBUG=true` змушує BamDude перезапускати останню міграцію на кожному старті. Якщо в тебе тисячі архівів — це означає прохід по всім 3MF на диску перед тим, як API підніметься. Вимикай DEBUG після того, як міграція встояла.
 
+### Сайдкар для сповіщень Signal { #signal-notifications-sidecar }
+
+Провайдер сповіщень **Signal CLI API** говорить із сервером [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api). Якщо свого ще немає, штатний override `docker-compose.signal.yml` піднімає його поруч із BamDude; `docker-install.sh` пропонує це питанням (або прапорцем `--signal`). Вручну — додай override у `.env`:
+
+```env
+COMPOSE_FILE=docker-compose.yml:docker-compose.signal.yml
+SIGNAL_API_PORT=8081
+```
+
+(Разом із сайдкаром PostgreSQL — перелічи всі три файли.) Далі `docker compose up -d`. Два кроки лишаються за тобою:
+
+1. **Прив'яжи номер.** Відкрий `http://127.0.0.1:8081/v1/qrcodelink?device_name=BamDude` у браузері на сервері (з іншої машини: `ssh -L 8081:127.0.0.1:8081 user@server`, а потім той самий URL на ноутбуці) і відскануй QR-код у Signal → Налаштування → Пов'язані пристрої. Зареєструвати новий номер теж можна, але це SMS/голосова верифікація і зазвичай капча — див. [Сповіщення](../features/notifications.md#signal-cli-api).
+2. **Створи провайдера** в Settings → Notifications → Add → Signal CLI API, з прив'язаним номером як відправником і URL під свою платформу:
+
+| Платформа | Signal API URL |
+|---|---|
+| Linux, host-мережа (типово) | `http://127.0.0.1:8081` |
+| Docker Desktop, bridge-мережа | `http://signal-api:8080` |
+
+!!! warning "Лише loopback"
+    signal-cli-rest-api не має власної автентифікації — хто дістав порт, той шле з твого номера. Override публікує його лише на `127.0.0.1`; не міняй це на `0.0.0.0`. На Docker Desktop loopback-публікація теж лишається, бо вона потрібна твоєму **браузеру** для сторінки з QR.
+
+Ключі акаунта живуть у томі `bamdude_signal` і **не входять** у бекап BamDude — втратив том, прив'язуєшся заново. Сайдкар запускає signal-cli у режимі `json-rpc` (один довгоживучий демон, близько 160 МБ у пам'яті ще до прив'язки акаунта) і пінований до релізу, а не `latest`, бо оновлення signal-cli може вимагати повторної прив'язки.
+
 ---
 
 ## :material-help-circle: Вирішення проблем
@@ -267,7 +292,7 @@ docker compose exec bamdude ping YOUR_PRINTER_IP
 
 [:material-printer-3d: **Додайте принтер**<br><small>Підключіть свій перший принтер</small>](first-printer.uk.md)
 
-[:material-arrow-up-circle: **Оновлення**<br><small>Міграція з Bambuddy</small>](upgrading.uk.md)
+[:material-arrow-up-circle: **Оновлення**<br><small>Безпечне оновлення та відкат</small>](upgrading.uk.md)
 
 [:material-help-circle: **Вирішення проблем**<br><small>Виникли проблеми?</small>](../reference/troubleshooting.uk.md)
 
