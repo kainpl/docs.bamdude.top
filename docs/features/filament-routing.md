@@ -29,7 +29,19 @@ The Print and Auto forms have **Allow match by base material** (`allow_base_mate
 
 When it is on and the sliced profile resolves to a filament family, the matcher uses that family's `filament_type` — for example `PETG` — rather than the profile's display name, vendor, or product variant. A child profile inherits the family field through its base preset. Therefore a file sliced with a custom **333Print PETG** profile whose family says `PETG` can use a loaded **Generic PETG** spool. This is a material-class match; it does not claim that the two profiles have identical temperatures or calibration.
 
-When the switch is off, or the family cannot be resolved, the matcher uses the profile's own `type`. If both the file and the loaded source report a `tray_info_idx`, their known variants must then agree. An explicit per-channel material override also intentionally uses the override instead of the family's material class.
+When the family cannot be resolved, the matcher uses the profile's own `type` — the base material the file declares, such as `ABS`. The switch alone still decides whether the profile id may refuse: with it on, no `tray_info_idx` comparison happens, family or no family.
+
+This is the ordinary case rather than an exotic one. BamDude ships the base catalogue — every Bambu and Orca id and every generic, offline, on every install — while the second tier fills through one account's cloud link. A plate sliced on somebody else's copy of the slicer therefore carries a preset id your install has never seen and never will.
+
+!!! warning "Until 0.6.0.1 an unresolvable profile was read as if you had switched this off"
+    Worse than losing the relaxation: switching off also re-arms the id
+    comparison the option exists to suppress. A preset id from somebody's
+    slicer never equals the id a spool reports, so the refusal was permanent.
+    Such a plate was turned away by every printer that had the right material
+    loaded, and the refusal named the filament type — the one thing that did
+    match. Update to 0.6.0.1; nothing needs to be re-queued.
+
+When the switch is off, the matcher uses the profile's own `type`, and if both the file and the loaded source report a `tray_info_idx`, their known variants must agree. An explicit per-channel material override also intentionally uses the override instead of the family's material class.
 
 Material names are compared case-insensitively through the small compatibility table shared by routing paths (currently `PA-CF`, `PA12-CF`, and `PAHT-CF` form one group). Other product variants are not made interchangeable merely because exact colour matching is off.
 
@@ -80,6 +92,8 @@ The Auto form groups printers by **model, nozzle count, and AMS state**:
 - **AMS state unknown**.
 
 For example, ten P2S printers with AMS fitted on only five appear in separate configuration groups. P1P, P1S, and P2S remain separate models; a similar name is not a model match.
+
+A refusal names the channel, what it needed and what is loaded — *Channel 1 needs ABS (Pa240002); loaded: PETG (GFG99), ABS (GFB99), ABS (GFB00)* — in the Auto queue's waiting reason, in the log, and on a queue row deferred at dispatch. The preview groups printers, so there it names what the file needs without listing any one printer's trays.
 
 **Compatible** means the loaded sources can satisfy the whole plate under its rules. **Ready** also accounts for the printer's current state. Plate-clear confirmation, drying, and staggered start can hold a compatible job; see [Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
 
