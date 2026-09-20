@@ -26,7 +26,10 @@ theme:
   name: material
   custom_dir: overrides
   logo: assets/logo.svg
-  favicon: assets/favicon.ico
+  # ⚠️ No `favicon:` here on purpose. The theme's only use of it is one
+  # `<link rel="icon">` emitted LAST in `site_meta`, and the tab icons have
+  # to come in the landing's order with the SVG first — so that block is
+  # overridden in `overrides/main.html` and declares all three itself.
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
