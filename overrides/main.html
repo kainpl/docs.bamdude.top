@@ -1,6 +1,54 @@
 {% extends "base.html" %}
 
 {#
+  The icon links, in the same order and under the same names as bamdude.top.
+  The theme emits exactly one — `theme.favicon`, last in this block — so the
+  SVG could never come first from `extrahead`, and the browser picks by order
+  among the ones it understands. Overriding the block is the only way to say
+  it in our order.
+
+  ⚠️ Copied from material 9.7.7's `base.html`. On a theme upgrade, diff that
+  block against this one: everything except the three icon lines has to stay
+  whatever the theme now says.
+#}
+{% block site_meta %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  {% if page.meta and page.meta.description %}
+    <meta name="description" content="{{ page.meta.description }}">
+  {% elif config.site_description %}
+    <meta name="description" content="{{ config.site_description }}">
+  {% endif %}
+  {% if page.meta and page.meta.author %}
+    <meta name="author" content="{{ page.meta.author }}">
+  {% elif config.site_author %}
+    <meta name="author" content="{{ config.site_author }}">
+  {% endif %}
+  {% if page.canonical_url %}
+    <link rel="canonical" href="{{ page.canonical_url }}">
+  {% endif %}
+  {% if page.previous_page %}
+    <link rel="prev" href="{{ page.previous_page.url | url }}">
+  {% endif %}
+  {% if page.next_page %}
+    <link rel="next" href="{{ page.next_page.url | url }}">
+  {% endif %}
+  {% if config.extra.alternate is iterable %}
+    {% for alt in config.extra.alternate %}
+      <link rel="alternate" href="{{ alt.link | url }}" hreflang="{{ alt.lang | d(lang.t('language')) }}">
+    {% endfor %}
+  {% endif %}
+  {% if "rss" in config.plugins %}
+    <link rel="alternate" type="application/rss+xml" title="{{ lang.t('rss.created') }}" href="{{ 'feed_rss_created.xml' | url }}">
+    <link rel="alternate" type="application/rss+xml" title="{{ lang.t('rss.updated') }}" href="{{ 'feed_rss_updated.xml' | url }}">
+  {% endif %}
+  <link rel="icon" href="{{ 'brand/svg/mark-adaptive.svg' | url }}" type="image/svg+xml">
+  <link rel="icon" href="{{ 'brand/favicon.ico' | url }}" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ 'brand/png/apple-touch-icon.png' | url }}">
+  <meta name="generator" content="mkdocs-{{ mkdocs_version }}, mkdocs-material-9.7.7">
+{% endblock %}
+
+{#
   x-default beside the en/uk pair: the page Google shows when neither
   language matches. It cannot live in `config.extra.alternate` — the language
   switcher renders that list verbatim and would grow a third, bogus entry —
@@ -9,25 +57,6 @@
 #}
 {% block extrahead %}
   {{ super() }}
-  {#
-    The same icon set the landing site declares, so a docs tab and a
-    bamdude.top tab show the SAME favicon. The theme emits only
-    `theme.favicon` (the .ico) in `site_meta`; browsers that understand an SVG
-    icon prefer it, and ours is the adaptive mark — it flips ink and accent
-    with `prefers-color-scheme`, which a flat .ico cannot do. Declared here
-    rather than as `theme.favicon` because that setting takes one file and the
-    .ico still has to be there for the ones that want it.
-  #}
-  {#
-    ⚠️ The filename carries the design, because the server answers this path
-    with `Cache-Control: immutable, max-age=2592000`. A browser that fetched
-    the old icon never asks again for a month, so REPLACING the bytes at a
-    fixed path changes nothing for anyone who has already been here — measured
-    2026-09-20, when a deployed icon stayed invisible in an open tab while
-    curl showed the new file live. Changing an icon means changing this name.
-  #}
-  <link rel="icon" href="{{ 'assets/icon-tile.svg' | url }}" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="{{ 'assets/apple-touch-icon.png' | url }}">
   {% for alt in config.extra.alternate %}
     {% if alt.lang == "en" %}
       <link rel="alternate" hreflang="x-default" href="{{ alt.link | url }}">
