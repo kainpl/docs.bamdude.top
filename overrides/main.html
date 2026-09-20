@@ -9,6 +9,17 @@
 #}
 {% block extrahead %}
   {{ super() }}
+  {#
+    The same icon set the landing site declares, so a docs tab and a
+    bamdude.top tab show the SAME favicon. The theme emits only
+    `theme.favicon` (the .ico) in `site_meta`; browsers that understand an SVG
+    icon prefer it, and ours is the adaptive mark — it flips ink and accent
+    with `prefers-color-scheme`, which a flat .ico cannot do. Declared here
+    rather than as `theme.favicon` because that setting takes one file and the
+    .ico still has to be there for the ones that want it.
+  #}
+  <link rel="icon" href="{{ 'assets/icon.svg' | url }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ 'assets/apple-touch-icon.png' | url }}">
   {% for alt in config.extra.alternate %}
     {% if alt.lang == "en" %}
       <link rel="alternate" hreflang="x-default" href="{{ alt.link | url }}">
