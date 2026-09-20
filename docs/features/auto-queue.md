@@ -67,7 +67,7 @@ Open Print for a library file or archive and choose **Auto**.
 | Target Location | An optional printer-location restriction. |
 | Filament source | Automatic: AMS or external spool; AMS only; External spools only. |
 | Force exact color match | Off by default: exact colours are preferred, but another compatible colour is allowed. Material and nozzle requirements remain. |
-| Allow match by base material | On by default: when the sliced profile resolves to a family, compare its family `filament_type` such as `PETG`, not its vendor or profile name. Turn it off to require the profile type and, where known, its variant. |
+| Allow match by base material | On by default: compare base materials, such as `PETG`, rather than vendor or profile names — the family's material when the catalogue knows the profile, the material the file declares when it does not. No profile id refuses while this is on. Turn it off to require the profile type and, where known, its variant. |
 | Plate channels | Material and color for each used channel; **Require this color** pins one channel's color. |
 
 Below the fields, **AMS connected / Without AMS / AMS state unknown** groups show compatible and ready counts separately, with reasons. A valid job may be added with zero counts and wait. A source-reading error must be resolved before adding it.
@@ -162,7 +162,7 @@ Among eligible candidates, readiness comes first, then the best color match. See
 
 ### Color, material, and profile variant
 
-Colour and material are separate decisions. With **Allow match by base material** on, a resolvable family contributes its `filament_type`, so a custom PETG profile and Generic PETG can match despite different names or vendors. With it off, a known `tray_info_idx` variant remains a restriction. A missing variant is never invented. See [material matching](filament-routing.md#material) and [colour rules](filament-routing.md#colors).
+Colour and material are separate decisions. With **Allow match by base material** on, a custom PETG profile and Generic PETG match despite different names or vendors — including a profile this install cannot resolve at all, which is the usual shape when several people slice for one farm. With it off, a known `tray_info_idx` variant remains a restriction. A missing variant is never invented. See [material matching](filament-routing.md#material) and [colour rules](filament-routing.md#colors).
 
 ---
 
