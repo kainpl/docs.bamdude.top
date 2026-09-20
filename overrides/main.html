@@ -18,7 +18,15 @@
     rather than as `theme.favicon` because that setting takes one file and the
     .ico still has to be there for the ones that want it.
   #}
-  <link rel="icon" href="{{ 'assets/icon.svg' | url }}" type="image/svg+xml">
+  {#
+    ⚠️ The filename carries the design, because the server answers this path
+    with `Cache-Control: immutable, max-age=2592000`. A browser that fetched
+    the old icon never asks again for a month, so REPLACING the bytes at a
+    fixed path changes nothing for anyone who has already been here — measured
+    2026-09-20, when a deployed icon stayed invisible in an open tab while
+    curl showed the new file live. Changing an icon means changing this name.
+  #}
+  <link rel="icon" href="{{ 'assets/icon-tile.svg' | url }}" type="image/svg+xml">
   <link rel="apple-touch-icon" href="{{ 'assets/apple-touch-icon.png' | url }}">
   {% for alt in config.extra.alternate %}
     {% if alt.lang == "en" %}
