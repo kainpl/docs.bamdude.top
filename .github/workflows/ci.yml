@@ -33,11 +33,16 @@ jobs:
       - name: Build (strict)
         run: mkdocs build --strict
 
-      # The header mark, the favicon and the JSON-LD Organization.logo are the
-      # docs' only visible identity; the third must equal the landing's URL
+      # The header mark, the tab icons and the JSON-LD Organization.logo are
+      # the docs' only visible identity; the last must equal the landing's URL
       # character for character (both sites declare the same @id).
+      #
+      # The three brand/ paths are the landing's own, deliberately: the two
+      # sites declare the same files under the same names so a docs tab and a
+      # bamdude.top tab are the same picture. Moving one without the other is
+      # what this step is here to catch — it caught exactly that on 2026-09-20.
       - name: Identity is wired into the built index
         run: |
-          for needle in 'assets/logo.svg' 'assets/favicon.ico' 'https://bamdude.top/brand/png/icon-tile-512.png'; do
+          for needle in 'assets/logo.svg' 'brand/svg/mark-adaptive.svg' 'brand/favicon.ico' 'brand/png/apple-touch-icon.png' 'https://bamdude.top/brand/png/icon-tile-512.png'; do
             grep -q -- "$needle" site/index.html || { echo "missing in site/index.html: $needle" >&2; exit 1; }
           done
