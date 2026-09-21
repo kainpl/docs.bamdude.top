@@ -21,6 +21,9 @@ In the Auto form, **Filament source** offers:
 
 Automatic source does not mean that an empty AMS slot or an unknown configuration is acceptable. Each used channel needs a loaded source with the required material and the correct nozzle binding.
 
+!!! note "Filament Track Switch (FTS)"
+    When FTS is installed, any loaded AMS source can feed either nozzle, so BamDude removes the ordinary per-nozzle AMS restriction. External holders are different: firmware does not permit an external-holder print while FTS is connected, including a holder physically installed after the switch. They are therefore excluded from automatic and external-only routing, the mapping picker, Auto-Queue and the final pre-print check. Removing FTS restores the ordinary external-feed rules after the printer reports the change.
+
 An explicit physical slot selection stays tied to that printer and source. BamDude does not silently replace it with another tray or external spool.
 
 An ordinary add to a printer is not a hand pin. A pin is a slot the operator chose, or a mapping stored with the job — a Bambu Studio *Send to printer* job with *save AMS mapping* on, for example. With base-material matching on, such a job is no longer sent back for review merely because the spool in that slot was re-tagged with another profile; its material, colour, nozzle binding and slot identity are checked exactly as before.
@@ -66,6 +69,7 @@ The number of copies never changes these rules. A batch of one and a batch of on
 | Two channels on one nozzle; enough suitable AMS slots | Can route when each channel has its own compatible slot. |
 | A supported dual-nozzle printer; AMS on one nozzle and external on the other | Can route when the file and current printer state establish those nozzle bindings, with automatic source rules. |
 | A supported dual-nozzle printer; one external feed for each nozzle | Can route if the plate uses those two feeds and both meet its requirements. |
+| An FTS-equipped printer; enough suitable AMS slots | Can route to either nozzle through FTS. External holders cannot be used while FTS is connected. |
 
 Dual-nozzle support follows the printer's capabilities; it is not limited to one model. Two available spools do not help if they feed the wrong nozzle. Missing nozzle or feed information causes a wait or a source error, depending on which information is missing.
 

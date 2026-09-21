@@ -285,12 +285,14 @@ Unknown AMS state is different from confirmed absence of AMS. Fresh information 
 
 The Filament Track Switch is an external dual-nozzle accessory that sits between an AMS and the printer's extruders, dynamically routing any AMS slot to either nozzle. With FTS, the AMS is no longer wired to a single extruder.
 
-BamDude detects the FTS via MQTT key `print.device.fila_switch` and **auto-suppresses the per-nozzle filter** in the print modal:
+BamDude treats the firmware's `print.aux` bit 29 as the authoritative FTS presence signal. It keeps compatibility with an older positive `print.device.fila_switch` report when that bit is absent, but a reported removal clears the accessory state rather than leaving a stale switch on screen. With FTS, BamDude **auto-suppresses the per-nozzle filter for AMS sources** in the print modal:
 
 - **Without FTS** — each AMS feeds a fixed nozzle, dropdown only shows trays on the matching nozzle (prevents the *position of left hotend is abnormal* failure from cross-nozzle assignment).
-- **With FTS** — every loaded slot is selectable for any nozzle, since FTS handles routing on the fly.
+- **With FTS** — every loaded **AMS** slot is selectable for either nozzle, since FTS handles routing on the fly. The external holders are unavailable: the printer firmware does not support an external-holder print while FTS is installed, even if the holder is physically spliced after the switch.
 
-**Routing badges:** slots currently fed into a track display `[L]` or `[R]` next to the colour swatch and in the dropdown, indicating which extruder FTS is currently routing them to. Idle slots (not in any track) show no badge. Detection is automatic and re-evaluated on every MQTT push, so plugging in or removing the accessory updates the dropdown behaviour without a refresh.
+**Routing badges:** slots currently fed into a track display `[L]` or `[R]` next to the colour swatch and in the dropdown, indicating which extruder FTS is currently routing them to. Idle slots (not in any track) show no badge. Detection is automatic and state changes reach both the initial status and live updates, so plugging in or removing the accessory updates the dropdown behaviour without a refresh.
+
+On models whose firmware declares the extra left-nozzle TPU check, a plain `TPU` job on the left waits until that firmware capability is positively reported. The same job on the right needs no extra FTS check. A material merely named `TPU-AMS` is not treated as plain TPU.
 
 ---
 
