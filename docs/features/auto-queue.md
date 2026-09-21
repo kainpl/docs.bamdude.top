@@ -67,10 +67,10 @@ Open Print for a library file or archive and choose **Auto**.
 | Target Location | An optional printer-location restriction. |
 | Filament source | Automatic: AMS or external spool; AMS only; External spools only. |
 | Force exact color match | Off by default: exact colours are preferred, but another compatible colour is allowed. Material and nozzle requirements remain. |
-| Allow match by base material | On by default: compare base materials, such as `PETG`, rather than vendor or profile names — the family's material when the catalogue knows the profile, the material the file declares when it does not. No profile id refuses while this is on. Turn it off to require the profile type and, where known, its variant. |
+| Allow match by base material | On by default: compare base materials, such as `PETG`, rather than vendor or profile names — always the material the file itself declares. No profile id refuses while this is on. Turn it off to require the same profile wherever the file and the loaded source both name one. |
 | Plate channels | Material and color for each used channel; **Require this color** pins one channel's color. |
 
-Below the fields, **AMS connected / Without AMS / AMS state unknown** groups show compatible and ready counts separately, with reasons. A valid job may be added with zero counts and wait. A source-reading error must be resolved before adding it.
+Below the fields, **AMS connected / Without AMS / AMS state unknown** groups show compatible and ready counts separately, with reasons. **Add to Auto queue** stays enabled while the answer is merely unknown — printers offline, telemetry still arriving — and while a job would only be waiting; a valid job may be added with zero ready counts and wait. It is disabled, with the reason, when every candidate is conclusively incompatible, and **Queue anyway — it will wait for the right filament** adds it after a confirmation; a plate sliced for a model no printer here can take has no such override. The four states are set out under [the compatibility preview](filament-routing.md#preview). A source-reading error must be resolved before adding it.
 
 For a **library file**, the same dialog carries an **Order** field — the open orders that still
 need this plate, ranked so the ones that need it come first (a reprint from an archive keeps the

@@ -23,13 +23,15 @@ Automatic source does not mean that an empty AMS slot or an unknown configuratio
 
 An explicit physical slot selection stays tied to that printer and source. BamDude does not silently replace it with another tray or external spool.
 
+An ordinary add to a printer is not a hand pin. A pin is a slot the operator chose, or a mapping stored with the job — a Bambu Studio *Send to printer* job with *save AMS mapping* on, for example. With base-material matching on, such a job is no longer sent back for review merely because the spool in that slot was re-tagged with another profile; its material, colour, nozzle binding and slot identity are checked exactly as before.
+
 ## Match material by profile or family {#material}
 
 The Print and Auto forms have **Allow match by base material** (`allow_base_material_match`). It is **on by default**.
 
-When it is on and the sliced profile resolves to a filament family, the matcher uses that family's `filament_type` — for example `PETG` — rather than the profile's display name, vendor, or product variant. A child profile inherits the family field through its base preset. Therefore a file sliced with a custom **333Print PETG** profile whose family says `PETG` can use a loaded **Generic PETG** spool. This is a material-class match; it does not claim that the two profiles have identical temperatures or calibration.
+When it is on, the comparison is between **the material the file itself declares** — `PETG`, `ABS`, `PA-CF` — and the material of each loaded source, after the small equivalence table described below. The profile either side carries plays no part: a profile id is neither a condition for compatibility nor a preference when a source is chosen. A file sliced with a custom **333Print PETG** profile therefore prints from a loaded **Generic PETG** spool. This is a material-class match; it does not claim that the two profiles have identical temperatures or calibration.
 
-When the family cannot be resolved, the matcher uses the profile's own `type` — the base material the file declares, such as `ABS`. The switch alone still decides whether the profile id may refuse: with it on, no `tray_info_idx` comparison happens, family or no family.
+The catalogue is still consulted, and where it knows a profile the preview reports the family it resolved to, so you can see what the file was sliced with. That family is reported, never substituted: an unresolvable profile changes nothing about the match, because the file declares its material either way.
 
 This is the ordinary case rather than an exotic one. BamDude ships the base catalogue — every Bambu and Orca id and every generic, offline, on every install — while the second tier fills through one account's cloud link. A plate sliced on somebody else's copy of the slicer therefore carries a preset id your install has never seen and never will.
 
@@ -41,7 +43,7 @@ This is the ordinary case rather than an exotic one. BamDude ships the base cata
     loaded, and the refusal named the filament type — the one thing that did
     match. Update to 0.6.0.1; nothing needs to be re-queued.
 
-When the switch is off, the matcher uses the profile's own `type`, and if both the file and the loaded source report a `tray_info_idx`, their known variants must agree. An explicit per-channel material override also intentionally uses the override instead of the family's material class.
+When the switch is off, the profile becomes a condition of its own: wherever both the file and the loaded source name one (`tray_info_idx`), they must name the same one. This now reads identically in the dialog and on the printer's own routing — until 0.6.0.1 the dialog applied the rule only where the profile could be resolved to a family, so it could report a printer as *ready* for a plate that printer then refused. An explicit per-channel material override still applies instead of the material the file declares for that channel.
 
 Material names are compared case-insensitively through the small compatibility table shared by routing paths (currently `PA-CF`, `PA12-CF`, and `PAHT-CF` form one group). Other product variants are not made interchangeable merely because exact colour matching is off.
 
@@ -97,7 +99,18 @@ A refusal names the channel, what it needed and what is loaded — *Channel 1 ne
 
 **Compatible** means the loaded sources can satisfy the whole plate under its rules. **Ready** also accounts for the printer's current state. Plate-clear confirmation, drying, and staggered start can hold a compatible job; see [Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
 
-The preview does not reserve a printer. A valid file can be queued with zero compatible or ready printers, or when live compatibility is temporarily unavailable. It waits for suitable conditions. Unknown AMS state is never treated as proof that no AMS is connected.
+The preview does not reserve a printer, and the **Print / Add to queue** button follows it rather than the printer's current occupation. A busy printer, an uncleared plate, drying and staggered start never disable the button: those are reasons a job waits, not reasons it cannot be queued.
+
+| What the check found | The button |
+|---|---|
+| **Compatible**, or compatible but only waiting | Enabled. |
+| **Not yet known** — the printer is offline, its telemetry is still arriving, the preview could not be built, or several printers are selected at once | Enabled, and no claim is made about the outcome. |
+| **Nothing loaded can supply it** — a used channel has no source on the selected printer as it is loaded now; in Auto, every candidate is conclusively incompatible | Disabled, with the reason beside it in the same words the routing uses, and **Queue anyway — it will wait for the right filament** under it. |
+| **Wrong machine for this file** — the plate was sliced for a model this printer cannot take (X1, X1C, X1E, P1P and P1S count as one family) | Disabled, with no override. |
+
+**Queue anyway** asks for confirmation and then does what queueing has always done: the job is added and waits for the right filament. On **Print now** it is added to that printer's queue rather than started directly — a direct print that has to wait would end cancelled — so a file uploaded with *print and delete* stays in the library until the queued job runs. While **editing** an existing job the verdict is shown but never blocks saving. In a batch that would otherwise answer several plates silently, a blocked member opens its own dialog instead of stalling the run.
+
+So no valid file is turned away: it waits for suitable conditions, exactly as a job queued with zero compatible or ready printers always has, and the same holds when live compatibility is temporarily unavailable. Unknown AMS state is never treated as proof that no AMS is connected.
 
 ## Plate selection and source errors {#plates}
 
