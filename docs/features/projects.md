@@ -171,7 +171,7 @@ Orders have no export: they are local to the farm that took them.
 
 ## :material-lightbulb-on: What to print next
 
-Under the lines, each line carries a plan: the plates that would cover what it still needs, ranked by **how many useful parts each one makes per hour of print time**. Everything already printed, running, queued for that line or reserved from stock is subtracted first, so a plan you have half-sent stops asking for the prints you already sent.
+Under the lines, each line carries a plan: the plates that would cover what it still needs. Where the farm has a usable lane for more than one recipe, the first choice is a **finish-sooner heuristic**: its printer models, how many lanes they have and work already occupying them come before the old useful-parts-per-hour tie-break. This can deliberately spend more machine-hours to finish the order earlier; it is not an optimisation proof or a dispatch reservation. Everything already printed, running, queued for that line or reserved from stock is subtracted first, so a plan you have half-sent stops asking for the prints you already sent.
 
 | Element | Behaviour |
 |---|---|
@@ -183,8 +183,8 @@ Under the lines, each line carries a plan: the plates that would cover what it s
 
 A plan that stops at its safety limit says so, instead of looking exactly like a finished one.
 
-!!! warning "Nothing here asks whether a printer is free"
-    Choosing a queue says where the work is filed; whether a machine can take it is decided at dispatch, exactly as for anything else in a queue. See [Auto-Queue → Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
+!!! warning "The plan sees capacity; dispatch still decides readiness"
+    A read-only farm snapshot supplies active, unpaused, AutoQueue-eligible lanes and their current work. An offline printer is not discarded merely for being offline; archived, maintenance, paused and AutoQueue-disabled printers receive no new planned work. Filament, live connectivity and every final queue gate remain dispatch-time checks. If no usable lane matches the only recipe, BamDude keeps that recipe visible so the forecast can say why it cannot run yet. See [Auto-Queue → Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 

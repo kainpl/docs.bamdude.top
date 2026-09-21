@@ -20,7 +20,7 @@ Say the number once — **100** — and have the whole thing land in the queue: 
 | Feature | Its part |
 |---|---|
 | **Calculate** in the [File Manager](../features/file-manager.md) | The wizard: from a selection of sliced files to an order with a plan, without authoring a product by hand. |
-| [What to print next](../features/projects.md#what-to-print-next) — the plan block | Picks plates to cover what is still needed, ranked by useful parts per hour; the same block the order page shows. |
+| [What to print next](../features/projects.md#what-to-print-next) — the plan block | Picks plates to cover what is still needed using the farm's usable model lanes and current load; the same block the order page shows. |
 | [Alternative files per printer model](../features/projects.md#alternative-files-per-printer-model) | One plan row, five candidate files — and the split of the row's count between them. |
 | The farm's split proposal | The forecast's suggestion of how to divide the row between models, applied with one press. |
 | [Auto-queue](../features/auto-queue.md) | Takes each queued copy to a free printer of the model its file was sliced for. |
@@ -33,7 +33,7 @@ Say the number once — **100** — and have the whole thing land in the queue: 
 
     *If exactly one catalog product already links all five files, the wizard offers **Use product “…”** instead of creating a one-off one.*
 
-3. **Calculate.** The wizard creates a product for the job — a one-off that never appears in the catalog — and an order with one line, and the dialog turns into step ***Plan***: the same plan block the order page has.
+3. **Calculate.** The wizard creates a product for the job — a one-off that never appears in the catalog — and an order with one line, and the dialog turns into step ***Plan***: the same plan block the order page has. Its first recommendation sees active AutoQueue-capable models and work already on them; a temporarily offline printer is still capacity, while an archived, maintenance, paused or AutoQueue-disabled one is not.
 
 4. **Read the plan.** One row: a plate, *Covers: bracket ×6*, a count of **17** (six a plate, a hundred wanted — the seventeenth plate makes two spare), time, filament and cost **per print**, and *ready ≈* for the row. Because the five files make the same parts, the row carries a **File** switch listing all five, each labelled with its printer model.
 
