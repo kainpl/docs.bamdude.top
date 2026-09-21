@@ -25,15 +25,15 @@ An explicit physical slot selection stays tied to that printer and source. BamDu
 
 An ordinary add to a printer is not a hand pin. A pin is a slot the operator chose, or a mapping stored with the job — a Bambu Studio *Send to printer* job with *save AMS mapping* on, for example. With base-material matching on, such a job is no longer sent back for review merely because the spool in that slot was re-tagged with another profile; its material, colour, nozzle binding and slot identity are checked exactly as before.
 
-## Match material by profile or family {#material}
+## Match by base material {#material}
 
 The Print and Auto forms have **Allow match by base material** (`allow_base_material_match`). It is **on by default**.
 
 When it is on, the comparison is between **the material the file itself declares** — `PETG`, `ABS`, `PA-CF` — and the material of each loaded source, after the small equivalence table described below. The profile either side carries plays no part: a profile id is neither a condition for compatibility nor a preference when a source is chosen. A file sliced with a custom **333Print PETG** profile therefore prints from a loaded **Generic PETG** spool. This is a material-class match; it does not claim that the two profiles have identical temperatures or calibration.
 
-The catalogue is still consulted, and where it knows a profile the preview reports the family it resolved to, so you can see what the file was sliced with. That family is reported, never substituted: an unresolvable profile changes nothing about the match, because the file declares its material either way.
+The catalogue may supply display information, but never replaces the declared material. No Bambu Cloud or Orca Cloud sync is required: files from other people's slicers with unknown local or cloud profiles match using their structured material field — `PETG` to `PETG`, `ABS` to `ABS`. A display name such as `Test-test` is never used to infer a material.
 
-This is the ordinary case rather than an exotic one. BamDude ships the base catalogue — every Bambu and Orca id and every generic, offline, on every install — while the second tier fills through one account's cloud link. A plate sliced on somebody else's copy of the slicer therefore carries a preset id your install has never seen and never will.
+Bundled profiles are available offline; optional cloud sync only adds the connected account's presets. Profiles from other people's computers may remain unknown, which is a normal farm workflow.
 
 !!! warning "Until 0.6.0.1 an unresolvable profile was read as if you had switched this off"
     Worse than losing the relaxation: switching off also re-arms the id
@@ -104,13 +104,17 @@ The preview does not reserve a printer, and the **Print / Add to queue** button 
 | What the check found | The button |
 |---|---|
 | **Compatible**, or compatible but only waiting | Enabled. |
-| **Not yet known** — the printer is offline, its telemetry is still arriving, the preview could not be built, or several printers are selected at once | Enabled, and no claim is made about the outcome. |
+| **Not yet known** — the printer is offline, its telemetry is still arriving, or the preview could not be built | Enabled after the request settles, and no claim is made about the outcome. |
 | **Nothing loaded can supply it** — a used channel has no source on the selected printer as it is loaded now; in Auto, every candidate is conclusively incompatible | Disabled, with the reason beside it in the same words the routing uses, and **Queue anyway — it will wait for the right filament** under it. |
 | **Wrong machine for this file** — the plate was sliced for a model this printer cannot take (X1, X1C, X1E, P1P and P1S count as one family) | Disabled, with no override. |
 
 **Queue anyway** asks for confirmation and then does what queueing has always done: the job is added and waits for the right filament. On **Print now** it is added to that printer's queue rather than started directly — a direct print that has to wait would end cancelled — so a file uploaded with *print and delete* stays in the library until the queued job runs. While **editing** an existing job the verdict is shown but never blocks saving. In a batch that would otherwise answer several plates silently, a blocked member opens its own dialog instead of stalling the run.
 
 So no valid file is turned away: it waits for suitable conditions, exactly as a job queued with zero compatible or ready printers always has, and the same holds when live compatibility is temporarily unavailable. Unknown AMS state is never treated as proof that no AMS is connected.
+
+For selected printers, the server checks a complete assignment for each plate/printer pair that will receive copies, including manual choices, material overrides, feed policy and nozzles. A populated tray dropdown alone is not proof of compatibility. Automatic selections use the dispatch resolver's ranking with the base-material option both on and off. State can still change before dispatch, which performs its own fresh check.
+
+A silent batch opens the dialog before submitting when its completed check is unknown or failed; it only waits invisibly while the request is in flight.
 
 ## Plate selection and source errors {#plates}
 
@@ -131,6 +135,8 @@ The server checks the source and routing before preparation and again immediatel
 The slot mapping actually sent to the printer is used for filament attribution. See [how an automatic mapping is chosen](#selection) for the colour and remaining-filament ranking, including its [AMS Filament Backup](print-queue.md#ams-filament-mapping) gate.
 
 ## Edit, copy, retry, and repeat {#editing}
+
+A schedule-only edit preserves the original physical pin, even when it sends the same tray numbers again: it does not approve a spool changed since queueing. A manual choice for one printer or plate does not pin other automatically mapped targets.
 
 Each printer-queue item keeps its own routing rules after Auto-Queue assigns it. Removing the original Auto-Queue row does not remove those rules. Changing only the schedule, cloning, retrying, or repeating retains them.
 
