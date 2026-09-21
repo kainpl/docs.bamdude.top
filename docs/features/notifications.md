@@ -13,7 +13,7 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 
 | Provider | Setup | Features |
 |----------|:-----:|----------|
-| **Telegram** | Medium | Via the BamDude bot, with actionable inline buttons (clear plate, mark maintenance done, pause/stop). Routes to every authorised chat that subscribed to the event. |
+| **Telegram** | Medium | Via the BamDude bot, with actionable inline buttons (clear plate, mark maintenance done, pause/stop). Each Telegram provider routes only to its own authorised chats that subscribed to the event. |
 | **Discord** | Easy | Channel webhook URL, embed formatting, image attachments. |
 | **Email (SMTP)** | Medium | STARTTLS / SSL / plain. Per-provider `to_email` so different users see different bodies. |
 | **Pushover** | Easy | Priority levels, image attachment up to 2.5 MB. |

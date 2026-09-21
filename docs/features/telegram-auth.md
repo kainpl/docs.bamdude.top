@@ -66,7 +66,7 @@ A single boolean — `telegram_registration_open` (Settings → Notifications �
 | Setting | Behaviour |
 |---|---|
 | `telegram_registration_open=true` | Unknown chats that message the bot are auto-registered with `is_active=False, group_id=NULL`. They cannot do anything yet — an admin still has to assign a group and flip them active in **Settings → Notifications → Telegram Chats**. Effectively a "let me see who wants in" mode. |
-| `telegram_registration_open=false` (default) | Unknown chats are silently rejected. To let a new chat in, an admin adds it manually in the web UI. |
+| `telegram_registration_open=false` (default) | Unknown chats are silently rejected. To let a new chat in, an admin adds it manually in the web UI — except the very first chat of a newly added bot, which is registered pending approval. |
 
 There is no third "open with auto-active default group" mode — neither option auto-grants permissions. Activation is always a manual step in the web UI.
 

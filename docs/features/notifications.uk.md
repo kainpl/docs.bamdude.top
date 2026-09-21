@@ -13,7 +13,7 @@ description: Push-сповіщення про події друку через �
 
 | Провайдер | Складність | Можливості |
 |-----------|:----------:|------------|
-| **Telegram** | Середньо | Через бота BamDude з actionable inline-кнопками (clear plate, mark maintenance done, pause/stop). Розсилається в кожен авторизований чат, який підписаний на подію. |
+| **Telegram** | Середньо | Через бота BamDude з actionable inline-кнопками (clear plate, mark maintenance done, pause/stop). Кожен Telegram-провайдер розсилає лише у свої авторизовані чати, підписані на подію. |
 | **Discord** | Легко | URL webhook каналу, форматування embed, прикріплення картинок. |
 | **Email (SMTP)** | Середньо | STARTTLS / SSL / plain. Per-provider `to_email` — різні юзери бачать різні тіла. |
 | **Pushover** | Легко | Рівні пріоритету, прикріплення картинок до 2.5 МБ. |

@@ -55,8 +55,8 @@ The Telegram bot provides:
 3. Go to **Settings** > **Notifications** > **Telegram Chats** in BamDude
 4. Authorize the chat and assign a group (role)
 
-!!! info "Bot Token Source"
-    The bot token is read from the first enabled Telegram notification provider in the database.
+!!! info "Several Telegram bots"
+    Each enabled Telegram notification provider is a bot of its own. BamDude polls them together in one session, but a provider's commands, chats, notifications and daily digest stay with that bot. A token identifies one bot and can belong to only one Telegram provider.
 
 !!! info "Per-message permission checks"
     Every command and inline-button press passes through `auth_middleware` before the handler runs. The middleware looks up the chat in `telegram_chats`, resolves its assigned group, and rejects the action unless the group holds the matching `resource:action` permission (e.g. `printers:control`, `archives:read`). Unauthorized chats see "У вас немає прав" / "You don't have permission" instead of executing the action.
