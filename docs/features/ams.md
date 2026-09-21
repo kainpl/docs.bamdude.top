@@ -281,9 +281,11 @@ For a sliced 3MF, BamDude matches the selected plate's used-channel nozzles agai
 
 Unknown AMS state is different from confirmed absence of AMS. Fresh information is required after reconnecting. See [Filament Routing](filament-routing.md) for complete examples and color rules.
 
-### Filament Track Switch (FTS)
+### Filament Track Switch (FTS) — full support
 
 The Filament Track Switch is an external dual-nozzle accessory that sits between an AMS and the printer's extruders, dynamically routing any AMS slot to either nozzle. With FTS, the AMS is no longer wired to a single extruder.
+
+**FTS is fully supported end to end.** BamDude reads its live state, presents the valid sources in the mapping picker, checks a complete assignment in the preview, and enforces the same topology in printer queues, Auto-Queue, repeats and the final command before print. The external-holder restriction below is the printer firmware's own supported-topology limit, not a partial BamDude implementation.
 
 BamDude treats the firmware's `print.aux` bit 29 as the authoritative FTS presence signal. It keeps compatibility with an older positive `print.device.fila_switch` report when that bit is absent, but a reported removal clears the accessory state rather than leaving a stale switch on screen. With FTS, BamDude **auto-suppresses the per-nozzle filter for AMS sources** in the print modal:
 
