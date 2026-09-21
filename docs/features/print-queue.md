@@ -370,9 +370,9 @@ Per-printer **AMS mappings** are configured per row — the multi-printer modal 
 
 Instead of pinning a job to a specific printer, queue it under **Any [model]**. That job does **not** land in a per-printer queue: a per-printer item is always bound to one machine and has no notion of a target model. It goes to the second tier — the **auto-queue**, a holding area of work that has not been given a printer yet:
 
-- Filament-aware: the router only offers a printer whose AMS has the right filament type loaded (and colour, when [Force colour match](virtual-printer.md#auto_queue) is on)
+- Filament-aware: the router needs a complete assignment for every used channel, using AMS or external feeds under the selected material, profile, colour and nozzle rules; see [filament routing](filament-routing.md).
 - Location-aware: optional location filter ("any printer in Workshop A") — a link to the locations directory, not a free-text string
-- **Manual filament override**: if no eligible printer matches automatically, set a manual mapping the router uses regardless
+- **Channel overrides** change the requested material or colour; they do not bypass routing or dispatch checks. Saving unmatched work to wait requires the dialog's explicit confirmation.
 
 While nothing matches, the item stays `pending` **in the auto-queue** and carries its own `waiting_reason` naming what it is short of — there is no `waiting_for_filament` status. It leaves that state when an eligible printer appears (the router then *creates* a real item in that printer's queue), or when you assign it to a specific printer yourself. Routing asks only routing questions: whether the machine can start *right now* — plate gate, drying, stagger — is asked again at dispatch, so an item routed to a busy printer just waits in that printer's queue where you can see it.
 
