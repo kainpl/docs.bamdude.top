@@ -50,7 +50,7 @@ Lines are ordered, and the order matters: it decides which line gets a shared pl
 
 ### Statuses and closing
 
-An order is `active`, `completed` or `cancelled`, and **only you close it**. When every line has reached its quantity the page raises an *All lines are printed — close the order?* banner and stops there. A completed order can be reopened; a cancelled one keeps its whole history and is excluded from a customer's "done".
+An order is `active`, `completed` or `cancelled`, and **only you close it**. When every line is covered by printed kits or kits allocated from stock, the page raises an *All lines are covered — close the order?* banner and stops there. A completed order can be reopened; a cancelled one keeps its whole history and is excluded from a customer's "done".
 
 !!! tip "Pickers offer open orders"
     Anywhere an order is picked — the print dialog, the archive editor, the bulk archive action — the list is the **active** orders plus whatever is already bound, so an existing link is never hidden and never silently cleared by saving a dialog.
@@ -64,8 +64,9 @@ The strip above the lines is computed by the server on every read; the browser n
 | **Ordered** | The sum of the line quantities. Literal — this is what the customer asked for. |
 | **Printed** | Units printed. Literal too: it counts prints and nothing else. |
 | **From stock** | Kits taken off the products' shelves (see [Free stock of parts](#free-stock-of-parts)), each line capped by its own quantity. |
-| **Complete** | Units printed **plus the kits taken from stock**, limited by the purchased parts actually acquired. |
-| **Remaining** | What is still to be made, after prints *and* kits from stock. |
+| **Covered** | Printed kits plus kits allocated from stock, capped separately on every line before the order is added up. This is the bar's numerator and the quantity left to make is derived from it. An overprint of one product cannot cover another product's shortage. |
+| **Can assemble** | The covered printed kits, limited by the purchased parts actually acquired. This does not mean the order was shipped or closed. |
+| **Left to cover** | What is still to be made after prints *and* kits from stock, summed from the deficits of individual lines. |
 | **Print time · Filament · Cost · Defective** | Summed over the order's prints. Time is the measured duration where one was recorded, else the slicer's estimate; filament is summed as it stands, including prints that never finished. |
 | **Margin** | Price minus cost, shown when a price is set. |
 | **Other prints** | How many prints belong to the order but to none of its lines. |
@@ -81,7 +82,9 @@ Each line expands into a row per printed part:
 | **Remaining** | Need minus usable, floored at zero. |
 | **Surplus** | Usable minus what the line's **full** quantity requires, floored at zero. Kits from stock lower the need above; they never raise this. |
 
-**Units printed is the minimum across parts** of usable ÷ per unit — the scarcest part decides, and the table shows at a glance which one it is. Progress is capped at 100 %: an overprinted line reports its excess through the printed-against-ordered counts and through each part's surplus, never through the bar. Prints in the trash count towards nothing.
+**Units printed is the minimum across parts** of usable ÷ per unit — the scarcest part decides, and the table shows at a glance which one it is. The **Covered** bar uses those units plus allocated stock, capped to each line's own quantity; it cannot read 100% while a different line is still short. An overprinted line reports its excess through the printed-against-ordered counts and through each part's surplus, never through the bar. Prints in the trash count towards nothing.
+
+**Printing** is a count of live print archives; **Queued** is a count of pending jobs, not an estimate of product units. A shared plate can contribute to more than one line, so neither counter is added up from line rows.
 
 ### Which order a print belongs to
 
