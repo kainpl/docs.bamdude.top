@@ -31,9 +31,11 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 1. Go to **Settings** > **Notifications**
 2. Click **Add Provider**
 3. Select provider type and enter configuration
-4. Click **Send Test** to verify
+4. Click **Send Test** to verify (all provider types except Telegram)
 5. Configure event triggers
 6. Click **Add**
+
+For Telegram, save the bot first, add and activate a chat on that bot, then use **Send Test** on the saved provider card.
 
 ---
 
@@ -637,7 +639,7 @@ The **daily digest** is a separate opt-in channel and never delays anything: eve
 
 ## :material-check-circle: Testing
 
-Every provider has a **Send Test** button next to the save action. Clicking it fires a synthetic event through the full pipeline (template render, quiet-hour gate, priority mapping, transport-specific wrap) so the resulting message is a faithful preview of what real events will look like — not a stripped-down "hello world".
+Saved providers have a **Send Test** button. For ordinary providers, it fires a synthetic event through the full pipeline (template render, quiet-hour gate, priority mapping, transport-specific wrap) so the resulting message is a faithful preview of what real events will look like — not a stripped-down "hello world". Telegram uses its own active chats: its test is sent immediately to every active chat attached to that bot, regardless of that chat's event subscriptions, printer scope, or quiet hours. That verifies delivery to each recipient rather than simulating a farm event.
 
 Re-test after editing templates, switching priorities, or changing transport-level fields like SMTP credentials. The test bypasses the digest queue (always sent immediately) so you don't have to wait until your digest time to see the result.
 
