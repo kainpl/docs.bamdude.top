@@ -73,7 +73,7 @@ On every phase, at most **one** bed climbing at a time — or two, whatever that
 - **The interval is the recovery gap, not the heat-up time.** With **Wait for bed to heat** on, the climb is already covered by the bed wait. Two to five minutes is plenty; ten just slows the farm.
 - **One slow heater on the phase.** Set **Stagger interval (minutes)** on that printer's edit form (`0` = the farm default) rather than raising the whole farm's interval.
 - **A phase tag cannot be deleted while it is a group.** The API answers `409` — un-tick it under Queue & Scheduling first, then delete. Silently redrawing which printers share a cap is not something a delete button should do.
-- **The forecast does not see stagger.** *Ready ≈* on an order is computed without it and says so in its list of assumptions. A farm that staggers hard will finish a little later than the date — see [The customer asks when fifty will be ready](when-will-it-be-ready.md).
+- **The forecast sees stagger too.** *Ready ≈* on an order uses the same group caps and live heating slots as the scheduler, so a staggered farm does not get a date that assumes every printer may heat at once — see [The customer asks when fifty will be ready](when-will-it-be-ready.md).
 - **Nothing here slows the dispatcher.** Uploads to several printers still run in parallel; the cap gates the *start* of the print and nothing else, so a print already running is never slowed by a neighbour waiting for a slot.
 - **A tag means whatever you say it means.** The same mechanism splits by *room* through locations; splitting by tag is for anything a room does not describe — a phase, a UPS, an extension lead.
 

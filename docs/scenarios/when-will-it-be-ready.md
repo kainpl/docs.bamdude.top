@@ -19,7 +19,7 @@ A date on the order that already accounts for the machines the farm has, the pri
 |---|---|
 | [Orders](../features/projects.md#orders) | The line — *Lamp × 50* — with a priority and a due date. |
 | [What to print next](../features/projects.md#what-to-print-next) | How many prints the fifty need, after what is printed, running and queued. |
-| The farm forecast | *Ready ≈* on the order and on every plan row, the machine-hours left, and the *after N more urgent orders* date. |
+| The farm forecast | *Ready ≈* only when every print in the plan can be dated, the machine-hours left, and the *after N more urgent orders* date. |
 | The filament table under the plan | Need per material and colour against the spools on the shelf. |
 | [Staggered start](../features/staggered-start.md) and [plate-clear confirmation](../features/print-queue.md#clear-plate-confirmation) | Both are counted in the date, using the same rules and the same live state the scheduler uses. |
 
@@ -27,13 +27,13 @@ A date on the order that already accounts for the machines the farm has, the pri
 
 1. **Open the order** — or create it: **Projects → Orders → New order**, customer, a line *Lamp × 50* with material `PETG`, priority **High**, due date. The product is already in the catalog with its plates linked.
 
-2. **Read the strip.** *Ordered 50 · Printed 12 · Complete 12 · Remaining 38*, and beside them two tiles the forecast fills: **Ready ≈** with a date and **Machine h left**. Under the tiles, when they apply: *after 2 more urgent orders: <date>* — the date if the lamps have to wait for the orders ranked ahead — and the counts of prints *without an estimate* or *with no printer for their model*.
+2. **Read the strip.** *Ordered 50 · Printed 12 · Complete 12 · Remaining 38*, and beside them two tiles the forecast fills: **Ready ≈** with a date and **Machine h left**. The date (and *after 2 more urgent orders: <date>*) appears only when every planned print has an estimate and a printer for its model. Otherwise the tile says **Incomplete estimate** and the counts below name prints *without an estimate* or *with no printer for their model*; machine-hours stay a separate sum, not a substitute date.
 
-3. **Read the plan.** *What to print next* lists the plates that cover the 38 with their counts, and every row shows its own *ready ≈* — the row's last print, not the order's. Nothing here has been sent yet; the numbers move as you change the counts.
+3. **Read the plan.** *What to print next* lists the plates that cover the 38 with their counts, and a fully placeable row shows its own *ready ≈* — the row's last print, not the order's. Nothing here has been sent yet. If you change a count, file, or split, its server forecast and farm proposal are explicitly marked as belonging to the previous plan; send the draft or undo the change to see them again. Time, grams and cost follow the same split that will be sent to the queue.
 
 4. **Check the filament.** The table under the plan's totals has a row per material and colour the plan needs: *need*, *on the shelf in this colour*, *on the shelf in this material*, with a shortage in amber. The line's colour names the order's main filament — the heaviest one of the line's material on the plate, or of the whole plate when the line names no material — so a support printed in whatever is loaded is counted by its material rather than asked for in a colour you never stock. A shelf that could not be read — Spoolman down — says so rather than showing zero.
 
-5. **Answer the customer.** *Ready ≈* is the date if the plan goes to the queue now, on top of what is already there. If two more urgent orders sit ahead, the second date is the honest one.
+5. **Answer the customer.** When the forecast is complete and the plan has not been edited, *Ready ≈* is the date if the plan goes to the queue now, on top of what is already there. If two more urgent orders sit ahead, the second date is the honest one. An incomplete or edited plan needs its missing file/model fixed or its new draft sent first — it has no honest completion date yet.
 
 6. **Send the plan** — the whole of it to the auto-queue, or a row to a specific printer with **To printer…** — and hang up.
 
@@ -49,6 +49,7 @@ A date on the order that already accounts for the machines the farm has, the pri
 - **A parked printer's work still counts.** A printer in maintenance mode or with a paused queue receives no *new* prints in the simulation, but the print it is running and the rows already in its queue are still played out — otherwise an order whose last print sits on a parked machine would read as finished.
 - **Closed orders forecast nothing.** Completed and cancelled orders get no date and place no work; their rows in the table show a dash.
 - **Unknowns stay unknown.** A print whose file has no time estimate, or a live print that has not yet handed over its 3MF, is counted as *without an estimate* and never quietly treated as zero hours.
+- **A partial placement is not a completion date.** If any print is unknown or has no printer for its model, the simulator may still calculate the work it could place, but the order and affected row show no *Ready ≈* date. The reason remains visible instead.
 
 ## :material-alert: Pitfalls and what-ifs
 
