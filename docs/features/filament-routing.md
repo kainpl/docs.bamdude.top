@@ -22,7 +22,7 @@ In the Auto form, **Filament source** offers:
 Automatic source does not mean that an empty AMS slot or an unknown configuration is acceptable. Each used channel needs a loaded source with the required material and the correct nozzle binding.
 
 !!! note "Filament Track Switch (FTS)"
-    When FTS is installed, any loaded AMS source can feed either nozzle, so BamDude removes the ordinary per-nozzle AMS restriction. External holders are different: firmware does not permit an external-holder print while FTS is connected, including a holder physically installed after the switch. They are therefore excluded from automatic and external-only routing, the mapping picker, Auto-Queue and the final pre-print check. Removing FTS restores the ordinary external-feed rules after the printer reports the change.
+    **FTS has full end-to-end support:** its live state, mapping picker, preview, printer queues, Auto-Queue and final dispatch use the same topology. When FTS is installed, any loaded AMS source can feed either nozzle, so BamDude removes the ordinary per-nozzle AMS restriction. External holders are different: firmware does not permit an external-holder print while FTS is connected, including a holder physically installed after the switch. They are therefore excluded from automatic and external-only routing, the mapping picker, Auto-Queue and the final pre-print check. Removing FTS restores the ordinary external-feed rules after the printer reports the change.
 
 An explicit physical slot selection stays tied to that printer and source. BamDude does not silently replace it with another tray or external spool.
 
