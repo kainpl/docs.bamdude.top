@@ -13,14 +13,14 @@ A plate comes off with two of six parts warped. Where do you say so — and what
 |---|---|
 | [Orders](../features/projects.md) | An order's figures subtract defects live: two bad parts are two parts still to print. |
 | Defects on the print | Every print keeps its own count — per part when the plate's parts are known, else one flat number. |
-| [Telegram](../features/telegram-bot.md) | The completion message and the plate answers ask for the count right there. |
+| [Telegram](../features/telegram-bot.md) | The completion message identifies its printer and run before asking for the count. |
 | [Statistics](../features/stats.md) | Defects by printer, over any timeframe. |
 
 ## Where you say it
 
 1. **On the order page.** Under *Prints*, every card shows `6 · 2 defective`. Its menu has **Defects…**: one counter per part, capped at what the plate made. Save, and the order's *Defective*, *Remaining* and progress move at once.
 2. **When you clear the plate.** On the printer card, the finished print's counters sit beside **Clear plate** and **Repeat** — fill in what came out bad and press either; the count travels with the answer. Only the print on the plate can be graded this way, under the same permission as clearing.
-3. **In Telegram.** The completion message offers **Defects…**, and answering **Plate cleared** or **Repeat print** asks the same question: one tap per part (0–5, or *other…* to type a number), *no defects, done* ends it.
+3. **In Telegram.** The completion message offers **Defects…** with its printer, print and run reference. Tap one count per part (0–5), or use *other…* and reply to that exact prompt with a number. **Plate cleared** and **Repeat print** answer only the run named on their card; an old card is refused rather than touching a newer plate.
 4. **Later, on any print.** The archive editor keeps its counters for prints of any age.
 
 Skipped objects are counted for you: a part you skip from the printer's screen or from BamDude is already in the count when you get there.

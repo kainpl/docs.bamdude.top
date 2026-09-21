@@ -202,12 +202,12 @@ Notifications sent to Telegram include inline action buttons:
 
 | Notification | Actions |
 |-------------|---------|
-| **Print Complete** | Clear plate |
-| **Print Failed** | Clear plate |
+| **Print Complete** | Clear plate / Repeat print / Defects… |
+| **Print Failed** | Clear plate / Repeat print when a held run is known |
 | **Maintenance Due** | Mark done |
 | **Print Progress** | Pause / Stop |
 
-**Defects…** on the completion message, and after *Plate cleared* / *Repeat print*: one message per part with buttons 0–5 (*other…* to type a number), *no defects, done* ends it. Needs the plate-clear permission and the printer in the chat's scope.
+Every completion control is bound to the exact completed run shown on its card. An old button cannot clear or repeat a newer print on the same printer; open the current printer card if Telegram says the card is stale. **Defects…** names the printer, print and run in every prompt. It offers one message per part with buttons 0–5 (*other…* opens a reply-only number prompt); reply to that exact prompt so a late number cannot land on another print. Needs the plate-clear permission and the printer in the chat's scope.
 
 ---
 
