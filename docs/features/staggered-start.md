@@ -35,7 +35,7 @@ Slots live **in memory**. A backend restart forgets them; a few seconds after MQ
 | Setting | Default | What it does |
 |---------|---------|--------------|
 | **Enable staggered start** | Off | Turns the cap on. Everything below is hidden while it's off. |
-| **Concurrent starts** | 2 | How many printers may be heating at the same time. Relabels itself to **Concurrent starts per group** once a split is on. |
+| **Concurrent starts** | 2 | How many printers may be heating at the same time. Becomes **Default concurrent starts per group** once a split is on; explicit group limits can be higher or lower. |
 | **Interval (minutes)** | 5 | Wait after a slot frees before the next start is allowed. |
 | **Wait for bed to heat** | On | Slot frees when the bed reaches target (±1 °C). Off → it frees right after the start. |
 | **Strict mode for direct dispatch** | Off | See [Direct prints and strict mode](#direct-prints-and-strict-mode). |
@@ -79,7 +79,12 @@ Turn an axis on and pick which tags (or which locations) are groups — an axis 
 
 **Concurrent starts** then means *per group*, and the field relabels itself to say so. Two phases with a cap of 2 means up to four beds farm-wide — two on each — and never three on one phase.
 
-**A group can carry its own limit.** Beside each picked tag or location a small number field appears; a value there caps *that* group alone, an empty field means the farm-wide number above. With both axes on, a group's cap is the smallest of its tag override, its location override and the global value — a workshop limited to 1 never starts two beds however generous its phase is. Un-picking a group clears its override. The banner prints each group's own `occupied/cap`.
+**A group can carry its own limit, higher or lower than the default.** Beside each picked tag or location a small number field appears; empty inherits the default above. For example, with tags only, default **2** and an **A1M** tag override of **6** allow six A1M starts while a **P1S** tag without an override stays at two. These are operator-selected tags, not automatic model groups. Choose limits to suit the electrical capacity feeding those printers.
+
+With both axes on, each axis uses its override or inherits the default; each **tag × location** pair uses the **lower** of those two values. Default 2, tag 6, location empty → 2; tag 6, location 4 → 4. These remain per-pair caps, not additional aggregate caps across all locations of a tag. Un-picking a group clears its override. The banner prints each group's own `occupied/cap`.
+
+!!! note "Upgrading preserves your effective limits"
+    Earlier versions capped every override at the default. During the upgrade, saved overrides above that ceiling are reduced to their old effective value, including groups currently disabled. Nothing silently starts heating more printers. To use a higher override, explicitly raise it after upgrading; subsequent restarts preserve that choice.
 
 The banner grows a segment per group, and a waiting item names the group it is waiting on:
 
