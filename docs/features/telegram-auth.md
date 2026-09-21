@@ -70,7 +70,11 @@ A single boolean — `telegram_registration_open` (Settings → Notifications �
 
 There is no third "open with auto-active default group" mode — neither option auto-grants permissions. Activation is always a manual step in the web UI.
 
-**A chat belongs to the bot it wrote to.** A chat in Telegram exists for one bot only — the one you pressed Start in — and BamDude records which Telegram provider (which bot token) that was. Each provider's card lists its own chats, a chat added from a card is registered under that provider, and a provider's notifications and daily digest go to its own chats and to no other's. If you retire one bot for another, nothing needs redoing: the first message a chat sends the new bot moves it across, roles and settings intact. Deleting a Telegram provider removes its chats with it.
+**A chat belongs to the bot it wrote to.** A chat in Telegram exists for one bot only — the one you pressed Start in — and BamDude records which Telegram provider (which bot token) that was. Each provider's card lists its own chats, a chat added from a card is registered under that provider, and a provider's notifications and daily digest go to its own chats and to no other's. Deleting a Telegram provider removes its chats with it.
+
+**Several bots, several sets of chats.** Every switched-on Telegram provider is a bot of its own, and each has its own chats. Telegram identifies a private chat by the person's own user id, the same number in every bot they use — so the same person talking to two of your bots is two chats in BamDude, each with its own role, printer scope and notification choices. Activating them is a separate step in each. A bot that has no chats yet registers its first one the way the very first setup does, whatever the registration switch says: whoever presses Start on a brand-new bot first is the person setting it up.
+
+**One token, one provider.** The token identifies the bot, so two providers holding the same token would be the same bot twice — which Telegram refuses to serve. Saving a provider with a token another one already has is turned down, and an installation that already carried such a pair keeps the older provider and switches the younger one off, moving its chats across.
 
 ---
 
