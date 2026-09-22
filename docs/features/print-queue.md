@@ -521,6 +521,9 @@ The terminal counters in the printer queue header (Total / Completed / Failed / 
 
 To see archived queue items, open the **Archives** page and filter by printer. Failed dispatches show the verbose `error_message` on hover (short cause codes continue to live in the existing `failure_reason` field).
 
+!!! note "Repairing an old stuck queue row"
+    After a restart or reconnect, the first fresh, inactive printer status can repair a queue row still marked `printing` when its own archive already records completion, failure or cancellation. This is separate from normal print completion: it does not reprint the job, replay accounting, run macros or send completion notifications. The repaired row is retained and the queue is paused for an operator to inspect the printer and plate before resuming; existing plate-clear requests are preserved. Active/offline printers, a dispatch or completion still in progress, and ambiguous archive links are left alone with a diagnostic in the server log. Deferred repairs are checked again at the next reconnect or restart, not on a polling timer.
+
 !!! tip "Dispatch-time archive starts as `printing`"
     Library-file dispatches now create the archive row directly in `status='printing'` — no transient "Archived" badge flash during the FTP+MQTT window. If dispatch fails after the row commits (FTP error, start-print error), a fresh-session helper flips the archive to `failed` / `cancelled` with the verbose `error_message` set, so a zombie `'printing'` row never sits stuck in the UI.
 
