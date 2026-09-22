@@ -61,6 +61,12 @@ Two different things carry a status here, and they are easy to confuse. The **qu
 !!! info "A paused queue still accepts work"
     Neither `is_paused` nor a `paused` / `error` status stops you adding to the queue, from any dialog. Only the scheduler reads them — a job put on a parked printer just waits there, visibly.
 
+### One active start per printer
+
+Pending jobs are a backlog, so you can continue filling and ordering a queue. A **Print now** or **Reprint** request, however, is refused while that printer already has a running or preparing print, or while its queue is paused or in error; resume and inspect the queue first. Auto-Queue treats both a pending backlog and an active claim as unavailable capacity, then tries another eligible printer in the same pass.
+
+If BamDude observes a new external print whose archive does not identify the current claim, it keeps both records visible and pauses further automatic starts. It never guesses ownership from the newest row or a filename.
+
 ### The items
 
 Every queue item carries one of exactly six statuses (visible on the queue card chip):
