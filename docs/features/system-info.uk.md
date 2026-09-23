@@ -9,7 +9,16 @@ description: Сторінка Інформація — версія, DB stats, s
 
 ## :material-information: Що це
 
-Read-only дашборд, що тягне з `GET /api/v1/system/info` (більшість сторінки), `GET /api/v1/system/storage-usage` (storage breakdown) і `GET /api/v1/support/logs` (log viewer). Maintenance-actions — POST endpoint-и за відповідними permission-ами. Усе живе в running BamDude-процесі — зовнішня metrics-БД не потрібна (для цього див. [Prometheus](prometheus.uk.md)).
+Read-only дашборд, що тягне з `GET /api/v1/system/info` (більшість сторінки), `GET /api/v1/system/storage-usage` (storage breakdown) і `GET /api/v1/support/logs` (log viewer). Maintenance-actions — POST endpoint-и за відповідними permission-ами. Стан повідомляє локальна інсталяція; зовнішня metrics-БД не потрібна (для цього див. [Prometheus](prometheus.uk.md)).
+
+Сторінка також окремо показує стан локальних сервісів прев’ю, камер і аналізу
+витрати філаменту з 3MF. Збій камер впливає на камерні функції, збій аналізу —
+на нові прогнози витрати; друк і черги, не залежні від камерної перевірки,
+працюють далі. Завдання з обов’язковою перевіркою може чекати на камеру.
+Аналізатор читає 3MF
+з архіву локально й передає через вбудований брокер лише обмежений результат,
+а не весь файл до віддаленого сервісу. Уже обчислений контекст зберігається
+до завершення відповідного друку.
 
 ## :material-tag-outline: Version info
 

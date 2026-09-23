@@ -9,7 +9,16 @@ The **Information** page (sidebar → Information, route `/system`) is BamDude's
 
 ## :material-information: What it is
 
-A read-only dashboard that pulls from `GET /api/v1/system/info` (most of the page), `GET /api/v1/system/storage-usage` (the storage breakdown), and `GET /api/v1/support/logs` (the log viewer). Maintenance actions are POST endpoints behind the appropriate permissions. Everything lives in the running BamDude process — no external metrics database is required (for that, see [Prometheus](prometheus.md)).
+A read-only dashboard that pulls from `GET /api/v1/system/info` (most of the page), `GET /api/v1/system/storage-usage` (the storage breakdown), and `GET /api/v1/support/logs` (the log viewer). Maintenance actions are POST endpoints behind the appropriate permissions. Health is reported by the local installation; no external metrics database is required (for that, see [Prometheus](prometheus.md)).
+
+The System page also shows separate, read-only health for the local preview,
+camera and 3MF filament-analysis workers. Camera failure affects camera
+features; analysis failure pauses new filament-usage projections. Neither
+stops unrelated printing or queues; a job requiring a camera check can wait
+for camera recovery. The analysis service reads the selected archive 3MF
+locally and sends only its bounded result through the bundled broker; it does
+not upload the whole 3MF to a remote service. A previously calculated print
+context remains cached until that print is released.
 
 ## :material-tag-outline: Version info
 

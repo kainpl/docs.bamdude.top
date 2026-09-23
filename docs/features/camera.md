@@ -186,44 +186,37 @@ BamDude enforces that on two axes:
 
 ---
 
-## :material-application-cog: Experimental isolated camera process
+## :material-application-cog: Isolated camera worker
 
-The default `inline` runtime keeps camera transport in the BamDude server
-process. Advanced operators can set this environment variable before starting
-the service:
-
-```text
-CAMERA_RUNTIME=worker
-```
-
-It starts one supervised local child process for camera work. One-shot captures,
-built-in Bambu chamber/RTSPS live view, and external MJPEG, RTSP and snapshot
+BamDude always starts a supervised local camera worker. There is no inline
+camera transport or fallback. One-shot captures, built-in Bambu chamber/RTSPS
+live view, and external MJPEG, RTSP and snapshot
 live views use an authenticated local JPEG relay; browser URLs, tokens, and the
 normal shared-viewer behaviour do not change. A disconnected browser relay
 releases the child-side producer instead of leaving a camera or `ffmpeg` process
 held open. The relay accepts at most 64 active sources and drops JPEGs over
 2 MiB, bounding queued live frames to 128 MiB per process.
 
-!!! warning "Experimental: verify before using on a production farm"
-    `worker` fails closed. If its process containment or local connection cannot
-    start, BamDude does not switch that request back to `inline` transport.
-    Built-in Bambu live view is worker-owned too; its RTSPS path uses the same
-    per-model probe and reconnect profile as the inline view. Virtual Printer
-    camera passthrough is a worker-owned, byte-for-byte raw TCP lease. Keep the
-    default `inline` setting unless you specifically test the camera and Virtual
-    Printer paths on your host first.
+If its containment or local connection fails, camera functions become
+unavailable; the application health endpoint and unrelated printing/queue work
+continue. Jobs that explicitly require a camera check may wait for recovery.
+The worker restarts with bounded backoff after a process failure. Check
+**System → Camera worker** for the reason and next retry time. A Virtual Printer
+camera passthrough is a worker-owned, byte-for-byte raw TCP lease; its other
+functions keep running during a camera outage.
 
-The setting does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
+Process isolation does not replace a hardware test. Camera firmware, Wi-Fi, `ffmpeg`
 and hardware-decoder behaviour still depend on the host and the camera model.
 
 ---
 
 ### Restart and INFO diagnostics
 
-Set the variable in the environment used to launch the backend (or its `.env`)
-and restart BamDude. Removing it or setting `CAMERA_RUNTIME=inline` takes effect
-on the next restart. A development reloader can add a Python launcher process;
-count worker-ready log entries and child PIDs, not just all Python processes.
+The former `CAMERA_RUNTIME` environment variable is ignored; remove it from
+your `.env` when convenient. The first startup attempt and cleanup can delay
+HTTP readiness by up to about 40 seconds on a failing host. A development
+reloader can add a Python launcher process; count worker-ready log entries and
+child PIDs, not just all Python processes.
 
 The normal backend log includes worker ready/stopped records, viewer attach/detach,
 relay start/first frame/end, and completed-session metrics. Match the printer and

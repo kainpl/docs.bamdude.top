@@ -350,6 +350,22 @@ The SQLite database is hitting "database is locked" errors under load — common
 
 ## :material-bug: Getting Help
 
+### Camera and 3MF analysis workers
+
+**Worker unavailable?** Open **System** and read that
+worker's reason separately from preview health. The camera worker starts with
+the application (a failed first attempt and cleanup may add up to about 40
+seconds before HTTP is ready), then retries process failures with bounded
+backoff. An unreapable child requires operator investigation; BamDude does not
+start a second owner or switch to in-process camera capture. The analysis
+worker shares the same bundled local broker as preview but has its own service
+and parser child. A failed analysis service retries with bounded backoff; a
+failed broker needs an application restart after its cause is resolved. A
+previously completed calculation for a live print remains cached.
+Neither failure stops unrelated printing or queues; a mandatory camera check
+can hold its job until cameras recover. Check the application log,
+local disk permissions and free space before restarting the service.
+
 ### Local preview service {#local-preview-service}
 
 Open **System → Local preview service** to see whether it is available,
