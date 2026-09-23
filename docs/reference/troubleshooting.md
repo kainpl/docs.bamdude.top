@@ -350,6 +350,26 @@ The SQLite database is hitting "database is locked" errors under load — common
 
 ## :material-bug: Getting Help
 
+### Local preview service {#local-preview-service}
+
+`Preview unavailable` means model-preview generation is unavailable; it does
+not stop the API, printer connections or printing. Existing thumbnails remain
+readable. Check free disk space, installation dependencies and write access to
+`DATA_DIR/.cache/preview-service`, then restart BamDude normally.
+
+If the log reports `RecoveryRequired` or an unresolved managed runtime, do not
+delete `managed-runtime.json` or kill a process based only on the PID in it.
+Stop BamDude and verify that its preview service, renderer and bundled NATS
+process have stopped (check executable and command line, not just a reused PID).
+If ownership is uncertain, retain the directory and request support. Once all
+owners are confirmed stopped, move **only** `DATA_DIR/.cache/preview-service`
+aside as a recovery copy and restart. This cache contains temporary artifacts,
+not library files; never remove the library/archive or other service stores.
+Keep the recovery copy until the new service works. Retry missing thumbnails
+explicitly; interrupted preview attempts are not replayed after restart.
+
+### Reporting an issue
+
 When reporting issues, include:
 
 - BamDude version

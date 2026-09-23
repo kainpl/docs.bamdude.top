@@ -7,6 +7,23 @@ description: Browse and manage your local library of print files
 
 Browse, upload, and manage files in your local BamDude library. Print directly or add to queue.
 
+## Model previews
+
+STL/OBJ preview generation and missing previews after server-side slicing run
+in a separate local process. BamDude includes and manages its local NATS broker
+and preview service automatically, in the same installation or Docker container.
+There is no external broker address, extra published port or additional container
+to configure. Installation downloads the bundled package; normal operation does
+not download an executable.
+
+Preview work is bounded and best-effort. An oversized model, a busy worker or a
+service failure may leave a file without a picture, but does not discard a valid
+upload or slicing result. Use thumbnail regeneration to retry later. Failed
+regeneration keeps the previous picture. Existing pictures are ordinary library
+files: viewing and backing them up does not require the preview service.
+
+For startup failures, see [local preview recovery](../reference/troubleshooting.md#local-preview-service).
+
 ---
 
 ## :material-folder: Overview
