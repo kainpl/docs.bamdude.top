@@ -352,6 +352,14 @@ The SQLite database is hitting "database is locked" errors under load — common
 
 ### Local preview service {#local-preview-service}
 
+Open **System → Local preview service** to see whether it is available,
+starting, restarting or unavailable. The panel gives the reason, error type
+and runtime directory when unavailable, with a link to this guide. A worker
+restart/backoff is distinct from an unresolved broker or process ownership;
+the latter needs manual verification, not a blind restart loop. The same
+reason, directory and recovery guidance are logged at WARNING level. No
+credentials or protocol payloads are included in this status.
+
 `Preview unavailable` means model-preview generation is unavailable; it does
 not stop the API, printer connections or printing. Existing thumbnails remain
 readable. Check free disk space, installation dependencies and write access to
