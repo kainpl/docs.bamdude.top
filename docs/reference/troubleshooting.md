@@ -375,10 +375,20 @@ installer upgrades apply the timeout before stopping the old service. Docker's
 default command replaces its shell with the application; preserve that `exec`
 if overriding the command, and retain the Compose shutdown grace period.
 
-An abrupt stop (power loss, OOM or forced kill) can still leave a recovery
-marker. Restarting alone does not clear it; this deliberately requires the
-ownership checks below, rather than automatically deleting evidence of a
-possibly live process.
+After an abrupt stop (power loss, OOM or forced kill), the next BamDude start
+automatically recovers a current-format broker runtime **only when its inherited
+OS lifetime lock proves that no old broker retains ownership**. A closed port
+or a missing PID is not sufficient. Persistent broker data is preserved; only
+BamDude's disposable preview buckets are reset. This requires a local filesystem,
+not a network-shared runtime directory.
+
+A live broker, a legacy/damaged marker, a copied runtime directory or an
+unverifiable lock still requires the manual checks below. WARNING logs include
+the refusal reason and marker path. Old preview staging directories are retained
+and their paths logged: broker recovery does not prove that an old renderer has
+finished using them. Once BamDude and all its preview processes are stopped,
+these temporary staging directories can be removed manually. Normal shutdown
+cleans its own staging; existing library/archive thumbnails are never removed.
 
 If the log reports `RecoveryRequired` or an unresolved managed runtime, do not
 delete `managed-runtime.json` or kill a process based only on the PID in it.
