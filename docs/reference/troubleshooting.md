@@ -357,6 +357,21 @@ not stop the API, printer connections or printing. Existing thumbnails remain
 readable. Check free disk space, installation dependencies and write access to
 `DATA_DIR/.cache/preview-service`, then restart BamDude normally.
 
+Service shutdown must let the application stop its children first, with every
+database backend. Current installers set systemd `KillMode=mixed` and
+`TimeoutStopSec=90`, NSSM `AppStopMethodConsole=90000`, and launchd
+`ExitTimeOut=90`. An existing manually managed service does **not** acquire
+these settings from a code-only update: apply them before the next stop
+(for systemd, use a service drop-in and `systemctl daemon-reload`). Windows
+installer upgrades apply the timeout before stopping the old service. Docker's
+default command replaces its shell with the application; preserve that `exec`
+if overriding the command, and retain the Compose shutdown grace period.
+
+An abrupt stop (power loss, OOM or forced kill) can still leave a recovery
+marker. Restarting alone does not clear it; this deliberately requires the
+ownership checks below, rather than automatically deleting evidence of a
+possibly live process.
+
 If the log reports `RecoveryRequired` or an unresolved managed runtime, do not
 delete `managed-runtime.json` or kill a process based only on the PID in it.
 Stop BamDude and verify that its preview service, renderer and bundled NATS
