@@ -14,6 +14,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 | Requirement | Details |
 |------------|---------|
 | **Python** | 3.12+ (native install only — Docker and the Windows installer bring their own) |
+| **macOS** | 12 or newer for a native install |
 | **Network** | Same LAN as your Bambu Lab printer |
 | **Printer** | Developer Mode enabled ([see guide](index.md#enabling-developer-mode)) |
 | **SD Card** | Inserted in the printer (required for file transfers) |
