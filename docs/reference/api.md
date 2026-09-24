@@ -43,17 +43,17 @@ BamDude supports two authentication mechanisms. Both enforce the same permission
 
 === "API key (recommended for scripts)"
 
-    Generate keys in **Settings → System → API Keys**. They look like `bb_<random_token>` and never auto-expire — revoke them per-key when no longer needed.
+    Generate keys in **Settings → System → API Keys**. They look like `bd_<random_token>` and never auto-expire — revoke them per-key when no longer needed.
 
     Send via either header:
 
     ```bash
     # Preferred: dedicated header
-    curl -H "X-API-Key: bb_abc123..." \
+    curl -H "X-API-Key: bd_abc123..." \
       https://bamdude.example.com/api/v1/printers/
 
     # Equivalent: bearer scheme
-    curl -H "Authorization: Bearer bb_abc123..." \
+    curl -H "Authorization: Bearer bd_abc123..." \
       https://bamdude.example.com/api/v1/printers/
     ```
 
@@ -187,7 +187,7 @@ Some endpoints can't accept `Authorization` headers because they're consumed by 
 
 ```bash
 # 1. Mint a token (auth required)
-TOKEN=$(curl -s -H "X-API-Key: bb_..." \
+TOKEN=$(curl -s -H "X-API-Key: bd_..." \
   -X POST https://bamdude.example.com/api/v1/printers/camera/stream-token \
   | jq -r .token)
 
@@ -253,7 +253,7 @@ curl -X POST -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/start
 ### List the last 50 archives for a printer
 
 ```bash
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/?printer_id=2&page=1&per_page=50"
 ```
 
@@ -261,7 +261,7 @@ curl -H "X-API-Key: bb_..." \
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   -H "Content-Type: application/json" \
   -d '{
     "library_file_id": 42,
@@ -275,7 +275,7 @@ curl -X POST \
 ### Get current printer status
 
 ```bash
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/printers/2/status"
 ```
 
@@ -285,7 +285,7 @@ The body is a JSON array of object IDs reported by the slicer.
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   -H "Content-Type: application/json" \
   -d '[100, 200]' \
   "https://bamdude.example.com/api/v1/printers/2/print/skip-objects"
@@ -297,7 +297,7 @@ When `on_print_start` couldn't FTP the 3MF (printer unreachable, FTP timeout) th
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/123/retry-download"
 ```
 
@@ -307,15 +307,15 @@ The cleanup job removes 3MF binaries for archives older than the retention windo
 
 ```bash
 # Dry-run preview — what would be deleted, total bytes
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/preview"
 
 # Run it
-curl -X POST -H "X-API-Key: bb_..." \
+curl -X POST -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/run"
 
 # Inspect the daily cron's last run + next run
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/status"
 ```
 

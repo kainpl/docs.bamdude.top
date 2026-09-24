@@ -43,17 +43,17 @@ BamDude підтримує два механізми автентифікаці�
 
 === "API-ключ (рекомендовано для скриптів)"
 
-    Створіть ключі в **Налаштування → Система → API-ключі**. Вони мають вигляд `bb_<random_token>` і ніколи не закінчуються автоматично — відкликайте їх по одному, коли вони більше не потрібні.
+    Створіть ключі в **Налаштування → Система → API-ключі**. Вони мають вигляд `bd_<random_token>` і ніколи не закінчуються автоматично — відкликайте їх по одному, коли вони більше не потрібні.
 
     Надсилайте через будь-який заголовок:
 
     ```bash
     # Preferred: dedicated header
-    curl -H "X-API-Key: bb_abc123..." \
+    curl -H "X-API-Key: bd_abc123..." \
       https://bamdude.example.com/api/v1/printers/
 
     # Equivalent: bearer scheme
-    curl -H "Authorization: Bearer bb_abc123..." \
+    curl -H "Authorization: Bearer bd_abc123..." \
       https://bamdude.example.com/api/v1/printers/
     ```
 
@@ -187,7 +187,7 @@ BamDude обмежує частоту запитів на endpoint-ах авте
 
 ```bash
 # 1. Mint a token (auth required)
-TOKEN=$(curl -s -H "X-API-Key: bb_..." \
+TOKEN=$(curl -s -H "X-API-Key: bd_..." \
   -X POST https://bamdude.example.com/api/v1/printers/camera/stream-token \
   | jq -r .token)
 
@@ -253,7 +253,7 @@ curl -X POST -H "X-API-Key: $KEY" https://<host>/api/v1/webhook/printer/3/start
 ### Список останніх 50 архівів принтера
 
 ```bash
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/?printer_id=2&page=1&per_page=50"
 ```
 
@@ -261,7 +261,7 @@ curl -H "X-API-Key: bb_..." \
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   -H "Content-Type: application/json" \
   -d '{
     "library_file_id": 42,
@@ -275,7 +275,7 @@ curl -X POST \
 ### Отримати поточний статус принтера
 
 ```bash
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/printers/2/status"
 ```
 
@@ -285,7 +285,7 @@ curl -H "X-API-Key: bb_..." \
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   -H "Content-Type: application/json" \
   -d '[100, 200]' \
   "https://bamdude.example.com/api/v1/printers/2/print/skip-objects"
@@ -297,7 +297,7 @@ curl -X POST \
 
 ```bash
 curl -X POST \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/123/retry-download"
 ```
 
@@ -307,15 +307,15 @@ curl -X POST \
 
 ```bash
 # Dry-run preview — what would be deleted, total bytes
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/preview"
 
 # Run it
-curl -X POST -H "X-API-Key: bb_..." \
+curl -X POST -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/run"
 
 # Inspect the daily cron's last run + next run
-curl -H "X-API-Key: bb_..." \
+curl -H "X-API-Key: bd_..." \
   "https://bamdude.example.com/api/v1/archives/cleanup/status"
 ```
 

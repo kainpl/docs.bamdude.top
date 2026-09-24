@@ -20,7 +20,7 @@ BamDude ships with always-on authentication: every API endpoint is protected, th
 - **Setup-gate + admin recovery** -- fresh installs walk through a one-time setup; lost-all-admins is recoverable via a CLI without losing data.
 
 !!! info "Auth is always on"
-    There is no "disable auth" toggle. Every endpoint requires a valid session or API key. API keys (`X-API-Key` or `Authorization: Bearer bb_...`) bypass JWT validation but still satisfy the same permission checks.
+    There is no "disable auth" toggle. Every endpoint requires a valid session or API key. API keys (`X-API-Key` or `Authorization: Bearer bd_...`) bypass JWT validation but still satisfy the same permission checks.
 
 ---
 

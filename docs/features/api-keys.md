@@ -5,7 +5,7 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 # API Keys
 
-API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bb_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
+API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bd_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
 
 The auth stack is **always on** (see [Authentication](authentication.md)) — a key is the headless equivalent of a logged-in user, not a bypass.
 
@@ -15,14 +15,14 @@ The auth stack is **always on** (see [Authentication](authentication.md)) — a 
 
 | Field | Value |
 |---|---|
-| **Prefix** | `bb_` (literal) |
+| **Prefix** | `bd_` (literal). Keys created before this change start with `bb_` — Bambuddy's prefix — and keep working unchanged |
 | **Body** | 32 random bytes, base64-url-encoded — 43 chars |
 | **Full length** | 46 characters |
 | **At rest** | Hashed (`get_password_hash`); only the prefix + name are stored in clear |
 | **Shown** | Once, on the create response. After that, revoke and regenerate if you lose it |
 
 ```
-bb_VGhpc0lzVGhlVGVzdEtleVNvUGxlYXNlSWdub3JlMTIz
+bd_VGhpc0lzVGhlVGVzdEtleVNvUGxlYXNlSWdub3JlMTIz
 └┬┘ └─────────────────────────────────────────┘
 prefix              random body
 ```
@@ -48,10 +48,10 @@ prefix              random body
 | **Manage Archives** | Optional. Create / edit / delete print archives (`can_manage_archives`) — **excluding** the destructive purge, which stays admin-only. Read-only archive access stays under **Can read status** |
 | **Manage Maintenance** | Optional. Log maintenance, reset counters, edit intervals, and manage the maintenance-type catalog (`can_manage_maintenance`). Read-only maintenance stays under **Can read status** |
 | **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
-| **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. Calls against any other printer return 403 |
+| **Printer scope** | Optional. Leave empty for "all printers", or pick specific printer IDs to narrow the key. A request that names any other printer returns 403 — in the address, the query or the request body, and through what belongs to a printer (its queue and queued jobs, a smart plug, a maintenance item). Printer, status, queue and job lists show only the key's printers. The auto-queue picks the printer itself, so a key with a printer scope cannot use it |
 | **Expires at** | Optional ISO timestamp. After that, the key is rejected even if it isn't revoked |
 
-The create response carries the full `key` field — **copy it before closing the dialog**. Subsequent reads of the row will only show the `bb_…` prefix.
+The create response carries the full `key` field — **copy it before closing the dialog**. Subsequent reads of the row will only show the `bd_…` prefix.
 
 !!! info "Cloud / Legacy badges"
     UI-created keys are stamped with the creating user's id, so a key shown with the **Cloud** badge can spend that user's Bambu Cloud token. Pre-0.4.3 keys imported from older installs are ownerless and surface a **Legacy** badge — they cannot be promoted to `Use Bambu Cloud` (the toggle is rejected at save time without an owner). Re-create such keys under your user account to enable cloud spend.
@@ -67,14 +67,14 @@ Both header forms are accepted — pick whichever fits your client.
 
 ```bash
 # X-API-Key header (preferred for tools that distinguish "API key" from "Bearer token")
-curl -H "X-API-Key: bb_..." http://localhost:8000/api/v1/printers/
+curl -H "X-API-Key: bd_..." http://localhost:8000/api/v1/printers/
 
-# Authorization: Bearer header — works because the server detects the bb_ prefix
+# Authorization: Bearer header — works because the server detects the key prefix
 # and routes to the API-key validator instead of JWT validation.
-curl -H "Authorization: Bearer bb_..." http://localhost:8000/api/v1/printers/
+curl -H "Authorization: Bearer bd_..." http://localhost:8000/api/v1/printers/
 ```
 
-Both reach the same code path. The `bb_` prefix on a `Bearer` token tells BamDude this is an API key, not a session JWT, so the JWT signature path is skipped and the key-hash compare runs instead.
+Both reach the same code path. The `bd_` prefix on a `Bearer` token — or `bb_` on a key created before the prefix changed — tells BamDude this is an API key, not a session JWT, so the JWT signature path is skipped and the key-hash compare runs instead.
 
 ---
 
@@ -155,12 +155,12 @@ The full schema is at `GET /openapi.json` — every route's `security` block lis
 
 ```bash
 # Read printer status
-curl -s -H "X-API-Key: bb_..." http://localhost:8000/api/v1/printers/3/status \
+curl -s -H "X-API-Key: bd_..." http://localhost:8000/api/v1/printers/3/status \
   | jq '.state, .progress'
 
 # Add a library file to a printer's queue
 curl -X POST http://localhost:8000/api/v1/queue/ \
-  -H "X-API-Key: bb_..." \
+  -H "X-API-Key: bd_..." \
   -H "Content-Type: application/json" \
   -d '{"printer_id": 3, "library_file_id": 142, "quantity": 1}'
 ```
@@ -235,7 +235,7 @@ After any of those, in-flight requests already past the validator finish (the va
 ## :material-help-circle: Troubleshooting
 
 ??? question "401 Unauthorized — `API key required`"
-    No `X-API-Key` header *and* no `Authorization` header on the request. Add one of them. If you're behind a proxy that strips custom headers, switch to `Authorization: Bearer bb_…`.
+    No `X-API-Key` header *and* no `Authorization` header on the request. Add one of them. If you're behind a proxy that strips custom headers, switch to `Authorization: Bearer bd_…`.
 
 ??? question "401 Unauthorized — but the key looks right"
     Check `enabled` on the row, then `expires_at`. A `PATCH` toggling `enabled` back to `true` revives a soft-disabled key. An expired key needs to be replaced — `expires_at` is a one-way street.
