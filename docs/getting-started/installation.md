@@ -41,7 +41,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     pip install -r requirements.txt
 
     # Run
-    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
 
 === ":material-apple: macOS"
@@ -58,7 +58,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     pip install -r requirements.txt
 
     # Run
-    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
@@ -253,7 +253,7 @@ The CLI refuses to run while at least one admin still exists — delete the dead
     Environment="PATH=/home/YOUR_USERNAME/bamdude/venv/bin"
     ExecStartPre=-/usr/bin/pkill -9 ffmpeg
     ExecStopPost=-/usr/bin/pkill -9 ffmpeg
-    ExecStart=/home/YOUR_USERNAME/bamdude/venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    ExecStart=/home/YOUR_USERNAME/bamdude/venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     Restart=always
     RestartSec=10
 

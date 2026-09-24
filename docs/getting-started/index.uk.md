@@ -31,7 +31,7 @@ description: Запустіть BamDude за кілька хвилин
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
-    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
 
     Відкрийте [http://localhost:8000](http://localhost:8000) у браузері.
