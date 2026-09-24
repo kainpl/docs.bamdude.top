@@ -40,7 +40,7 @@ graph LR
 
 ## :material-thermometer: Per-filament chamber-target map
 
-The chamber target for a print is derived from the loaded filament types. The built-in map ships these defaults (°C), fully editable under **Settings → Printing → Preheat & Heat Soak**:
+The chamber target for a print is derived from the filaments that print uses. The built-in map ships these defaults (°C), fully editable under **Settings → Printing → Preheat & Heat Soak**:
 
 | Filament | Chamber target |
 |---|---|
@@ -58,7 +58,8 @@ The chamber target for a print is derived from the loaded filament types. The bu
 | **Other / unmapped** (`default`) | 0 °C |
 
 - **`0` means "no chamber phase"** — commodity filaments (PLA, PETG, TPU, PVA) derive `0`, so a PLA-only print skips the chamber wait entirely and just does the bed + soak.
-- **The highest target across loaded slots wins.** Load PA in slot 1 and PLA in slot 2 and the print soaks to PA's 50 °C — the engineering filament's requirement is binding.
+- **The highest target among the filaments the print uses wins.** A print that uses PA from slot 1 and PLA from slot 2 soaks to PA's 50 °C — the engineering filament's requirement is binding.
+- **A spool the print does not use does not count.** Which slots a print uses comes from its filament mapping, so an ASA spool parked in slot 3 does not make a PLA-only print wait for a 45 °C chamber. An external spool the print feeds from counts like any slot. A print without a filament mapping falls back to every loaded AMS slot.
 - **A filled or foamed type without a row of its own uses its base material's.** A slot loaded with ASA-GF or ASA Aero gets ASA's 45 °C, ABS-GF gets ABS's. A type listed on its own still wins — PETG-CF keeps its 40 °C rather than PETG's 0. Only a type whose base isn't in the map either falls to **Other / unmapped**.
 - Each value is capped at 60 °C in the editor. Reset the whole map to the shipped defaults with one click.
 
