@@ -362,6 +362,9 @@ worker shares the same bundled local broker as preview but has its own service
 and parser child. A failed analysis service retries with bounded backoff; a
 failed broker needs an application restart after its cause is resolved. A
 previously completed calculation for a live print remains cached.
+Normal camera shutdown waits for the worker to release its cameras before
+closing the guardian. An unresponsive worker is forcibly reaped and retried;
+the log distinguishes `graceful`, `forced` and `cleanup_failed` outcomes.
 Neither failure stops unrelated printing or queues; a mandatory camera check
 can hold its job until cameras recover. Check the application log,
 local disk permissions and free space before restarting the service.
@@ -400,11 +403,18 @@ not a network-shared runtime directory.
 
 A live broker, a legacy/damaged marker, a copied runtime directory or an
 unverifiable lock still requires the manual checks below. WARNING logs include
-the refusal reason and marker path. Old preview staging directories are retained
-and their paths logged: broker recovery does not prove that an old renderer has
-finished using them. Once BamDude and all its preview processes are stopped,
-these temporary staging directories can be removed manually. Normal shutdown
-cleans its own staging; existing library/archive thumbnails are never removed.
+the refusal reason and marker path. Old preview and analysis staging with
+payloads or unknown entries is retained and logged: broker recovery does not
+prove that an old worker has finished using it. A known empty service skeleton
+is retained too, but only counted at INFO level; it needs no immediate action.
+After a confirmed crash of the **current** service, BamDude cleans only that
+service's abandoned attempts before relaunch. If an owned cleanup fails, look
+for `staging_cleanup_failed` with its path and error in the server log; the
+System page does not show per-file cleanup failures. A persistent disk or
+permission error may require fixing the cause and restarting. Once BamDude and
+all its workers are stopped, old temporary staging may be removed manually
+after verifying ownership. Existing library/archive thumbnails and archive
+source files are never removed by this cleanup.
 
 If the log reports `RecoveryRequired` or an unresolved managed runtime, do not
 delete `managed-runtime.json` or kill a process based only on the PID in it.
