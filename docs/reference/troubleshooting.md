@@ -20,16 +20,23 @@ covering that time. The following entries help narrow down the delay:
 
 - `WebSocket bootstrap timing`: authentication/accept and initial queue preparation,
   including waits for that viewer's writer to make room in the queue.
-- `WebSocket bootstrap applied`: the browser has applied the initial states to its
-  query cache. Match the `id` with the previous entry. `client_connect_ms` includes
-  the token request, connection and receipt; `server_elapsed` also includes the
-  return trip for this acknowledgement. Neither measures the first painted card.
+- `WebSocket bootstrap applied`: the browser has committed every printer state
+  received before the bootstrap marker to its query cache. Match the `id` with
+  the previous entry. `client_connect_ms` runs from token-request start to that
+  cache commit; `token_ms`, `socket_open_ms`, `first_status_ms` (opening to the
+  first status, if any), and `marker_to_cache_ms` separate the stages. Missing
+  stages from an older client appear as `None`. `server_elapsed` includes the
+  return trip for the acknowledgement. None measures the first painted card.
 - `Slow WebSocket send`, `WebSocket send timed out`, or `WebSocket outbox overflow`:
   a browser connection cannot keep up with outgoing data.
 
 Missing acknowledgement alone does not prove a server fault: an older browser
 bundle, a disconnected tab or a network interruption can also explain it. These
 timings do not include loading the application's JavaScript or the printer list.
+Under a steady stream of archive, library or inventory events, affected cache
+entries are marked stale within five seconds of the first event while browser
+timers are running (a suspended tab may resume later). Active reads
+are then started at a limited pace; an inactive view refreshes when opened.
 
 ---
 
