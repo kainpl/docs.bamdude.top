@@ -43,7 +43,9 @@ The **Authored families** block under **Profiles → Local** lists every family 
 
 ## :material-printer-3d-nozzle: What the printer receives
 
-AMS slot assignment goes through the catalog: the printer gets the family id and the proper versioned preset id, temperatures come from the actual preset for that printer and nozzle (spool overrides still win), and multi-colour spools write **all** their colours to the tray, exactly as Bambu Studio does. A custom family is only sent to printers that declare support for user presets — others receive the generic family of the same material.
+AMS slot assignment goes through the catalog: the printer gets the family id and the proper versioned preset id, temperatures come from the actual preset for that printer and nozzle (spool overrides still win), and multi-colour spools write **all** their colours to the tray, exactly as Bambu Studio does. A custom family is only sent to printers that declare support for user presets — others receive a system family of the same filament type.
+
+A spool with no family at all — a quick-added one, or a Spoolman spool without a linked K-profile — is configured from its material. The slot keeps the spool's filament type: it gets a family of exactly that type, the generic one where the catalog has it (PLA, PETG, PA-CF…) and otherwise the catalog's own (a spool of PLA Aero gets *Bambu PLA Aero*). Words and qualifiers are understood — "PLA Aero" is PLA-AERO, `PLA+` and "PLA Matte" are PLA. For a type no profile exists for, such as ASA-GF, the base material's generic profile supplies the temperatures and the slot still says ASA-GF. The type matters because the queue matches spools to plates by it.
 
 ## :material-link: Related pages
 

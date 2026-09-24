@@ -39,8 +39,8 @@ The per-printer preset and its temperatures are resolved from the catalog for
 the printer and the **nozzle actually fitted** — with a 0.6 mm nozzle the tray
 gets the 0.6 mm preset, and on a dual-nozzle H2D each AMS resolves against the
 nozzle that feeds it. A custom family is only sent to printers that declare
-support for user presets; others receive the generic family of the same
-material. A profile/nozzle mismatch is what makes the printer reject a print
+support for user presets; others receive a system family of the same filament
+type. A profile/nozzle mismatch is what makes the printer reject a print
 with the cryptic *"Failed to get AMS mapping table"* — the queue catches that
 mismatch before uploading and fails the item with an actionable message
 instead.
