@@ -18,8 +18,8 @@ It's **off by default** — existing installs see no change until you turn it on
 The stage runs on the idle printer, right before dispatch, and resolves everything per print:
 
 1. **Should it run?** The per-print override decides — `off` skips, `on` forces it on, `inherit` (the default) follows the global **Preheat & Heat Soak** toggle.
-2. **Bed target** is read from the print file's own metadata. If the file carries no bed temperature, preheat is skipped for that print.
-3. **Chamber target** is worked out from the loaded AMS filament types: BamDude looks up each loaded slot's type in the [chamber-target map](#per-filament-chamber-target-map) and takes the **hottest** across all loaded slots — so a mixed PA + PLA job soaks for the PA. A target of `0` skips the chamber phase but still runs the bed phase and the soak.
+2. **Chamber target** is worked out from the filaments the print uses: BamDude looks up each one's type in the [chamber-target map](#per-filament-chamber-target-map) and takes the **hottest** — so a mixed PA + PLA job soaks for the PA. When that comes out as `0` (PLA, PETG, TPU, PVA), there is nothing to preheat for and **the whole stage is skipped** — the print starts straight away; on printers with an airduct flap the flap is set back to cooling. A chamber target of exactly `0` typed for one print, or preheat forced **on** for it, still runs the bed phase and the soak.
+3. **Bed target** is read from the print file's own metadata. If the file carries none but the print wants chamber heat, the bed is driven to 90 °C — on these printers the bed is what heats the chamber.
 4. **Hardware tier** decides how the chamber phase behaves (see below).
 5. **Wait, then soak.** BamDude waits for the bed (and, where possible, the chamber) to reach target — up to the max-wait cap — then holds at temperature for the soak duration. Both loops abort cleanly if you cancel the queued print mid-soak.
 
@@ -27,12 +27,11 @@ The stage runs on the idle printer, right before dispatch, and resolves everythi
 graph LR
     A[Job about to dispatch] --> B{Preheat on?}
     B -- no --> Z[Start print]
-    B -- yes --> C[Heat bed to file target]
-    C --> D{Chamber target > 0?}
-    D -- yes --> E[Heat / wait per hardware tier]
-    D -- no --> F[Bed only]
+    B -- yes --> D{Filaments want a chamber?}
+    D -- no --> Z
+    D -- yes --> C[Heat bed to file target]
+    C --> E[Heat / wait per hardware tier]
     E --> G[Soak at temperature]
-    F --> G
     G --> Z
 ```
 
@@ -57,7 +56,7 @@ The chamber target for a print is derived from the filaments that print uses. Th
 | PVA | 0 °C |
 | **Other / unmapped** (`default`) | 0 °C |
 
-- **`0` means "no chamber phase"** — commodity filaments (PLA, PETG, TPU, PVA) derive `0`, so a PLA-only print skips the chamber wait entirely and just does the bed + soak.
+- **`0` means "nothing to preheat for"** — commodity filaments (PLA, PETG, TPU, PVA) derive `0`, so a PLA-only print skips preheat entirely and starts straight away.
 - **The highest target among the filaments the print uses wins.** A print that uses PA from slot 1 and PLA from slot 2 soaks to PA's 50 °C — the engineering filament's requirement is binding.
 - **A spool the print does not use does not count.** Which slots a print uses comes from its filament mapping, so an ASA spool parked in slot 3 does not make a PLA-only print wait for a 45 °C chamber. An external spool the print feeds from counts like any slot. A print without a filament mapping falls back to every loaded AMS slot.
 - **A filled or foamed type without a row of its own uses its base material's.** A slot loaded with ASA-GF or ASA Aero gets ASA's 45 °C, ABS-GF gets ABS's. A type listed on its own still wins — PETG-CF keeps its 40 °C rather than PETG's 0. Only a type whose base isn't in the map either falls to **Other / unmapped**.
@@ -110,7 +109,7 @@ The Print dialog's options carry a **Preheat** control so you can flip the decis
 | **On** | Force the stage on for this print even if the global toggle is off. |
 | **Off** | Skip the stage for this print even if the global toggle is on. |
 
-When it isn't set to **Off**, an optional **Chamber target override** field lets you type an explicit chamber temperature (°C) for this print. Leave it blank to use the filament-derived default; an explicit `0` means "bed and soak, but no chamber phase" even if the loaded filament would otherwise want one.
+When it isn't set to **Off**, an optional **Chamber target override** field lets you type an explicit chamber temperature (°C) for this print. Leave it blank to use the filament-derived default — a print whose filaments want no chamber then skips preheat entirely; an explicit `0` means "bed and soak, but no chamber phase" even if the filament would otherwise want one. The field says so under it.
 
 ---
 
@@ -128,7 +127,7 @@ When it isn't set to **Off**, an optional **Chamber target override** field lets
 - **No bed temperature, no preheat.** The bed target comes from the print file's metadata. A file with no bed temperature (rare) skips the stage entirely.
 - **Best-effort throughout.** A dropped printer, a refused `M141`, or a missing sensor reading logs and continues — the normal upload + start path always runs afterward. Preheat never blocks a print from starting; it only delays it.
 - **The soak eats into throughput.** A 15-minute radiant warm-up plus a 5-minute soak is 20 minutes the printer isn't printing. That's the point for engineering filaments, but keep the max-wait sane on a busy farm.
-- **External-spool prints derive no chamber target.** If a print runs off an external spool with no AMS filament data, the chamber phase short-circuits (target `0`) and only the bed + soak run — use the per-print chamber override if you need a chamber soak there.
+- **An external spool counts only when the print's filament mapping names it.** A print without a filament mapping derives its target from the AMS alone, so an external-spool print of that kind derives `0` and skips preheat — use the per-print chamber override if you need a chamber soak there.
 
 ---
 
