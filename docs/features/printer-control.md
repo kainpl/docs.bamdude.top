@@ -303,11 +303,16 @@ POST /api/v1/printers/{id}/bed-jog?distance=N
 |-------|------------|
 | `distance` | Non-zero, `|distance| <= 200` mm |
 
+`distance` is a **nozzle-bed gap**, with the same meaning on every model: positive opens the gap, negative closes it. On a CoreXY printer (X1, P1, H2, P2S, X2D) the bed drops away from the nozzle; on a bed-slinger (A1, A1 Mini, A2L) the toolhead rises off the bed. Positive is always the safe direction.
+
+!!! warning "Changed after 0.6.1"
+    Before this, `distance` followed Bambu Studio's *arrow* convention — negative moved whatever travels on Z upwards — which on a bed-slinger is the opposite of the gap: a script that sent `+5` for clearance on an A1 lowered the nozzle. The printer card's arrows now go through `POST /api/v1/printers/{id}/jog?axis=z`, which keeps Studio's arrow convention.
+
 The `force` parameter was removed in 0.4.7. It wrapped the move in `M211 S0` … `M211 S1` — a command form that does not exist in Bambu's firmware dialect (there, bare `M211 S` means *push* the endstop state and `M211 R` means *pop* it), and the UI sent it on every jog, so every manual move ran without the soft endstops being explicitly enabled. A stray `?force=true` from an old client is ignored.
 
 Step selector in the popover: `1 / 10 / 50 mm`. Only enabled when the printer is **not** running a print.
 
-The same axis is also in the **Motion Control** window below, together with X, Y and the extruder. Both go through one implementation, so the direction handling and the endstop sequence cannot drift apart.
+The same axis is also in the **Motion Control** window below, together with X, Y and the extruder. Both go through one implementation, so the direction handling and the endstop sequence cannot drift apart. On a bed-slinger both label the control **Z** and speak of the toolhead rather than the plate — that is the part that moves on Z there, and it is how Bambu Studio labels it.
 
 ### G-code sent
 
