@@ -59,6 +59,7 @@ The chamber target for a print is derived from the loaded filament types. The bu
 
 - **`0` means "no chamber phase"** — commodity filaments (PLA, PETG, TPU, PVA) derive `0`, so a PLA-only print skips the chamber wait entirely and just does the bed + soak.
 - **The highest target across loaded slots wins.** Load PA in slot 1 and PLA in slot 2 and the print soaks to PA's 50 °C — the engineering filament's requirement is binding.
+- **A filled or foamed type without a row of its own uses its base material's.** A slot loaded with ASA-GF or ASA Aero gets ASA's 45 °C, ABS-GF gets ABS's. A type listed on its own still wins — PETG-CF keeps its 40 °C rather than PETG's 0. Only a type whose base isn't in the map either falls to **Other / unmapped**.
 - Each value is capped at 60 °C in the editor. Reset the whole map to the shipped defaults with one click.
 
 !!! note "Where the defaults come from"
