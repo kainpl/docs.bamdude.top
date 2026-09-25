@@ -30,6 +30,8 @@ graph LR
 
 **Paper** — one label per page, or laid out across a sheet of stock. Driver side only: a desk label printer feeds a roll, and there is no page to tile.
 
+**Starting position** — with a sheet chosen, the first free label on it, counted row by row from the top left. A half-used sheet goes back into the printer: the first page starts at that cell, every later page at the first one.
+
 **Design** — every design drawn for that output, with its description and its size. Press **Print** and the PDF opens in a new tab, where you decide whether to print it or save it.
 
 !!! tip "A design that does not fit is greyed out, not hidden"
@@ -149,6 +151,7 @@ POST /api/v1/spoolman/labels
   "spools": [{ "id": 12, "display_name": "Polymaker PLA Basic Red" }],
   "template_id": 4,
   "sheet_id": 2,
+  "starting_position": 5,
   "monochrome": false
 }
 ```
@@ -160,6 +163,7 @@ Returns a PDF stream. Up to 500 labels per request, printed in the order the IDs
 | `template_id` | A design from the catalogue. |
 | `sheet_id` | Paper to lay it out on. On its own — with no `template_id` — it builds a design to fit the cell. |
 | `template` | One of six names this endpoint has always accepted, resolved against the designs that ship with BamDude. Cannot be combined with `sheet_id`: two of those names *are* sheets, so that would answer "which paper" twice. |
+| `starting_position` | With a sheet: the first free cell, 1-based, row by row (default 1). Refused off a sheet and past the sheet's last cell. |
 | `monochrome` | Drops the colour swatch. The hex line still carries the colour. |
 | `display_name` | Optional per spool. Omit it and the server composes the same name the Inventory page shows — a label printed by an API key must read like one printed from the browser. |
 
