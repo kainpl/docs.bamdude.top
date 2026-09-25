@@ -114,7 +114,7 @@ The tag filter matters here for a reason that is easy to miss. It is applied by 
 
 ## :material-printer: Print Directly
 
-1. Find a sliced file (`.gcode` or `.gcode.3mf`)
+1. Find a sliced file — a `.gcode`, a `.gcode.3mf`, or a `.3mf` with sliced G-code inside. BamDude looks inside the file rather than at its name, so a plate exported from the slicer as `Part.3mf` prints like `Part.gcode.3mf`
 2. Click the printer icon or right-click for context menu
 3. Select **Print**
 4. Choose printer(s), configure filament mapping, set print options
@@ -506,6 +506,8 @@ External folders are indexed on creation. To pick up new or removed files:
 1. Click the external folder in the sidebar
 2. Click **Scan / Refresh** in the info bar
 3. New files are added to the index, files removed on disk are dropped from the index
+
+A scan judges each 3MF by what it holds: one with sliced G-code inside is marked sliced and gets **Print**, whatever it is called. Files indexed before this was checked are re-judged on the folder's next scan.
 
 ### Read-only protection
 
