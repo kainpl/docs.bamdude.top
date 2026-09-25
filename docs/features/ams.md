@@ -389,7 +389,7 @@ The printer firmware reports power constraints via `dry_sf_reason` per AMS unit.
 | `8` | Need plugin power | No external PSU connected — plug in the AMS power adapter |
 
 !!! warning "PSU not connected (most common cause)"
-    If the drying button is greyed out with a "Power required" tooltip, the most likely cause is `dry_sf_reason=8` — connect the external power adapter to your AMS unit.
+    A greyed-out drying button names what blocks it, in the order the operator has to act: the power adapter first (`dry_sf_reason` 1 or 8 — connect the external power adapter to your AMS unit), then filament at the AMS outlet (3 — retract it), then anything else. The server refuses a drying command with the same priority.
 
 ### HMS error codes (AMS power)
 
@@ -495,6 +495,39 @@ Defaults are based on BambuStudio's official filament drying profiles. Edit them
 
 !!! note "AMS 2 Pro temperature limit"
     AMS 2 Pro (`n3f`) caps at 65 °C in firmware. AMS-HT (`n3s`) caps at 85 °C. Setting a higher temperature in the preset is harmless — it's clamped to the hardware ceiling at command time.
+
+!!! tip "Composites and nylon"
+    A composite spool dries — and is judged against the humidity threshold — as its base material: PA6-CF, ABS-GF or PLA-AERO use the PA, ABS or PLA row. Nylon under any of its spellings (NYLON, PA6, PA11, PA12, PAHT, PPA) uses PA. The preheat stage reads the chamber target the same way.
+
+### Scheduled Drying
+
+Plan a drying cycle instead of starting it on the spot. The drying popover (the :material-fire: flame icon on an AMS) has a **When** row:
+
+| Choice | What happens |
+|---|---|
+| **Now** | Starts immediately, as before. |
+| **After delay** | Starts in 1–48 hours. |
+| **At time** | Starts at the date and time you pick (your browser's clock). |
+| **When free** | Starts as soon as the printer is free. |
+| **Repeat** | A schedule: chosen weekdays at a time of day, optionally **Not later than** a second time. |
+
+A schedule runs in **farm time** — the server's time zone, not your browser's. The popover says so when the two differ.
+
+How a scheduled run behaves:
+
+- It starts only on an idle printer and makes the same checks as the drying button: a model and firmware that can dry, the unit's temperature ceiling, no [`dry_sf_reason`](#dry_sf_reason-codes) blocker. While it cannot start it waits, and the printer card says why — printing, offline, power adapter, filament at the outlet. If it can never run on that unit (a model that dries only from its own screen, firmware without drying, a temperature above the unit's ceiling), it fails at once and says so.
+- A repeating schedule's run that could not start before its **Not later than** time is skipped for that day and reported. Without one, the window lasts until the schedule's next day.
+- A print going out on the printer **stops a scheduled cycle on every model** — even one that can dry while printing, because a scheduled temperature is yours, not the mid-print cap — and the cycle resumes after the print while its window is still open. Whether the queue waits for a scheduled cycle instead is the same **Block queue until drying completes** switch (`queue_drying_block`) that governs auto-drying.
+- Auto-drying leaves a unit alone while a schedule holds it.
+- A cycle stopped by hand on an idle printer counts as cancelled, not failed; one stopped in its last tenth counts as done.
+- Days missed while BamDude was down are skipped quietly — no burst of notifications on restart.
+- Archiving a printer cancels its waiting runs and pauses its schedules; deleting it removes both.
+
+Under the AMS units the printer card lists what is planned — waiting, running and missed runs with their reason, and the schedules — with cancel / dismiss, edit, pause / resume and delete. **Settings → Filament → Drying schedules** shows every schedule of the farm; new schedules are created from a printer card.
+
+Three notifications, per provider and per Telegram chat: **Scheduled drying started** and **finished** (off by default — a nightly schedule would send two a night per AMS) and **did not happen** (on by default — a missed night otherwise looks like a dried spool).
+
+API: `GET` / `POST /api/v1/scheduled-dryings`, `DELETE /api/v1/scheduled-dryings/{id}` (cancels a waiting or running run, dismisses a failed or skipped one), `GET` / `POST /api/v1/drying-schedules`, `PATCH` / `DELETE /api/v1/drying-schedules/{id}`. Listing needs `printers:read`, changing needs `printers:control`.
 
 ### Ambient Drying
 
