@@ -96,7 +96,7 @@ These are the default fields emitted for every archive row. You can narrow the s
 | `designer` | Designer | From 3MF metadata or manual edit |
 | `tags` | Tags | Comma-separated tags string |
 | `notes` | Notes | Free-text notes added to the archive |
-| `failure_reason` | Failure Reason | Set on `failed` / `aborted` archives |
+| `failure_reason` | Failure Reason | Set on `failed` / `aborted` archives — a key such as `layerShift`, `userCancelled` or `noStatusUpdate`, or free text an older version stored |
 | `started_at` | Started At | ISO 8601 UTC |
 | `completed_at` | Completed At | ISO 8601 UTC |
 | `created_at` | Created At | ISO 8601 UTC |

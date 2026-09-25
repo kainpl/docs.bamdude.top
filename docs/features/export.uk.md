@@ -96,7 +96,7 @@ Stats workbook — це single sheet з парами Metric / Value та weekly-
 | `designer` | Designer | З 3MF metadata або manual edit |
 | `tags` | Tags | Comma-separated теги |
 | `notes` | Notes | Free-text нотатки |
-| `failure_reason` | Failure Reason | Set на `failed` / `aborted` архівах |
+| `failure_reason` | Failure Reason | Set на `failed` / `aborted` архівах — ключ на кшталт `layerShift`, `userCancelled` чи `noStatusUpdate`, або вільний текст, збережений давнішою версією |
 | `started_at` | Started At | ISO 8601 UTC |
 | `completed_at` | Completed At | ISO 8601 UTC |
 | `created_at` | Created At | ISO 8601 UTC |
