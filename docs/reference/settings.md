@@ -108,6 +108,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `ams_humidity_thresholds` | empty | JSON map of per-filament-type humidity trigger thresholds for auto-drying + alarms — `{"default": int, "PLA": int, "ASA": int, …}`. Empty = fall back to `ams_humidity_fair` for every type. A multi-material AMS resolves to the strictest (lowest) across its loaded spools. |
 | `ams_temp_good` | `28.0` | Green-zone temperature threshold (°C) on AMS cards. |
 | `ams_temp_fair` | `35.0` | Yellow-zone temperature threshold. Above is red. |
+| `ams_temp_alarm` | unset | Temperature (°C) above which the AMS temperature alarm is sent. Unset (or 0 and below) falls back to `ams_temp_fair`. No alarm while the AMS is drying or cooling down after it. |
 | `ams_history_retention_days` | `30` | How many days of AMS history to keep before pruning. |
 | `inbox_retention_days` | `30` | How many days of in-app notification-centre history each person keeps. Range 1-365. Swept once a day, read or not. |
 | `log_retention_days` | `7` | Retention limit for daily `bamdude-YYYY-MM-DD.log` archives. Range 1–365. Excess archives are removed at the next successful rotation. See [System info → Log rotation](../features/system-info.md#log-rotation-retention). |

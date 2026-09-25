@@ -313,6 +313,12 @@ Configure custom warning thresholds in **Settings** > **General**.
 
 The single Fair / High band above is a global default. You can also set **per-filament-type** auto-dry / alarm humidity thresholds under **Settings → Filaments** (`ams_humidity_thresholds`) — PLA, PETG, TPU, ABS, ASA, PA, PC, PVA, plus a `default` catch-all. When one AMS holds several materials, BamDude resolves to the **strictest (lowest)** threshold across all loaded spools, so the most moisture-sensitive filament in the unit sets the trigger. Empty slots contribute no constraint; unknown types fall back to `default`, then to the global Fair threshold.
 
+### Temperature alarm
+
+The AMS card colours its temperature by the **Good** and **Fair** bands (`ams_temp_good` / `ams_temp_fair`). The notification has its own threshold, **Alarm above** (`ams_temp_alarm`) under **Settings → Filaments → AMS Display Thresholds**: leave it empty and the alarm fires above Fair, as it always did; set it higher (say 45 °C) and a warm room turns the card amber without paging you every hour. A value of 0 or less is ignored and falls back to Fair.
+
+No temperature alarm is sent while an AMS is **drying**, nor while it **cools down** afterwards: the firmware's own drying state (`dry_time`, and `dry_status` Checking / Drying / Cooling) holds the alarm back, and the hold ends as soon as the unit reads at or below the alarm threshold again — or after two hours if it never does. A heater that has lost control (`dry_status` 6) is never treated as drying heat. The hold survives a restart. Humidity alarms are unaffected — humidity falling is the point of drying.
+
 ---
 
 ## :material-fire: Remote AMS Drying

@@ -108,6 +108,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `ams_humidity_thresholds` | пусто | JSON-мапа per-filament-type порогів вологості для auto-drying + алармів — `{"default": int, "PLA": int, "ASA": int, …}`. Пусто = fallback на `ams_humidity_fair` для всіх типів. Multi-material AMS резолвиться до найсуворішого (найнижчого) серед завантажених котушок. |
 | `ams_temp_good` | `28.0` | Зелена-зона temp-поріг (°C) на AMS-картках. |
 | `ams_temp_fair` | `35.0` | Жовта-зона temp. Вище — червоне. |
+| `ams_temp_alarm` | не задано | Температура (°C), вище якої надсилається тривога температури AMS. Не задано (або 0 і менше) — діє `ams_temp_fair`. Поки AMS сушить або остигає після сушіння, тривога не надсилається. |
 | `ams_history_retention_days` | `30` | Скільки днів історії AMS тримати до prune. |
 | `inbox_retention_days` | `30` | Скільки днів історії центру сповіщень зберігається в кожного користувача. Діапазон 1-365. Прибирається раз на добу, незалежно від прочитаності. |
 | `log_retention_days` | `7` | Ліміт зберігання добових архівів `bamdude-YYYY-MM-DD.log`. Діапазон 1–365. Зайві архіви видаляються під час наступної успішної ротації. Див. [System info → Ротація логів](../features/system-info.uk.md#ротація-retention-логів). |
