@@ -217,8 +217,13 @@ setting. Only what you tick is applied.
 
 | Group | Examples | Default |
 |---|---|:---:|
-| **Design intent** | wall count, infill density and pattern, layer and first-layer height, supports, seam position, brim, ironing | :material-check: ticked |
+| **Design intent** | wall count, infill density and pattern, supports, seam position, brim, ironing | :material-check: ticked |
+| **Defines the preset** — badged `overrides preset` | layer height, first-layer height | :material-close: unticked |
 | **Machine-tuned** — badged `machine-tuned` | speeds, accelerations, jerk, fan speeds, temperatures, prime-tower geometry | :material-close: unticked |
+
+Layer height and first-layer height *are* the process preset you picked — "0.08mm High Quality" is its
+layer height — so the file's value is offered, with the preset's own beside it, but never ticked for you:
+a file's 0.2 used to slice quietly over an explicitly picked 0.08 preset.
 
 Machine-tuned values were chosen for the *author's* printer. On yours they can be
 merely wrong, or outside the range your profile accepts — which fails the slice
