@@ -12,8 +12,20 @@ Solutions for common issues with BamDude.
 Printer cards can display live WebSocket states while the REST status request is
 still pending. REST supplies additional archive and plate information and remains
 the fallback when WebSocket access is unavailable. Simultaneous status reads are
-combined into a bounded batch; returning to a tab refreshes only active queries.
+combined into a bounded batch; returning to a tab refreshes only active data
+that is stale, failed, or changed while the tab was hidden. A quick switch away
+and back does not reread a fresh farm.
 A stalled WebSocket viewer is disconnected so it cannot hold up other viewers.
+
+The queue badge reads compact counts, not every queued job. Queue and Printers
+views share active queue reads across their cards; closed Issues sections show
+counts and load paged details only when opened. While a tab is hidden, these
+farm reads pause. A failed count is shown as unavailable, never as a complete
+zero. WebSocket disconnection does not turn off the independent REST fallback.
+The per-card status fallback of a whole page is merged into one batched request
+per interval, and a printer whose live state arrived recently is skipped until
+its own interval is due. After a network drop the browser reconnects with growing,
+slightly randomised delays of up to 30 seconds instead of every few seconds.
 
 For a support report, note the time you opened the page and attach backend logs
 covering that time. The following entries help narrow down the delay:
