@@ -47,6 +47,7 @@ Build date and git SHA are not exposed via this endpoint — release builds bake
 | `total_print_time_seconds` / `_formatted` | Sum of `print_time_seconds` across all archives. |
 | `total_filament_grams` / `_kg` | Sum of `filament_used_grams`. |
 | `database.size` (under `storage`) | File size of `bambuddy.db`, or PostgreSQL DB size if PG is in use. |
+| `archive_size_bytes` / `_formatted` (under `storage`) | Total size of the archive directory. Walked on a worker thread — never on the server's main loop — once for all open pages, and reused for up to 60 s. |
 
 ## :material-harddisk: Storage usage breakdown
 
@@ -78,7 +79,7 @@ The scan is cached for 5 minutes (`STORAGE_USAGE_CACHE_SECONDS = 300`). Pass `?r
 | Disk total / used / free / percent | `psutil.disk_usage(base_dir)`. |
 | `connected_printers` | Live MQTT-connected printers from `printer_manager`. |
 
-The values are point-in-time — refreshing the page re-samples them. There's no historical rollup here. For time-series, scrape [Prometheus](prometheus.md).
+The values are point-in-time — refreshing the page re-samples them (the archive size above may be up to a minute old). The CPU sample is also taken off the main loop. There's no historical rollup here. For time-series, scrape [Prometheus](prometheus.md).
 
 ## :material-text-box-search: Log viewer
 

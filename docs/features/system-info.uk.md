@@ -47,6 +47,7 @@ Build date і git SHA через цей endpoint не експонуються �
 | `total_print_time_seconds` / `_formatted` | Сума `print_time_seconds` крізь усі архіви. |
 | `total_filament_grams` / `_kg` | Сума `filament_used_grams`. |
 | `database.size` (під `storage`) | Розмір файлу `bambuddy.db` або PostgreSQL DB size, якщо PG. |
+| `archive_size_bytes` / `_formatted` (під `storage`) | Загальний розмір теки архіву. Обходиться в робочому потоці — ніколи не в головному циклі сервера — один раз для всіх відкритих сторінок і використовується повторно до 60 с. |
 
 ## :material-harddisk: Storage usage breakdown
 
@@ -78,7 +79,7 @@ Scan кешується на 5 хвилин (`STORAGE_USAGE_CACHE_SECONDS = 300`
 | Disk total / used / free / percent | `psutil.disk_usage(base_dir)`. |
 | `connected_printers` | Live MQTT-connected принтери з `printer_manager`. |
 
-Значення — point-in-time — refresh сторінки re-семплить їх. Historical rollup тут немає. Для time-series скрейпай [Prometheus](prometheus.uk.md).
+Значення — point-in-time — refresh сторінки re-семплить їх (розмір архіву вище може бути до хвилини давнім). Вибірка CPU теж знімається поза головним циклом. Historical rollup тут немає. Для time-series скрейпай [Prometheus](prometheus.uk.md).
 
 ## :material-text-box-search: Log viewer
 
