@@ -118,7 +118,12 @@ Drive **Load** and **Unload** directly from any AMS slot or external spool — n
 
 1. Hover over the slot on the printer card.
 2. Click :material-dots-vertical: in the slot's hover menu.
-3. **Load** to feed the tray, **Unload** to retract whatever is currently loaded.
+3. **Load** to feed the tray, **Unload** to retract it.
+
+**Unload** acts on the slot whose menu you used. On a two-nozzle printer with both nozzles loaded it unloads the nozzle fed from that slot; if no nozzle is loaded from it, BamDude says so and sends nothing.
+
+!!! info "With a Filament Track Switch"
+    Either nozzle can be fed from any slot, so **Load** asks which one — as Bambu Studio does. Nothing is preselected, and a nozzle already loaded from that slot is greyed out. While the switch is not set up on the printer (every AMS assigned to an inlet on its Manual AMS Setup screen), or right after a reconnect before the printer has confirmed the switch is still there, BamDude refuses the load instead of sending one the printer would drop. Printers without a switch load in one click, as before.
 
 !!! note "Availability"
     The Load / Unload menu is hidden while the printer is `RUNNING` — wait for idle.
@@ -292,7 +297,9 @@ BamDude treats the firmware's `print.aux` bit 29 as the authoritative FTS presen
 - **Without FTS** — each AMS feeds a fixed nozzle, dropdown only shows trays on the matching nozzle (prevents the *position of left hotend is abnormal* failure from cross-nozzle assignment).
 - **With FTS** — every loaded **AMS** slot is selectable for either nozzle, since FTS handles routing on the fly. The external holders are unavailable: the printer firmware does not support an external-holder print while FTS is installed, even if the holder is physically spliced after the switch.
 
-**Routing badges:** slots currently fed into a track display `[L]` or `[R]` next to the colour swatch and in the dropdown, indicating which extruder FTS is currently routing them to. Idle slots (not in any track) show no badge. Detection is automatic and state changes reach both the initial status and live updates, so plugging in or removing the accessory updates the dropdown behaviour without a refresh.
+**Inlet badges:** behind the switch an AMS reaches both nozzles, so instead of a nozzle it is badged with the switch **inlet** it is plumbed into — the one set on the printer's Manual AMS Setup screen. The badge reads **L** for IN-A and **R** for IN-B, in blue rather than the green nozzle badge, and its tooltip names the inlet: the letter is the inlet's position, not a claim about which nozzle that AMS feeds. The print dialog's slot list carries the same `[L]` / `[R]`. An AMS the switch has not been set up for shows no badge rather than a guess. Changes on the printer screen reach the page live.
+
+**One inlet for the whole print:** when every filament a print needs sits behind the same inlet, the print dialog says so. It is allowed but slow — a change between two filaments on one inlet pulls the old spool all the way back to its AMS before the next can go up the shared tube; across the two inlets it only retracts to the switch. Moving one spool to an AMS on the other inlet fixes it. It is advice, never a block.
 
 On models whose firmware declares the extra left-nozzle TPU check, a plain `TPU` job on the left waits until that firmware capability is positively reported. The same job on the right needs no extra FTS check. A material merely named `TPU-AMS` is not treated as plain TPU.
 
