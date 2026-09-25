@@ -119,14 +119,14 @@ If you only run BamDude, the built-in inventory above already does everything Sp
 |---------|--------|
 | `spoolman_enabled` | Master switch. |
 | `spoolman_sync_mode` | `auto` (push every AMS change immediately) or `manual` (wait for an explicit Sync button click). |
-| `spoolman_disable_weight_sync` | Skip `remaining_weight` updates on existing Spoolman spools — only push location. Use this when Spoolman is your authoritative weight tracker (its granular usage reporting beats AMS estimates). |
+| `spoolman_disable_weight_sync` | Skip `remaining_weight` updates on existing Spoolman spools. Use this when Spoolman is your authoritative weight tracker (its granular usage reporting beats AMS estimates). |
 | `spoolman_report_partial_usage` | When a print fails or is cancelled, report the **estimated grams used up to the abort point** based on layer progress, instead of dropping the whole estimate. Helps Spoolman keep an accurate weight after failures. |
 
 ### :material-sync-circle: What syncs
 
 - **AMS slot ↔ Spoolman spool** — Each loaded slot maps to a Spoolman spool ID. Material, brand, colour, and (unless `disable_weight_sync` is on) remaining weight are kept in step.
 - **Print consumption** — Each completed print reports the grams used to Spoolman as a usage event. Cancelled / failed prints respect `spoolman_report_partial_usage`.
-- **Location** — BamDude writes the printer name + AMS coordinates to Spoolman's `location` field (`H2D-1 AMS-A Slot 3` etc.). Always synced even with weight sync disabled.
+- **Location** — the **Storage Location** you pick for a spool is written to Spoolman's `location` field, and Spoolman's location names appear in BamDude's Storage Location list. A printer slot is not a storage location: which spool is loaded where is tracked by slot assignments, not written to `location`.
 - **RFID** — Bambu Lab tray UUIDs are passed through to Spoolman's tag field.
 
 ### :material-link-off: Unlinking
@@ -209,8 +209,8 @@ Three independent automation toggles (Settings → Spoolman):
 - **Auto-detect on AMS change** — when AMS filament changes, BamDude detects the new configuration, matches against Spoolman, and updates slot mappings without intervention.
 - **Auto-clear location on removal** — when spools are removed from AMS, BamDude detects the empty slot, finds Spoolman spools with the matching location string, and clears the `location` field. The spool is now available for other printers.
 
-!!! info "Location format"
-    Spoolman locations follow the format `Printer Name - AMS X Slot Y`, e.g. `H2D-Workshop - AMS A Slot 3`.
+!!! info "Old slot markers in `location`"
+    Older versions wrote the slot a spool was loaded into — `H2D-Workshop - AMS A1`, `AMS-HT A1`, `External Spool` — into Spoolman's `location` field. Those strings are left on your Spoolman spools, but they are not offered as storage locations, and the ones already imported were removed from the list (unless a spool here is filed under one). A marker is cleared from a Bambu Lab spool once it leaves the AMS.
 
 ### :material-server-network: Multi-printer sync
 

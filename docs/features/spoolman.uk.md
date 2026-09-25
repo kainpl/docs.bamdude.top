@@ -119,14 +119,14 @@ BamDude постачається з **повноцінним інвентаре�
 |--------------|-------|
 | `spoolman_enabled` | Master switch. |
 | `spoolman_sync_mode` | `auto` (пушити кожну зміну AMS одразу) або `manual` (чекати explicit натискання Sync). |
-| `spoolman_disable_weight_sync` | Скіпати оновлення `remaining_weight` на існуючих spool-ах Spoolman — пушити лише локацію. Використовуйте, якщо Spoolman — ваш authoritative weight tracker (його гранулярний звіт з'їдає AMS-оцінки). |
+| `spoolman_disable_weight_sync` | Скіпати оновлення `remaining_weight` на існуючих spool-ах Spoolman. Використовуйте, якщо Spoolman — ваш authoritative weight tracker (його гранулярний звіт з'їдає AMS-оцінки). |
 | `spoolman_report_partial_usage` | Коли друк падає або скасовується, звітувати **орієнтовну кількість грамів, використаних до точки переривання**, на основі прогресу по шарах, замість того щоб скидати всю оцінку. Допомагає Spoolman тримати точну вагу після фейлів. |
 
 ### :material-sync-circle: Що синхронізується
 
 - **Слот AMS ↔ Spoolman spool** — кожен заряджений слот мапиться на Spoolman spool ID. Матеріал, бренд, колір і (якщо `disable_weight_sync` не увімкнено) залишок ваги тримаються в курсі один одного.
 - **Споживання друку** — кожен завершений друк звітує грами в Spoolman як usage event. Скасовані / провалені друки поважають `spoolman_report_partial_usage`.
-- **Локація** — BamDude пише ім'я принтера + AMS-координати у поле `location` Spoolman (`H2D-1 AMS-A Slot 3` тощо). Завжди синхронізується, навіть якщо синхронізацію ваги вимкнуто.
+- **Локація** — **місце зберігання**, яке ви обираєте для котушки, записується в поле `location` Spoolman, а назви локацій зі Spoolman зʼявляються у списку місць зберігання BamDude. Слот принтера — не місце зберігання: яка котушка де завантажена, відстежують призначення слотів, а не поле `location`.
 - **RFID** — Bambu Lab tray UUID-и пробрасуються в поле tag Spoolman.
 
 ### :material-link-off: Відв'язка
@@ -209,8 +209,8 @@ AMS Lite (наприклад, A1 серія) **не має сенсора ваг
 - **Auto-detect on AMS change** — коли AMS-філамент змінюється, BamDude детектує нову конфігурацію, матчить проти Spoolman і оновлює slot mapping без втручання.
 - **Auto-clear location on removal** — коли котушку прибирають з AMS, BamDude детектує порожній слот, знаходить Spoolman-котушки з відповідним рядком локації і чистить поле `location`. Котушка тепер доступна іншим принтерам.
 
-!!! info "Формат локації"
-    Spoolman-локації слідують формату `Printer Name - AMS X Slot Y`, наприклад `H2D-Workshop - AMS A Slot 3`.
+!!! info "Старі маркери слотів у `location`"
+    Давніші версії писали в поле `location` Spoolman слот, у який завантажили котушку, — `H2D-Workshop - AMS A1`, `AMS-HT A1`, `External Spool`. Ці рядки лишаються на ваших котушках у Spoolman, але як місця зберігання більше не пропонуються, а вже імпортовані прибрано зі списку (якщо жодна котушка тут не записана під таким місцем). З котушки Bambu Lab маркер знімається, щойно вона покидає AMS.
 
 ### :material-server-network: Multi-printer синк
 
