@@ -177,7 +177,7 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 ## :material-alert-circle-outline: Limitations
 
 !!! note "Presigned S3 downloads trust the same certificates as everything else"
-    MakerWorld often hands the 3MF out as an Amazon S3 link. BamDude verifies that download against the same certificate bundle as every other connection, not the operating system's store — on Windows the system store fills lazily, and an import used to fail with `unable to get local issuer certificate` on a machine that had not met that Amazon root yet.
+    MakerWorld often hands the 3MF out as an Amazon S3 link. BamDude verifies that download against the same certificate bundle as every other connection, not the operating system's store — on Windows the system store fills lazily, and an import used to fail with `unable to get local issuer certificate` on a machine that had not met that Amazon root yet. Behind a TLS-inspecting proxy, point `SSL_CERT_FILE` (or `SSL_CERT_DIR`) at its CA: every connection, this one included, honours it.
 
 !!! warning "MakerWorld 418 — application-level CAPTCHA"
     MakerWorld occasionally challenges your IP with a CAPTCHA (`HTTP 418` with `{"captchaId":...}`). This is **application-level**, not Cloudflare-edge — there's no server-side solve, since CAPTCHAs are intentionally unsolvable without a real browser. BamDude does one short-backoff retry, then surfaces the upstream message verbatim. Wait 1–4 hours of quiet traffic, or use **Open on MakerWorld** to import manually via your browser.

@@ -177,7 +177,7 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 ## :material-alert-circle-outline: Обмеження
 
 !!! note "Presigned-завантаження з S3 довіряє тим самим сертифікатам, що й решта"
-    MakerWorld часто віддає 3MF як посилання Amazon S3. BamDude перевіряє це завантаження тим самим набором сертифікатів, що й усі інші з'єднання, а не сховищем операційної системи — на Windows системне сховище наповнюється ліниво, і імпорт падав з `unable to get local issuer certificate` на машині, яка ще не зустрічала цей корінь Amazon.
+    MakerWorld часто віддає 3MF як посилання Amazon S3. BamDude перевіряє це завантаження тим самим набором сертифікатів, що й усі інші з'єднання, а не сховищем операційної системи — на Windows системне сховище наповнюється ліниво, і імпорт падав з `unable to get local issuer certificate` на машині, яка ще не зустрічала цей корінь Amazon. За проксі з TLS-інспекцією вкажи його CA у `SSL_CERT_FILE` (або `SSL_CERT_DIR`): кожне з'єднання, і це теж, його враховує.
 
 !!! warning "MakerWorld 418 — application-level CAPTCHA"
     MakerWorld інколи кидає виклик твоїй IP CAPTCHA-ою (`HTTP 418` з `{"captchaId":...}`). Це **application-рівень**, не Cloudflare-edge — server-side розв'язку немає, бо CAPTCHA принципово не розв'язується без браузера. BamDude робить один retry з коротким backoff'ом, потім кидає upstream-повідомлення verbatim. Чекай 1–4 години тиші, або тисни **Open on MakerWorld** і качай вручну через браузер.
