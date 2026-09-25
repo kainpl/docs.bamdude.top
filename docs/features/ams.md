@@ -389,7 +389,7 @@ The printer firmware reports power constraints via `dry_sf_reason` per AMS unit.
 | `8` | Need plugin power | No external PSU connected — plug in the AMS power adapter |
 
 !!! warning "PSU not connected (most common cause)"
-    A greyed-out drying button names what blocks it, in the order the operator has to act: the power adapter first (`dry_sf_reason` 1 or 8 — connect the external power adapter to your AMS unit), then filament at the AMS outlet (3 — retract it), then anything else. The server refuses a drying command with the same priority.
+    The drying button's tooltip names what blocks drying, in the order the operator has to act: the power adapter first (`dry_sf_reason` 1 or 8 — connect the external power adapter to your AMS unit), then filament at the AMS outlet (3 — retract it), then anything else. The server refuses a drying command with the same priority. The button still opens — with **Now** switched off — so a cycle can be [scheduled](#scheduled-drying) for when the unit is ready.
 
 ### HMS error codes (AMS power)
 
@@ -515,17 +515,19 @@ A schedule runs in **farm time** — the server's time zone, not your browser's.
 
 How a scheduled run behaves:
 
+- The flame button opens the popover even while the unit is drying or blocked — only **Now** is switched off then, so the next cycle can be planned. **Stop** stays on the drying bar.
 - It starts only on an idle printer and makes the same checks as the drying button: a model and firmware that can dry, the unit's temperature ceiling, no [`dry_sf_reason`](#dry_sf_reason-codes) blocker. While it cannot start it waits, and the printer card says why — printing, offline, power adapter, filament at the outlet. If it can never run on that unit (a model that dries only from its own screen, firmware without drying, a temperature above the unit's ceiling), it fails at once and says so.
 - A repeating schedule's run that could not start before its **Not later than** time is skipped for that day and reported. Without one, the window lasts until the schedule's next day.
-- A print going out on the printer **stops a scheduled cycle on every model** — even one that can dry while printing, because a scheduled temperature is yours, not the mid-print cap — and the cycle resumes after the print while its window is still open. Whether the queue waits for a scheduled cycle instead is the same **Block queue until drying completes** switch (`queue_drying_block`) that governs auto-drying.
+- An offline printer, or one that has just reconnected and not reported yet, is waited for — never judged by its empty state.
+- **Any print that starts on the printer** — from the queue, **Print now**, the printer's screen or the slicer — **stops a scheduled cycle on every model** — even one that can dry while printing, because a scheduled temperature is yours, not the mid-print cap — and the cycle resumes after the print while its window is still open. Whether the queue waits for a scheduled cycle instead is the same **Block queue until drying completes** switch (`queue_drying_block`) that governs auto-drying.
 - Auto-drying leaves a unit alone while a schedule holds it.
-- A cycle stopped by hand on an idle printer counts as cancelled, not failed; one stopped in its last tenth counts as done.
+- A cycle stopped by hand on an idle printer counts as cancelled, not failed; one stopped in its last tenth counts as done. A cycle the AMS accepted but never began counts as **did not happen** and is reported.
 - Days missed while BamDude was down are skipped quietly — no burst of notifications on restart.
 - Archiving a printer cancels its waiting runs and pauses its schedules; deleting it removes both.
 
-Under the AMS units the printer card lists what is planned — waiting, running and missed runs with their reason, and the schedules — with cancel / dismiss, edit, pause / resume and delete. **Settings → Filament → Drying schedules** shows every schedule of the farm; new schedules are created from a printer card.
+Under the AMS units the printer card lists what is planned — waiting, running and missed runs with their reason, and the schedules — with cancel / dismiss, edit, pause / resume and delete — changing them takes `printers:control`, and deleting a schedule or stopping a running cycle asks first. **Settings → Filament → Drying schedules** shows every schedule of the farm; new schedules are created from a printer card. Editing a schedule while its run waits keeps that night and applies the new settings; moving its time or days re-plans from now.
 
-Three notifications, per provider and per Telegram chat: **Scheduled drying started** and **finished** (off by default — a nightly schedule would send two a night per AMS) and **did not happen** (on by default — a missed night otherwise looks like a dried spool).
+Three notifications, per provider and per Telegram chat: **Scheduled drying started** and **finished** (off by default — a nightly schedule would send two a night per AMS) and **did not happen** (on by default — a missed night otherwise looks like a dried spool). "On by default" applies to new providers and to Telegram chats that keep the default selection; a provider or chat with its own event selection keeps it exactly as saved, so tick the event there.
 
 API: `GET` / `POST /api/v1/scheduled-dryings`, `DELETE /api/v1/scheduled-dryings/{id}` (cancels a waiting or running run, dismisses a failed or skipped one), `GET` / `POST /api/v1/drying-schedules`, `PATCH` / `DELETE /api/v1/drying-schedules/{id}`. Listing needs `printers:read`, changing needs `printers:control`.
 
