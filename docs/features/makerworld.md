@@ -42,7 +42,9 @@ BamDude reuses your existing **Bambu Cloud** sign-in for downloads — there's n
 - **Anonymous calls** (URL parsing, design metadata, plate enumeration) work without a token.
 - **Download calls** (`/iot-service/api/user/profile/{profileId}`) require your stored Bambu Cloud bearer.
 
-If no token is stored, **Settings → MakerWorld → Status** reports `can_download = false` and the Import button is disabled — go to **Settings → Bambu Cloud** to sign in first.
+If no token is stored, the MakerWorld page shows a **Bambu Cloud sign-in required to download** banner and the Import and Print buttons stay disabled — sign in to Bambu Cloud on the **Profiles** page first.
+
+If a token is stored but Bambu has stopped accepting it, the banner says **Bambu Cloud sign-in expired** instead, and the buttons stay disabled until you sign in again. A download refused for that reason answers *Your Bambu Cloud sign-in has expired. Open the Profiles page and sign in to Bambu Cloud again.* A single stray `401` does not sign you out: only Bambu's own expiry answer marks the token as dead.
 
 !!! note "API-key callers use the key owner's token"
     Requests authenticated with an **API key** (`X-API-Key` / `Bearer bd_…`) that carries the cloud-access scope now resolve the **key owner's** stored Bambu Cloud token, so `has_cloud_token` / `can_download` reflect that user instead of always reporting `false`. Extension and Home Assistant imports that previously failed with "requires Bambu Cloud login" now succeed, as long as the key's owner has signed into Bambu Cloud.
@@ -154,7 +156,7 @@ GET /api/v1/makerworld/imports/{library_file_id}/cover
 GET /api/v1/makerworld/imports/{library_file_id}/cover-variant
 ```
 
-Both are **public (whitelisted)** rather than permission-gated, because `<img src>` browser fetches can't carry an `Authorization` header. The variant route is named `cover-variant` (not `variant-cover`) so the substring `/cover` matches the auth-middleware whitelist — same mechanism library thumbnails and printer covers already use. The JSON metadata endpoint at `…/meta` keeps its `makerworld:view` permission gate since `fetch()` requests carry the JWT normally.
+Both are **public (whitelisted)** rather than permission-gated, because `<img src>` browser fetches can't carry an `Authorization` header. Each route has its own anchored entry in the auth-middleware whitelist. The JSON metadata endpoint at `…/meta` keeps its `makerworld:view` permission gate since `fetch()` requests carry the JWT normally.
 
 Re-download refreshes both cover files alongside the 3MF bytes. Deleting a library file CASCADE-drops the meta row, and the cover files are unlinked from disk.
 
@@ -174,6 +176,9 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 
 ## :material-alert-circle-outline: Limitations
 
+!!! note "Presigned S3 downloads trust the same certificates as everything else"
+    MakerWorld often hands the 3MF out as an Amazon S3 link. BamDude verifies that download against the same certificate bundle as every other connection, not the operating system's store — on Windows the system store fills lazily, and an import used to fail with `unable to get local issuer certificate` on a machine that had not met that Amazon root yet.
+
 !!! warning "MakerWorld 418 — application-level CAPTCHA"
     MakerWorld occasionally challenges your IP with a CAPTCHA (`HTTP 418` with `{"captchaId":...}`). This is **application-level**, not Cloudflare-edge — there's no server-side solve, since CAPTCHAs are intentionally unsolvable without a real browser. BamDude does one short-backoff retry, then surfaces the upstream message verbatim. Wait 1–4 hours of quiet traffic, or use **Open on MakerWorld** to import manually via your browser.
 
@@ -182,7 +187,7 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 - **3MF size cap: 200 MB.** Larger plates fail the SSRF-guarded download with a clear error.
 
 !!! warning "Bambu Cloud token has ~90-day lifetime"
-    Bambu Cloud bearers expire after roughly 90 days. If MakerWorld imports suddenly start failing with `401` / "Please log in to download models" after months of working, sign out and back into Bambu Cloud under **Settings → Bambu Cloud** to refresh the token. K-profile fetches and firmware checks would also break — re-auth fixes all three at once.
+    Bambu Cloud bearers expire after roughly 90 days. When that happens the MakerWorld page shows **Bambu Cloud sign-in expired** — sign out and back into Bambu Cloud on the **Profiles** page to refresh the token. K-profile fetches and firmware checks would also break — re-auth fixes all three at once.
 
 ---
 
@@ -199,12 +204,12 @@ The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tag
 
 ## :material-cog-outline: Settings
 
-**Settings → MakerWorld** carries:
+There is no MakerWorld section in Settings:
 
-- **Status** — `has_cloud_token` / `can_download`. Read-only.
-- **Default folder** — defaults to the auto-created top-level `MakerWorld` folder. Override per import via the folder picker on the import button.
+- **Sign-in state** — shown on the MakerWorld page as a banner when downloads are off (no token, or an expired one); `GET /api/v1/makerworld/status` returns the same.
+- **Default folder** — the auto-created top-level `MakerWorld` folder. Override per import via the folder picker on the import button.
 
-There are no other tunables — credentials live in **Settings → Bambu Cloud**, the proxy host allowlist is hard-coded for security.
+Credentials live on the **Profiles** page (Bambu Cloud sign-in); the CDN host allowlist is fixed for security.
 
 ---
 
@@ -214,13 +219,13 @@ There are no other tunables — credentials live in **Settings → Bambu Cloud**
 
 | Endpoint | Method | Auth | Purpose |
 |---|---|---|---|
-| `/api/v1/makerworld/status` | GET | `makerworld:view` | Report Bambu Cloud token presence and regional host. |
+| `/api/v1/makerworld/status` | GET | `makerworld:view` | `has_cloud_token`, `can_download`, and `sign_in_expired` — a stored token Bambu has rejected (`can_download` is then `false`). |
 | `/api/v1/makerworld/resolve` | POST | `makerworld:view` | Resolve URL → design + plate list + flat already-imported IDs + per-variant dedupe map (`already_imported_by_profile_id`). |
-| `/api/v1/makerworld/import` | POST | `makerworld:import` | Download a specific plate (`profile_id`) into the library. Writes the meta row + cover images alongside the 3MF. |
-| `/api/v1/makerworld/imports` | GET | `makerworld:view` | Server-paginated grid for the History tab. Query params: `page`, `per_page` (12 / 24 / 48 / 96 or `all=true`), `search` (joins library_files + meta), `sort_by` (`imported_at` / `title` / `author`). Returns the standard `{data, meta:{total, current_page, per_page, last_page}}` envelope. |
+| `/api/v1/makerworld/import` | POST | `makerworld:import` | Download a specific plate (`profile_id`) into the library. Writes the meta row + cover images alongside the 3MF. Optional `source_type` names the model provider (default and only registered value: `makerworld`); an unknown one is a `400` before anything is written. |
+| `/api/v1/makerworld/imports` | GET | `makerworld:view` | Server-paginated grid for the History tab. Query params: `page`, `per_page` (1–200, default 24), `search` (filename, meta title or author), `sort_by` (`date-desc` / `date-asc` / `name-asc` / `name-desc`). Returns the standard `{data, meta:{total, current_page, per_page, last_page}}` envelope. |
 | `/api/v1/makerworld/imports/{id}/meta` | GET | `makerworld:view` | The captured meta-table row (title / author / license / sliced-for / compatibility / materials / raw_payload). |
 | `/api/v1/makerworld/imports/{id}/cover` | GET | public (whitelisted) | Locally-cached model cover image. Whitelisted because `<img src>` can't send auth headers. |
-| `/api/v1/makerworld/imports/{id}/cover-variant` | GET | public (whitelisted) | Locally-cached variant cover image. The path is `cover-variant`, not `variant-cover`, so the substring `/cover` matches the same auth whitelist. |
+| `/api/v1/makerworld/imports/{id}/cover-variant` | GET | public (whitelisted) | Locally-cached variant cover image. Whitelisted under its own anchored pattern, like `/cover`. |
 | `/api/v1/makerworld/imports/{id}/redownload` | POST | `makerworld:import` | Re-fetch the 3MF bytes and overwrite the existing file at `library_files.file_path`. Stable `library_file_id`; refreshes `file_size` / `file_hash` / `file_metadata` / meta row / covers. |
 | `/api/v1/makerworld/recent-imports` | GET | `makerworld:view` | Legacy: last N MakerWorld library files (default 10, clamped `[1, 50]`). Superseded by `/imports` — kept for backwards-compat. |
 | `/api/v1/makerworld/thumbnail` | GET | public (whitelisted) | Proxy MakerWorld / public-cdn for `<img>` rendering on the Import-tab preview — host-allowlisted, no redirects. History-tab cards use the local `/cover` endpoints instead. |
@@ -231,14 +236,15 @@ The reverse-engineered three-step flow against `api.bambulab.com` (undocumented 
 
 1. `GET https://api.bambulab.com/v1/design-service/design/{designId}` — public metadata. Returns `{id, modelId, title, coverUrl, instances[], …}`. The `modelId` field is the alphanumeric identifier (e.g. `US2bb73b106683e5`) — **different from** the integer `designId` from the URL.
 2. `GET https://api.bambulab.com/v1/iot-service/api/user/profile/{profileId}?model_id={modelId}` with `Authorization: Bearer {cloud_token}`. Returns `{url, name}` where `url` is a 5-minute-TTL presigned S3 URL (`s3.<region>.amazonaws.com/...?at=…&exp=…&key=…`).
-3. Fetch the presigned URL **without following redirects** and **without re-encoding the query string** — S3 signatures are computed over the exact query bytes, so any normalising HTTP client (httpx default, requests, aiohttp without `raw_path`) breaks them with `SignatureDoesNotMatch`. BamDude uses `urllib.request` with a no-op `HTTPRedirectHandler` for this step.
+3. Fetch the presigned URL **without following redirects** and **without re-encoding the query string** — S3 signatures are computed over the exact query bytes, so any normalising HTTP client (httpx default, requests, aiohttp without `raw_path`) breaks them with `SignatureDoesNotMatch`. BamDude uses `urllib.request` with a no-op `HTTPRedirectHandler` for this step, and an explicit TLS context built from the `certifi` bundle (urllib would otherwise use the operating system's store).
 
 The older `makerworld.com/api/v1/design-service/instance/{id}/f3mf` path that some reverse-engineering projects document is cookie-gated at Cloudflare and returns "Please log in to download models" regardless of bearer. The `api.bambulab.com` path does not go through that gate.
 
 ### Code
 
-- `backend/app/services/makerworld.py` — API client + download logic + thumbnail proxy helpers.
-- `backend/app/services/makerworld_meta.py` — `build_meta_dict()` / `download_covers()` / `cleanup_cover_files()` — the m056 meta-table writer + local cover-image fetcher.
+- `backend/app/services/model_providers/` — the model-provider interface (`base.py`) and registry (`registry.py`). A model site is a `ModelProvider` descriptor plus a per-request `ProviderService`; the routes pick the provider through the registry and never talk to the site directly. MakerWorld is the first provider.
+- `backend/app/services/model_providers/makerworld/` — `provider.py` (descriptor), `service.py` (API client, download, thumbnail proxy), `http.py` (constants, User-Agent, S3 download), `url.py` (URL parsing + canonical dedupe key), `errors.py`, `meta.py` (`build_meta_dict()` / `download_covers()` / `cleanup_cover_files()` — the m056 meta-table writer + local cover-image fetcher).
+- `backend/app/services/bambu_cloud_credentials.py` — where the stored Bambu Cloud token lives and whether Bambu rejected it; shared with the cloud routes.
 - `backend/app/models/library_file_makerworld_meta.py` — SQLAlchemy model for the meta child table (1:1 with `library_files`, `ON DELETE CASCADE`).
 - `backend/app/migrations/m056_library_file_makerworld_meta.py` — schema migration + best-effort backfill of historical imports.
 - `backend/app/api/routes/makerworld.py` — FastAPI routes.

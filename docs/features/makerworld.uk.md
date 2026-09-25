@@ -42,7 +42,9 @@ BamDude перевикористовує вже збережений вхід у
 - **Анонімні дзвінки** (парсинг URL, метадані, перелік плит) працюють без токена.
 - **Скачування** (`/iot-service/api/user/profile/{profileId}`) потребує твій збережений Bambu Cloud bearer.
 
-Якщо токена нема — **Settings → MakerWorld → Status** показує `can_download = false` і кнопка Import disabled. Зайди в **Settings → Bambu Cloud** і авторизуйся спершу.
+Якщо токена нема — сторінка MakerWorld показує банер **Для завантаження потрібен Bambu Cloud**, а кнопки Import і Print вимкнені. Спершу увійди в Bambu Cloud на сторінці **Профілі**.
+
+Якщо токен збережено, але Bambu більше його не приймає, банер каже **Вхід у Bambu Cloud протермінувався**, і кнопки лишаються вимкненими, доки не увійдеш знову. Завантаження, відхилене з цієї причини, відповідає *Вхід у Bambu Cloud протермінувався. Відкрийте сторінку «Профілі» й увійдіть у Bambu Cloud знову.* Одна випадкова відповідь `401` не виписує тебе: мертвим токен позначає лише власна відповідь Bambu про протермінування.
 
 !!! note "API-ключі використовують токен власника ключа"
     Запити, автентифіковані **API-ключем** (`X-API-Key` / `Bearer bd_…`) зі scope доступу до хмари, тепер резолвлять збережений Bambu Cloud токен **власника ключа**, тож `has_cloud_token` / `can_download` відображають того користувача, а не завжди повертають `false`. Імпорти з розширення й Home Assistant, які раніше падали з "requires Bambu Cloud login", тепер проходять — доки власник ключа увійшов у Bambu Cloud.
@@ -154,7 +156,7 @@ GET /api/v1/makerworld/imports/{library_file_id}/cover
 GET /api/v1/makerworld/imports/{library_file_id}/cover-variant
 ```
 
-Обидва — **публічні (whitelisted)**, а не permission-gated, бо `<img src>` браузера не вміє слати `Authorization`. Variant-роут називається `cover-variant` (не `variant-cover`), щоб підстрока `/cover` метчилась тим самим auth-middleware whitelist'ом — той самий механізм, що library thumbnails і printer covers вже використовують. JSON-метадані endpoint `…/meta` тримає `makerworld:view` permission-gate, бо `fetch()` спокійно несе JWT.
+Обидва — **публічні (whitelisted)**, а не permission-gated, бо `<img src>` браузера не вміє слати `Authorization`. Кожен роут має в whitelist'і auth-middleware свій власний заякорений запис. JSON-метадані endpoint `…/meta` тримає `makerworld:view` permission-gate, бо `fetch()` спокійно несе JWT.
 
 Re-download оновлює обидва файли обкладинок поряд з 3MF-байтами. Delete library-файлу CASCADE-дропає рядок meta-таблиці, файли обкладинок розв'язуються з диску.
 
@@ -174,6 +176,9 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 
 ## :material-alert-circle-outline: Обмеження
 
+!!! note "Presigned-завантаження з S3 довіряє тим самим сертифікатам, що й решта"
+    MakerWorld часто віддає 3MF як посилання Amazon S3. BamDude перевіряє це завантаження тим самим набором сертифікатів, що й усі інші з'єднання, а не сховищем операційної системи — на Windows системне сховище наповнюється ліниво, і імпорт падав з `unable to get local issuer certificate` на машині, яка ще не зустрічала цей корінь Amazon.
+
 !!! warning "MakerWorld 418 — application-level CAPTCHA"
     MakerWorld інколи кидає виклик твоїй IP CAPTCHA-ою (`HTTP 418` з `{"captchaId":...}`). Це **application-рівень**, не Cloudflare-edge — server-side розв'язку немає, бо CAPTCHA принципово не розв'язується без браузера. BamDude робить один retry з коротким backoff'ом, потім кидає upstream-повідомлення verbatim. Чекай 1–4 години тиші, або тисни **Open on MakerWorld** і качай вручну через браузер.
 
@@ -182,7 +187,7 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 - **3MF size cap: 200 МБ.** Більше — fail з ясною помилкою.
 
 !!! warning "Bambu Cloud токен живе ~90 днів"
-    Bambu Cloud bearer-и експайряться приблизно через 90 днів. Якщо MakerWorld-імпорти раптом починають падати з `401` / "Please log in to download models" після місяців роботи — вийди і знов авторизуйся в Bambu Cloud під **Settings → Bambu Cloud**, щоб освіжити токен. Fetch K-профілів і firmware-чек теж зламаються — re-auth лагодить усі три одночасно.
+    Bambu Cloud bearer-и експайряться приблизно через 90 днів. Тоді сторінка MakerWorld показує **Вхід у Bambu Cloud протермінувався** — вийди і знов увійди в Bambu Cloud на сторінці **Профілі**, щоб освіжити токен. Fetch K-профілів і firmware-чек теж зламаються — re-auth лагодить усі три одночасно.
 
 ---
 
@@ -199,12 +204,12 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 
 ## :material-cog-outline: Налаштування
 
-**Settings → MakerWorld** містить:
+Розділу MakerWorld у Settings нема:
 
-- **Status** — `has_cloud_token` / `can_download`. Read-only.
-- **Default folder** — за замовчуванням auto-created top-level `MakerWorld`. Можна перевизначити через folder-picker на кнопці Import.
+- **Стан входу** — банер на сторінці MakerWorld, коли завантаження вимкнені (токена нема або він протермінувався); те саме повертає `GET /api/v1/makerworld/status`.
+- **Default folder** — auto-created top-level `MakerWorld`. Можна перевизначити через folder-picker на кнопці Import.
 
-Інших тумблерів нема — облік повноваження живе в **Settings → Bambu Cloud**, allowlist хостів проксі hard-coded задля безпеки.
+Облікові дані живуть на сторінці **Профілі** (вхід у Bambu Cloud); allowlist хостів CDN зафіксовано задля безпеки.
 
 ---
 
@@ -214,13 +219,13 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 
 | Ендпоінт | Метод | Auth | Призначення |
 |---|---|---|---|
-| `/api/v1/makerworld/status` | GET | `makerworld:view` | Звітує наявність Bambu Cloud токена + регіональний host. |
+| `/api/v1/makerworld/status` | GET | `makerworld:view` | `has_cloud_token`, `can_download` і `sign_in_expired` — збережений токен, який Bambu відхилив (`can_download` тоді `false`). |
 | `/api/v1/makerworld/resolve` | POST | `makerworld:view` | URL → дизайн + список плит + плоский already-imported ID-список + per-variant dedupe-мапа (`already_imported_by_profile_id`). |
-| `/api/v1/makerworld/import` | POST | `makerworld:import` | Завантажити конкретну плиту (`profile_id`) у бібліотеку. Записує рядок meta + обкладинки поряд з 3MF. |
-| `/api/v1/makerworld/imports` | GET | `makerworld:view` | Server-paginated сітка для вкладки History. Query-параметри: `page`, `per_page` (12 / 24 / 48 / 96 або `all=true`), `search` (joins library_files + meta), `sort_by` (`imported_at` / `title` / `author`). Повертає стандартний envelope `{data, meta:{total, current_page, per_page, last_page}}`. |
+| `/api/v1/makerworld/import` | POST | `makerworld:import` | Завантажити конкретну плиту (`profile_id`) у бібліотеку. Записує рядок meta + обкладинки поряд з 3MF. Необов'язковий `source_type` називає постачальника моделей (типове і єдине зареєстроване значення — `makerworld`); невідомий — `400` ще до будь-якого запису. |
+| `/api/v1/makerworld/imports` | GET | `makerworld:view` | Server-paginated сітка для вкладки History. Query-параметри: `page`, `per_page` (1–200, типово 24), `search` (ім'я файла, назва або автор з meta), `sort_by` (`date-desc` / `date-asc` / `name-asc` / `name-desc`). Повертає стандартний envelope `{data, meta:{total, current_page, per_page, last_page}}`. |
 | `/api/v1/makerworld/imports/{id}/meta` | GET | `makerworld:view` | Зафіксований рядок meta-таблиці (title / author / license / sliced-for / compatibility / materials / raw_payload). |
 | `/api/v1/makerworld/imports/{id}/cover` | GET | публічний (whitelisted) | Локально-кешована model-обкладинка. Whitelisted, бо `<img src>` не може слати auth-хедер. |
-| `/api/v1/makerworld/imports/{id}/cover-variant` | GET | публічний (whitelisted) | Локально-кешована variant-обкладинка. Шлях — `cover-variant`, не `variant-cover`, щоб підстрока `/cover` метчилась тим самим auth-whitelist'ом. |
+| `/api/v1/makerworld/imports/{id}/cover-variant` | GET | публічний (whitelisted) | Локально-кешована variant-обкладинка. У whitelist'і — свій заякорений запис, як і `/cover`. |
 | `/api/v1/makerworld/imports/{id}/redownload` | POST | `makerworld:import` | Перетягнути 3MF-байти і перезаписати існуючий файл у `library_files.file_path`. `library_file_id` стабільний; оновлює `file_size` / `file_hash` / `file_metadata` / рядок meta / обкладинки. |
 | `/api/v1/makerworld/recent-imports` | GET | `makerworld:view` | Legacy: останні N MakerWorld library-файлів (default 10, clamp `[1, 50]`). Замінений на `/imports` — тримається для backwards-compat. |
 | `/api/v1/makerworld/thumbnail` | GET | публічний (whitelisted) | Проксі MakerWorld / public-cdn для рендеру `<img>` на прев'ю вкладки Import — host-allowlisted, без редиректів. Картки History натомість використовують локальні `/cover` endpoint'и. |
@@ -231,14 +236,15 @@ Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє сл
 
 1. `GET https://api.bambulab.com/v1/design-service/design/{designId}` — публічні метадані. Повертає `{id, modelId, title, coverUrl, instances[], …}`. Поле `modelId` — алфавітно-цифровий ідентифікатор (наприклад, `US2bb73b106683e5`) — **відрізняється** від integer `designId` з URL.
 2. `GET https://api.bambulab.com/v1/iot-service/api/user/profile/{profileId}?model_id={modelId}` з `Authorization: Bearer {cloud_token}`. Повертає `{url, name}`, де `url` — presigned S3 URL з 5-хвилинним TTL (`s3.<region>.amazonaws.com/...?at=…&exp=…&key=…`).
-3. Тягнути presigned-URL **без слідування редиректам** і **без re-encoding query-стрінга** — S3-підписи рахуються над точними байтами query, тож будь-який нормалізуючий HTTP-клієнт (httpx default, requests, aiohttp без `raw_path`) зламає їх з `SignatureDoesNotMatch`. BamDude використовує `urllib.request` з no-op `HTTPRedirectHandler` для цього кроку.
+3. Тягнути presigned-URL **без слідування редиректам** і **без re-encoding query-стрінга** — S3-підписи рахуються над точними байтами query, тож будь-який нормалізуючий HTTP-клієнт (httpx default, requests, aiohttp без `raw_path`) зламає їх з `SignatureDoesNotMatch`. BamDude використовує `urllib.request` з no-op `HTTPRedirectHandler` для цього кроку, і явний TLS-контекст з набору `certifi` (інакше urllib бере сховище операційної системи).
 
 Старіший шлях `makerworld.com/api/v1/design-service/instance/{id}/f3mf`, який документують деякі reverse-engineering-проєкти, cookie-gated на Cloudflare і повертає "Please log in to download models" незалежно від bearer. Шлях `api.bambulab.com` через цей gate не йде.
 
 ### Код
 
-- `backend/app/services/makerworld.py` — API-клієнт + download-логіка + thumbnail-proxy helper-и.
-- `backend/app/services/makerworld_meta.py` — `build_meta_dict()` / `download_covers()` / `cleanup_cover_files()` — m056 meta-table writer + локальний cover-image fetcher.
+- `backend/app/services/model_providers/` — інтерфейс постачальника моделей (`base.py`) і реєстр (`registry.py`). Сайт моделей — це дескриптор `ModelProvider` плюс per-request `ProviderService`; роути вибирають постачальника через реєстр і ніколи не звертаються до сайту напряму. MakerWorld — перший постачальник.
+- `backend/app/services/model_providers/makerworld/` — `provider.py` (дескриптор), `service.py` (API-клієнт, завантаження, thumbnail-проксі), `http.py` (константи, User-Agent, S3-завантаження), `url.py` (розбір URL + канонічний ключ дедупу), `errors.py`, `meta.py` (`build_meta_dict()` / `download_covers()` / `cleanup_cover_files()` — m056 meta-table writer + локальний cover-image fetcher).
+- `backend/app/services/bambu_cloud_credentials.py` — де лежить збережений Bambu Cloud токен і чи Bambu його відхилив; спільне з cloud-роутами.
 - `backend/app/models/library_file_makerworld_meta.py` — SQLAlchemy-модель дочірньої meta-таблиці (1:1 з `library_files`, `ON DELETE CASCADE`).
 - `backend/app/migrations/m056_library_file_makerworld_meta.py` — schema-міграція + best-effort backfill історичних імпортів.
 - `backend/app/api/routes/makerworld.py` — FastAPI-роути.
