@@ -122,6 +122,11 @@ If you only run BamDude, the built-in inventory above already does everything Sp
 | `spoolman_disable_weight_sync` | Skip `remaining_weight` updates on existing Spoolman spools. Use this when Spoolman is your authoritative weight tracker (its granular usage reporting beats AMS estimates). |
 | `spoolman_report_partial_usage` | When a print fails or is cancelled, report the **estimated grams used up to the abort point** based on layer progress, instead of dropping the whole estimate. Helps Spoolman keep an accurate weight after failures. |
 
+!!! warning "Switching the tracking mode removes slot assignments"
+    Choosing **Built-in Inventory** or **Spoolman** under **Settings → Filament** removes every AMS slot assignment of the mode you leave — each mode keeps its own, and in the new one spools are assigned to slots anew. The page therefore asks before it switches, saying how many assignments go and which printers are printing right now: filament those prints use reaches neither inventory. Nothing is switched by the click alone.
+
+    A print that finishes and cannot charge a slot it drew from — its assignment was removed during the print, or it never had one — sends a **Filament not charged** notification naming the slots and the grams. It rides the **Missing spool assignment** toggle of your notification providers.
+
 ### :material-sync-circle: What syncs
 
 - **AMS slot ↔ Spoolman spool** — Each loaded slot maps to a Spoolman spool ID. Material, brand, colour, and (unless `disable_weight_sync` is on) remaining weight are kept in step.
