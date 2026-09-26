@@ -209,6 +209,8 @@ There are four recovery triggers — no periodic polling, so short prints aren't
 3. **`on_print_complete` last-chance** — right before SD cleanup runs at print end, BamDude tries one more download. The file is still on SD and the printer is no longer busy writing — highest-probability success window.
 4. **Manual** — `POST /api/v1/archives/{id}/retry-download`. The frontend exposes a "Retry 3MF download" menu item on the archive card, visible only when `file_path` is empty.
 
+A recovered file must be the plate that was printed: a candidate whose sliced plates do not include the archive's own plate is discarded, never attached. It matters after the print-start download refused a file for holding another plate than the one running — the retries come back with the same stale name that fetched it. When that happens the row keeps the project's name (renamed to the running plate when the name carries a plate number), not `plate_1` from the G-code path.
+
 Concurrent triggers don't race: a per-archive `asyncio.Lock` returns `"in_progress"` immediately if another retry is already running. Five distinct return statuses (`recovered`, `already_has_file`, `in_progress`, `failed`, `error`) map to clean toasts in the UI. The print-start download takes the same lock even though it doesn't come from this service — a printer reconnect part-way through it would otherwise open a second FTP session for a file already on its way, and attach a second copy on top of the first. So does the download for a print BamDude adopts at start-up (below).
 
 While the row has no file yet:
