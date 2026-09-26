@@ -130,7 +130,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `spoolman_sync_mode` | `auto` | `auto` синкає одразу на кожну зміну; `manual` чекає кнопки. |
 | `spoolman_disable_weight_sync` | `false` | Не пушити BamDude-tracked usage назад у Spoolman — оновлювати лише локацію. |
 | `spoolman_report_partial_usage` | `true` | Звітувати оцінену витрату на failed / cancelled друках за progress-у шарів. |
-| `spool_display_template` | `{brand} {material} {color_name}` | Шаблон синтезованого display-name котушки. Placeholder-и: `{brand}`, `{material}`, `{subtype}`, `{color_name}`, `{color_hex}`, `{slicer_filament_name}`, `{note}`, `{label_weight_g}`, `{label_weight_kg}`, `{remaining_g}`, `{remaining_kg}`, `{remaining_pct}`, `{cost_per_kg}`. Невідомі placeholder-и лишаються як є — щоб одруки виплили. |
+| `spool_display_template` | `{brand} {material} {subtype} {color_name}` | Шаблон синтезованого display-name котушки. Placeholder-и: `{brand}`, `{material}`, `{subtype}`, `{color_name}`, `{color_hex}`, `{slicer_filament_name}`, `{note}`, `{label_weight_g}`, `{label_weight_kg}`, `{remaining_g}`, `{remaining_kg}`, `{remaining_pct}`, `{cost_per_kg}`. Невідомі placeholder-и лишаються як є — щоб одруки виплили. |
 
 ## :material-network: Мережа / зв'язок
 

@@ -130,7 +130,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `spoolman_sync_mode` | `auto` | `auto` syncs immediately on changes; `manual` requires explicit button press. |
 | `spoolman_disable_weight_sync` | `false` | Don't push BamDude-tracked usage back to Spoolman — only update location. |
 | `spoolman_report_partial_usage` | `true` | Report estimated usage on failed / cancelled prints based on layer progress. |
-| `spool_display_template` | `{brand} {material} {color_name}` | Template for the synthesised spool display name. Placeholders: `{brand}`, `{material}`, `{subtype}`, `{color_name}`, `{color_hex}`, `{slicer_filament_name}`, `{note}`, `{label_weight_g}`, `{label_weight_kg}`, `{remaining_g}`, `{remaining_kg}`, `{remaining_pct}`, `{cost_per_kg}`. Unknown placeholders are kept verbatim so typos surface. |
+| `spool_display_template` | `{brand} {material} {subtype} {color_name}` | Template for the synthesised spool display name. Placeholders: `{brand}`, `{material}`, `{subtype}`, `{color_name}`, `{color_hex}`, `{slicer_filament_name}`, `{note}`, `{label_weight_g}`, `{label_weight_kg}`, `{remaining_g}`, `{remaining_kg}`, `{remaining_pct}`, `{cost_per_kg}`. Unknown placeholders are kept verbatim so typos surface. |
 
 ## :material-network: Network / connectivity
 

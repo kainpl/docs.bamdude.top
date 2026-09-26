@@ -49,7 +49,7 @@ Bulk-add takes a quantity and creates N rows in one go — combine with **auto-i
 
 The Filaments page synthesises a human label per spool via a user-configurable template — search and sort use the same string. Edit it under **Settings → System → Spool Display Template**.
 
-Default: `{brand} {material} {color_name}` (renders as e.g. `Polymaker PLA Jade White`).
+Default: `{brand} {material} {subtype} {color_name}` (renders as e.g. `Polymaker PLA Matte Jade White`; a spool with no subtype simply leaves that word out). The template changes only how a spool is named — searching finds a spool by its brand, material, subtype, colour, note or lot whatever the template shows.
 
 | Token | Source | Example |
 |-------|--------|---------|
