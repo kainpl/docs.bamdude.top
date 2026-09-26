@@ -27,9 +27,9 @@ Most actions are gated by `printers:control`. Two subsets carve off lower-privil
 
 ### Start a print from the card
 
-Drag a sliced `.gcode` or `.gcode.3mf` file onto a printer card or click the green **Print** button. The file is uploaded to your library, the print modal opens with that printer pre-selected, and the job is dispatched through the standard print queue.
+Drag a sliced `.gcode.3mf` file onto a printer card, or click the green **Print** button. A dropped file is uploaded to your library and the Schedule dialog opens pinned to that printer, adding the job to its queue; the **Print** button uploads the file and opens the print modal for a direct print.
 
-The card also shows a red **"Printer busy"** overlay when you drop on a non-idle printer, so you don't accidentally interrupt a running job. See [Print Queue](print-queue.md) for what happens after the dispatch.
+A drop is accepted whatever the printer is doing — printing, paused or offline — because it only queues: the overlay says **Drop to print** when the job would start at once and **Drop to queue** when it would wait for the print, the plate or the printer to come back. Dropping needs the **Upload** and **Add to queue** permissions; without one of them the overlay names the missing one. See [Print Queue](print-queue.md) for what happens after the dispatch.
 
 !!! note "Permission"
     `printers:control`. The library upload itself also checks `library:upload`.
