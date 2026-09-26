@@ -139,6 +139,8 @@ You no longer have to be on this page to watch detection track a print. Each car
 
 A printer detection is **not** watching shows no badge at all, rather than one implying it is covered.
 
+The badge never claims a print is watched when it is not. While a monitored print waits for its first result it reads **AI starting** (grey). When the latest check produced no result — the ML server refused the token, could not be reached, the camera gave no frame, or the External URL is empty — it reads **AI not checking** (amber), and its tooltip names the reason for that printer (the reason is shown to users with settings access; others see that the print is not being checked). No score is quoted without a result. The Active prints list on this page shows the same, and **Test** saves the form first, so a green result describes the configuration detection actually runs with.
+
 !!! info "The badge needs no settings permission"
     It is readable by anyone who can see printers. It deliberately carries no
     configuration — the ML server address and the detection history stay behind
