@@ -151,7 +151,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 
 | Key | Default | Ефект |
 |---|---|---|
-| `camera_view_mode` | `window` | `window` відкриває камери в новому вікні браузера; `embedded` показує overlay на дашборді. |
+| `camera_view_mode` | `window` | Типовий режим для браузера, який ще не обрав його на кнопці камери принтера (кожен браузер пам'ятає свій вибір): `window` відкриває камери в новому вікні браузера; `embedded` показує overlay на дашборді. |
 
 ## :material-bell: Telegram & нотифікації
 

@@ -151,7 +151,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 
 | Key | Default | Effect |
 |---|---|---|
-| `camera_view_mode` | `window` | `window` opens cameras in a new browser window; `embedded` shows them as an overlay on the dashboard. |
+| `camera_view_mode` | `window` | `window` opens cameras in a new browser window; `embedded` shows them as an overlay on the dashboard. The default for a browser that has not picked a mode on a printer's camera button — each browser remembers its own pick. |
 
 ## :material-bell: Telegram & notifications
 

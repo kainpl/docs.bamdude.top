@@ -16,7 +16,7 @@ BamDude provides MJPEG video streaming from your printer's built-in camera, or f
 ### Opening the Camera
 
 1. Click the :material-camera: camera icon on any printer card
-2. Choose between embedded overlay or separate window (configurable in Settings)
+2. The icon opens the camera the way this browser last chose. The arrow beside it offers both — an **embedded overlay** on the page or a **separate window** — opens it that way and remembers the pick for this browser, so two people watching one farm can each keep their own. **Settings → Camera → Camera View Mode** is only the default for a browser that has not chosen yet
 3. Stream starts automatically
 
 ### Stream Controls
@@ -59,7 +59,7 @@ Each tile shows:
 - an **offline chip** when the printer isn't connected;
 - an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
 - an **HMS-error badge** when the printer has active (non-noise) HMS errors;
-- **click** opens that camera in your preferred viewer — embedded overlay or separate window, per your Camera settings. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
+- **click** switches the tile between its live stream and snapshots; the card button on a printer's tile opens that printer's card. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
 
 ### Wall settings
 
