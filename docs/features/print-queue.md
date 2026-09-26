@@ -178,6 +178,14 @@ Choose a source for every used channel of the selected plate: AMS or a supported
 
 On supported dual-nozzle printers, **[L] / [R]** badges show nozzle bindings. Support is not limited to H2D or X2D: it follows the model's capabilities and current configuration. Mixed AMS + external feeds or two separate external feeds are allowed only with the selected plate's correct bindings.
 
+#### H2C nozzle rack
+
+On an **H2C**, every filament that prints from the rack gets a **rack position** picker (**R1**–**R6**, numbered as on the printer and on the printer card) beside its AMS slot; a filament on the fixed hotend shows **[L]**. Which of the six rack nozzles a colour uses is not stored in the 3MF — Bambu Studio sends it with the print — so the dialog asks. Every position is listed with the nozzle it holds; an empty position, or one holding the wrong diameter or flow type, is greyed out with the reason. The choice is per filament **group**: filaments the slicer grouped together share one hotend and move together.
+
+Nothing has to be picked. The dialog pre-selects what the dispatcher would assign: a position already loaded with that colour first, otherwise the lowest one that fits. The nozzle currently on the carriage — which the printer leaves out of its rack report — is offered at its own position. The pick is stored with a queued job and sent with a print started straight away, a reprint and every copy of a quantity; it applies to the one printer it was made for.
+
+It is checked again when the print is sent, because the rack can be reloaded in the meantime. A position **you chose** that no longer fits stops the print with a message saying what the position holds now, and the uploaded file is removed from the printer. Positions that were **assigned automatically** and can no longer be placed are left to the printer to choose, as before.
+
 The job retains its feed and color rules through schedule edits, repeats, and cloning. A manual mapping needs a new answer for another printer or plate. [Complete rules and waiting reasons](filament-routing.md#editing).
 
 **Prefer lowest remaining filament** (`prefer_lowest_filament`): this farm setting is **on by default** under **Settings → Filament → Filament checks → «Drain the emptiest spool first»**. After compatibility and the exact-colour preference, it picks the lower remaining otherwise-equivalent source so near-empty spools are used first. Tracked AMS spools use BamDude/Spoolman grams; firmware-only sources use their reported percentage in a separate, lower-priority tier. The same switch governs the auto-queue's dispatch mapping and the virtual printer's saved mapping. See [the complete ranking](filament-routing.md#selection).

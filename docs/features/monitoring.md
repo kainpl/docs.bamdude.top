@@ -82,7 +82,7 @@ H2 printers expose extended nozzle metadata on hover:
 |---------|------|--------------|
 | **H2D / H2D Pro** | L/R nozzle hover card | Side-by-side detail for both nozzles — diameter, type, flow, wear, max temp, serial. The active nozzle is highlighted **Active** vs **Idle**. |
 | **H2S** | Single-nozzle hover card | Wear, serial, max temp on hover over the nozzle temp tile. |
-| **H2C** | Nozzle rack card | 6-position tool-changer dock — every slot with diameter + filament colour. Empty slots are placeholder tiles; hover for full detail. |
+| **H2C** | Nozzle rack card | 6-position tool-changer dock — every slot with diameter + filament colour, and its position number 1–6 underneath (the **R1**–**R6** the print dialog's rack picker names). Empty slots are placeholder tiles and keep their number; hover for full detail. The card takes only the width its six slots need. |
 
 !!! info "L/R semantics — Active vs mounted"
     The L/R card flags the nozzle the printer is **currently using**, not just which one is mounted. On dual-extruder jobs that swap mid-print the highlighting follows the live state.
