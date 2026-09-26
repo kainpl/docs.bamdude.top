@@ -30,12 +30,15 @@ Rows created before this change remain legacy rows until they are captured by a 
 When **Queue Shortest First** is enabled (Settings → Printing → Queue & Scheduling → Auto-Queue Routing → Queue Shortest First), pending rows are sorted by:
 
 ```
-ORDER BY been_jumped DESC,
-         estimated_print_time_seconds ASC,
+ORDER BY target_model,
+         been_jumped DESC,
+         print_time_seconds ASC NULLS LAST,
          position ASC
 ```
 
 The `been_jumped` sticky bit prevents starvation: every time SJF promotes a shorter print *past* a longer one, the longer one gets `been_jumped=True` and floats to the top of the next round regardless of its print time. This way a 14 h print can't sit indefinitely behind a stream of 30-min jobs.
+
+Each printer model is its own contest, and a job whose print time is not known yet sorts after every known one rather than first. The Auto-Queue panel lists pending jobs in this same order while the toggle is on, so the row at the top of a model's group is the one placed next; drag handles are hidden, because a manual order would be ignored.
 
 When the toggle is off, items dispatch in FIFO order (by `position`).
 
