@@ -100,7 +100,7 @@ Per-user push-сервіс з нативними iOS/Android-додатками 
 | **User key** | Зі сторінки твого акаунту Pushover |
 | **API token** | З Application, який ти щойно створив |
 
-Pushover priority мапиться на numeric levels `-2…+2` на подію в BamDude — ідея та сама, що й у ntfy, але зі шкалою Pushover.
+У Pushover один **Priority** на провайдера (`-2…+2`, `0` = звичайний) — для всього, що цей провайдер надсилає. Пріоритет на подію є лише в ntfy (див. нижче).
 
 !!! info "Priority 2 (Emergency) вимагає двох додаткових полів"
     Pushover **обов'язково** вимагає інтервал повтору й термін дії для Emergency-сповіщень: вони повторюються, доки їх не підтвердять, тож сервіс відхиляє будь-яке повідомлення з priority 2, де не вказано як часто і як довго. Виставте **Priority** у `2` — і з'являться два поля:
@@ -372,9 +372,9 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 
 ---
 
-## :material-priority-high: Пріоритет на подію (ntfy і Pushover)
+## :material-priority-high: Пріоритет на подію (ntfy)
 
-І ntfy, і Pushover підтримують priority-рівні — `default` / `high` / `urgent` для ntfy, `-2…+2` для Pushover. BamDude дає обрати priority **на тип події** на кожному провайдері, тож завершений друк не пушитиме на lock-screen, а провал друку — пушитиме:
+ntfy підтримує рівні пріоритету від `1` (мін.) до `5` (терміново). BamDude дає обрати пріоритет **на тип події** на кожному ntfy-провайдері, тож завершений друк не пушитиме на lock-screen, а провал друку — пушитиме:
 
 | Тип події | Рекомендований ntfy-priority | Чому |
 |---|---|---|
@@ -383,7 +383,7 @@ Generic-format webhooks шлють стандартизований JSON-кон�
 | `filament_low`, `maintenance_due` | `default` | Plan-ahead, не interrupt-now. |
 | `ams_humidity_high` | `high` | Стосується пластика, який ось-ось у роботу. |
 
-Налаштовується в edit-формі провайдера: dropdown priority поряд з тоглером підписки на подію. Defaults мапять кожну подію на `default`-priority — opt-in escalation тільки де треба. Той самий контроль у Pushover приймає numeric levels.
+Налаштовується у формі редагування ntfy-провайдера: розділ **Пріоритет події (ntfy)** показує події, на які провайдер підписаний, кожну — зі своїм списком. Кожна подія стартує з `default` (3) — підвищуй лише там, де треба. Pushover натомість бере один пріоритет на весь провайдер (див. [Pushover](#pushover)).
 
 Це незалежне від нижче daily-digest / quiet-hours pipeline'у — quiet-hour-suppressed подія не відсилається жодним priority; активна подія все одно поважає вибраний per-event priority.
 

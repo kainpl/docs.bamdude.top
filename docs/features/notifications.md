@@ -100,7 +100,7 @@ Per-user push service with native iOS/Android apps and on-device priority escala
 | **User key** | From your Pushover account page |
 | **API token** | From the Application you just created |
 
-Pushover priority maps to numeric levels `-2…+2` per event in BamDude — same idea as ntfy but with the Pushover scale.
+Pushover has one **Priority** per provider (`-2…+2`, `0` = normal), applied to everything that provider sends. Per-event priority is ntfy's alone (see below).
 
 !!! info "Priority 2 (Emergency) needs two extra fields"
     Pushover *mandates* a retry interval and an expiry for Emergency alerts — they re-alert until you acknowledge them, so it refuses any priority-2 message that doesn't say how often and for how long. Set **Priority** to `2` and two fields appear:
@@ -372,9 +372,9 @@ See [Telegram Bot Setup](telegram-bot.md) for full configuration.
 
 ---
 
-## :material-priority-high: Per-event priority (ntfy & Pushover)
+## :material-priority-high: Per-event priority (ntfy)
 
-Both ntfy and Pushover support priority levels — `default` / `high` / `urgent` for ntfy, `-2…+2` for Pushover. BamDude lets you pick the priority **per event type** on each provider, so a finished print doesn't push to the lock-screen but a print failure does:
+ntfy supports priority levels from `1` (min) to `5` (urgent). BamDude lets you pick the priority **per event type** on each ntfy provider, so a finished print doesn't push to the lock-screen but a print failure does:
 
 | Event type | Suggested ntfy priority | Why |
 |---|---|---|
@@ -383,7 +383,7 @@ Both ntfy and Pushover support priority levels — `default` / `high` / `urgent`
 | `filament_low`, `maintenance_due` | `default` | Plan-ahead, not interrupt-now. |
 | `ams_humidity_high` | `high` | Affects filament you're about to use. |
 
-Configure under each provider's edit form: there's a per-event priority dropdown next to the event-subscribe toggle. Defaults map every event to `default` priority — opt-in to escalation only where it matters. Pushover's same control accepts the numeric levels.
+Configure in the ntfy provider's edit form: the **Event priority (ntfy)** section lists the events the provider is subscribed to, each with its own dropdown. Every event starts at `default` (3) — escalate only where it matters. Pushover takes one priority for the whole provider instead (see [Pushover](#pushover)).
 
 This is independent of the daily digest / quiet hours pipeline below — a quiet-hour-suppressed event isn't sent at any priority; an active event still respects the per-event priority you picked.
 
