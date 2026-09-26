@@ -194,7 +194,7 @@ In the file manager, sort by **most printed** or **least recently printed** to f
 
 ## :material-cloud-download: 3MF Download Recovery
 
-Every archive row starts with `file_path = ""` and gets its 3MF attached once BamDude has fetched it from the printer. That fetch can fail — the printer is slow, the network glitches, the file has already been moved on the SD card, the path doesn't match. When it does, the row keeps its empty `file_path` and gains `extra_data["no_3mf_available"] = True`, and is filled in retroactively.
+Every archive row starts with `file_path = ""` and gets its 3MF attached once BamDude has fetched it from the printer. That fetch can fail — the printer is slow, the network glitches, the file has already been moved on the SD card, the path doesn't match. When it does, the row keeps its empty `file_path` and gains `extra_data["no_3mf_available"] = True` together with `extra_data["no_3mf_reason"]` — why the fetch failed (see the banner below) — and is filled in retroactively.
 
 !!! tip "There is no size limit on the 3MF — `ftp_timeout` bounds a stall, not a slow transfer"
     A print's 3MF comes back over the same SD card the print is reading from, so the transfer rate depends on what the printer is doing: 231 KB/s on an idle P1S, 43 KB/s on a printing one. `ftp_timeout` used to be applied to the whole download as well as to the socket, which quietly turned it into a **limit on file size** — at 30 seconds, anything past a few megabytes was abandoned mid-transfer and archived as "3MF unavailable". It now applies per socket operation: a connection that has gone quiet is dropped after the configured seconds, and one that keeps delivering is left to finish. Uploads to the printer are separately capped at 10 minutes, which `ftp_timeout` does not affect.
@@ -217,10 +217,19 @@ While the row has no file yet:
 - **Skip-objects modal stays hidden** — the object list is unknown until the file lands. As soon as recovery completes, the loaded object list is pushed into the printer's MQTT state so the modal works for the rest of the print, not just from the next restart.
 - **MQTT-reported metadata still gets recorded** — filament use, layer counts, energy, timing all flow in even without the 3MF.
 
-When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
+When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag and its reason. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
 
-!!! tip "Archives-page banner — \"prints archived without thumbnails\""
-    When a recent print landed through the no-3MF fallback, the Archives page shows a one-time, dismissible banner explaining how to fix it. The usual cause is **"Store sent files on external storage"** being off in the slicer — so the printer's SD card never gets the `.gcode.3mf`, and BamDude has nothing to FTP-fetch (hence no thumbnail or 3D preview). This is the slicer-only variant of that setting, which the printer never reports over MQTT, so the connection diagnostic can't detect it — the banner is the only place BamDude can surface it. Turn the setting on in your slicer and future prints archive with full thumbnails; the banner won't reappear once dismissed.
+!!! tip "Archives-page banner — why a print has no 3MF"
+    When a print of the last 30 days was left without its 3MF, the Archives page shows a dismissible banner that says **why**, because the fix depends on it. BamDude records the reason at every failed fetch, and the banner speaks to the most urgent one, linking the matching troubleshooting entry:
+
+    | Reason | What happened | What to do |
+    |---|---|---|
+    | **The printer refused the file connection** | Port 990 answered with something that is not TLS, so nothing could be read. | Not a slicer setting — usually another program was using the printer's file service. See [FTPS cleartext answer](../reference/troubleshooting.md#ftps-cleartext-answer). |
+    | **The printer rejected the access code** | The file-transfer login was refused. | Re-copy the access code — see [Wrong access code](../reference/troubleshooting.md#wrong-access-code). |
+    | **The printer's file service didn't answer** | The connection to port 990 failed or timed out. | Check the printer is on and port 990 is reachable — see [FTPS port 990 blocked](../reference/troubleshooting.md#ftps-port-990-blocked). |
+    | **The printer didn't keep the file** | BamDude looked on the printer — its card, and its internal storage on a printer that has one — and the `.gcode.3mf` was not there. | Usually **"Store sent files on external storage"** is off in the slicer (install step 4). That is the slicer-only variant of the setting, which the printer never reports over MQTT, so the connection diagnostic can't see it — this banner is the only place BamDude can surface it. |
+
+    Each reason is dismissed on its own, so closing one shows the next rather than hiding it. A row that failed before reasons were recorded gets the last row's wording. BamDude keeps asking for the file on the four recovery triggers above, and **Retry 3MF download** asks right away.
 
 ### A print that started while BamDude was off
 
