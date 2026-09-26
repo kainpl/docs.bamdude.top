@@ -295,7 +295,7 @@ graph LR
 
 ## :material-key-variant: Camera-stream tokens
 
-Live MJPEG, snapshots, archive thumbnails, and the cover image all come back as `<img>`/`<video>` GETs that can't carry an `Authorization` header. BamDude issues a short-lived (60 minute) query-param token from `POST /printers/camera/stream-token`; the frontend threads it through every camera URL automatically. Tokens are scoped to the logged-in user — login / logout invalidates the cache, and the `useStreamTokenSync` hook walks the DOM to retrofit any `<img>` source rendered before a token landed. See [Camera Streaming](camera.md) for the gory details.
+Live MJPEG and snapshots come back as `<img>`/`<video>` GETs that can't carry an `Authorization` header. BamDude issues a short-lived (60 minute) query-param token from `POST /printers/camera/stream-token`; the frontend threads it through every camera URL automatically. Archive thumbnails, the job's cover and the other pictures take a separate media token from `POST /auth/media-token`, which every signed-in user gets. Tokens are scoped to the logged-in user — login / logout invalidates the cache, and the `useStreamTokenSync` hook walks the DOM to retrofit any `<img>` source rendered before a token landed. See [Camera Streaming](camera.md) for the gory details.
 
 ---
 

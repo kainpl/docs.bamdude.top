@@ -290,7 +290,7 @@ graph LR
 
 ## :material-key-variant: Токени для камери
 
-Live MJPEG, знімки, мініатюри архіву та cover-картинки приходять у вигляді `<img>`/`<video>` GET-ів, які не можуть нести `Authorization`-хедер. BamDude видає короткоживучий (60 хв) query-param токен з `POST /printers/camera/stream-token`; фронтенд автоматично прошиває його в кожен camera-URL. Токени scoped на залогіненого юзера — login / logout інвалідує кеш, а хук `useStreamTokenSync` обходить DOM і ретрофітить будь-які `<img>` source, рендеренi до того, як токен прийшов. Деталі — на [Сторінці камери](camera.uk.md).
+Live MJPEG і знімки приходять у вигляді `<img>`/`<video>` GET-ів, які не можуть нести `Authorization`-хедер. BamDude видає короткоживучий (60 хв) query-param токен з `POST /printers/camera/stream-token`; фронтенд автоматично прошиває його в кожен camera-URL. Мініатюри архіву, обкладинка завдання й інші картинки беруть окремий медіатокен з `POST /auth/media-token`, який отримує кожен залогінений користувач. Токени scoped на залогіненого юзера — login / logout інвалідує кеш, а хук `useStreamTokenSync` обходить DOM і ретрофітить будь-які `<img>` source, рендеренi до того, як токен прийшов. Деталі — на [Сторінці камери](camera.uk.md).
 
 ---
 

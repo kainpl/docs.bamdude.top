@@ -279,7 +279,7 @@ Customize with query parameters: `?size=large&fps=30&show=progress,eta,filename`
 
 ## :material-key-variant: Stream Token Gate
 
-Camera endpoints (live stream, snapshot, cover thumbnail, plate-detection reference) are not Bearer-token-friendly -- a `<img src>` tag can't attach an `Authorization` header. BamDude routes these through a short-lived query-param token instead:
+Camera endpoints (live stream, snapshot, plate-detection reference) are not Bearer-token-friendly -- a `<img src>` tag can't attach an `Authorization` header. BamDude routes these through a short-lived query-param token instead:
 
 1. The frontend hits `POST /api/v1/printers/camera/stream-token` to mint a token tied to the current user (TTL 60 min).
 2. The token is appended as `?token=...` to every camera URL via `withStreamToken()` in the API client.
@@ -287,6 +287,9 @@ Camera endpoints (live stream, snapshot, cover thumbnail, plate-detection refere
 4. The token is keyed by `user.id` in React-Query so login/logout invalidates the cache.
 
 Tokens are stored in `auth_ephemeral_tokens` so they survive backend restarts and work behind multi-worker deploys. Operators don't need to do anything -- this is invisible plumbing -- but the implication is that copying a camera URL out of the browser only works for the lifetime of the embedded token.
+
+!!! note "The job's cover and other pictures take a different token"
+    The cover image on a printer card, archive and library thumbnails and the other pictures are not the camera: they take a **media token**, which every signed-in user gets and which the server checks against the permission for what the picture shows. A user without camera access sees them; a camera token does not open them. See [API → Camera streams and binary endpoints](../reference/api.md#camera-streams-and-binary-endpoints).
 
 ### Long-lived tokens for Home Assistant / Frigate / kiosks / OBS
 

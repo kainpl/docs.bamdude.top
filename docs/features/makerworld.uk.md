@@ -164,13 +164,13 @@ Re-download оновлює обидва файли обкладинок поря
 
 ## :material-cloud-outline: Legacy thumbnail-проксі
 
-Для мініатюр на вкладці **Import** (resolve-прев'ю показує hosted-галерею MakerWorld до того, як ти натиснеш Import) BamDude досі піднімає **неавторизований** thumbnail-проксі на `/api/v1/makerworld/thumbnail?url=...`, який:
+Для мініатюр на вкладці **Import** (resolve-прев'ю показує hosted-галерею MakerWorld до того, як ти натиснеш Import) BamDude досі піднімає thumbnail-проксі на `/api/v1/makerworld/thumbnail?url=...` для залогінених користувачів (він бере медіатокен сторінки й `makerworld:view`), який:
 
 - Server-side тягне картинку,
 - Обмежує upstream-host MakerWorld'івським allowlist'ом (`makerworld.bblmw.com`, `public-cdn.bblmw.com`) — це не generic open-proxy,
 - Повертає байти з довгим `immutable` cache (filename'и hash-вмістимі).
 
-Endpoint вайтлістнутий в auth-gate бо `<img>` не вміє слати `Authorization`. Як тільки ти натискаєш Import, BamDude тягне свою копію обкладинки і вже ніколи цю саму картинку через проксі не несе.
+`<img>` не вміє слати `Authorization`, тож медіатокен їде в URL. Як тільки ти натискаєш Import, BamDude тягне свою копію обкладинки — вона віддається так само, під дозволами самого файлу бібліотеки, — і вже ніколи цю саму картинку через проксі не несе.
 
 ---
 

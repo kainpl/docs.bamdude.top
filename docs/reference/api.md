@@ -183,7 +183,12 @@ The full enumerated list is in `/docs` — this table just shows where to look.
 
 ## :material-camera-iris: Camera streams and binary endpoints
 
-Some endpoints can't accept `Authorization` headers because they're consumed by `<img>` / `<video>` tags. They use a short-lived **stream-token** (60 min TTL) passed as a query parameter.
+Some endpoints are consumed by `<img>` / `<video>` tags, which can't send an `Authorization` header, so they also take a short-lived token (60 min TTL) as a `?token=` query parameter. There are two, and they are not interchangeable:
+
+- the **stream token** — the camera: live stream, snapshot, plate-detection reference;
+- the **media token** — every other picture and video: thumbnails, plate previews, timelapses, QR codes, covers.
+
+A script or integration does not need either: the same endpoints accept the ordinary `X-API-Key` / `Authorization` header, within the key's scopes.
 
 ```bash
 # 1. Mint a token (auth required)
@@ -195,17 +200,29 @@ TOKEN=$(curl -s -H "X-API-Key: bd_..." \
 curl "https://bamdude.example.com/api/v1/printers/2/camera/snapshot?token=$TOKEN" -o snap.jpg
 ```
 
-Endpoints behind the stream-token gate:
+Endpoints behind the stream-token gate (minting one needs `camera:view`):
 
 | Endpoint | Returns |
 |----------|---------|
 | `GET /printers/{id}/camera/stream?token=...` | MJPEG stream |
 | `GET /printers/{id}/camera/snapshot?token=...` | JPEG snapshot |
-| `GET /printers/{id}/cover?token=...` | Current print cover thumbnail (served from local archive — never triggers an FTP fetch) |
+| `GET /cameras/{id}/stream?token=...` · `GET /cameras/{id}/snapshot?token=...` | The same for a standalone camera |
 | `GET /printers/{id}/camera/plate-detection/references/{index}/thumbnail?token=...` | Calibration-reference thumbnail used by plate-clear detection (`{index}` selects which stored reference). |
 | `GET /obico/cached-frame/{nonce}` | Frame URL handed to the Obico ML API. Whitelisted in the auth middleware because Obico's GET can't carry a bearer header — the nonce itself is the capability. |
 
-The web UI keeps the stream token cached per session and refreshes it before expiry.
+The **media token** is minted by any signed-in user with `POST /auth/media-token` (a JWT, not an API key — a key uses its header instead). It names the user, so each endpoint applies the permission and ownership rule of what it serves — a user limited to their own prints gets only their own pictures:
+
+| Endpoint | Permission |
+|----------|------------|
+| `GET /archives/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/plate-preview` · `/project-image/{path}` · `/qrcode` · `/timelapse` | `archives:read_all` / `archives:read_own` |
+| `GET /library/files/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/card-file/{path}` · `GET /makerworld/imports/{id}/cover` · `/cover-variant` | `library:read_all` / `library:read_own` |
+| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `projects:read` |
+| `GET /printers/{id}/camera-cover` | `printers:read` — the current job's cover, served from the local archive (never triggers an FTP fetch) |
+| `GET /makerworld/thumbnail?url=...` | `makerworld:view` |
+
+Public, no token: `GET /archives/{id}/photos/{file}` (notifications link finished-print photos for services that fetch without credentials), `GET /external-links/{id}/icon` and `GET /auth/oidc/providers/{id}/icon` (the sign-in page). A Cam Wall, overlay or kiosk token opens no media endpoint.
+
+The web UI keeps both tokens cached per session and refreshes them before expiry.
 
 ---
 

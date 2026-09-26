@@ -181,9 +181,14 @@ BamDude обмежує частоту запитів на endpoint-ах авте
 
 ---
 
-## :material-camera-iris: Потоки камери та бінарні endpoint-и
+## :material-camera-iris: Потоки камери та бінарні endpoint-и { #camera-streams-and-binary-endpoints }
 
-Деякі endpoint-и не можуть приймати заголовок `Authorization`, бо їх споживають теги `<img>` / `<video>`. Вони використовують короткоживучий **stream-токен** (TTL 60 хв), що передається як query-параметр.
+Деякі endpoint-и споживають теги `<img>` / `<video>`, які не можуть надіслати заголовок `Authorization`, тож вони приймають ще й короткоживучий токен (TTL 60 хв) як query-параметр `?token=`. Таких токенів два, і вони не взаємозамінні:
+
+- **stream-токен** — камера: live-потік, знімок, reference детекції столу;
+- **медіатокен** — усі інші картинки й відео: мініатюри, прев'ю плит, таймлапси, QR-коди, обкладинки.
+
+Скрипту чи інтеграції жоден не потрібен: ті самі endpoint-и приймають звичайний заголовок `X-API-Key` / `Authorization` у межах дозволів ключа.
 
 ```bash
 # 1. Mint a token (auth required)
@@ -195,17 +200,29 @@ TOKEN=$(curl -s -H "X-API-Key: bd_..." \
 curl "https://bamdude.example.com/api/v1/printers/2/camera/snapshot?token=$TOKEN" -o snap.jpg
 ```
 
-Endpoint-и за stream-токен-шлюзом:
+Endpoint-и за stream-токен-шлюзом (щоб його отримати, потрібен `camera:view`):
 
 | Endpoint | Повертає |
 |----------|----------|
 | `GET /printers/{id}/camera/stream?token=...` | потік MJPEG |
 | `GET /printers/{id}/camera/snapshot?token=...` | JPEG-знімок |
-| `GET /printers/{id}/cover?token=...` | мініатюра обкладинки поточного друку (видається з локального архіву — ніколи не ініціює FTP-вибірку) |
+| `GET /cameras/{id}/stream?token=...` · `GET /cameras/{id}/snapshot?token=...` | те саме для окремої камери |
 | `GET /printers/{id}/camera/plate-detection/references/{index}/thumbnail?token=...` | мініатюра калібраційного reference-фрейма для детекції очищеного столу (`{index}` вибирає, який зі збережених референсів). |
 | `GET /obico/cached-frame/{nonce}` | URL кадру, який передається в ML-API Obico. Стоїть у білому списку auth-middleware, бо GET від Obico не може нести bearer-заголовок — самим капабіліті є nonce. |
 
-Веб-інтерфейс кешує stream-токен у межах сесії та оновлює його перед закінченням терміну.
+**Медіатокен** отримує будь-який залогінений користувач через `POST /auth/media-token` (JWT, не API-ключ — ключ натомість шле свій заголовок). Токен називає користувача, тож кожен endpoint застосовує правило дозволів і власності того, що віддає, — користувач, обмежений власними друками, отримує лише свої картинки:
+
+| Endpoint | Дозвіл |
+|----------|--------|
+| `GET /archives/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/plate-preview` · `/project-image/{path}` · `/qrcode` · `/timelapse` | `archives:read_all` / `archives:read_own` |
+| `GET /library/files/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/card-file/{path}` · `GET /makerworld/imports/{id}/cover` · `/cover-variant` | `library:read_all` / `library:read_own` |
+| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `projects:read` |
+| `GET /printers/{id}/camera-cover` | `printers:read` — обкладинка поточного завдання з локального архіву (ніколи не ініціює FTP-вибірку) |
+| `GET /makerworld/thumbnail?url=...` | `makerworld:view` |
+
+Публічні, без токена: `GET /archives/{id}/photos/{file}` (сповіщення посилаються на фото завершеного друку для сервісів, що тягнуть без облікових даних), `GET /external-links/{id}/icon` і `GET /auth/oidc/providers/{id}/icon` (сторінка входу). Токен Cam Wall, оверлею чи кіоску не відкриває жодного медіа-endpoint-а.
+
+Веб-інтерфейс кешує обидва токени в межах сесії та оновлює їх перед закінченням терміну.
 
 ---
 

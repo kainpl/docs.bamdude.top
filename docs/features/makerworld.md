@@ -164,13 +164,13 @@ Re-download refreshes both cover files alongside the 3MF bytes. Deleting a libra
 
 ## :material-cloud-outline: Legacy thumbnail proxy
 
-For thumbnails on the **Import** tab (the resolve preview shows MakerWorld's hosted gallery images before you click Import), BamDude still exposes an **unauthenticated** thumbnail proxy at `/api/v1/makerworld/thumbnail?url=...` that:
+For thumbnails on the **Import** tab (the resolve preview shows MakerWorld's hosted gallery images before you click Import), BamDude still exposes a thumbnail proxy at `/api/v1/makerworld/thumbnail?url=...` for signed-in users (it takes the page's media token and `makerworld:view`) that:
 
 - Server-side fetches the image,
 - Restricts the upstream host to the MakerWorld CDN allowlist (`makerworld.bblmw.com`, `public-cdn.bblmw.com`) — not a generic open proxy,
 - Returns the bytes with a long `immutable` cache window (filenames are content-hashed).
 
-The proxy endpoint is whitelisted in the always-on auth gate because `<img>` tags can't send `Authorization` headers. Once you click Import, BamDude downloads its own copy of the cover and never proxies the same image again.
+`<img>` tags can't send `Authorization` headers, so the media token rides in the URL. Once you click Import, BamDude downloads its own copy of the cover — served the same way, under the library file's own permissions — and never proxies the same image again.
 
 ---
 
