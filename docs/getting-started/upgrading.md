@@ -132,6 +132,8 @@ sudo /opt/bamdude/install/update.sh
 | `BACKUP_MODE` | `auto` | `auto` skips when nothing to back up, `require` aborts if backup fails, `skip` disables |
 | `FORCE` | `0` | Set to `1` to bypass dirty-worktree / backup checks |
 
+While the service is stopped, the script also checks that the unit starts uvicorn with `--loop asyncio`. Installs created before the installer pinned it (July 2026) never gained the flag, and without it the server runs on uvloop, which can silently truncate Virtual Printer uploads. A plain one-line uvicorn unit gets the flag added (the file is backed up beside itself first); a unit with drop-ins, a wrapper script or a continued command line is left as it is, and the script says what to add by hand. BamDude also logs a warning at startup whenever it finds itself on uvloop.
+
 ---
 
 ## :material-cursor-default-click-outline: 4. Upgrade procedure — In-app updater (Information page)
