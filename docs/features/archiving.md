@@ -216,6 +216,7 @@ While the row has no file yet:
 - **Thumbnails and 3D preview won't render** — the 3MF doesn't exist locally yet.
 - **Skip-objects modal stays hidden** — the object list is unknown until the file lands. As soon as recovery completes, the loaded object list is pushed into the printer's MQTT state so the modal works for the rest of the print, not just from the next restart.
 - **MQTT-reported metadata still gets recorded** — filament use, layer counts, energy, timing all flow in even without the 3MF.
+- **The filament weight may be missing** — without the 3MF it comes only from the built-in inventory's measured spool drop, and only for slots with a spool assigned. If the file never arrives, type the figure in **Edit archive → Filament used (g)**: statistics, cost and order figures read it, and **no spool is debited** — it is the archive's number, not an inventory movement. A cost that was empty, or was the farm rate applied to the old figure, follows the new one; a cost from spool tracking stays.
 
 When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag and its reason. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
 
@@ -545,7 +546,7 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
 | **Schedule** | Add to the print queue. |
 | :material-cube-outline: | Open the 3D preview. |
 | :material-download: | Download the 3MF file. Disabled if `file_path` is empty. |
-| :material-pencil: | Edit archive details (tags, notes, order and line, cost, photos). |
+| :material-pencil: | Edit archive details (tags, notes, order and line, filament used, photos). |
 | :material-cloud-download: | Retry 3MF download. Only visible when `file_path = ""`. |
 
 !!! tip "An archive can be filed under an order — or counted into stock"
