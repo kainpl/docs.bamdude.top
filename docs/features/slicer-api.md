@@ -231,6 +231,20 @@ Machine-tuned values were chosen for the *author's* printer. On yours they can b
 merely wrong, or outside the range your profile accepts — which fails the slice
 outright — so they are listed with a badge and left off for you to decide.
 
+**Supports follow the ticks.** A file with supports switched on turns them on
+for your slice too — they are design intent, ticked by default. Untick them and
+the slice keeps your preset's own support settings; an unticked support setting
+is no longer carried in behind your back. A file that records no deviations at
+all (an OrcaSlicer export, say) has nothing to tick, and its supports are still
+carried as before.
+
+The same ticks appear beside each option in the **Process settings** panel, and
+a tick in either place is the same tick. That panel greys out an option only
+when the slice itself would switch it off — judged by your preset's values, the
+file's values you ticked and anything you typed, not by the slicer's built-in
+defaults, which used to grey the whole Support page for a preset with supports
+on. A greyed option's "from file" tick can still be cleared.
+
 !!! info "Nothing here is guessed"
     Bambu Studio writes the list of deviations into the 3MF itself
     (`different_settings_to_system` in `Metadata/project_settings.config`).
