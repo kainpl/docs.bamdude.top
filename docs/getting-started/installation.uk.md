@@ -61,6 +61,9 @@ description: Встановлення BamDude на вашу систему, вк
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
 
+!!! warning "macOS: принтер недоступний, хоча все інше працює"
+    macOS видає доступ до локальної мережі підпису коду, а Python з Homebrew на Intel-маках його не має — тоді кожне з'єднання з принтером мовчки відкидається, без помилки й без запиту. `install/install.sh` під час встановлення на macOS підписує інтерпретатор (лише якщо він не підписаний), а повторний запуск після `brew upgrade python` підписує новий. Вручну: `codesign --force --sign - "$(python3 -c 'import os,sys;print(os.path.realpath(sys._base_executable))')"`. Перевірка **Дозвіл macOS на доступ до локальної мережі** в діагностиці з'єднання каже, який у вас випадок.
+
 Відкрийте [http://localhost:8000](http://localhost:8000) у браузері.
 
 ---

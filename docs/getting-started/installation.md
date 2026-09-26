@@ -61,6 +61,9 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
 
+!!! warning "macOS: the printer is unreachable while everything else works"
+    macOS grants Local Network access to a code signature, and Homebrew's Python on Intel Macs has none — every connection to the printer is then dropped with no error and no prompt. `install/install.sh` signs the interpreter on a macOS install (only if it is unsigned), and re-running it after `brew upgrade python` signs the new one. By hand: `codesign --force --sign - "$(python3 -c 'import os,sys;print(os.path.realpath(sys._base_executable))')"`. The connection diagnostic's **macOS Local Network permission** check tells you which case you are in.
+
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
