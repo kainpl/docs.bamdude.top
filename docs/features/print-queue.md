@@ -406,6 +406,7 @@ When a printer has an associated smart plug, the queue can drive power state:
 - **Auto power-on** (`auto_on`, on by default) — when the scheduler reaches an item on a printer that is offline, it switches the plug on **then** and waits for the printer to connect before dispatching. There is no offset that fires ahead of a scheduled clock; if you want the machine up earlier, the plug's own **schedule** (a plain on/off time of day) is the tool for that.
 - **Auto power-off** (`auto_off`, on by default) — fires after the print finishes or fails, then waits out a delay. Two delay modes: **time** (default 5 minutes) or **temperature** — hold until the printer cools below a threshold (default 70 °C). A separate toggle does the same after an **AMS drying** cycle, with its own longer delay (default 10 minutes), because the chamber is hot afterwards.
 - **Per-job** — the Add-to-Queue dialog's `auto_off_after` asks for a power-off after *this* job specifically.
+- **Auto-queue** — a job aimed at a printer model, with every matching printer off, switches one on per pass: the first that can run it. What a switched-off printer holds is read from the spools assigned to its slots (BamDude or Spoolman) and, for an unassigned slot, from what the printer last reported; a printer whose every slot is known and which lacks a channel's material or forced colour is passed over, and the job's waiting reason names what it lacks. A printer BamDude has not heard from since it started is still switched on.
 
 Full setup + per-printer linking → [Smart plugs](smart-plugs.md).
 
