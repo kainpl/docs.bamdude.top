@@ -127,6 +127,8 @@ docker compose --profile all    up -d   # обидва
 
 Desktop-кнопка **Open in Slicer** керується окремим, незалежним налаштуванням — **Settings → Slicer → Open in Slicer** — dropdown'ом, що за замовчуванням стоїть на **Same as API slicer**. Вкажи інший слайсер, щоб, наприклад, слайсити через Bambu Studio sidecar, а файли відкривати локально в OrcaSlicer (чи навпаки); наявні налаштування не змінюються, поки ти сам не вибереш інше значення.
 
+Передача йде посиланням, а через посилання два слайсери приймають різне: **Bambu Studio бере лише 3MF** — STL чи STEP за посиланням він відхиляє ще до завантаження, — а **OrcaSlicer бере 3MF, STL і STEP**. Тож меню файлу пропонує Open in Slicer лише для файлу, який налаштований слайсер прийме, а 3D-перегляд відкриває STL в OrcaSlicer (називаючи його на кнопці), коли налаштований Bambu Studio.
+
 Preset-tiers (Imported/Local → Orca Cloud → Bambu Cloud → Standard) backend перелічує автоматично у момент слайсингу — per-install setting не потрібен, див. "Слайсинг файлу" нижче.
 
 ---

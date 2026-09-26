@@ -128,6 +128,8 @@ You can also override the env-var defaults that BamDude reads at startup: `SLICE
 
 The desktop **Open in Slicer** button is controlled by a separate, independent setting — **Settings → Slicer → Open in Slicer** — a dropdown that defaults to **Same as API slicer**. Point it at a different slicer to, e.g., slice through the Bambu Studio sidecar but open files locally in OrcaSlicer (or vice versa); existing setups are unchanged until you pick a different value.
 
+The handoff is a link, and the two slicers do not take the same files over one: **Bambu Studio accepts only a 3MF** — it refuses an STL or STEP link before downloading anything — while **OrcaSlicer takes 3MF, STL and STEP**. So the file menu offers Open in Slicer only for a file the configured slicer will take, and the 3D preview opens an STL in OrcaSlicer (naming it on the button) when Bambu Studio is the one configured.
+
 Preset tiers (Imported/Local → Orca Cloud → Bambu Cloud → Standard) are listed automatically by the backend at slice time and don't need a per-install setting — see "Slicing a file" below.
 
 ---
