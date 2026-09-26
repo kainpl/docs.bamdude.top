@@ -601,10 +601,11 @@ Open the [ports listed above](#required-ports) in your firewall.
         environment:
           - TZ=Europe/Kyiv
           - VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100  # your Docker host's LAN IP
+          - VIRTUAL_PRINTER_ADVERTISE_ADDRESS=192.168.1.100  # the same LAN IP
         restart: unless-stopped
     ```
 
-    `VIRTUAL_PRINTER_PASV_ADDRESS` is **mandatory** in bridge mode — without it FTP PASV advertises the container's internal IP and the data channel fails. See [PASV Address](#pasv-address-nat-docker-bridge) below.
+    `VIRTUAL_PRINTER_PASV_ADDRESS` is **mandatory** in bridge mode — without it FTP PASV advertises the container's internal IP and the data channel fails. A VP bound to a real printer also needs `VIRTUAL_PRINTER_ADVERTISE_ADDRESS`, or the slicer is told the container's IP as the upload destination. See [PASV Address](#pasv-address-nat-docker-bridge) below.
 
 === "Unraid / Synology / TrueNAS SCALE"
 
@@ -798,6 +799,14 @@ VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100
 
 The FTPS server boots, logs `FTP PASV address override: 192.168.1.100`, and from then on every PASV reply uses that address. No effect when BamDude runs on the host network — leave it unset there.
 
+A VP bound to a real printer has one more address to get right. The slicer takes the upload destination from the printer's MQTT status (`net.info`), which BamDude rewrites to the virtual printer's own address — in bridge mode that is the container's, and the send stalls early. Set `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` to the same LAN IP:
+
+```bash
+VIRTUAL_PRINTER_ADVERTISE_ADDRESS=192.168.1.100
+```
+
+The log line `MQTT bridge net.info IP encoding armed: … (VIRTUAL_PRINTER_ADVERTISE_ADDRESS)` confirms the variable reached the container. A value that is not an IPv4 address is ignored with one warning and the bind address is used instead. Leave it unset on host or macvlan networking.
+
 ---
 
 ## :material-help-circle: Troubleshooting
@@ -871,7 +880,7 @@ Multi-NIC host (Tailscale, Docker bridges, dual LAN) — auto-detection picks th
 1. **Permissions** on `<DATA_DIR>/virtual_printer/` — must be writable by the user running BamDude.
 2. **Port 990 already in use?** `sudo ss -tlnp | grep :990` — disable any conflicting FTP server.
 3. **`CAP_NET_BIND_SERVICE` missing** — see the [Linux native tab](#platform-setup) above.
-4. **Bridge-mode Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` is mandatory; without it PASV advertises the container's internal IP and the data channel fails mid-handshake.
+4. **Bridge-mode Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` is mandatory; without it PASV advertises the container's internal IP and the data channel fails mid-handshake. A VP bound to a real printer also needs `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` — otherwise the send stalls around 10 %, because the slicer uploads to the container's IP.
 
 ### Slicer says "The printer is busy with another print job"
 

@@ -162,6 +162,7 @@ nano .env
 |----------|-------------|
 | `HA_URL`, `HA_TOKEN` | Home Assistant base URL + long-lived token. When **both** are set, HA integration is auto-enabled and the matching DB settings become read-only (env wins). Recommended for the HA Add-on; native installs can also enable HA via Settings → Integrations without env vars. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | Override the FTP-PASV address advertised by the virtual printer (set this if BamDude runs behind NAT and slicers can't reach the bind IP). |
+| `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` | The upload destination a virtual printer bound to a real printer tells the slicer (set this if BamDude runs behind NAT, e.g. Docker bridge mode). |
 
 #### Container detection
 

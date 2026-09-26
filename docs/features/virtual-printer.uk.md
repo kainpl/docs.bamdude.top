@@ -601,10 +601,11 @@ Tailscale — рекомендований шлях для **віддалено�
         environment:
           - TZ=Europe/Kyiv
           - VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100  # LAN IP Docker-хоста
+          - VIRTUAL_PRINTER_ADVERTISE_ADDRESS=192.168.1.100  # той самий LAN IP
         restart: unless-stopped
     ```
 
-    `VIRTUAL_PRINTER_PASV_ADDRESS` у bridge-режимі **обовʼязковий** — без нього FTP PASV анонсує внутрішній IP контейнера і канал даних ламається у середині хендшейку.
+    `VIRTUAL_PRINTER_PASV_ADDRESS` у bridge-режимі **обовʼязковий** — без нього FTP PASV анонсує внутрішній IP контейнера і канал даних ламається у середині хендшейку. VP, привʼязаному до справжнього принтера, потрібен ще й `VIRTUAL_PRINTER_ADVERTISE_ADDRESS`, інакше слайсер отримує IP контейнера як адресу завантаження.
 
 === "Unraid / Synology / TrueNAS SCALE"
 
@@ -798,6 +799,14 @@ VIRTUAL_PRINTER_PASV_ADDRESS=192.168.1.100
 
 FTPS-сервер стартує, логує `FTP PASV address override: 192.168.1.100`, і відтепер кожна PASV-відповідь використовує цю адресу. Не має ефекту, коли BamDude крутиться на host-мережі — там не задавайте.
 
+У VP, привʼязаного до справжнього принтера, є ще одна адреса. Куди завантажувати, слайсер бере з MQTT-статусу принтера (`net.info`), а BamDude переписує її на адресу самого віртуального принтера — у bridge-режимі це адреса контейнера, і відправка зависає на початку. Поставте `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` на той самий LAN IP:
+
+```bash
+VIRTUAL_PRINTER_ADVERTISE_ADDRESS=192.168.1.100
+```
+
+Рядок логу `MQTT bridge net.info IP encoding armed: … (VIRTUAL_PRINTER_ADVERTISE_ADDRESS)` підтверджує, що змінна дійшла до контейнера. Значення, яке не є IPv4-адресою, ігнорується з одним попередженням, і використовується адреса привʼязки. На host- чи macvlan-мережі не задавайте.
+
 ---
 
 ## :material-help-circle: Troubleshooting
@@ -871,7 +880,7 @@ FTPS-сервер стартує, логує `FTP PASV address override: 192.168
 1. **Права** на `<DATA_DIR>/virtual_printer/` — має бути writeable юзером, від якого крутиться BamDude.
 2. **Порт 990 вже занятий?** `sudo ss -tlnp | grep :990` — вимкни конфліктуючий FTP.
 3. **`CAP_NET_BIND_SERVICE` нема** — див. [Linux native вище](#платформенне-налаштування).
-4. **Bridge-режим Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` обовʼязковий; без нього PASV анонсує внутрішній IP контейнера, і канал даних рветься.
+4. **Bridge-режим Docker** — `VIRTUAL_PRINTER_PASV_ADDRESS` обовʼязковий; без нього PASV анонсує внутрішній IP контейнера, і канал даних рветься. VP, привʼязаному до справжнього принтера, потрібен ще й `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` — інакше відправка зависає десь на 10 %, бо слайсер вантажить на IP контейнера.
 
 ### Слайсер каже "The printer is busy with another print job"
 

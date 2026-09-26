@@ -97,6 +97,9 @@ services:
       # Обов'язково для FTP PASV за NAT — постав LAN-IP Docker-хоста.
       # Слайсеру це треба, щоб відкрити data-з'єднання.
       - VIRTUAL_PRINTER_PASV_ADDRESS=${VIRTUAL_PRINTER_PASV_ADDRESS:-}
+      # Bridge-режим, VP привʼязаний до справжнього принтера: той самий LAN-IP,
+      # щоб слайсер знав, куди вантажити.
+      - VIRTUAL_PRINTER_ADVERTISE_ADDRESS=${VIRTUAL_PRINTER_ADVERTISE_ADDRESS:-}
     restart: unless-stopped
 
 volumes:
@@ -122,6 +125,7 @@ volumes:
 | `JWT_SECRET_KEY` | автогенерація, зберігається | Не змінюйте на запущеній інсталяції -- це анулює всі видані токени. |
 | `PUID` / `PGID` | `1000` / `1000` | UID / GID, від якого працює контейнер. Виставляй у відповідність власника mounted volumes, щоб уникнути permission-помилок. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | не задано | Перевизначити FTP-PASV IP, який анонсує віртуальний принтер. Обов'язково в **bridge mode** (LAN-IP Docker-хоста); у host-mode лиши порожнім. |
+| `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` | не задано | Адреса, за якою слайсери досягають BamDude; віртуальний принтер, привʼязаний до справжнього, передає її як адресу завантаження. Потрібна в **bridge mode** (LAN-IP Docker-хоста); у host-режимі не задавай. |
 | `USE_SYSTEM_TRUST_STORE` | не задано (off) | Opt-in. Постав будь-яке непорожнє значення (напр. `true`), щоб контейнер довіряв самопідписаним сертифікатам, змонтованим у `/usr/local/share/ca-certificates`. Див. [Довіра до самопідписаного сертифіката](#trusting-a-self-signed-certificate) нижче. |
 
 Повний перелік, включно з опціональними інтеграціями, див. у [Інсталяція > Змінні середовища](installation.uk.md#змінні-середовища).

@@ -97,6 +97,9 @@ services:
       # Required for FTP PASV to work behind NAT — set to the Docker host's
       # LAN IP. The slicer needs this to open the data connection.
       - VIRTUAL_PRINTER_PASV_ADDRESS=${VIRTUAL_PRINTER_PASV_ADDRESS:-}
+      # Bridge mode, VP bound to a real printer: the same LAN IP, so the
+      # slicer is told where to upload.
+      - VIRTUAL_PRINTER_ADVERTISE_ADDRESS=${VIRTUAL_PRINTER_ADVERTISE_ADDRESS:-}
     restart: unless-stopped
 
 volumes:
@@ -121,6 +124,7 @@ volumes:
 | `APP_URL` | `http://localhost:5173` | Public-facing base URL — used in password-reset / MFA emails, OIDC callbacks, and the Obico cached-frame URL. The `external_url` setting in Settings → System overrides this. |
 | `PUID` / `PGID` | `1000` / `1000` | UID / GID the container runs as. Match the owner of your mounted volumes to avoid permission errors. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | unset | Override the FTP-PASV IP advertised by the virtual printer. Required in **bridge mode** (set to the Docker host's LAN IP); leave unset in host-mode. |
+| `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` | unset | The address slicers reach BamDude on, sent as the upload destination by a virtual printer bound to a real printer. Needed in **bridge mode** (the Docker host's LAN IP); leave unset in host-mode. |
 | `JWT_SECRET_KEY` | auto-generated, persisted | Don't change on a running install -- it invalidates all issued tokens. |
 | `USE_SYSTEM_TRUST_STORE` | unset (off) | Opt-in. Set to any non-empty value (e.g. `true`) to make the container trust self-signed certificates mounted into `/usr/local/share/ca-certificates`. See [Trusting a self-signed certificate](#trusting-a-self-signed-certificate) below. |
 

@@ -162,6 +162,7 @@ nano .env
 |--------|------|
 | `HA_URL`, `HA_TOKEN` | Базовий URL Home Assistant + long-lived token. Якщо задано **обидва**, HA-інтеграція авто-увімкнена і відповідні DB-сетинги стають read-only (env переб'є). Рекомендовано для HA Add-on; нативні інсталяції можуть вмикати HA через Settings → Integrations без env-змінних. |
 | `VIRTUAL_PRINTER_PASV_ADDRESS` | Перевизначити FTP-PASV адресу, яку анонсує віртуальний принтер (встановіть, якщо BamDude працює за NAT і слайсери не можуть досягти bind IP). |
+| `VIRTUAL_PRINTER_ADVERTISE_ADDRESS` | Адреса завантаження, яку віртуальний принтер, привʼязаний до справжнього, повідомляє слайсеру (встановіть, якщо BamDude працює за NAT, напр. Docker bridge). |
 
 #### Container detection
 
