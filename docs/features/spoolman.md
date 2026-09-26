@@ -173,7 +173,7 @@ Hover over any AMS slot on the Printers page to see:
 |-------|--------|
 | **Vendor** | Bambu Lab or Generic — read from the RFID tag. |
 | **Profile** | Filament type and subtype (`PLA Basic`, `PETG Translucent`, …). |
-| **Color** | Color name + swatch — resolved through the BamDude color catalog (single source of truth). |
+| **Color** | Color name + swatch — resolved through the BamDude color catalog (single source of truth). Spoolman has no colour-name field, so a spool whose name BamDude never stored shows the catalog's name for its swatch rather than its subtype (`Silk+` is not a colour); searching finds a spool by the colour name you can see. |
 | **K Factor** | Pressure-advance value currently active for this slot. |
 | **Fill Level** | Remaining percentage, with visual bar. |
 | **Spool ID** | Linked Spoolman spool ID (only when Spoolman is enabled and the slot is linked). |
