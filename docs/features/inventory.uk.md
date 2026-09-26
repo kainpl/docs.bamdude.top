@@ -409,7 +409,7 @@ cost = (weight_used_grams / 1000) × cost_per_kg
 
 ## :material-palette: Каталог кольорів
 
-Імена кольорів приходять з таблиці `color_catalog` — manufacturer-aware. Коли два бренди постачають paint-chip з тим самим hex — для UI виграє Bambu Lab; non-Bambu резолвиться через свої записи. Якщо hex котушки взагалі не в каталозі — BamDude падає на HSL-derived ім'я ("dark cyan", "light yellow"), тож в UI ніколи не побачиш голий hex.
+Імена кольорів приходять з таблиці `color_catalog` — manufacturer-aware. Коли два бренди постачають paint-chip з тим самим hex — для UI виграє Bambu Lab; non-Bambu резолвиться через свої записи. Якщо hex котушки взагалі не в каталозі — BamDude падає на HSL-derived ім'я ("dark cyan", "light yellow"), тож в UI ніколи не побачиш голий hex. Один hex може бути й двома кольорами в лінійці одного бренду — `#FFFFFF` це Jade White у PLA Basic і Ivory White у PLA Matte, — тож слот AMS спершу питає з власним матеріалом, а слот із призначеною котушкою показує назву кольору цієї котушки.
 
 Каталог можна розширювати руками під **Settings → Inventory → Colour Catalog**. Frontend підтягує runtime-мапу `{hex: name}` один раз на сесію — додавання нового запису діє на наступний логін (або hard-refresh).
 

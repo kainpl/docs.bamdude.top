@@ -409,7 +409,7 @@ If you update spool prices or add cost data retroactively, the **Recalculate Cos
 
 ## :material-palette: Colour catalog
 
-Colour names come from the `color_catalog` table — manufacturer-aware. When two brands ship a paint chip with the same hex, the Bambu Lab name wins for clarity in the UI; non-Bambu brands resolve via their own entries. If a spool's hex isn't in the catalog at all, BamDude falls back to an HSL-derived name ("dark cyan", "light yellow") so you never see a raw hex string in the UI.
+Colour names come from the `color_catalog` table — manufacturer-aware. When two brands ship a paint chip with the same hex, the Bambu Lab name wins for clarity in the UI; non-Bambu brands resolve via their own entries. If a spool's hex isn't in the catalog at all, BamDude falls back to an HSL-derived name ("dark cyan", "light yellow") so you never see a raw hex string in the UI. One hex can also be two colours in one brand's range — `#FFFFFF` is Jade White in PLA Basic and Ivory White in PLA Matte — so an AMS slot asks with its own material first, and a slot with an assigned spool shows that spool's colour name.
 
 You can extend the catalog manually under **Settings → Inventory → Colour Catalog**. The frontend pulls a runtime `{hex: name}` map once per session — adding a new entry takes effect on next login (or on a hard refresh).
 
