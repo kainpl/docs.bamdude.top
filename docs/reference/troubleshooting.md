@@ -339,9 +339,15 @@ The printer rejected the file-transfer login. The access code is wrong, or it ch
 
 BamDude could not reach the printer's file-transfer port (FTPS 990). The port is blocked, or the printer is off or on another subnet. Make sure nothing (firewall, Docker bridge networking) blocks port 990 between BamDude and the printer, and that both are on the same network.
 
+### FTPS cleartext answer
+
+The printer answered its secure file-transfer port (990) in plain text instead of starting TLS — the log shows `[SSL: WRONG_VERSION_NUMBER]`. This is not a firewall or a firmware version problem: a plain-text reply on that port is exactly what produces this error, while a TLS version mismatch produces a different one. It is how the printer's file server turns a connection away, most often because another program — a slicer's device page, another integration — is using it at that moment; the printer accepts about one file connection at a time.
+
+Close other programs that browse or send files to this printer and try again. If it keeps happening with nothing else connected, restart the printer. Right after the error BamDude asks the printer once what it said and logs it (`Printer … answered port 990 in cleartext with: …`) — include that line when you report the problem.
+
 ### FTPS TLS failure
 
-The TLS handshake with the printer's file-transfer server failed — often a firewall/proxy intercepting the connection, or outdated printer firmware. Update the printer firmware and check that nothing intercepts port 990.
+The TLS handshake with the printer's file-transfer server failed after the printer had started speaking TLS. Check that nothing between BamDude and the printer intercepts port 990 (a proxy or a security appliance) and try again; the sample line names the exact TLS error — include it in a report.
 
 ### MQTT connection unstable
 
