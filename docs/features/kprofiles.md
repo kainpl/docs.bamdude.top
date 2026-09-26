@@ -40,6 +40,7 @@ So a 3-printer farm running 4 materials at 2 nozzle sizes ends up with up to `3 
 | Surface | What it does |
 |---|---|
 | **Profiles** in the sidebar | The profile list. Filter by printer model, search by name, edit, clone, import, export. |
+| AMS slot card (Printers page) | Shows the K value the slot is calibrated with under the material — `K 0.024` — on AMS, AMS HT and external-spool slots, without hovering. A slot with no known calibration shows nothing, never a default. |
 | Spool detail (under Inventory) | "K-profile override" — pick a profile to use whenever this spool is assigned to an AMS slot. Useful for off-spec filaments. |
 | Settings → Backup → Git | Schedule profiles + cloud profile snapshots to GitHub / GitLab. |
 
