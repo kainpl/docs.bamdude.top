@@ -107,8 +107,11 @@ If you only run BamDude, the built-in inventory above already does everything Sp
 1. **Settings** → **Integrations** → **Spoolman**
 2. Set the **URL** (e.g. `http://192.168.1.50:7912` or a docker-compose service alias like `http://spoolman:7912`)
 3. (Optional) **API Key** — required only if your Spoolman instance is behind authentication; leave blank for the default open setup.
-4. **Test Connection**
-5. **Save**
+4. **Save**
+
+The status beside the URL asks the configured Spoolman whether it answers, every time — not whether BamDude happened to talk to it earlier. While it does not answer, a **Connect** button retries. There is no Disconnect: Spoolman is a plain HTTP API with no session to close, and the enable switch is what turns the integration off.
+
+The extra fields BamDude keeps on a spool (the RFID tag, the slicer preset, the colour name) are registered in Spoolman by the first write that carries them, so enabling the integration from Settings is enough — the first AMS sync no longer fails with *Unknown extra field*. A field that already exists is left alone, including one you renamed or retyped in Spoolman's own UI.
 
 !!! tip "Network reachability"
     BamDude must be able to reach the Spoolman URL from inside its own process. On docker-compose, put both services on the same network and use the service alias; on bare metal, a LAN hostname or static IP is enough.
@@ -332,7 +335,7 @@ run is easy to spot and undo.
 
 **Sync not working**
 
-- Confirm `spoolman_enabled` is on and **Test Connection** still passes.
+- Confirm `spoolman_enabled` is on and the status beside the URL says **Connected**.
 - Check Spoolman's own logs — newer / older Spoolman versions occasionally tighten or change their REST contract.
 - Verify the spool is recognised as Bambu Lab (auto-sync only fires for Bambu RFID — see above). For non-Bambu spools, use **Manual Link**.
 - For multi-printer setups, confirm the printer name in BamDude matches the location string Spoolman expects.
