@@ -87,6 +87,8 @@ This **does not send an MQTT command** to the printer — it just flips a server
 
 Accepted printer states: `FINISH`, `FAILED`, **`IDLE`**. The IDLE case covers Auto-Off cycles — when the printer was powered off via smart plug after a job, the persisted `awaiting_plate_clear` flag is still set when it boots back into IDLE, and the operator still needs to acknowledge the cleared plate.
 
+A printer that is **switched off** is answered too, with no state check: with Auto Power Off, "plate still up, printer off" is the ordinary end of a print, and clearing sends nothing to the printer. The card keeps the **Clear plate** button on such a printer (and bulk *Clear plate* works on it); the queue then switches the printer on for the next job instead of passing it over. A printer that is on and printing is still refused.
+
 !!! note "Distinct permission"
     Clear-plate uses `printers:clear_plate` — a more granular permission than `printers:control`. You can grant a tech the ability to OK the next job without giving them stop / pause / chamber-light access.
 
