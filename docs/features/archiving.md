@@ -46,7 +46,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     |-------|-------------|
     | `file_path` | 3MF copy at `data/archive/<printer_id>/<timestamp>_<name>/<filename>.3mf`. Empty string means the 3MF couldn't be fetched (fallback row) or was cleaned by retention. |
     | `file_size` | Bytes on disk. |
-    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. For 3MFs sliced through the Docker slicer sidecar — which skips the desktop-only plate-PNG render — BamDude generates the missing plate thumbnails server-side (an isometric Bambu-green render of the embedded model, 512 px + 128 px) so the archive card isn't blank. |
+    | `thumbnail_path` | Extracted PNG from the slicer. Stays even after the 3MF is cleaned. For 3MFs sliced through the Docker slicer sidecar — which skips the desktop-only plate-PNG render — BamDude generates the missing plate thumbnails server-side (an isometric Bambu-green render of the embedded model, 512 px + 128 px, lit and framed like the File Manager's STL thumbnails) so the archive card isn't blank. A plate of many copies is read one part at a time and simplified evenly; a plate still over the preview's face limit after that gets no picture rather than holding anything up. |
     | `source_3mf_path` | Original project 3MF when uploaded from the slicer (separate from the dispatched copy). |
 
 === "Slicer metadata"
