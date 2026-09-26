@@ -849,9 +849,10 @@ VIRTUAL_PRINTER_ADVERTISE_ADDRESS=192.168.1.100
    docker exec bamdude openssl x509 -in /app/data/virtual_printer/certs/bbl_ca.crt -noout -fingerprint -sha1
    ```
    Рядок `SHA1 Fingerprint=…` має бути серед сертифікатів у `printer.cer`.
-3. **Слайсер повністю перезапущений?** Cmd+Q на macOS, End Task на Windows. Закрити вікно недостатньо — `printer.cer` не перечитується.
-4. **Linux AppImage / Flatpak**: `printer.cer` всередині бандла read-only. Або розпаковуй AppImage і редагуй вшитий cert, або ставимо CA в системний trust store + перевіряємо `tls_cert_store_accepted: yes` у `~/.config/BambuStudio/BambuStudio.conf`.
-5. **Останній варіант — регенерація**:
+3. **CA двох інсталяцій з однаковою назвою?** Якщо в `printer.cer` лежать CA двох інсталяцій BamDude (чи Bambuddy), слайсер пробує лише перший CA з тією ж назвою — коли обидва звуться просто `Virtual Printer CA`, одна інсталяція падає з загальною помилкою підключення. CA, згенерований зараз, має суфікс інсталяції (`BamDude Virtual Printer CA 1A2B3C4D`), тож це трапляється, лише коли обидва згенеровані старими версіями. Перевір: `openssl x509 -in bbl_ca.crt -noout -subject`; перегенеруй один із них (останній крок нижче) і імпортуй заново.
+4. **Слайсер повністю перезапущений?** Cmd+Q на macOS, End Task на Windows. Закрити вікно недостатньо — `printer.cer` не перечитується.
+5. **Linux AppImage / Flatpak**: `printer.cer` всередині бандла read-only. Або розпаковуй AppImage і редагуй вшитий cert, або ставимо CA в системний trust store + перевіряємо `tls_cert_store_accepted: yes` у `~/.config/BambuStudio/BambuStudio.conf`.
+6. **Останній варіант — регенерація**:
    ```bash
    rm -rf /path/to/data/virtual_printer/certs/
    # disable + re-enable VP в UI для регенерації
