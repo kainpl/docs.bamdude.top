@@ -132,7 +132,7 @@ The extra fields BamDude keeps on a spool (the RFID tag, the slicer preset, the 
 
 ### :material-sync-circle: What syncs
 
-- **AMS slot ↔ Spoolman spool** — Each loaded slot maps to a Spoolman spool ID. Material, brand, colour, and (unless `disable_weight_sync` is on) remaining weight are kept in step.
+- **AMS slot ↔ Spoolman spool** — Each loaded slot maps to a Spoolman spool ID. Material, brand, colour, and (unless `disable_weight_sync` is on) remaining weight are kept in step. A clear or translucent spool keeps its transparency in Spoolman's `color_hex` (eight characters); an opaque one stays six characters, exactly as your existing filaments are stored, so nothing already there is rewritten or duplicated.
 - **Print consumption** — Each completed print reports the grams used to Spoolman as a usage event. Cancelled / failed prints respect `spoolman_report_partial_usage`.
 - **Location** — the **Storage Location** you pick for a spool is written to Spoolman's `location` field, and Spoolman's location names appear in BamDude's Storage Location list. A printer slot is not a storage location: which spool is loaded where is tracked by slot assignments, not written to `location`.
 - **RFID** — Bambu Lab tray UUIDs are passed through to Spoolman's tag field.
