@@ -59,6 +59,7 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | `stagger_interval_minutes` | `5` | Хвилини очікування після того, як слот звільниться, до старту наступного. |
 | `stagger_wait_for_bed` | `true` | Слот звільняється, коли стіл досяг target-temp ±1 °C. Якщо вимкнено, слот звільняється одразу після старту друку. |
 | `per_printer_mapping_expanded` | `false` | Розгортати секцію custom filament mapping у print-modal за замовчуванням. |
+| `auto_queue_compatible_models` | `false` | Дозволити Auto Queue вибрати сумісний за Bambu Studio принтер, коли точна модель не готова. Ручний вибір сумісної цілі доступний і без цього. |
 
 ## :material-printer-3d: Віртуальний принтер
 

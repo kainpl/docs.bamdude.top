@@ -1,11 +1,13 @@
 ---
 title: Auto-Queue Routing
-description: Route prints by exact model, complete filament requirements, and the current AMS and external feed configuration
+description: Route prints by model compatibility, complete filament requirements, and the current AMS and external feed configuration
 ---
 
 # Auto-Queue Routing
 
-Auto-Queue distributes work into per-printer queues. Choose the file, plate, and print rules; the router finds a printer of the exact model that can supply every used filament channel.
+Auto-Queue distributes work into per-printer queues. Choose the file, plate, and print rules; the router finds a printer that accepts the file and can supply every used filament channel. Exact-model routing is the default. An optional fallback also considers compatible models from Bambu Studio's directed `compatible_machine` data.
+
+Compatibility is checked from the **target printer's** Bambu Studio configuration: a printer accepting a file from another model does not imply the reverse. A P1P with its upgrade kit confirmed by live status uses P1S for this check. The physical nozzle, rack, filament, and build-plate checks still apply. Manual selection of a compatible printer is allowed with a warning; a known incompatible model is refused.
 
 Printers of the same model with and without AMS are checked against their actual configurations. See [Filament Routing](filament-routing.md) for the complete rules, multicolor and dual-nozzle examples, and waiting reasons.
 
@@ -21,8 +23,8 @@ Rows created before this change remain legacy rows until they are captured by a 
 
 1. On submission, BamDude validates the selected plate in the sliced 3MF, its matching G-code, model, and used channels. A source error blocks adding the job; a temporary lack of compatible printers does not.
 2. The background router reads pending work in queue order, or SJF order when enabled.
-3. It looks for a printer of the required model and location with a complete suitable set of feeds. Each used channel needs its own source.
-4. Among eligible printers, one ready to start wins. The job moves to that printer's queue with its routing rules; if no candidate exists, the panel shows a waiting reason.
+3. It looks for a printer of the required model and location with a complete suitable set of feeds. With compatible-model fallback enabled, a compatible printer is considered when no ready exact-model printer can run the file. Each used channel needs its own source.
+4. Among eligible printers, a ready exact-model printer wins; otherwise a ready compatible printer may win. The job moves to that printer's queue with its routing rules; if no candidate exists, the panel shows a waiting reason.
 5. The printer queue applies its usual plate-clear, drying, staggered-start, and swap-macro gates. Filament and source checks run again before the actual start command.
 
 ## :material-sort-numeric-ascending: SJF + starvation guard
@@ -51,6 +53,7 @@ When the toggle is off, items dispatch in FIFO order (by `position`).
 | Setting | Effect |
 |---------|--------|
 | **Queue Shortest First** | Enables SJF + the starvation guard. Default: off (FIFO). |
+| **Use compatible printers in Auto Queue** | Allows compatible-model fallback when no exact-model printer is ready. Default: off. A manual choice of a compatible model does not depend on this switch. |
 
 The router itself is **always on** — there's no master switch. If no auto-queue items exist, the scheduler is a 30 s no-op.
 
@@ -66,7 +69,7 @@ Open Print for a library file or archive and choose **Auto**.
 
 | Field | Meaning |
 |---|---|
-| Target Model | The exact model from the sliced file. An empty selection means detect it from the 3MF, not allow any model. |
+| Target Model | The file's model, or an explicitly compatible model. An empty selection means detect it from the 3MF, not allow any model. |
 | Target Location | An optional printer-location restriction. |
 | Filament source | Automatic: AMS or external spool; AMS only; External spools only. |
 | Force exact color match | Off by default: exact colours are preferred, but another compatible colour is allowed. Material and nozzle requirements remain. |
@@ -96,7 +99,7 @@ Drop **as many sliced files as you like** anywhere over the **Auto-Queue panel**
 
 **A file with no recorded model is refused**, by name, before the dialog opens. There is nothing to pin and nothing to verify; queueing it on a guess would leave an item waiting for a machine nobody chose.
 
-The auto-mode form no longer offers a target the file cannot run on either. Choosing a mismatched model never failed — it produced an item waiting for a printer that would never take it, with nothing explaining the wait.
+The auto-mode form offers exact and Bambu Studio compatible targets. A known incompatible target is refused instead of creating a permanently waiting item.
 
 The **Load from library** button on the panel opens the same [file picker](print-queue.md#load-a-queue-from-the-library), with every printable file offered rather than one machine's worth.
 

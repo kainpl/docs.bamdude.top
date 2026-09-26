@@ -275,14 +275,14 @@ A farm runs the same job on several machines. The queue card has a **Copy** butt
 The dialog puts **what** on the left and **where** on the right:
 
 - the queue's items, everything ticked to start with, each showing its plate, print time and filament;
-- the other printers **of the same model**, ticked by you, each with its state and progress.
+- other printers that accept **every selected item's file model**, ticked by you, each with its state and progress.
 
 Both sides have select-all and clear. The printer list is in the order and grouping your Queues screen is already in, so you pick from the layout you navigate by.
 
-!!! info "Why only the same model"
-    The items were sliced for this machine. Another model is a different build volume and a different G-code flavour, and BamDude does not re-slice.
+!!! info "How compatible targets are checked"
+    BamDude uses the target printer's directed Bambu Studio compatibility list. It does not re-slice or bypass nozzle, build-volume, or filament checks. With no matrix available, the picker offers only exact matches.
 
-**Each item keeps the plate it was queued with** — it is literally the same file on the same model, so that plate exists there too. Copies go to the end of each target queue, so a printer mid-job finishes first.
+**Each item keeps the plate it was queued with** — it is the same captured file, and the target is checked for that plate. Copies go to the end of each target queue, so a printer mid-job finishes first.
 
 **Ready queued items copy from their saved file, not from the original.** The copy reuses the verified immutable object already held in `data/queue-sources/`, so it still works after the archive, library record, laptop folder or SMB share has gone away. It asks for fresh target-printer, AMS-mapping, schedule and print-option choices. Legacy rows retain their original-file behavior; a missing or broken saved source stays visible but cannot be copied.
 

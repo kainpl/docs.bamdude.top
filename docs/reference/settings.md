@@ -59,6 +59,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `stagger_interval_minutes` | `5` | Wait time after a slot frees before the next start. |
 | `stagger_wait_for_bed` | `true` | Slot frees when the bed reaches target temp (±1 °C). When off, the slot frees immediately after print start. |
 | `per_printer_mapping_expanded` | `false` | Expand the custom filament mapping section by default in the print modal. |
+| `auto_queue_compatible_models` | `false` | Let Auto Queue use a Bambu Studio compatible printer when no exact-model printer is ready. Manual compatible targets remain available when off. |
 
 ## :material-printer-3d: Virtual printer
 
