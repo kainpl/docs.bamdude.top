@@ -49,6 +49,8 @@ Click **Start Debug Logging** and BamDude:
 
 Now reproduce the bug in another tab. Detailed logs are captured continuously. The session **auto-stops at 5 minutes** as a safety cap — you can also click **Stop & Submit** earlier when you've reproduced what you need.
 
+You can also **close the panel** and reproduce the bug in the same tab — recording keeps running. While it does, the bug button turns amber (in the compact layout the header button pulses, and the debug-logging banner offers **Resume report**); opening it brings you back to this step with your description intact. A page reload does not lose the run either: BamDude picks it up again while the server is still logging. If the 5-minute cap fires while the panel is closed, the panel opens first so the report is submitted in front of you. A run left unattended past the cap (the browser was closed) is not filed on the next visit — the log level is simply put back.
+
 ### :material-stop-circle: Step 3 — Stop & Submit
 
 Hitting Stop:
