@@ -440,6 +440,8 @@ It's **on by default**, so nothing changes for a setup that has one plug per pri
 
 Accessory plugs still switch on and off normally, and still report power and energy — they just don't speak for the printer's state.
 
+**Per-print energy** is read from the first plug, in that order (the power source first), that actually reports an energy counter — so a mains switch with no power sensor does not hide the plug that meters the printer. The print's end is read from the **same** plug its start was, so two counters never make one figure. On the Smart Plugs tab, a plug counts as online when it answers, whether or not it measures energy.
+
 ### Auto Power On
 
 When a queued print is ready, BamDude turns on the plug that powers the printer, waits for it to boot, then starts the print.
