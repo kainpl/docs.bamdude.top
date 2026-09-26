@@ -163,6 +163,8 @@ Each completed print reports per-filament consumption to Spoolman as a usage eve
 
 This matches BamDude's per-spool tracking model — the same numbers feeding the Stats page also feed Spoolman, just routed through Spoolman's usage-history table on top of BamDude's local archive.
 
+**The archive learns what was charged.** Each charge that lands is priced from its own spool — the spool's price when set, else its filament's, over the filament's net weight — so a multi-material print bills each slot at its own rate, and grams no spool could price are covered at the farm's default filament rate. The archive's filament weight follows the same rule as the built-in inventory: a failed print, or one whose 3MF never arrived, records the grams actually charged; a completed print keeps its slicer estimate. A spool with no price leaves the recorded cost alone. **Recalculate Costs** on the Stats page keeps a cost priced this way rather than re-pricing it at the default rate, and says how many it kept.
+
 ### :material-tray-full: AMS slot mapping (hover card)
 
 Hover over any AMS slot on the Printers page to see:
