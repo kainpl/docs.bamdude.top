@@ -427,6 +427,8 @@ That catalogue names the print each recording belongs to, so the video is matche
 
 On both media the printer also reports the full path of the recording it has just finished writing, and the automatic scan takes **that** file by name instead of assuming the one new recording is the right one. It is still only accepted if it appeared after this print started — otherwise a video recorded from the printer's own screen mid-print, which the printer would honestly report as its most recent, could be attached to the wrong job.
 
+If the printer's storage did not answer when the print started, BamDude could not see what was already there, so "new since this print started" tells it nothing. A single new recording, or the one the printer names, is still attached. Between several others it will not guess — they stay on the printer for **Scan for timelapse**, rather than an arbitrary one being attached (and, with the clean-up below on, deleted from the printer).
+
 !!! note "Which printers keep timelapses internally"
     Not the same set as those that keep models internally — a machine can do one and not the other, so BamDude checks the two capabilities separately and only asks for a catalogue the printer says it has.
 
