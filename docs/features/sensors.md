@@ -19,7 +19,7 @@ BamDude records Zigbee readings and can notify you when they leave their limits.
 
 ## :material-home-automation: Home Assistant sensors
 
-Configure the Home Assistant connection in **Settings → Smart plugs → Home Assistant**. The **HA Sensors** section there discovers numeric and binary entities and lets you bind them to printers. You can bind the same HA entity to several printers; each binding has its own name, display order, alert condition, notification switch, and optional **Block print** switch. Binary sensors can alert on either on or off; numeric sensors can alert above or below a threshold, including sensors without a unit. The printer card shows the latest reading and its history.
+Configure the Home Assistant connection in **Settings → Network**. Open **Settings → Smart plugs → Sensors** and press **Add sensor → Home Assistant** to bind a numeric or binary entity to a printer or spool-storage location. Zigbee and HA sensors share this one section; the source and place filters help find a binding. You can bind the same HA entity to several places; its card groups those uses while keeping their names, alert conditions, notifications, readings and histories independent. Printer bindings also have an optional **Block print** switch. Binary sensors can alert on either on or off; numeric sensors can alert above or below a threshold, including sensors without a unit. A sensor hidden on a printer or storage card remains manageable in Settings.
 
 An alerting printer binding holds pending queued jobs until the condition clears. AutoQueue prefers a ready printer when it has another compatible choice. If Home Assistant is unavailable or the reading is old, the hold releases so a disconnected HA server cannot strand the queue. This is an operational hold, not a safety interlock; manual starts at the printer and prints already running are outside it.
 
@@ -33,7 +33,7 @@ You can mix HA and Zigbee sensors in one place. Both appear as separate chips; w
 
 1. **Settings → Smart plugs → Zigbee** — press **Pair** and put the sensor in pairing mode (usually a long press on its button).
 2. When it appears in the paired list, press **Add as sensor**.
-3. Give it a name and, optionally, an initial room or printer. Open **Edit sensor** to add more printer, room or spool-storage bindings.
+3. Give it a name and, optionally, an initial room, printer or spool-storage place. Open **Edit sensor** to add more bindings. You can also start from **Settings → Smart plugs → Sensors → Add sensor → Zigbee** after pairing.
 
 One physical sensor can be shown in several places. Each binding can have its own label, display order and alert limits. Removing a binding leaves the sensor, its other bindings and its single measurement history intact. A new binding starts with notifications off until you enable them for that target.
 
