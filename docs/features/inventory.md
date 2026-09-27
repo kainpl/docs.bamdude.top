@@ -78,11 +78,13 @@ CSV import/export is **local-inventory only**. In **Spoolman mode** both buttons
 Where a spool physically lives — a shelf, drawer, or dry-box — is a **managed catalog**, not free text. A **Locations** button in the inventory header opens the catalog manager where you create, rename, and delete locations; the spool form's **Storage location** field is a dropdown drawn from that catalog, with an inline *create new* option so you never leave the form to add a shelf.
 
 - **Rename propagates** — renaming a location updates every spool assigned to it in one write, so there's no orphaned free-text drift.
-- **Delete is guarded** — a location with spools still assigned can't be deleted until you move those spools elsewhere.
+- **Delete is guarded** — move assigned spools and detach Zigbee or Home Assistant sensors before deleting the location.
 - **Legacy free-text migrates** — on first launch after upgrade, BamDude backfills the catalog from the distinct free-text storage values already on your spools and links each spool to its matching catalog row.
 - **Spoolman sync** — in Spoolman mode the catalog imports Spoolman's distinct locations, and a rename cascades to Spoolman's per-spool `location` field (rolled back locally if Spoolman rejects it, so the two never diverge).
 
 Viewing the catalog needs `inventory:read`; creating / renaming / deleting a location needs `inventory:update`.
+
+A location can show readings from [Zigbee and Home Assistant sensors](sensors.md). The catalog displays each source separately, with a chart for its history. If more than one sensor reports the same quantity, select a primary source for the compact temperature, humidity or battery display; no source is chosen silently. The optional inventory table columns and card footer show the reading for each spool's storage location. Sensor setup and readings require the smart-sensor permissions.
 
 ### Editing a spool created by Quick Add, CSV import or RFID
 

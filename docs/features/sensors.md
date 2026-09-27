@@ -1,13 +1,13 @@
 ---
 title: Environment Sensors
-description: Zigbee temperature and humidity sensors — live readings, history charts, and alerts when a room leaves its limits
+description: Zigbee and Home Assistant sensors for printers and spool storage — readings, history, alerts, and optional print holds
 ---
 
 # Environment Sensors
 
 Pair a Zigbee temperature/humidity sensor and BamDude reads the room your printers stand in: current values wherever you are in the app, a chart of the last week, and a message when it leaves the limits you set.
 
-Sensors use the **same radio as Zigbee smart plugs** — one dongle drives both. If you have not set the radio up yet, do that first on the [Smart Plugs](smart-plugs.md) page; everything below assumes the coordinator is connected.
+Zigbee sensors use the **same radio as Zigbee smart plugs** — one dongle drives both. If you want Zigbee readings, set up the coordinator on the [Smart Plugs](smart-plugs.md) page. Home Assistant sensors use your existing HA server and do not need a Zigbee radio.
 
 ---
 
@@ -15,7 +15,17 @@ Sensors use the **same radio as Zigbee smart plugs** — one dongle drives both.
 
 Filament cares about humidity. ABS cares about draughts. A print that warps at 3 a.m. and a print that warps at noon usually differ by something nobody was in the room to see.
 
-BamDude does not act on these readings — it does not switch anything on or off because a room got warm. It records them and tells you.
+BamDude records Zigbee readings and can notify you when they leave their limits. A Home Assistant sensor attached to a printer can also hold queued starts while its configured alert is active; this is optional and does not stop a print already running.
+
+## :material-home-automation: Home Assistant sensors
+
+Configure the Home Assistant connection in **Settings → Smart plugs → Home Assistant**. The **HA Sensors** section there discovers numeric and binary entities and lets you bind them to printers. You can bind the same HA entity to several printers; each binding has its own name, display order, alert condition, notification switch, and optional **Block print** switch. Binary sensors can alert on either on or off; numeric sensors can alert above or below a threshold, including sensors without a unit. The printer card shows the latest reading and its history.
+
+An alerting printer binding holds pending queued jobs until the condition clears. AutoQueue prefers a ready printer when it has another compatible choice. If Home Assistant is unavailable or the reading is old, the hold releases so a disconnected HA server cannot strand the queue. This is an operational hold, not a safety interlock; manual starts at the printer and prints already running are outside it.
+
+**Inventory → Locations** also accepts HA entities for a spool-storage place. Temperature, humidity and battery readings have a guided picker; other numeric or binary entities remain available through the sensor API. A location binding can have its own alert and notification, but it never blocks printing. Replacing an entity starts a new history revision, so readings from different devices or units are not joined into one chart. HA readings share the sensor-history retention setting with Zigbee.
+
+You can mix HA and Zigbee sensors in one place. Both appear as separate chips; when several visible sensors report the same quantity, choose the **primary** reading for its compact inventory display. Until you choose one, that compact value stays blank. The inventory table's temperature, humidity and battery columns are optional and initially hidden.
 
 ---
 
