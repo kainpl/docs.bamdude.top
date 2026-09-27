@@ -25,7 +25,7 @@ An alerting printer binding holds pending queued jobs until the condition clears
 
 **Inventory → Locations** also accepts HA entities for a spool-storage place. Temperature, humidity and battery readings have a guided picker; other numeric or binary entities remain available through the sensor API. A location binding can have its own alert and notification, but it never blocks printing. Replacing an entity starts a new history revision, so readings from different devices or units are not joined into one chart. HA readings share the sensor-history retention setting with Zigbee.
 
-You can mix HA and Zigbee sensors in one place. Both appear as separate chips; when several visible sensors report the same quantity, choose the **primary** reading for its compact inventory display. Until you choose one, that compact value stays blank. The inventory table's temperature, humidity and battery columns are optional and initially hidden.
+You can mix HA and Zigbee sensors in one place. Both appear as separate chips; when several visible sensors report the same quantity, choose the **primary** reading for its compact inventory display. Until you choose one, that compact value stays blank. The inventory table's temperature, humidity and battery columns are optional and initially hidden. With sensor-read permission, you can sort by these live readings across the full inventory; spools without a current reading appear last.
 
 ---
 

@@ -84,7 +84,7 @@ Where a spool physically lives — a shelf, drawer, or dry-box — is a **manage
 
 Viewing the catalog needs `inventory:read`; creating / renaming / deleting a location needs `inventory:update`.
 
-A location can show readings from [Zigbee and Home Assistant sensors](sensors.md). The catalog displays each source separately, with a chart for its history. If more than one sensor reports the same quantity, select a primary source for the compact temperature, humidity or battery display; no source is chosen silently. The optional inventory table columns and card footer show the reading for each spool's storage location. Sensor setup and readings require the smart-sensor permissions.
+A location can show readings from [Zigbee and Home Assistant sensors](sensors.md). The catalog displays each source separately, with a chart for its history. If more than one sensor reports the same quantity, select a primary source for the compact temperature, humidity or battery display; no source is chosen silently. The optional inventory table columns and card footer show the reading for each spool's storage location. Table columns sort the full inventory by current readings, placing unavailable readings last. Sensor setup and readings require the smart-sensor permissions.
 
 ### Editing a spool created by Quick Add, CSV import or RFID
 
