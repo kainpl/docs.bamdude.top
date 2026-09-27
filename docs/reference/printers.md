@@ -5,7 +5,7 @@ description: Compatibility information for Bambu Lab printer models
 
 # Supported Printers
 
-BamDude supports all Bambu Lab 3D printers with Developer Mode capability.
+BamDude supports the Bambu Lab 3D printers listed below when Developer Mode is available.
 
 ---
 
@@ -27,6 +27,11 @@ BamDude supports all Bambu Lab 3D printers with Developer Mode capability.
 | **A1** | A1 | :material-check: | AMS Lite |
 | **A1 Mini** | A1 | :material-check: | :material-close: |
 | **A2L** | A2 | :material-check:[^a2l] | :material-check:[^a2l] |
+
+BambuStudio `v02.08.04.57` also includes an **N8** model description. BamDude
+recognizes its model name and code in the mirrored catalog, but N8 connection,
+printing, and laser features have not been verified. It is therefore not in
+the supported-model table or feature matrix yet.
 
 ---
 
