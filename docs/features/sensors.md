@@ -23,7 +23,9 @@ BamDude does not act on these readings — it does not switch anything on or off
 
 1. **Settings → Smart plugs → Zigbee** — press **Pair** and put the sensor in pairing mode (usually a long press on its button).
 2. When it appears in the paired list, press **Add as sensor**.
-3. Give it a name and a **location**. The location is what makes readings show up beside your printers — see [below](#where-readings-appear).
+3. Give it a name and, optionally, an initial room or printer. Open **Edit sensor** to add more printer, room or spool-storage bindings.
+
+One physical sensor can be shown in several places. Each binding can have its own label, display order and alert limits. Removing a binding leaves the sensor, its other bindings and its single measurement history intact. A new binding starts with notifications off until you enable them for that target.
 
 Removing a sensor from the list is **not** the same as removing it from the network: it stays paired and keeps its settings, so adding it back restores what it had.
 
@@ -38,6 +40,8 @@ Removing a sensor from the list is **not** the same as removing it from the netw
 |---|---|
 | **Sidebar**, next to the smart-switches button | Every sensor, its place, and what it reads right now. Available on any page. |
 | **Printers page**, grouped by location | The readings for that place, in the group heading itself |
+| **Printer card** | Readings explicitly bound to that printer |
+| **Inventory → Storage Locations**, or a selected storage-location filter | Readings for that spool storage place |
 | **Settings → Smart plugs → Sensors** | The full card: every quantity, when it last reported, battery, and the buttons for charts and limits |
 
 A sensor covers **the place it stands in and everything inside it**. One sensor on a workshop reads out above every shelf in that workshop — you do not need one per shelf. Where two sensors apply to the same group, both are shown, nearest first.
