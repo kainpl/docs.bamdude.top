@@ -507,7 +507,9 @@ External folders are indexed on creation. To pick up new or removed files:
 2. Click **Scan / Refresh** in the info bar
 3. New files are added to the index, files removed on disk are dropped from the index
 
-A scan judges each 3MF by what it holds: one with sliced G-code inside is marked sliced and gets **Print**, whatever it is called. Files indexed before this was checked are re-judged on the folder's next scan.
+A scan reads 3MF contents, including every plate, using the same file preparation service as local uploads. A file with sliced G-code inside is marked sliced and gets **Print**, whatever it is called. Existing indexed files gain full metadata on the next scan; changed files are refreshed in place, including their plate list and preview. Unchanged files with complete metadata are skipped. The scan runs in the background in small batches, so a large or slow network share does not hold up the File Manager. Scans still start when you link a folder or click **Scan / Refresh**.
+
+If a file cannot be read or parsed, BamDude keeps its last good metadata and tries again on a later scan. Files already in the library remain available if the preparation service is temporarily unavailable.
 
 ### Read-only protection
 
@@ -531,7 +533,7 @@ When you delete an external folder from BamDude:
 
 ### Supported file types
 
-External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `.stp`, and image files (`.png`, `.jpg`, `.gif`, `.webp`, `.svg`).
+External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `.stp`, Markdown (`.md`), and image files (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`).
 
 ---
 
