@@ -304,7 +304,7 @@ Under the table, the **Movements** journal lists every movement on every shelf, 
 
 ## :material-shield-key: Permissions
 
-Orders, products, customers, the plan and the shelf all live under one family of permissions — nothing new was added for any of them.
+Orders, products, customers, the plan and the shelf all live under one family of permissions.
 
 | Permission | Covers |
 |---|---|
@@ -312,6 +312,9 @@ Orders, products, customers, the plan and the shelf all live under one family of
 | `projects:create` | Creating an order, a product or a customer. |
 | `projects:update` | Editing them, filing prints, sending a plan to a queue, banking a surplus, reserving kits and correcting the shelf. |
 | `projects:delete` | Deleting them. |
+| `projects:file_prints` | Filing any archived print under an order and taking it out — a print started from the printer's screen or a slicer belongs to nobody. Administrators and Operators have it after the upgrade. |
+
+A change made from another section that moves the workshop's figures asks for `projects:update` on top of that section's own permission: linking a library file or folder to products, unlinking it, and moving files when the move changes which products they belong to; and filing prints under an order, which also needs `projects:file_prints` or the right to edit those prints (your own, or all). A file that lands in a folder linked to products — uploaded, sliced or unpacked from a ZIP — takes the folder's links without asking: the link is a rule its author set for the folder.
 
 For [API keys](api-keys.md#permission-model), the **Manage Projects** scope (`can_manage_projects`) carries create / edit / delete across all three entities; read-only access rides `can_read_status`. The scope is off on existing keys after an upgrade and is granted per key under **Settings → API Keys**.
 
