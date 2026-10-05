@@ -7,9 +7,6 @@ description: Keep 50 printers on one operator screen, ordered by attention and c
 
 The status monitor is a separate screen for the operator: see which printer needs attention now and which print finishes next. **Printers** and **Queue** share the same tile layout. A change of state changes the color, icon and text without changing the tile's size.
 
-!!! info "Next release"
-    The monitor is implemented in the development build and is part of the next release. If your installed version has no **Open monitor** button, check the [BamDude release notes](https://github.com/kainpl/bamdude/releases) before following this guide.
-
 ## Open it on a second display
 
 1. On **Printers** or **Queue**, select **Open monitor**.
