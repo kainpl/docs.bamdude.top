@@ -1,15 +1,15 @@
 ---
 title: Orders, Products & Stock
-description: Customers, orders of product × quantity, products made of printed and purchased parts, a plan that says what to print next, and a free stock of spare parts
+description: Customers, configurable products, orders, print plans, finished-goods stock and dispatch notes
 ---
 
 # Orders, Products & Stock
 
-**Projects** in the sidebar opens three tabs: **Orders**, **Products** and **Customers**.
+**Projects** in the sidebar opens four sections: **Orders**, **Products**, **Customers** and **Stock**. Each section has its own permissions. The Orders list opens as cards until you save a different view in this browser; cards, table, kanban, workspace and deadlines remain available.
 
 An order says *what is wanted* — so many of which product, for whom, by when, at what price. A product says *how it is made* — which printed and purchased parts go into one unit, and which sliced plates produce them. Progress is counted in finished units, worked out from the parts your prints actually produced.
 
-Every figure on an order comes from **print history**: the archives, never the queue. The queue only ever answers "what is still waiting".
+Completed output comes from **print history** in the archives. The order also shows live and queued work, stock reservations and issues separately, so a planned or queued job never counts as a finished part.
 
 !!! info "This replaces the old projects with a print plan"
     Targets, the copies stepper, the separate bill-of-materials table and project export are gone — the product took all of that over. Existing projects are converted automatically; see [Upgrading from the old projects](#upgrading-from-the-old-projects).
@@ -18,15 +18,15 @@ Every figure on an order comes from **print history**: the archives, never the q
 
 ## :material-account-group: Customers
 
-A customer is a name, a free-form contact and notes. No discounts, no invoicing details — the price lives on the order.
+A customer has a name, a type, a code, several contacts with delivery details, and notes. The price lives on the order.
 
 A customer is **optional** on an order: internal work and test prints belong to nobody, and that is a normal state rather than a gap to fill.
 
 | Where | What it shows |
 |---|---|
-| **Customers** tab | A flat table: name, contact, how many orders, how many are active / completed / cancelled, total price. |
-| **Customer page** | The same figures, plus every order they placed rendered as the ordinary order cards. |
-| **Orders** tab | Filter by customer, or group the list by customer. |
+| **Customers** section | Searchable, paged cards or table with contacts, order counts and totals. |
+| **Customer page** | Contacts, order figures, paged orders and dispatch notes. |
+| **Orders** section | Filter by customer or group the list by customer. |
 
 Deleting a customer keeps their orders — the orders simply stop belonging to anyone. Names are not forced to be unique, and two identical entries are told apart by hand: merging customers is deliberately not implemented.
 
@@ -115,6 +115,8 @@ To file many prints at once, select them on the [Archives](archiving.md) page an
 
 A product is a **catalog entity** reused across orders. The product *is* the template — separate project templates no longer exist.
 
+A product can have a SKU, version and category. It stays a **draft** until marked **ready to print**, which requires a part and a printable plate; if those disappear later, it is shown as incomplete. Variant groups let one product describe choices such as straight or angled parts. Each order line stores its chosen options and part counts, so changing the product's default later does not rewrite an existing order. A line may also request selected parts without ordering a whole kit.
+
 The catalog carries an **In catalog** flag. A product outside it is not offered when adding an order line, unless the line already points at it; a catalog grows forever, and without the flag the product picker would become the pain the project picker used to be.
 
 | Action | What it does |
@@ -134,8 +136,8 @@ The catalog carries an **In catalog** flag. A product outside it is not offered 
 
 Purchased parts are tracked **per order**, not per product: the order's procurement checklist holds need / acquired / remaining, so *"printed, waiting on screws"* is a state the page can show.
 
-!!! tip "Per unit `0` means «do not measure this part»"
-    The part stays in a plate's yield but creates neither need nor surplus — calibration cubes and test pieces riding along on a shared plate belong here.
+!!! tip "Per unit `0` means «out of the kit»"
+    The part is still counted for the product and can be ordered separately, but it does not contribute to a standard kit. Use **Not counted** for a calibration cube or another object that is not a product part at all.
 
 Parts belong to a product, not to a global catalog: the same bracket in two products is two rows with two independent quantities. Within a product, merging one part into another moves its aliases across and the historical prints resolve to the survivor through the union — nothing is rewritten. Removing an alias makes that name its own part again on the next sync; renaming changes only the name.
 
@@ -286,19 +288,19 @@ Three things it deliberately does **not** do:
 
 ### The shelf on the product page
 
-**Free stock** sits under the composition: the kit count as its headline, a balance for every counted part — zeros included, because an empty shelf and a product with nothing to count are different answers — and the movements table with date, part, the signed change, the reason, where it came from and any note. The table shows the most recent movements and says so when that is all it is showing.
+The product's **Stock** tab shows the free-parts shelf alongside finished-goods positions and movements: the kit count, a balance for every counted part — zeros included — and the journal with date, part, signed change, reason and note. The journal pages through older movements.
 
 **Adjust** writes a correction as a movement with a note you must supply, never as a silent overwrite, and a correction that would take a part below zero is refused. In the catalog, a product card carries its kit count as a badge when there is anything on the shelf.
 
 Deleting a part removes its ledger; **merging** two parts moves the movements onto the survivor, because a merge says the two were always the same thing. Deleting a product removes the ledgers of all its parts. Deleting a print leaves its movements alone and simply drops the reference — the parts are still on the shelf.
 
-### The Stock tab
+### The Stock section
 
-**Projects → Stock** is the same shelf for the whole farm at once. One row per product that has anything to count — kits first, then name — expanding into the balance of each counted part and the **active** orders whose lines hold kits of it in reserve, each a link. **Adjust** on a row opens the same hand-correction dialog the product page has.
+**Projects → Stock** opens on **Finished goods**. Each stock position represents one product configuration, with its location, minimum, on-hand, reserved and available quantities. The list marks positions below their minimum. Open a position to see its reservations, other configurations and the parts its kit needs. Receive finished units, take stock, reserve them or issue them to a customer. **Assemble** uses free printed parts and adds finished units in one recorded movement.
 
-Under the table, the **Movements** journal lists every movement on every shelf, newest first, filterable by product and by reason, with **Show older** loading the next page until the ledger is exhausted — the page says so, rather than leaving the oldest row shown to be read as the first there ever was.
+**Free parts** shows the balance of each part, active order reservations and how many kits each configuration could make. A part with zero units per kit remains visible as *Out of kit*. The **Journal** pages through movements in both ledgers, with filters for product and operation.
 
-**Only with stock** (on by default) hides a product whose shelf is empty and unreserved; turn it off to see every product with a counted part, zeros included. A product hidden from the catalog still appears, marked, because its parts are on the shelf all the same. Completed orders are not listed as holding kits — theirs went out inside the units the customer received — and cancelled orders have already given theirs back.
+An issue from an order or directly from stock creates a numbered **dispatch note**. Its recipient, units and waybill are recorded when the issue is made; the waybill can be edited later. Orders can receive finished printed units into stock and issue them in batches, so issuing some units does not close the rest of the order. Stock movements and corrections have separate permissions; see below.
 
 ---
 
