@@ -44,7 +44,7 @@ prefix              random body
 | **Can read status** | Дозволити live-стан принтера, списки архівів, статистику — read-поверхню |
 | **Manage Library** | Опціонально. Завантаження / перейменування / переміщення / видалення файлів бібліотеки — **будь-якого власника**, не лише творця ключа — плюс нотатки й імпорт з MakerWorld (`can_manage_library`). Read-only доступ до бібліотеки лишається під **Can read status** |
 | **Manage Inventory** | Опціонально. Створення / редагування / видалення котушок, записів каталогу й налаштувань прогнозу (`can_manage_inventory`). Read-only інвентар лишається під **Can read status** |
-| **Manage Projects** | Опціонально. Створення / редагування / видалення проєктів і додавання архівів до них (`can_manage_projects`). Read-only доступ до проєктів лишається під **Can read status** |
+| **Manage Projects** | Опціонально. Усі записи Майстерні — замовлення, вироби, замовники, склад — прив'язка друків до замовлень і читання контактів замовників (`can_manage_projects`). Читання замовлень, виробів і складу лишається під **Can read status** |
 | **Manage Archives** | Опціонально. Створення / редагування / видалення архівів друку (`can_manage_archives`) — **окрім** деструктивного purge, який лишається admin-only. Read-only доступ до архівів лишається під **Can read status** |
 | **Manage Maintenance** | Опціонально. Логування обслуговування, скидання лічильників, редагування інтервалів і керування каталогом типів обслуговування (`can_manage_maintenance`). Read-only доступ до обслуговування лишається під **Can read status** |
 | **Use Bambu Cloud** | Опціонально. Коли ввімкнено, ключ резолвить per-user Bambu Cloud-токен юзера-творця для маршрутів `cloud:*` (slicer presets, MakerWorld imports). За замовчуванням вимкнено, щоб legacy-ключі не могли мовчки витрачати cloud-token власника. Відхиляється при збереженні на ownerless-ключах — див. примітку про значки нижче. |
@@ -89,7 +89,7 @@ curl -H "Authorization: Bearer bd_..." http://localhost:8000/api/v1/printers/
     - `can_read_status` — для printer-state, archive, stats, monitoring (і read-only бібліотека / інвентар / settings-language)
     - `can_manage_library` — для library upload / rename / move / delete + notes + імпорт з MakerWorld. Ключ їде на **all-ownership** варіантах (`library:update_all` / `library:delete_all`): API-ключі не несуть per-row ідентичності власника, тож Manage-Library ключ може курувати **будь-який** файл незалежно від власника. Лише `library:purge` (hard-delete поза вікном trash) лишається admin-only
     - `can_manage_inventory` — для spool / catalog / forecast **writes** (read-only інвентар лишається під `can_read_status`)
-    - `can_manage_projects` — для create / edit / delete проєктів і додавання архівів до проєкту (read-only доступ до проєктів лишається під `can_read_status`)
+    - `can_manage_projects` — для всіх записів Майстерні (замовлення, вироби, замовники, склад), прив'язки друків до замовлень і читання замовників (читання замовлень, виробів і складу лишається під `can_read_status`)
     - `can_manage_archives` — для create / edit / delete архівів друку. `archives:purge` — деструктивний hard-delete, що оминає recycle bin — **лишається admin-only** і ніколи не видається цим scope-ом
     - `can_manage_maintenance` — для логування обслуговування, скидання лічильників, редагування інтервалів і керування каталогом типів обслуговування (read-only доступ до обслуговування лишається під `can_read_status`)
     - `can_access_cloud` — для cloud-token-backed ендпоінтів (slicer presets, MakerWorld)

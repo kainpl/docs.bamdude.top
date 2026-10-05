@@ -304,19 +304,36 @@ Under the table, the **Movements** journal lists every movement on every shelf, 
 
 ## :material-shield-key: Permissions
 
-Orders, products, customers, the plan and the shelf all live under one family of permissions.
+The workshop has four sections — orders, products, customers and stock — and each has its own rights. Filing prints under orders is a right of its own.
 
 | Permission | Covers |
 |---|---|
-| `projects:read` | Reading orders, products, customers, the plan block and the free stock. |
-| `projects:create` | Creating an order, a product or a customer. |
-| `projects:update` | Editing them, filing prints, sending a plan to a queue, banking a surplus, reserving kits and correcting the shelf. |
-| `projects:delete` | Deleting them. |
-| `projects:file_prints` | Filing any archived print under an order and taking it out — a print started from the printer's screen or a slicer belongs to nobody. Administrators and Operators have it after the upgrade. |
+| `orders:read` | Orders: the lists, the order page, its plan, forecast, journal, attachments and cover; the customer's name and the contact's name and role. |
+| `orders:create` | Creating an order, duplicating one, an order from files. |
+| `orders:update` | An order's fields, status, stage, lines, configuration, purchases, attachments and cover; defects recorded from the order; filing future work under it. |
+| `orders:delete` | Deleting an order. |
+| `orders:file_prints` | Filing any print — past or future, yours, someone else's, or one started from the printer's screen or a slicer — under an open order, moving it to another line, taking it out. It does not let you edit a print's photos, files or notes. |
+| `products:read` | The catalog, the product page, its parts, variants, plates and files (as far as the library lets you see them), purchase prices, attachments, export. |
+| `products:create` | Creating a product — from scratch, from a file, by import or by duplicating. |
+| `products:update` | A product's card, parts, variants, categories, its links to library files and folders, attachments and cover. |
+| `products:delete` | Deleting a product. |
+| `customers:read` | The customer directory: contacts with phone, e-mail, city and delivery; notes. |
+| `customers:create` | Creating a customer — also from the order form. |
+| `customers:update` | Editing a customer and its contacts; the list of delivery methods. |
+| `customers:delete` | Deleting a customer. |
+| `stock:read` | Finished positions, the parts shelf, the journal, dispatch notes, the stock tiles. |
+| `stock:move` | Moving goods: receipts, reservations, assembly, issues and dispatch notes, taking from stock into an order line, banking an order's surplus. |
+| `stock:adjust` | Correcting the books: stocktakes, manual corrections, write-offs, counting an old print onto the shelf, a position's location and minimum. |
 
-A change made from another section that moves the workshop's figures asks for `projects:update` on top of that section's own permission: linking a library file or folder to products, unlinking it, and moving files when the move changes which products they belong to; and filing prints under an order, which also needs `projects:file_prints` or the right to edit those prints (your own, or all). A file that lands in a folder linked to products — uploaded, sliced or unpacked from a ZIP — takes the folder's links without asking: the link is a rule its author set for the folder.
+**Filing prints.** A past print is filed, moved to another line or taken out of an order by someone with `orders:file_prints`, or by someone who may edit orders (`orders:update`) and may edit that print (`archives:update_own` for your own, `archives:update_all` for any). Future work — the print dialog, the queue, a reprint, a queue job's clone, the plate's «Repeat», Telegram — needs `orders:file_prints` or `orders:update`; without either, a reprint or a clone goes without the order, and the button says so before anything is sent. Nothing new is filed under a closed order. A print whose output the order has taken into stock cannot leave it, and a print in the trash is not filed — restore it first; a batch with one such print moves nothing.
 
-For [API keys](api-keys.md#permission-model), the **Manage Projects** scope (`can_manage_projects`) carries create / edit / delete across all three entities; read-only access rides `can_read_status`. The scope is off on existing keys after an upgrade and is granted per key under **Settings → API Keys**.
+**From other sections.** Linking a library file or folder to products, unlinking it, and moving files when the move changes which products they belong to also need `products:update` (and the library's own rights). A file that lands in a folder linked to products — uploaded, sliced or unpacked from a ZIP — takes the folder's links without asking: the link is a rule its author set for the folder. Taking from stock needs `stock:move`; giving back what an order held when it is cancelled, completed or reduced needs no stock right. A delete asks for the rights of what it really changes: a customer with active orders also needs `orders:update`, a product with stock also `stock:adjust`.
+
+**What you may not read stays empty.** A page of one section shows another section's fields only to someone who may read that section: without `customers:read` an order shows its contact without the phone; without `products:read` the purchase prices are «—». Filtering or sorting a list by a field you may not read is refused. A dispatch note shows the recipient's phone and address and the supplier's bank details only to someone with `customers:read` or `stock:move`; anyone else sees its number, date, order, customer, units and waybill.
+
+For [API keys](api-keys.md#permission-model), the **Manage Projects** scope (`can_manage_projects`) carries every workshop write, filing prints and reading customers; reading orders, products and stock rides `can_read_status`. The scope is off on existing keys after an upgrade and is granted per key under **Settings → API Keys**.
+
+**After the upgrade** every group can do what it did before: the old «Projects» rights become the matching rights of all four sections, and Administrators, Operators and Viewers get their default sets. A custom group that held *File prints under orders* without the right to edit orders does not keep it, and a user who had «edit» in one group and *File prints under orders* in another keeps only their own prints — the upgrade log names such groups. A status-only API key no longer reads customers.
 
 ---
 

@@ -216,7 +216,7 @@ The **media token** is minted by any signed-in user with `POST /auth/media-token
 |----------|------------|
 | `GET /archives/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/plate-preview` · `/project-image/{path}` · `/qrcode` · `/timelapse` | `archives:read_all` / `archives:read_own` |
 | `GET /library/files/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/card-file/{path}` · `GET /makerworld/imports/{id}/cover` · `/cover-variant` | `library:read_all` / `library:read_own` |
-| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `projects:read` |
+| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `products:read` for a product's pictures, `orders:read` for an order's cover |
 | `GET /printers/{id}/camera-cover` | `printers:read` — the current job's cover, served from the local archive (never triggers an FTP fetch) |
 | `GET /makerworld/thumbnail?url=...` | `makerworld:view` |
 

@@ -216,7 +216,7 @@ Endpoint-и за stream-токен-шлюзом (щоб його отримат�
 |----------|--------|
 | `GET /archives/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/plate-preview` · `/project-image/{path}` · `/qrcode` · `/timelapse` | `archives:read_all` / `archives:read_own` |
 | `GET /library/files/{id}/thumbnail` · `/plate-thumbnail/{n}` · `/card-file/{path}` · `GET /makerworld/imports/{id}/cover` · `/cover-variant` | `library:read_all` / `library:read_own` |
-| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `projects:read` |
+| `GET /products/{id}/attachment-image/{file}` · `/cover-image` · `GET /projects/{id}/cover-image` | `products:read` для зображень виробу, `orders:read` для обкладинки замовлення |
 | `GET /printers/{id}/camera-cover` | `printers:read` — обкладинка поточного завдання з локального архіву (ніколи не ініціює FTP-вибірку) |
 | `GET /makerworld/thumbnail?url=...` | `makerworld:view` |
 

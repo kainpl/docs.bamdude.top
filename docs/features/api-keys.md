@@ -44,7 +44,7 @@ prefix              random body
 | **Can read status** | Allow live printer state, archive lists, statistics — the read surface |
 | **Manage Library** | Optional. Upload / rename / move / delete library files — **any owner**, not just the key creator's — plus notes and MakerWorld import (`can_manage_library`). Read-only library access stays under **Can read status** |
 | **Manage Inventory** | Optional. Create / edit / delete spools, catalogue entries, and forecast settings (`can_manage_inventory`). Read-only inventory stays under **Can read status** |
-| **Manage Projects** | Optional. Create / edit / delete projects and add archives to them (`can_manage_projects`). Read-only project access stays under **Can read status** |
+| **Manage Projects** | Optional. Every workshop write — orders, products, customers, stock — filing prints under orders, and reading customers' contacts (`can_manage_projects`). Reading orders, products and stock stays under **Can read status** |
 | **Manage Archives** | Optional. Create / edit / delete print archives (`can_manage_archives`) — **excluding** the destructive purge, which stays admin-only. Read-only archive access stays under **Can read status** |
 | **Manage Maintenance** | Optional. Log maintenance, reset counters, edit intervals, and manage the maintenance-type catalog (`can_manage_maintenance`). Read-only maintenance stays under **Can read status** |
 | **Use Bambu Cloud** | Optional. When ticked, the key resolves the creating user's per-user Bambu Cloud token for `cloud:*` routes (slicer presets, MakerWorld imports). Off by default so legacy keys can never silently spend the owner's cloud token. Rejected at save time on ownerless keys — see badge note below. |
@@ -89,7 +89,7 @@ Two layers gate every API-keyed call:
     - `can_read_status` — required for printer-state, archive, stats, monitoring reads (and read-only library / inventory / settings-language)
     - `can_manage_library` — required for library upload / rename / move / delete + notes + MakerWorld import. A key rides the **all-ownership** variants (`library:update_all` / `library:delete_all`): API keys carry no per-row ownership identity, so a Manage-Library key can curate **any** file regardless of owner. Only `library:purge` (hard-delete past the trash window) stays admin-only
     - `can_manage_inventory` — required for spool / catalogue / forecast **writes** (read-only inventory stays under `can_read_status`)
-    - `can_manage_projects` — required for project create / edit / delete and adding archives to a project (read-only project access stays under `can_read_status`)
+    - `can_manage_projects` — required for every workshop write (orders, products, customers, stock), filing prints under orders and reading customers (reading orders, products and stock stays under `can_read_status`)
     - `can_manage_archives` — required for print-archive create / edit / delete. `archives:purge` — the destructive hard-delete that bypasses the recycle bin — **stays admin-only** and is never granted by this scope
     - `can_manage_maintenance` — required for logging maintenance, resetting counters, editing intervals, and managing the maintenance-type catalog (read-only maintenance stays under `can_read_status`)
     - `can_access_cloud` — required for cloud-token-backed endpoints (slicer presets, MakerWorld)
