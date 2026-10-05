@@ -28,7 +28,7 @@ The two spare shades exist **in BamDude**: on the product's shelf, where the nex
 
 1. **Order A is printed.** On its page, the lamp line expanded shows the shade part with *Surplus 2*, and the header's **Bank the surplus** button is live. Press it. The toast says what moved — *2 → free stock of Lamp* — and the button goes quiet: pressing it again moves nothing, and says so.
 
-2. **Look at the product.** **Products → Lamp**, section **Free stock**: the headline says **0 kits** — two shades and no bases make no whole lamp — and the parts table below reads *shade 2 · base 0*. The movements table has one row: today, shade, `+2`, *Surplus banked*, with a link to order A.
+2. **Look at the product.** **Products → Lamp → Stock**, under **Free parts**: the headline says **0 kits** — two shades and no bases make no whole lamp — and the parts table below reads *shade 2 · base 0*. The movements table has one row: today, shade, `+2`, *Surplus banked*, with a link to order A.
 
 3. **A base from nowhere.** An engineer prints a plate of four bases from the printer's own screen to test a new filament. It belongs to no order, it completes, and the shelf reads *shade 2 · base 4* — **2 kits**. Nobody pressed anything: an order-less print is credited on completion, good parts only. *(A scrapped base would not have counted — see [Recording scrap](recording-defects.md).)*
 
@@ -36,7 +36,7 @@ The two spare shades exist **in BamDude**: on the product's shelf, where the nex
 
 5. **The shelf after.** *shade 0 · base 2* — the two kits went out as a reservation for order B's line; the two extra bases stay. The movements table shows `−2` on each part, *Reserved for an order*, linked to order B.
 
-6. **A count that disagrees.** Somebody finds a third shade in the box. **Adjust** on the product's shelf: the part, `+1`, and a note you must write — *found in the box under bench 3*. Corrections are movements too; the ledger never overwrites.
+6. **A count that disagrees.** Somebody finds a third shade in the box. **Adjust** under the product's **Stock → Free parts**: the part, `+1`, and a note you must write — *found in the box under bench 3*. Corrections are movements too; the ledger never overwrites.
 
 ## :material-cogs: What BamDude does on its own after that
 
@@ -55,9 +55,9 @@ The two spare shades exist **in BamDude**: on the product's shelf, where the nex
 - **Kits from stock never raise a surplus.** They lower the line's need, progress and plan, but the surplus is measured against the line's *full* quantity. Otherwise the same kits would land on the shelf twice — once banked, once released.
 - **Reopening a cancelled order re-reserves nothing.** The shelf may have gone to somebody else in the meantime; type **From stock** again if it is still there.
 - **A duplicated order takes nothing.** A reorder must not quietly empty the shelf.
-- **Only counted printed parts have a shelf.** A part with *per unit* `0` is not measured; a purchased part is procurement, not stock.
+- **Only counted printed parts have a shelf.** A part with *per unit* `0` sits outside the standard kit but can still be ordered as a part; **Not counted** marks an object that is not a product part. A purchased part is procurement, not printed-parts stock.
 - **History is not swept up.** Prints from before the shelf existed are not counted in; for one you know is still in the box, the archive editor's **Count into stock** does it — one print at a time, on your say-so, and only for a print that finished successfully and belongs to no order.
-- **The whole farm's shelves are one tab.** **Projects → Stock** lists every product with anything on its shelf, the orders holding its kits, and one journal of every movement — the place to look when the question is "what do we have" rather than "what does this product have".
+- **The whole farm's stock is one section.** **Projects → Stock** opens on finished goods; **Free parts** shows parts balances and order reservations, and **Journal** records movements in both ledgers.
 
 ## :material-link-variant: Related scenarios
 
