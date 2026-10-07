@@ -155,6 +155,8 @@ DATABASE_URL=postgresql+asyncpg://bamdude:password@192.168.1.100:5432/bamdude
 
 Use the shipped override `docker-compose.postgres.yml`:
 
+The current override preloads `pg_stat_statements` and runs a one-shot `postgres-stats-init` service before BamDude starts. This creates and checks the extension in `POSTGRES_DB` for both new and existing database volumes. After updating the Compose files, run `docker compose up -d` with your usual project configuration; updating only the BamDude image does not apply this setup. An older override without `postgres-stats-init`, or a third-party PostgreSQL installation, needs the [manual setup below](#pg-stat-statements).
+
 ```env
 # .env
 COMPOSE_FILE=docker-compose.yml:docker-compose.postgres.yml
@@ -169,7 +171,7 @@ DATABASE_URL=postgresql+asyncpg://bamdude:change-me@127.0.0.1:5433/bamdude
 
 ## :material-chart-timeline-variant: Enable pg_stat_statements {#pg-stat-statements}
 
-**For full database diagnostics, external PostgreSQL needs `pg_stat_statements`.** This applies to the separate container above, third-party images, and servers installed on a host. BamDude uses it for the slow-statement list. Setting `DATABASE_URL`, installing BamDude, or updating its image does not configure the external server. The bundled server started by BamDude enables it automatically; a separately managed PostgreSQL service must be checked by its administrator.
+**For full database diagnostics, external PostgreSQL needs `pg_stat_statements`.** BamDude uses it for the slow-statement list. The current PostgreSQL Compose override above and the bundled server started by BamDude enable it automatically. For older Compose files, third-party images or servers installed on a host, follow the steps below. Setting `DATABASE_URL` or updating only the BamDude image does not configure the external server.
 
 Activation has three parts: install the module's files **on the PostgreSQL server**, preload the library and restart that server, then create the extension **in the database named in `DATABASE_URL`**. Run administrative SQL using a PostgreSQL administrator account; BamDude's application account does not need to become a superuser.
 
@@ -264,7 +266,7 @@ The extension query must return a version, and the final query must succeed; a f
 | `permission denied` when creating the extension | Run that administrative step with a database administrator account. |
 | `current transaction is aborted` | Start a new transaction or connection after fixing the first SQL error; later messages are consequences of that error. |
 
-The extension is needed for query statistics, not ordinary storage of BamDude data. Some BamDude versions also report other failed database-health checks after an unavailable statistics query; enabling the extension addresses that configuration problem. See the [PostgreSQL module documentation](https://www.postgresql.org/docs/18/pgstatstatements.html) for server-side details.
+The extension is needed for query statistics, not ordinary storage of BamDude data. Older BamDude versions also report other failed database-health checks after an unavailable statistics query. The SQL-isolation fix keeps those checks independent; the statistics warning remains until the extension is enabled. See the [PostgreSQL module documentation](https://www.postgresql.org/docs/18/pgstatstatements.html) for server-side details.
 
 ---
 
