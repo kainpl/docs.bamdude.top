@@ -146,6 +146,9 @@ nano .env
 !!! tip "The installer asks for you"
     `install.sh` offers SQLite, the bundled PostgreSQL, or an external server — interactively, or unattended with `--db sqlite|embedded|external` (plus `--database-url` for the last). Re-running over an existing install keeps the backend you already use.
 
+!!! important "External PostgreSQL: enable query statistics"
+    Full database diagnostics require `pg_stat_statements` on the PostgreSQL server. Setting `DATABASE_URL` or updating the BamDude image does not enable it. Follow [the setup and verification steps for Docker or a self-hosted server](../features/postgresql.md#pg-stat-statements).
+
 #### Auth & reverse-proxy
 
 | Variable | Default | Description |

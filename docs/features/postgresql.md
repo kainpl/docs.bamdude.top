@@ -137,6 +137,7 @@ DATABASE_URL=postgresql+asyncpg://bamdude:password@192.168.1.100:5432/bamdude
 | Host | the server's address |
 | Port | default `5432` |
 | Database | must already exist |
+| Query statistics | enable [`pg_stat_statements`](#pg-stat-statements) for full database diagnostics |
 
 !!! warning "Create the database with a UTF-8 locale"
     Case-insensitive search (`ILIKE`) and full-text ranking follow the database's `LC_CTYPE`. A database created with the `C` or `POSIX` locale folds ASCII letters only, so «Лампа» would not match a search for `ЛАМПА`. Create it with a UTF-8 locale — for example `CREATE DATABASE bamdude ENCODING 'UTF8' LOCALE 'en_US.utf8' TEMPLATE template0;` (or `LOCALE_PROVIDER builtin LOCALE 'C.UTF-8'` on PostgreSQL 17+). BamDude checks this at start: on a `C`-locale database it folds case through a Unicode collation (PostgreSQL 17+ or an ICU build), turns full-text ranking off, and says so in the log; a server with no such collation searches with ASCII folding only and logs a warning with the fix. The bundled server is created correctly by BamDude itself.
@@ -163,6 +164,107 @@ DATABASE_URL=postgresql+asyncpg://bamdude:change-me@127.0.0.1:5433/bamdude
 
 !!! warning "Host networking and the database host"
     The default compose runs BamDude with `network_mode: host` for printer discovery, and a host-network container **cannot** reach another container by its Compose name. So on Linux the override publishes PostgreSQL on `127.0.0.1:5433` and you point `DATABASE_URL` there; on Docker Desktop (macOS/Windows), where host mode is dropped, use the service name `@postgres:5432` instead. `docker-install.sh` writes the correct one for your platform automatically.
+
+---
+
+## :material-chart-timeline-variant: Enable pg_stat_statements {#pg-stat-statements}
+
+**For full database diagnostics, external PostgreSQL needs `pg_stat_statements`.** This applies to the separate container above, third-party images, and servers installed on a host. BamDude uses it for the slow-statement list. Setting `DATABASE_URL`, installing BamDude, or updating its image does not configure the external server. The bundled server started by BamDude enables it automatically; a separately managed PostgreSQL service must be checked by its administrator.
+
+Activation has three parts: install the module's files **on the PostgreSQL server**, preload the library and restart that server, then create the extension **in the database named in `DATABASE_URL`**. Run administrative SQL using a PostgreSQL administrator account; BamDude's application account does not need to become a superuser.
+
+### Check whether the module is installed
+
+Connect to the target server with `psql` or your database client and run:
+
+```sql
+SHOW server_version;
+SHOW shared_preload_libraries;
+SELECT name, default_version, installed_version
+FROM pg_available_extensions
+WHERE name = 'pg_stat_statements';
+```
+
+A row with `installed_version` empty means the files are available but the extension has not been created in this database. No row means you must first install the module matching your PostgreSQL major version. Distribution packages often put it in a separate **contrib** package; custom images must include it in the image build. Use the package or image vendor's instructions. The official `postgres:18` image includes the files, but they still need activation.
+
+### Docker Compose: official postgres image and compatible images
+
+Add this setting to the **PostgreSQL service**, keeping its existing image version, volumes, environment and other options:
+
+```yaml
+services:
+  postgres:
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+```
+
+This is a partial example, not a replacement Compose file. Keep any existing `command` flags. Retain other preloaded libraries in the comma-separated value, for example `shared_preload_libraries=existing_library,pg_stat_statements`. Third-party images with a different entrypoint may require their own configuration file or environment variable instead of this `command`; follow that image's documentation.
+
+Apply the change from the same Compose project, with the same `.env` and `-f` options you normally use:
+
+```bash
+docker compose up -d --no-deps postgres
+docker compose exec postgres psql -U bamdude -d bamdude -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
+Replace `postgres` with your database service name, `-U bamdude` with its administrator role, and `-d bamdude` with the database from `DATABASE_URL`. The shipped override's default `POSTGRES_USER` is `bamdude`. Allow PostgreSQL to finish starting before the second command. `docker compose restart` alone does not apply an edited Compose `command`.
+
+Keep the existing database volume. In the official image, scripts in `/docker-entrypoint-initdb.d` run only for an empty data directory; adding one later does not enable the extension in an existing database. Run the SQL command above explicitly.
+
+### PostgreSQL installed on a host
+
+As a database administrator, find the active configuration and existing preload libraries:
+
+```sql
+SHOW config_file;
+SHOW shared_preload_libraries;
+```
+
+In that server's `postgresql.conf`, add the following setting, preserving any other libraries in the list:
+
+```ini
+shared_preload_libraries = 'pg_stat_statements'
+```
+
+**Restart the PostgreSQL service or cluster** using your installation's service manager; a configuration reload or restarting BamDude is not enough. On Linux, use the actual PostgreSQL systemd unit for your cluster; on Windows, restart the corresponding PostgreSQL service in Services. Then create the extension in BamDude's database as an administrator. For a typical Linux installation:
+
+```bash
+sudo -u postgres psql -d bamdude -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
+Substitute your connection parameters and administrator role if they differ. For a managed database, enable the module and preload setting through the provider's supported configuration, then create the extension in the target database. Ask the provider or administrator if those controls are not available.
+
+### Verify the server settings and application access
+
+As a database administrator, verify the active settings:
+
+```sql
+SHOW shared_preload_libraries;
+SHOW compute_query_id;
+```
+
+The preload list must contain `pg_stat_statements`, and `compute_query_id` should be `auto` or `on`. If query identifiers were explicitly disabled, set `compute_query_id` to `auto` or `on`. Ordinary roles may be forbidden to read the preload setting; that alone does not mean the extension is unavailable.
+
+Then reconnect to the database from `DATABASE_URL`, using BamDude's database role, and run:
+
+```sql
+SELECT extversion FROM pg_extension WHERE extname = 'pg_stat_statements';
+SELECT query, calls, total_exec_time
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 5;
+```
+
+The extension query must return a version, and the final query must succeed; a fresh statistics table can be empty. Other roles' query text may be hidden, which is expected without additional monitoring privileges. Refresh **System → Database Health** after verification.
+
+| Error or symptom | What to check |
+|---|---|
+| Module absent from `pg_available_extensions`, or control/library file missing | Install the module for the server's PostgreSQL major version; for Docker, include it in the image. |
+| `pg_stat_statements must be loaded via shared_preload_libraries` | Check the active preload setting and restart PostgreSQL. |
+| `relation "pg_stat_statements" does not exist` | Run `CREATE EXTENSION` in the database BamDude actually connects to, normally in the `public` schema. |
+| `permission denied` when creating the extension | Run that administrative step with a database administrator account. |
+| `current transaction is aborted` | Start a new transaction or connection after fixing the first SQL error; later messages are consequences of that error. |
+
+The extension is needed for query statistics, not ordinary storage of BamDude data. Some BamDude versions also report other failed database-health checks after an unavailable statistics query; enabling the extension addresses that configuration problem. See the [PostgreSQL module documentation](https://www.postgresql.org/docs/18/pgstatstatements.html) for server-side details.
 
 ---
 
@@ -256,7 +358,7 @@ Some migrations are slow whatever the backend, because the bottleneck is opening
 - **PostgreSQL** — from the server's own `pg_stat_statements`. The bundled server enables it for you. ⚠️ If you run the bundled PostgreSQL **as a Windows service**, BamDude does not write that server's configuration, so the extension may be installed while the library was never preloaded; the card then says so rather than showing an empty table.
 - **SQLite** — there is no such view, so the list comes from BamDude's own measurements and needs **Slow query log** turned on in Settings → General (see [Finding what is slow](../reference/troubleshooting.md#finding-what-is-slow)). Until it is, the card says so.
 
-A figure BamDude could not read is left out and named at the bottom of the card, so a single unavailable statistic never blanks the rest.
+Figures BamDude could not read are named at the bottom of the card. If it reports unavailable `pg_stat_statements`, follow the [activation and verification steps](#pg-stat-statements) above.
 
 !!! tip "Prometheus"
     The same numbers are exported as `bamdude_db_*` gauges on the metrics endpoint — engine info, size, pool, and per backend either cache hit ratio, connections and deadlocks, or WAL bytes and free pages.
