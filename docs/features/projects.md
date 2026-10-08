@@ -141,6 +141,14 @@ Purchased parts are tracked **per order**, not per product: the order's procurem
 
 Parts belong to a product, not to a global catalog: the same bracket in two products is two rows with two independent quantities. Within a product, merging one part into another moves its aliases across and the historical prints resolve to the survivor through the union — nothing is rewritten. Removing an alias makes that name its own part again on the next sync; renaming changes only the name.
 
+### Additional printed parts
+
+In a printed part's editor, set an **additional percentage** to include spare parts in new order lines. For ten products containing three A parts each, 10% adds three A parts: the plan needs 33 A parts in total. The extra quantity rounds up once for the whole order line. Purchased parts and lines ordered in **parts mode** do not receive implicit extras.
+
+Each new line keeps its percentage. Changing the catalog default affects future lines; it does not rewrite existing orders. Changing a part's base count, ignoring it, deleting it or merging it is refused when that would invalidate a saved extra-part obligation. Configure the order line before receiving or issuing its goods.
+
+Extras are received and issued separately in **Stock and issue**. A customer order must include them in its delivery before it can close. An order without a customer can close to free stock once its main units and extras have been received or assembled. These planned extras are not surplus available to bank a second time.
+
 ### Plates as recipes
 
 Linking a library **file or folder** to a product does everything else by itself: the product gains a plate row for every plate of every linked file, and every object name on those plates resolves to exactly one printed part — a name no part covers creates one, with the count on the plate where it was first seen as its per-unit figure. You review and correct it; editing a row clears the *from file* badge.
@@ -271,6 +279,12 @@ It is deliberately not automatic. A surplus is sometimes shipped with the order 
 A print that completes filed under **no** order is credited to stock automatically, good parts only — printed minus defective. The accounting then follows you if you change your mind: file that print under an order afterwards and the credit is taken back; take it back out and it returns. A reversal that would push a part below zero is refused, but the print is still filed — those parts were already spent, and refusing the filing would punish you for the books not balancing.
 
 Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that **finished successfully** and belongs to no order, one at a time, when you say so — a failed or cancelled print made nothing there is anything to count.
+
+### Taking individual parts from stock
+
+**Take from stock** can reserve incomplete kits as well as finished products and complete kits. If ten products need A×3 and B×1, taking A30 from stock leaves only B10 to print. When B10 is printed, the receipt uses the reserved A parts to complete the ten products.
+
+The banner names the individual parts and quantities. Reservations belong to the order; simply viewing its plan does not consume free stock. A later delivery offers only the components still missing, including planned additional parts. Repeating the action does not reserve the same parts twice. Cancellation or a reduced quantity returns unused reservations, and the activity journal records what was taken.
 
 ### Taking kits from stock
 
