@@ -147,7 +147,7 @@ In a printed part's editor, set an **additional percentage** to include spare pa
 
 Each new line keeps its percentage. Changing the catalog default affects future lines; it does not rewrite existing orders. Changing a part's base count, ignoring it, deleting it or merging it is refused when that would invalidate a saved extra-part obligation. Configure the order line before receiving or issuing its goods.
 
-Extras are received and issued separately in **Stock and issue**. A customer order must include them in its delivery before it can close. An order without a customer can close to free stock once its main units and extras have been received or assembled. These planned extras are not surplus available to bank a second time.
+Extras are received and issued separately in **Stock and issue**. A customer order must include them in its delivery before it can close. An order without a customer can close to free stock once its main units have been received or assembled and its extras received. These planned extras are not surplus available to bank a second time.
 
 ### Plates as recipes
 
@@ -253,13 +253,14 @@ A print started from the printer's own screen is filed afterwards: the archive e
 
 A plate makes four lids and the order needed three. The fourth is not a rounding error, it is a thing on a shelf — and this is where it lives.
 
-Stock is a **ledger of movements**, never a counter. A part's balance is the sum of its movements; a product's **kits** are the whole units the shelf can already make — the minimum across counted parts of balance ÷ per unit, the same "scarcest part decides" rule that drives a line's progress. There are exactly five reasons, and the reason decides the sign:
+Stock is a **ledger of movements**, never a counter. A part's balance is the sum of its movements; a product's **kits** are the whole units the shelf can already make — the minimum across counted parts of balance ÷ per unit, the same "scarcest part decides" rule that drives a line's progress. Each movement has a reason that decides its sign. Common examples:
 
 | Reason | Sign | When |
 |---|---|---|
 | **Surplus banked** | + | You pressed **Bank the surplus** on an order. |
 | **Print without an order** | + | A print completed belonging to no order. |
 | **Reserved for an order** | − | A line took kits off the shelf. |
+| **Individual parts reserved** | − | A line took loose parts, including incomplete kits or additional parts. |
 | **Reservation released** | + | That line gave them back. |
 | **Hand correction** | ± | You counted the shelf yourself. |
 
