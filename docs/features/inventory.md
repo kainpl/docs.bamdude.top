@@ -34,6 +34,9 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches), or **[History](#history)** (every consumption record on the farm). *Forecast* sits beside them when you have permission for it.
 - **Group similar** — toggle that visually collapses identical spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label weight + subtype`; lot is deliberately **not** part of it, so a batch created with **auto-numbered lots** (see below) still collapses into one row, and a group may span several lots. A spool that is loaded in a printer always appears individually, so you can tell which physical spool is in which slot; a started spool back on the shelf groups with its twins, and the row's remaining weight is the exact sum over the members. Group state persists across sessions.
 
+!!! info "Grouped sorting after 0.7.0"
+    In the current development version, click **ID**, **Lot**, **Purchased**, **Location**, **Label**, **Net** or **Remaining** to sort both groups and their expanded spools. Groups are ordered before pagination. Label and net weights use group totals; remaining percentage uses the group's total remaining divided by its total label weight. ID, lot, purchase date and location use the representative spool (the lowest ID in the group). This extended sorting is not in the `0.7.0` image.
+
 ## :material-package-variant: Adding spools
 
 **Inventory** in the sidebar opens the spool list. **+ Add Spool** asks for:
@@ -330,6 +333,10 @@ What happens, in order:
 A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only its honest 350 g. The archive still records the print as 600 g at 600 g's cost — the close-out is the spool's lifetime drift being recognised, not this print's consumption. If you *don't* assign B, the whole 600 g stays on A and the close-out shrinks to 1400 g — A still ends at zero, B stays untracked, which is why the notification nudges you to assign.
 
 Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
+
+### Archive a spool closed by runout
+
+Since 0.7.0, **Settings → Filament → Usage accuracy → Archive the spool it closed** can archive an empty spool after its unambiguous runout episode closes and the printer has demonstrably moved to a backup or replacement. It is **off by default** and works with built-in inventory and Spoolman. A spool reinserted to continue the same print stays active; a low or negative accounting balance alone does not prove a physical runout.
 
 ### Two-way AMS weight sync for tagged spools (0.5.5)
 

@@ -97,6 +97,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 |---|---|---|
 | `low_stock_threshold` | `20.0` | Spool remaining percentage at which `filament_low` notifications fire. Range 0.1 – 99.9. |
 | `runout_zero_point_enabled` | `true` | Close a spool at exactly its label weight when the printer reports an unambiguous filament runout. |
+| `runout_archive_spool_enabled` | `false` | Archive a spool after an unambiguous runout closes and a backup or replacement continues the print; built-in inventory and Spoolman. Requires runout close-out. |
 | `ams_sync_bidirectional` | `true` | Let idle AMS readings correct a Bambu-tagged spool's weight downward too (a value must repeat across two reports a minute apart). |
 | `runout_purge_grams` | `0` | Grams charged to the backup spool for the purge of an AMS auto-switch. 0 disables it. |
 | `usage_events_retention_hours` | `72` | How long a finished print's usage-event journal (runout/tray timeline) is kept for troubleshooting. |

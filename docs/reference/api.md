@@ -9,6 +9,10 @@ BamDude exposes a versioned REST API at `/api/v1` plus a WebSocket channel for r
 
 ---
 
+## Workshop API change in 0.7.0
+
+`POST /api/v1/products/from-file/{id}` returns `{product, notes}`, rather than the product alone. Read the new product's fields under `product`; `notes` describes what the file supplied. The source must be visible through the caller's library permissions. Review custom groups for the separate Orders, Products, Customers and Stock rights after upgrading.
+
 ## :material-rocket-launch: Quick start
 
 - **Base URL:** `https://<your-bamdude-host>/api/v1`

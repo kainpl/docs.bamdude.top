@@ -34,6 +34,10 @@ A drop is accepted whatever the printer is doing — printing, paused or offline
 !!! note "Permission"
     `printers:control`. The library upload itself also checks `library:upload`.
 
+### H2C rack-nozzle choice
+
+For a sliced plate using the H2C rack, the print dialog shows **Rack position** (R1–R6) beside each rack filament group. Empty positions and nozzles with the wrong diameter or flow type are disabled with a reason. Filaments in the same slicer group share one hotend. Leaving the choice automatic prefers a suitable loaded nozzle; a manual choice is checked again at dispatch and refuses the print if the rack changed. Queues and reprints keep the choice.
+
 ### Nozzle Offset Calibration (dual-nozzle only)
 
 On the **H2D, H2D Pro, H2C and X2D**, the print dialog shows a **"Nozzle Offset Calibration"** toggle — **on by default**, matching Bambu Studio. It controls whether the printer runs its nozzle-offset calibration routine before the print starts.

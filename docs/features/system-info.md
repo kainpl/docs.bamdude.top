@@ -20,6 +20,10 @@ locally and sends only its bounded result through the bundled broker; it does
 not upload the whole 3MF to a remote service. A previously calculated print
 context remains cached until that print is released.
 
+The **Library file worker** prepares uploaded and mounted files and their 3MF plate metadata. Its outage prevents new file preparation and folder scans; existing files remain available. Check this panel when upload or scan logs say `library file service unavailable`.
+
+Database health is shown independently of these workers. After 0.7.0, a failed SQL check no longer aborts the other checks: missing `pg_stat_statements` leaves a statistics warning while version, size and other readable fields remain available. See [PostgreSQL setup](postgresql.md) for enabling it; updating only BamDude does not configure an external PostgreSQL server.
+
 ## :material-tag-outline: Version info
 
 | Field | Source |
@@ -211,14 +215,14 @@ Docker installs reject `/apply` with `is_docker: True` — running `git fetch` /
 # docker-compose.yml
 image: kainpl/bamdude:0.4.5b1     # for betas — explicit pin required
 # OR
-image: kainpl/bamdude:latest      # for stable (latest only tracks main)
+image: kainpl/bamdude:latest      # latest stable release tag
 ```
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-The hint text in the UI explicitly explains why `:latest` won't pick up a beta — the `:latest` Docker tag tracks `main`, betas are tagged on `dev` and ship as `:X.Y.ZbN` only.
+The hint explains why `:latest` will not pick up a beta: a stable release tag updates `:latest`, while beta tags publish `:X.Y.ZbN` and update `:dev`. A branch push alone does not update either release channel.
 
 **Source-build** — for operators who cloned the repo and use `build:` in compose:
 

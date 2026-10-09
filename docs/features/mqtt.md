@@ -51,7 +51,8 @@ All topics are prefixed with your configured prefix. **The default prefix is `ba
 
 | Topic | Description |
 |-------|-------------|
-| `bambuddy/printers/{serial}/status` | Real-time printer state (throttled) |
+| `bambuddy/printers/{serial}/status` | Real-time printer state (throttled, retained), including `awaiting_plate_clear` |
+| `bambuddy/printers/{serial}/plate_clear` | Retained plate-clear gate: `awaiting: true` means waiting for an operator to clear the plate; refreshed after reconnect, including offline printers |
 | `bambuddy/printers/{serial}/online` | Printer just came online. Fires on the **connection edge**, so it is a transition, not a heartbeat. |
 | `bambuddy/printers/{serial}/offline` | Printer just went offline — the same edge, the other direction. |
 | `bambuddy/printers/{serial}/print/started` | Print job started |
@@ -129,7 +130,10 @@ All payloads are JSON objects. Example printer status payload:
   "speed_level": 2,
   "cooling_fan_speed": 100,
   "big_fan1_speed": 50,
-  "big_fan2_speed": 50
+  "big_fan2_speed": 50,
+  "left_aux_fan_speed": null,
+  "exhaust_fan_present": null,
+  "awaiting_plate_clear": false
 }
 ```
 

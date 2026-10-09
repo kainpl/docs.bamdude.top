@@ -38,6 +38,8 @@ An order carries a name, an optional customer, a description, a colour badge, ta
 
 ### Order lines
 
+Orders also have a stage and a responsible operator, separate from active/completed/cancelled status. Use the list's cards, table, kanban, workspace or deadline view to follow the same work. The readiness forecast names missing estimates or unplaceable plates instead of treating them as zero; the order detail shows machine-hours by printer model. See [When will it be ready?](../scenarios/when-will-it-be-ready.md).
+
 A line is **`product × quantity`**, plus three optional fields:
 
 | Field | Behaviour |
@@ -142,6 +144,9 @@ Purchased parts are tracked **per order**, not per product: the order's procurem
 Parts belong to a product, not to a global catalog: the same bracket in two products is two rows with two independent quantities. Within a product, merging one part into another moves its aliases across and the historical prints resolve to the survivor through the union — nothing is rewritten. Removing an alias makes that name its own part again on the next sync; renaming changes only the name.
 
 ### Additional printed parts
+
+!!! info "After 0.7.0"
+    Saved extra percentages are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
 
 In a printed part's editor, set an **additional percentage** to include spare parts in new order lines. For ten products containing three A parts each, 10% adds three A parts: the plan needs 33 A parts in total. The extra quantity rounds up once for the whole order line. Purchased parts and lines ordered in **parts mode** do not receive implicit extras.
 
@@ -282,6 +287,9 @@ A print that completes filed under **no** order is credited to stock automatical
 Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that **finished successfully** and belongs to no order, one at a time, when you say so — a failed or cancelled print made nothing there is anything to count.
 
 ### Taking individual parts from stock
+
+!!! info "After 0.7.0"
+    Reserving incomplete kits by individual component is available after 0.7.0. The `0.7.0` release supports finished goods and complete stock kits; it does not implement the loose-component flow below.
 
 **Take from stock** can reserve incomplete kits as well as finished products and complete kits. If ten products need A×3 and B×1, taking A30 from stock leaves only B10 to print. When B10 is printed, the receipt uses the reserved A parts to complete the ten products.
 

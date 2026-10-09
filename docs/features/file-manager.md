@@ -239,11 +239,11 @@ The toolbar **Generate Thumbnails** button opens a scope picker:
 | Property | Value |
 |---|---|
 | **Renderer** | Trimesh isometric view + matplotlib raster |
-| **Colour** | Bambu green (`#00AE42`) on dark background |
+| **Colour** | Shaded Bambu green (`#00AE42`) with a transparent background |
 | **Format** | PNG, optimised for thumbnail-card size |
 | **Priority** | Background task, low priority — won't block uploads or browsing |
 
-Both ASCII and binary STL formats are supported. Very complex meshes (100k+ vertices) render without crashing, just take longer.
+Both ASCII and binary STL formats are supported. Complex meshes may be simplified; preview work has size, time and memory limits. An oversized or failed preview can leave a valid file without a thumbnail.
 
 ---
 
@@ -538,6 +538,8 @@ External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `
 ---
 
 ## :material-link: Linking files and folders to products
+
+**Add to order…** in a file's menu or plate gallery opens the order-line dialog with the one-off-from-a-file tab and source already selected. From the gallery, the current plate is preselected too. Choose an active order; the action requires permission to update orders and read that library file. A file moved to Trash meanwhile is refused rather than attached silently.
 
 Right-click a folder (or use its three-dot menu) → **Link to products** to attach it to any number of [products](projects.md#products); the picker is a chip multi-select, so several products are chosen in one go. Every file row offers the same thing for a single file.
 

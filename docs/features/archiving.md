@@ -567,6 +567,10 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
 
 ---
 
+### Correcting filament used
+
+**Edit → Filament used (g)** can supply or correct an archive's weight, including a print whose 3MF was never recovered. Statistics, cost and order figures read this value; saving it does **not** debit any spool. A missing cost or one calculated using the farm rate follows the new weight; a cost already calculated from spool tracking stays. Both decimal point and comma are accepted.
+
 ## :material-view-grid: View Modes
 
 - **Grid** — large thumbnails for visual browsing.

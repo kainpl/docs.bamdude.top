@@ -396,6 +396,12 @@ Neither failure stops unrelated printing or queues; a mandatory camera check
 can hold its job until cameras recover. Check the application log,
 local disk permissions and free space before restarting the service.
 
+### Uploads and folder scans fail together
+
+Check **System → Library file worker**, **3MF analysis worker** and **Local preview service**. They share the bundled broker, so several unavailable panels can have one startup cause. Read the first startup error, free space and access to the runtime directory. A missing `broker/logs/nats.log` does not rule out broker failure: startup can fail before a log is created.
+
+After 0.7.0, the bundled broker manager restores private permissions (`0700` on POSIX) on its own service directories before startup, including directories previously created with `0755`. It does not repair a wrong owner or a read-only mount. Update to a version containing the fix and restart normally; do not recursively change permissions on the entire data directory or remove ownership records to force startup.
+
 ### Local preview service {#local-preview-service}
 
 Open **System → Local preview service** to see whether it is available,

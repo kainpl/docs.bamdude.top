@@ -1,6 +1,6 @@
 ---
 title: Upgrading & Migration
-description: Backup-first protocol for upgrading BamDude, full migration map for 0.4.0 / 0.4.1, and rollback procedure.
+description: Backup-first upgrades, 0.7.0 compatibility notes, historical migrations and rollback.
 ---
 
 # Upgrading & Migration
@@ -11,13 +11,19 @@ This guide is the operator's safe-upgrade protocol. The DB schema advances **for
 
 ---
 
+## Before upgrading to 0.7.0
+
+Review custom permission groups: Orders, Products, Customers and Stock have independent rights, and filing prints under orders is separate. Integrations creating products from files must read the `{product, notes}` response described in the [API guide](../reference/api.md). PostgreSQL 18 containers mount their data volume at `/var/lib/postgresql`, not the old `/var/lib/postgresql/data` path; keep your existing major version and volume layout when applying an override update.
+
+The [changelog](https://github.com/kainpl/bamdude/blob/main/CHANGELOG.md) separates released changes from **Unreleased**. Grouped spool sorting, loose-component stock reservations and saved BOM extra percentages documented for current development are not in the `0.7.0` image. Updating only an image does not apply changed Compose files or configure query statistics on an external PostgreSQL server; see [PostgreSQL](../features/postgresql.md).
+
 ## :material-clipboard-check: 1. Pre-upgrade checklist
 
 Before touching anything:
 
 1. **Stop the BamDude service** (`sudo systemctl stop bamdude` or `docker compose down`).
 2. **Back up the data directory** — see the backup commands below.
-3. **Note your current version** — open `/system/health` in a browser, or run `cat pyproject.toml | grep version` for native installs. Useful if you need to roll back.
+3. **Note your current version** — open **Information** (`/system`) in the web UI, or read the installed version in `backend/app/core/config.py` for native installs. Useful if you need to roll back.
 4. **If running behind a reverse proxy** (nginx / Caddy / Traefik), copy the config aside so you can verify it after upgrade.
 5. **Check log size** — if `data/logs/` is huge, this is a good moment to rotate.
 
@@ -41,7 +47,7 @@ Before touching anything:
 
 === "Native — UI backup (recommended)"
 
-    Open **Settings → Backup → Local Backup → Create Backup**, then **Download Backup** to save the zip to your computer. The zip packs the SQLite DB, archive directory, thumbnails, uploads, and config in the same layout `install.sh` lays out on disk — restore is just "unzip into the install path and restart". It also captures encryption-key metadata and scheduled-backup state that a raw `tar` of `data/` leaves behind.
+    Open **Settings → Backup → Local Backup → Create Backup**, then **Download Backup** to save the zip to your computer. The zip packs the SQLite DB, archive directory, thumbnails, uploads, and config in the same layout `install.sh` lays out on disk — restore through the backup UI using the [backup guide](../features/backup.md). It also captures encryption-key metadata and scheduled-backup state that a raw `tar` of `data/` leaves behind.
 
 === "Native — shell"
 
@@ -53,7 +59,9 @@ Before touching anything:
 === "PostgreSQL"
 
     ```bash
-    pg_dump -Fc -f ~/bamdude-$(date +%Y%m%d).dump "$DATABASE_URL"
+    # Use a PostgreSQL client DSN, without SQLAlchemy's +asyncpg driver suffix.
+    PG_DSN='postgresql://bamdude@your-postgres-host:5432/bamdude'
+    pg_dump -Fc -f ~/bamdude-$(date +%Y%m%d).dump "$PG_DSN"
     # Plus tar up the archive/ + library/ directories from the data volume.
     ```
 
@@ -68,13 +76,13 @@ docker compose up -d
 docker compose logs -f       # watch migrations apply
 ```
 
-Pinning a specific tag in `compose.yaml` is fine and recommended for stable installs — `:0.4.1` will never move; `:latest` follows `main`.
+Pinning a specific tag in `compose.yaml` is fine and recommended for stable installs — `:0.7.0` selects that release; `:latest` follows the latest stable release tag, while `:dev` follows beta releases.
 
 ```yaml
 # Pinned, recommended
-image: ghcr.io/kainpl/bamdude:0.4.1
+image: ghcr.io/kainpl/bamdude:0.7.0
 
-# Rolling, follows main
+# Latest stable release
 image: ghcr.io/kainpl/bamdude:latest
 ```
 
@@ -103,7 +111,7 @@ sudo systemctl stop bamdude
 
 # Pull source
 sudo -u bamdude git fetch
-sudo -u bamdude git checkout v0.4.1     # or whatever tag
+sudo -u bamdude git checkout v0.7.0     # or whatever tag
 
 # Python deps
 sudo -u bamdude ./venv/bin/pip install -r requirements.txt --upgrade

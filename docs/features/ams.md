@@ -15,6 +15,7 @@ Each AMS slot displays:
 
 - **Filament color** -- Visual color swatch
 - **Material type** -- PLA, PETG, ABS, etc.
+- **K value** -- Known pressure-advance calibration, such as `K 0.024`, directly on the slot card; no guessed default when calibration is unknown.
 - **Remaining** -- Estimated filament left
 - **Active** -- Currently feeding indicator
 - **Slot number** -- 1-based number with auto-contrast text
