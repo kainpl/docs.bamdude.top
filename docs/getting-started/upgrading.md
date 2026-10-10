@@ -15,7 +15,7 @@ This guide is the operator's safe-upgrade protocol. The DB schema advances **for
 
 Review custom permission groups: Orders, Products, Customers and Stock have independent rights, and filing prints under orders is separate. Integrations creating products from files must read the `{product, notes}` response described in the [API guide](../reference/api.md). PostgreSQL 18 containers mount their data volume at `/var/lib/postgresql`, not the old `/var/lib/postgresql/data` path; keep your existing major version and volume layout when applying an override update.
 
-The [changelog](https://github.com/kainpl/bamdude/blob/main/CHANGELOG.md) separates released changes from **Unreleased**. Grouped spool sorting, loose-component stock reservations and saved BOM extra percentages documented for current development are not in the `0.7.0` image. Updating only an image does not apply changed Compose files or configure query statistics on an external PostgreSQL server; see [PostgreSQL](../features/postgresql.md).
+The [changelog](https://github.com/kainpl/bamdude/blob/main/CHANGELOG.md) separates released changes from **Unreleased**. [Automatic full-stock spool assignment](../features/inventory.md#automatic-stock-assignment), grouped spool sorting, loose-component stock reservations and saved BOM extra percentages documented for current development are not in the `0.7.0` image. Updating only an image does not apply changed Compose files or configure query statistics on an external PostgreSQL server; see [PostgreSQL](../features/postgresql.md).
 
 ## :material-clipboard-check: 1. Pre-upgrade checklist
 

@@ -280,6 +280,30 @@ You can assign a spool to a slot **before** loading the filament — useful when
 - Surfaces this in the confirmation toast: *"Spool assigned. The slot will be configured when you insert the filament."*
 - Replays the full configuration automatically the moment the slot transitions to loaded. The "loaded" signal is the AMS state code (`state == 11`, "filament fed to extruder"), not the tray's material string — so 3rd-party spools without readable RFID (which report state=11 but keep `tray_type=""`) trigger the replay too. After the replay the assignment fingerprint is stamped, so subsequent AMS pushes don't re-fire.
 
+### Automatic assignment of a full stock spool {#automatic-stock-assignment}
+
+!!! info "Availability"
+    Available in the current development branch after 0.7.0; not in the `0.7.0` release image. This is an optional feature for **built-in inventory**, not Spoolman, and is off by default on every printer.
+
+Use this when a printer is routinely loaded with new, full, untagged spools of the same filament. BamDude can assign the next matching inventory spool when it observes filament being inserted into an empty AMS slot, including a replacement after runout.
+
+1. Add the full spools to **Inventory** with their actual material, colour, brand, subtype, filament family and label weight.
+2. Open **Printers → Edit printer**, enable **Assign a full stock spool on loading**, and choose the **Inventory filament group**. Save the printer.
+3. While BamDude is connected to the printer, load a new full spool from that group into an empty AMS slot. Check the resulting assignment on the slot or in Inventory.
+
+Editing the policy requires both printer-edit and inventory-update permission; reading the group list requires inventory-read permission.
+
+**What it selects.** The group must match exactly, including colour and filament family. Eligible stock is unarchived, unassigned, untagged, single-colour 1.75 mm filament with positive label weight, zero actual consumption and no previous print use; a spool entered as partial is excluded. The oldest inventory entry is selected first, with ID breaking ties. Resetting the displayed consumption counter does not make a used spool eligible. If the group runs out, it stays selected: BamDude does not substitute another group or create a spool. Add matching stock or assign a spool manually.
+
+**What loading means.** An untagged reel has no readable inventory ID or weight. Enabling this policy is your declaration that new spools loaded this way are full and belong to the selected group. Startup and reconnect only establish the current slot state; they do not assign spools that were already present. RFID identification and manual assignments take priority. Removing and returning a known partial spool without a runout keeps its assignment.
+
+!!! warning "Returning the old spool after runout"
+    Removing a partial spool during a print can itself cause runout. If you return that same reel, **assign it manually before inserting it or resuming**. Otherwise, the enabled policy treats the replacement as a new full spool. A manual assignment made after the runout wins, even when it names the same partial reel. To swap a partial reel for a full one without runout, also use manual assignment.
+
+**External holders:** ordinary loading still needs manual assignment because there is no insertion sensor. With this policy enabled, a clearly identified external-spool runout followed by your **Pause → Printing** resume in the same connected session can assign a full replacement from the selected group. BamDude must see that specific external feed loaded; ordinary pauses, reconnects and ambiguous runouts do not qualify. Returning the old reel requires manual assignment before resume. The feature does not resume the printer for you.
+
+This controls physical inventory assignment. It does not change [filament routing](filament-routing.md), queue colour/profile overrides or AMS Backup compatibility settings.
+
 ### Replacing the spool on an assigned slot
 
 You do not have to unassign first. Hover an assigned slot and pick **Replace spool** (next to **Unassign**): the dialog shows what is currently assigned, lists only spools that are free — the current one and anything assigned to another slot stay hidden, so you can never pull a spool out of a different printer by mistake — and one confirm swaps the assignment. This works the same on AMS, AMS HT and external slots, with the built-in inventory or Spoolman.

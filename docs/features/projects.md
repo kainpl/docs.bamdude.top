@@ -154,6 +154,8 @@ Each new line keeps its percentage. Changing the catalog default affects future 
 
 Extras are received and issued separately in **Stock and issue**. A customer order must include them in its delivery before it can close. An order without a customer can close to free stock once its main units have been received or assembled and its extras received. These planned extras are not surplus available to bank a second time.
 
+The base kit composition stays unchanged. In the example above, a kit still needs three A parts, not 3.3: the three additional A parts are a separate obligation for the line. Stock offers and assembly use the base composition; the plan and delivery also account for the extras.
+
 ### Plates as recipes
 
 Linking a library **file or folder** to a product does everything else by itself: the product gains a plate row for every plate of every linked file, and every object name on those plates resolves to exactly one printed part — a name no part covers creates one, with the count on the plate where it was first seen as its per-unit figure. You review and correct it; editing a row clears the *from file* badge.
