@@ -329,6 +329,16 @@ An issue from an order or directly from stock creates a numbered **dispatch note
 
 ---
 
+## Prepared-file auto-ejection
+
+An order can enable **Auto-eject** for newly created queue jobs. This experimental mode is for hardware and sliced files prepared by the operator: the file's finish G-code must perform the ejection. BamDude adds no ejection motion and does not validate that sequence. Enabling requires acknowledgement of the hardware, prepared files and camera calibration; it cannot be combined with Swap Mode.
+
+Calibrate the empty-plate detector for the actual camera and the plate's position after ejection. By default, dispatch waits for a fresh image from that camera. A retained object, unavailable check or changed printer context keeps the job waiting. After a successful auto-eject print, this check may answer its plate-clear gate; ordinary, failed, cancelled or uncertain predecessors still require a manual answer.
+
+The order can adjust the image-difference threshold. It is not a probability of an empty plate, and raising it may miss a retained part. **Skip OpenCV plate check** is an explicit opt-out behind two warnings; jobs then display a red no-check badge, and BamDude cannot verify ejection. Camera errors never enable this option automatically.
+
+Mode and camera policy are copied into each new job. Later order edits do not change existing jobs; copies and repeats retain their saved policy. Details and the operator-supplied reference setup: [prepared-file auto-eject guide](https://github.com/kainpl/bamdude/blob/feature/v0.7.0-fixes/docs/order-auto-eject-mvp.md).
+
 ## :material-shield-key: Permissions
 
 The workshop has four sections — orders, products, customers and stock — and each has its own rights. Filing prints under orders is a right of its own.

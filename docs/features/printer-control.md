@@ -23,6 +23,14 @@ Most actions are gated by `printers:control`. Two subsets carve off lower-privil
 
 ---
 
+## Confirmed actions for selected printers
+
+Select printers on the Printers page and open **Actions**. You can home axes, run supported device calibrations, record maintenance work, pause or resume queues, enter or leave maintenance mode, and switch lights. The existing stop, pause, resume, clear-errors and clear-plate actions also show a confirmation.
+
+The preview names the printers and explains skips. Homing and calibration require explicit confirmation that the plates are empty. Before each action, BamDude checks that printer again; stale or unknown telemetry cannot authorize motion, unsupported calibrations are refused, and a busy printer cannot enter maintenance mode. Results distinguish a command sent from a change saved, a skipped printer and a failed action. A sent command is not confirmation that the physical operation finished.
+
+For maintenance, select the completed tasks and optionally enter a common note. Each printer keeps its own maintenance history and lifetime hours. The same permissions as the individual actions apply.
+
 ## :material-printer: Print Actions
 
 ### Start a print from the card
