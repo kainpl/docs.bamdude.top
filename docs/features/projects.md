@@ -329,6 +329,14 @@ An issue from an order or directly from stock creates a numbered **dispatch note
 
 ---
 
+## Print parameters by sliced model
+
+In an order's **Print plan**, expand **Print parameters for this order**, select a sliced printer model and enable custom parameters. Each model has independent calibration, timelapse and preheat choices; unsupported controls are hidden. Save before using **Queue** or **Queue entire plan**. Cancel restores the saved choices, and unsaved or saving changes disable those queue buttons.
+
+Only new plan jobs receive the settings. Existing jobs and saved operator profiles stay unchanged; clearing a model's override restores profile inheritance. **To printer…** opens its own interactive print dialog.
+
+Auto Queue keeps the settings for the captured file's sliced model even if you change its routing target to a compatible printer. Editing one job or a batch updates that source model's settings. Rebalancing to a different sliced file selects the new model's entry from the job's saved settings, without rereading the current order.
+
 ## Prepared-file auto-ejection
 
 An order can enable **Auto-eject** for newly created queue jobs. This experimental mode is for hardware and sliced files prepared by the operator: the file's finish G-code must perform the ejection. BamDude adds no ejection motion and does not validate that sequence. Enabling requires acknowledgement of the hardware, prepared files and camera calibration; it cannot be combined with Swap Mode.
