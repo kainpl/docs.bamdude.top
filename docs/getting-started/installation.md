@@ -72,6 +72,8 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 
 Part thumbnails (after 0.7.0) render with a pinned Node.js. `install/install.sh`, `update.sh` and the in-app update in Settings download it once into `runtime/` of the installation — 26–30 MiB depending on the platform, about 118 MiB unpacked on Linux — and a manual install runs the `provision` line above. Without it the System page shows **Part thumbnail worker** as `runtime_missing`; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker). The Windows installer and the Docker image carry Node.js already.
 
+Which Node.js a machine gets: Linux and macOS on x64 or arm64, and Windows x64, run Node.js 24. A Raspberry Pi with the 32-bit Raspberry Pi OS (armhf — Pi 2, 3, 4, 5, Zero 2 W) runs Node.js 22, the last line Node.js publishes for 32-bit ARM, until its support ends on 30 April 2027; after that, a BamDude update returns it to the fallback picture. 2 GB of RAM or more is recommended there — a Pi with 1 GB is not promised to render a heavy plate beside the service. armv6 (Pi 1, Zero, Zero W), an armel or musl 32-bit system and RISC-V have no official Node.js build: parts get only the fallback picture the file allows.
+
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
