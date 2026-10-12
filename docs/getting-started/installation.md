@@ -40,6 +40,9 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     source venv/bin/activate
     pip install -r requirements.txt
 
+    # The pinned Node.js part thumbnails render with (after 0.7.0; downloaded once)
+    python -m backend.app.services.render_runtime provision --runtime runtime
+
     # Run
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
@@ -57,6 +60,9 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     source venv/bin/activate
     pip install -r requirements.txt
 
+    # The pinned Node.js part thumbnails render with (after 0.7.0; downloaded once)
+    python -m backend.app.services.render_runtime provision --runtime runtime
+
     # Run
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
@@ -64,13 +70,15 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 !!! warning "macOS: the printer is unreachable while everything else works"
     macOS grants Local Network access to a code signature, and Homebrew's Python on Intel Macs has none — every connection to the printer is then dropped with no error and no prompt. `install/install.sh` signs the interpreter on a macOS install (only if it is unsigned), and re-running it after `brew upgrade python` signs the new one. By hand: `codesign --force --sign - "$(python3 -c 'import os,sys;print(os.path.realpath(sys._base_executable))')"`. The connection diagnostic's **macOS Local Network permission** check tells you which case you are in.
 
+Part thumbnails (after 0.7.0) render with a pinned Node.js. `install/install.sh` and `update.sh` download it once into `runtime/` of the installation — 26–30 MiB depending on the platform, about 118 MiB unpacked on Linux — and a manual install runs the `provision` line above. Without it the System page shows **Part thumbnail worker** as `runtime_missing`; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker). The Windows installer and the Docker image carry Node.js already.
+
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
 ## :material-microsoft-windows: Windows (native installer)
 
-Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime and a static `ffmpeg`, lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
+Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime, a static `ffmpeg` and — after 0.7.0 — the pinned Node.js that renders part thumbnails (about 21 MiB of the installer; measured 2026-10-12, Node v24.17.0), lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
 
 1. Download the latest **`bamdude-<version>-windows-x64-setup.exe`** from the [Releases page](https://github.com/kainpl/bamdude/releases).
 2. Run it (it needs Administrator rights — it registers a service and writes to `ProgramData`).

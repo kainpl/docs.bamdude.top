@@ -29,6 +29,8 @@ Docker is the easiest way to run BamDude. One command and you're done.
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
+The image carries the pinned Node.js that renders part thumbnails (after 0.7.0) — a layer of about 124 MB (measured 2026-10-12, Node v24.17.0) — so nothing is downloaded at start-up.
+
 ---
 
 ## :material-cog: Configuration

@@ -40,6 +40,9 @@ description: Встановлення BamDude на вашу систему, вк
     source venv/bin/activate
     pip install -r requirements.txt
 
+    # Закріплений Node.js для мініатюр деталей (після 0.7.0; завантажується раз)
+    python -m backend.app.services.render_runtime provision --runtime runtime
+
     # Run
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
@@ -57,6 +60,9 @@ description: Встановлення BamDude на вашу систему, вк
     source venv/bin/activate
     pip install -r requirements.txt
 
+    # Закріплений Node.js для мініатюр деталей (після 0.7.0; завантажується раз)
+    python -m backend.app.services.render_runtime provision --runtime runtime
+
     # Run
     uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio --timeout-graceful-shutdown 15
     ```
@@ -64,13 +70,15 @@ description: Встановлення BamDude на вашу систему, вк
 !!! warning "macOS: принтер недоступний, хоча все інше працює"
     macOS видає доступ до локальної мережі підпису коду, а Python з Homebrew на Intel-маках його не має — тоді кожне з'єднання з принтером мовчки відкидається, без помилки й без запиту. `install/install.sh` під час встановлення на macOS підписує інтерпретатор (лише якщо він не підписаний), а повторний запуск після `brew upgrade python` підписує новий. Вручну: `codesign --force --sign - "$(python3 -c 'import os,sys;print(os.path.realpath(sys._base_executable))')"`. Перевірка **Дозвіл macOS на доступ до локальної мережі** в діагностиці з'єднання каже, який у вас випадок.
 
+Мініатюри деталей (після 0.7.0) рендеряться закріпленим Node.js. `install/install.sh` і `update.sh` завантажують його раз у `runtime/` встановлення — 26–30 МіБ залежно від платформи, близько 118 МіБ розпакованим на Linux, — а ручне встановлення виконує рядок `provision` вище. Без нього сторінка System показує **Воркер мініатюр деталей** зі станом `runtime_missing`; див. [Воркер мініатюр деталей](../reference/troubleshooting.md#part-thumbnail-worker). Інсталятор Windows і образ Docker уже несуть Node.js.
+
 Відкрийте [http://localhost:8000](http://localhost:8000) у браузері.
 
 ---
 
 ## :material-microsoft-windows: Windows (нативний інсталятор)
 
-Для Windows 10/11 є самодостатній **`.exe`-інсталятор** — без Docker, без WSL і **без окремого встановлення Python чи Node**. Setup несе в собі embedded Python runtime і статичний `ffmpeg`, розкладає все по місцях і реєструє BamDude як **Windows Service**, що стартує при завантаженні системи.
+Для Windows 10/11 є самодостатній **`.exe`-інсталятор** — без Docker, без WSL і **без окремого встановлення Python чи Node**. Setup несе в собі embedded Python runtime, статичний `ffmpeg` і — після 0.7.0 — закріплений Node.js, що рендерить мініатюри деталей (близько 21 МіБ інсталятора; заміряно 2026-10-12, Node v24.17.0), розкладає все по місцях і реєструє BamDude як **Windows Service**, що стартує при завантаженні системи.
 
 1. Завантаж останній **`bamdude-<version>-windows-x64-setup.exe`** зі [сторінки Releases](https://github.com/kainpl/bamdude/releases).
 2. Запусти його (потрібні права Administrator — він реєструє сервіс і пише в `ProgramData`).
