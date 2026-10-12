@@ -22,6 +22,8 @@ context remains cached until that print is released.
 
 The **Library file worker** prepares uploaded and mounted files and their 3MF plate metadata. Its outage prevents new file preparation and folder scans; existing files remain available. Check this panel when upload or scan logs say `library file service unavailable`.
 
+The **Part thumbnail worker** (after 0.7.0) renders the [part pictures](projects.md#part-pictures). Its panel shows **Available**, **Fallback only** (no official Node.js build for this machine) or **Unavailable**; the reason in a sentence with its code beside it; the pinned Node.js version and its date; the queue — plates waiting and failed; and the last attempt's outcome and time. When it is not available, the panel links to [its troubleshooting](../reference/troubleshooting.md#part-thumbnail-worker). An outage stops only new pictures: products, orders and stock keep working, and waiting plates are not counted as failed.
+
 Database health is shown independently of these workers. After 0.7.0, a failed SQL check no longer aborts the other checks: missing `pg_stat_statements` leaves a statistics warning while version, size and other readable fields remain available. See [PostgreSQL setup](postgresql.md) for enabling it; updating only BamDude does not configure an external PostgreSQL server.
 
 ## :material-tag-outline: Version info

@@ -460,6 +460,30 @@ not library files; never remove the library/archive or other service stores.
 Keep the recovery copy until the new service works. Retry missing thumbnails
 explicitly; interrupted preview attempts are not replayed after restart.
 
+### Part thumbnail worker {#part-thumbnail-worker}
+
+!!! info "After 0.7.0"
+    The part thumbnail worker is in the current development branch after 0.7.0. It is not in the `0.7.0` release image.
+
+Open **System → Part thumbnail worker**. It renders the [part pictures](../features/projects.md#part-pictures) with a pinned Node.js runtime, through the same bundled broker as the preview service. The panel shows its state, the reason as a sentence with its code, the pinned Node.js version, the queue and the last attempt.
+
+**While it is down, nothing else stops.** Products, orders and stock keep working; parts show **being prepared** or the picture they already had; queued plates wait, and attempts that could not start are not counted as failures. When the worker is back, the queue carries on by itself.
+
+| Reason | What to do |
+|---|---|
+| `runtime_missing` | The pinned Node.js is not installed. **Docker:** pull the current image — it carries Node.js. **Native:** run `install/update.sh`, or from the installation directory with its venv, as the service user, `python -m backend.app.services.render_runtime provision --runtime <install>/runtime`. **Windows:** run the installer again; it replaces the runtime whole. |
+| `runtime_failed` | Node.js is installed but does not start: an antivirus blocking `node`, an install directory mounted `noexec`, or a binary for another architecture. The log says `Part render runtime_failed: Node … does not start`. The worker probes it again by itself and logs `Part render runtime recovered: Node … starts again` when it works. |
+| `bundle_mismatch` | The render bundle does not match this version — an update that did not finish. Update or reinstall again. |
+| `no_runtime` | Nothing to repair: there is no official Node.js build for this machine (32-bit ARM, for example). Parts get only the fallback picture a 3MF carries — the plate's top view and object masks; a raw `.gcode` gets none. |
+| `staging_full` | Results of earlier renders under `DATA_DIR/.cache/part-render-service/staging` have not been cleaned up, and new renders wait until they are. Look for `Part render main staging is over its budget` and `staging retained` in the log, then check free disk space and write access. |
+| `ownership_uncertain` | BamDude could not prove that an earlier render process is gone, so it takes no new renders. Restart BamDude normally. Do **not** kill processes by a PID from a file. If it repeats after a clean restart, keep the directory and ask for support. |
+| `starting`, `not_started`, `startup_failed`, `broker_disconnected`, `worker_restarting`, `circuit_open` | The worker or its broker is starting or recovering, and it retries by itself. After several failures in a row it pauses before the next try. If it never becomes available, read the first `Part render worker …` error in the log; it often has the same cause as the other panels on the shared broker (see [Uploads and folder scans fail together](#uploads-and-folder-scans-fail-together)). |
+| `stopped` | BamDude is shutting down or restoring a backup. |
+
+The parent log records each attempt as `Part render attempt=<id> … started` and `Part render attempt=<id> outcome=<outcome> … elapsed_ms=…`, and the worker as `Part render worker ready pid=… node=…`. BamDude removes the staging of earlier runs once it has proven them over. It keeps and logs (`staging retained`) whatever it cannot prove, and that is never removed by hand while BamDude runs.
+
+Rendered pictures are kept in `DATA_DIR/part-renders`. It is a cache: it is deliberately left out of backups, and after a restore the pictures are rendered again.
+
 ### Reporting an issue
 
 When reporting issues, include:

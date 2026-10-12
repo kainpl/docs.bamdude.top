@@ -181,6 +181,29 @@ Any 3MF in the library shows the same card, read-only, from its **Model card** e
 
 The product page also reports **Printed for orders** — units of this product made across every order it appears in, of any status. It is not "how many times this file was printed": a print outside an order does not count here.
 
+### Part pictures
+
+!!! info "After 0.7.0"
+    Part pictures are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+Every printed part gets its **own picture**, rendered by the server in the background from the sliced G-code of the plates that give it, in that part's filament colours. Nothing is rendered in the browser. While its plate waits in the queue the part shows **being prepared**. When the G-code cannot tell the part apart — several objects on a plate sliced without object labels, say — the picture is cut out of the plate's own top view by the part's mask from the 3MF.
+
+The **Picture** section of a part's editor decides what is shown:
+
+| Choice | What it shows |
+|---|---|
+| **Automatic** | The first ready picture from the plates that give the part. |
+| **An object of a plate** | That one instance — useful when two plates draw the same part differently. A pin that stops holding (its file unlinked or trashed, the object gone) falls back to automatic and says why. |
+| **Photo** | A photo you upload. It is shown instead of any render. |
+
+A **purchased** part has no plates, so it takes a photo only. A photo is re-encoded on the server: EXIF (GPS, the camera's serial), XMP and other embedded metadata are not kept. **Re-render** in the same section queues every plate of the product again; the old pictures stay on screen until the new ones are ready.
+
+A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in issuing and receiving, and in the Stock section.
+
+**Export** carries each part's choice and photo; **import** restores them, re-pinning an instance to the imported file. Rendered pictures are a cache under `DATA_DIR/part-renders`, deliberately left out of backups: after a restore they are rendered again.
+
+On a machine with no official Node.js build — 32-bit ARM, for example — parts get only the fallback picture a 3MF can give, and a raw `.gcode` gets none. The System page says so; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker).
+
 ### Export and import
 
 **Export** packs a product into a ZIP — the card, the composition, the attachments, the cover and every linked file. **Import** unpacks it on another BamDude: files it already has are matched by content and reused, anything genuinely new is ingested into the library through the ordinary upload path so hashing, dedup and metadata stay the library's, and the plates come back from the files themselves. Anything the imported files cannot account for is reported to you as a warning rather than quietly invented.
