@@ -251,6 +251,25 @@ There is no `system:maintenance` or `support_bundle:create` permission — the s
 
 ## :material-api: API reference
 
+### Print-state diagnostics and recovery
+
+**Print state diagnostics** lists unresolved differences between queue claims and execution archives. It checks the current records and fresh printer observations; **Check again** repeats the check without changing data. Offline telemetry alone does not prove a print is stuck. Continue through all pages when the list is partial.
+
+An operator can preview an addressed correction, review **Before → After**, and confirm it. Depending on the evidence, the panel can align an old item with its terminal archive, release an orphan queue header, or fill a missing completion time from the archive start plus the slicer duration. The last action requires explicit confirmation that this archive belongs to that completed print. Its time remains visibly **estimated** and cannot authorize deletion.
+
+**Remove stale item, keep archive** appears only for a proven completed execution with an actual end time and no dependent AutoQueue, calibration, receipt or order records. Ambiguous identity, unresolved completion/swap effects or an uncertain printer state remove the action entirely. There is no forced delete. Archives, accounting and source files are preserved.
+
+A repair on an inactive printer leaves its queue paused: inspect the plate before resuming. A proven old item can also be corrected while a positively identified newer print continues; that print and its queue header are preserved. The panel sends no printer commands and does not repeat completion accounting or macros. A changed or expired preview must be prepared and confirmed again. Successful actions appear in the printer's recovery history.
+
+Reading requires `system:read`, `printers:read`, `queue:read_all` and `archives:read_all`. Repairs additionally require `queue:update_all` and `printers:control`; an estimated end also requires `archives:update_all`, and deletion requires `queue:delete_all`. API-key printer restrictions apply to the list and each action.
+
+```
+GET  /api/v1/system/print-state-issues
+POST /api/v1/system/printers/{printer_id}/print-state/preview
+POST /api/v1/system/printers/{printer_id}/print-state/apply
+GET  /api/v1/system/printers/{printer_id}/print-state/history
+```
+
 ```
 GET    /api/v1/system/info             # full system snapshot
 GET    /api/v1/system/storage-usage    # bucketed storage breakdown
