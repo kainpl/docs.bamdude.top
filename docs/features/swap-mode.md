@@ -218,7 +218,8 @@ archive or file.
    macros. Your saved swap settings are not changed.
 3. **Save declaration** reads the file again and saves the declaration only for **exactly the bytes you saw**. If
    the file changed in between, or someone declared it first, nothing is saved — read it again and decide again.
-   Who declared it and when is kept with it.
+   Who declared it and when is kept with it, and the dialog shows it whenever you open it — a declaration a
+   backup restored says so.
 
 For an archive this is a declaration of its **file**, for future reprints. What the print that was archived ran with
 — and anything still owed at its end, such as a held table swap — stays exactly as it was recorded.
@@ -228,7 +229,9 @@ queued, so a new declaration does not reach it by itself. After saving — or wh
 already has your declaration — it lists the waiting and failed jobs that print this file and lets you **apply** the declaration to the ones you select — none is selected for you. Only a
 job whose own answer is unknown, that holds exactly these bytes and that was never sent to a printer can take it; a
 job that already has its own answer is never overwritten (queue the file again to print with the new one). The
-selected jobs change together or not at all. Applying is not a retry: a failed job stays failed until you press
+selected jobs change together or not at all. If someone declares the file differently while the dialog is open,
+the list goes and the dialog asks you to read the file again — nothing is applied under a declaration you were not
+shown. Applying is not a retry: a failed job stays failed until you press
 **Retry**.
 
 ### :material-pause-circle: A held table swap
