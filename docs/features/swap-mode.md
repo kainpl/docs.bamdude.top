@@ -212,8 +212,10 @@ off, no macro, an outcome left uncertain by an outage —:
   next waiting job, and as a **Swap held** badge on the print in the archive. The reason says whether the swap cycle
   had **started**, **may have started**, or did not start.
 
-A change-table macro that raises an error while BamDude runs it holds the queue the same way; since it may have gone
-out, it is not sent again.
+BamDude sends the change-table macro at most once per print. Two reconnects at the same moment, a restart in the
+middle of it, or an error while it runs hold the queue the same way instead of sending it again; a print whose printer
+another job has already taken leaves that job's queue alone; and if BamDude stops while settling a table swap, the
+next connection to the printer finishes the settlement or holds the queue.
 
 Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. A completed job
 that ran stays in the queue with its reason: with plate confirmation on, confirming the plate removes it; with it off,
