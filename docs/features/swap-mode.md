@@ -69,6 +69,8 @@ Swap intent is **persisted to disk**, not held in memory. Restarting BamDude mid
 - When `swap_mode_start` fires successfully, the dispatcher removes it from the list immediately.
 - When `swap_mode_change_table` fires successfully (in `on_print_complete`), the same write removes it.
 - Once the list is empty, the key drops entirely so the archive's `extra_data` stays clean.
+- A `swap_mode_change_table` that cannot run when the print ends ([held](#a-held-table-swap)) stays on the
+  list as the record of what was not done — it is never fired later by itself.
 
 **Why this matters**
 
@@ -106,7 +108,9 @@ The brief DB-insert phase (`INSERT INTO print_archives`) sits behind a startup-l
 When swap mode is active for a printer:
 
 1. Print completes on the printer.
-2. The `swap_mode_change_table` macro runs (G-code over MQTT, with idle-state ACK).
+2. The `swap_mode_change_table` macro runs (G-code over MQTT, with idle-state ACK) — for a print BamDude can
+   prove it started, over a file known to declare no swap sequence of its own (see
+   [A held table swap](#a-held-table-swap)).
 3. **Plate-clear confirmation is bypassed** — the swapper handles plate clearing.
 4. The next queued print is dispatched.
 5. Cycle repeats until the queue is empty.
@@ -130,10 +134,12 @@ This is the **unattended batch production** mode for compatible printers.
     Press **Clear Plate** on the printer card once the bed is actually empty and
     the queue resumes.
 
-    The one exception is a file whose name carries `.swap.` or `.swaps.` (what
-    swaplist.app exports): those have the table changes baked into the G-code, so
-    they swap correctly even when started from the printer, and no confirmation
-    is asked for.
+    The one exception is a file that **declares its own swap sequence** (what
+    swaplist.app exports — see [A File's Own Swap Sequence](#a-files-own-swap-sequence)):
+    the table changes are baked into its G-code, so it swaps correctly even when
+    started from the printer. When BamDude saw that start and downloaded the file,
+    no confirmation is asked for; a print it only matched by its name later still
+    asks.
 
 !!! note "A cancelled or failed print always asks for confirmation"
 
@@ -147,6 +153,65 @@ This is the **unattended batch production** mode for compatible printers.
     while a swap macro was running**, the message says so explicitly — that is a
     network problem, not a macro problem. Short connection drops are ridden out
     for 30 seconds before the print is given up on.
+
+---
+
+## :material-file-check: A File's Own Swap Sequence
+
+Some files carry the table changes **inside their G-code** — what swaplist.app exports. BamDude must not add its own
+swap macros to those, or the table would be swapped twice. Whether a file does is a **declaration** the file makes
+once, and the print keeps it.
+
+**How a file declares it.** By its own file name when it first comes in — an upload, a ZIP member (the member's name,
+not the ZIP's), an external folder scan, the Virtual Printer, a MakerWorld import, a file saved off a printer: a
+`.swap.` or `.swaps.` marker **between dots** (`Tray.swaps.gcode.3mf`). Renaming the file later declares nothing; an
+external folder scan reads it again only when the file's content has changed. Files BamDude slices itself declare no
+sequence of their own.
+
+**The print keeps it.** A queued job captures the declaration together with the file's bytes: renaming the library
+file, copying the job or deleting the original changes nothing, and the print's archive records it, so a reprint
+carries it too.
+
+| The file… | BamDude's swap macros | Printer list |
+|---|---|---|
+| declares its own sequence | not added | narrowed to swap-mode printers |
+| declares none | the swap macros you chose | every printer |
+| is **unknown** | not guessed — see below | every printer |
+
+**What is unknown.** A print archived before this was recorded (BamDude never wrote it down, so an old "no" is not
+trusted); a library file without a content hash, until a folder scan has actually read it; a print started from the
+printer's screen whose file could not be downloaded.
+
+**Over an unknown source**, asking for BamDude's swap macros is refused rather than guessed:
+
+- the print dialog says the source's swap compatibility is unknown and offers **Print without the extra swap
+  macros** for this one job — your saved swap settings, and what a grouped run carries to its next file, stay as
+  they are. Without our macros the printer's ordinary plate rules apply: with plate confirmation on, the next job
+  waits for the plate to be cleared;
+- a job that was already queued with our swap macros fails before it is sent and says why. **Retry** sends it again
+  exactly as it was, so it fails again; queue the file again with the swap macros off, or reprint the archive with
+  **Print without the extra swap macros**.
+
+**Saving an archive to the library** carries its known declaration across. An unknown one is refused, and so is a
+file the library already holds under the other declaration — the archive itself stays.
+
+### :material-pause-circle: A held table swap
+
+When a print ends, BamDude runs its own `swap_mode_change_table` only for a print it can prove it started (its own
+dispatch, a start from the printer's screen it saw, or the printer's exact job id), that **completed**, on a printer
+still in swap mode with its change-table macro, over a file known to declare **no** sequence of its own. Otherwise —
+an unknown or self-swapping file, a finish BamDude cannot tie to its print, a failed or cancelled print, swap mode
+off, no macro, an outcome left uncertain by an outage —:
+
+- nothing is sent, and the step stays owed — it is never fired later by itself;
+- the plate is not cleared;
+- the printer's queue is **paused**, even when plate confirmation is off, with a reason on the job that ran, on the
+  next waiting job, and as a **Swap held** badge on the print in the archive. The reason says whether the swap cycle
+  had **started**, **may have started**, or did not start.
+
+Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. Likewise a
+print whose file declares its own sequence clears the plate only for such a proven, completed print — never one
+BamDude matched only by its name, and never an order with auto-eject, which keeps its own plate handling.
 
 ---
 
