@@ -179,8 +179,9 @@ carries it too.
 | is **unknown** | not guessed — see below | every printer |
 
 **What is unknown.** A print archived before this was recorded (BamDude never wrote it down, so an old "no" is not
-trusted); a library file without a content hash, until a folder scan has actually read it; a print started from the
-printer's screen whose file could not be downloaded.
+trusted); a library file without a content hash — one in an external folder until a folder scan has actually read
+it, a managed one until it is uploaded again as a new copy — and its SWAP tag is not shown meanwhile; a print started
+from the printer's screen whose file could not be downloaded.
 
 **Over an unknown source**, asking for BamDude's swap macros is refused rather than guessed:
 
@@ -190,7 +191,9 @@ printer's screen whose file could not be downloaded.
   waits for the plate to be cleared;
 - a job that was already queued with our swap macros fails before it is sent and says why. **Retry** sends it again
   exactly as it was, so it fails again; queue the file again with the swap macros off, or reprint the archive with
-  **Print without the extra swap macros**.
+  **Print without the extra swap macros**;
+- an AutoQueue job waits for a printer without swap mode when one could print it, busy or not, and fails the same
+  way only when none could.
 
 **Saving an archive to the library** carries its known declaration across. An unknown one is refused, and so is a
 file the library already holds under the other declaration — the archive itself stays.
@@ -209,7 +212,12 @@ off, no macro, an outcome left uncertain by an outage —:
   next waiting job, and as a **Swap held** badge on the print in the archive. The reason says whether the swap cycle
   had **started**, **may have started**, or did not start.
 
-Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. Likewise a
+A change-table macro that raises an error while BamDude runs it holds the queue the same way; since it may have gone
+out, it is not sent again.
+
+Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. A completed job
+that ran stays in the queue with its reason: with plate confirmation on, confirming the plate removes it; with it off,
+remove it yourself. Likewise a
 print whose file declares its own sequence clears the plate only for such a proven, completed print — never one
 BamDude matched only by its name, and never an order with auto-eject, which keeps its own plate handling.
 
