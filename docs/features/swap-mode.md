@@ -181,7 +181,14 @@ carries it too.
 **What is unknown.** A print archived before this was recorded (BamDude never wrote it down, so an old "no" is not
 trusted); a library file without a content hash — one in an external folder until a folder scan has actually read
 it, a managed one until it is uploaded again as a new copy — and its SWAP tag is not shown meanwhile; a print started
-from the printer's screen whose file could not be downloaded.
+from the printer's screen whose file could not be downloaded. Any of them can be [declared by you](#declaring-a-file-yourself).
+
+**Older external files.** A file an external folder scan brought in before this version recorded only "no", whatever
+it held. BamDude now judges such a file by its name **on the share** — the same `.swap.` / `.swaps.` rule a new file
+gets — never by the name the library shows, which a rename in BamDude changes. The upgrade records that answer once,
+so the SWAP tag and the tag filter agree with it. A managed library file from before keeps the answer it had: BamDude
+cannot tell any more whether that "no" was a declaration or an old default. The name on disk can be wrong about what
+the G-code does — it is the same trust a new file's name gets; when in doubt, declare the file yourself.
 
 **Over an unknown source**, asking for BamDude's swap macros is refused rather than guessed:
 
@@ -195,8 +202,34 @@ from the printer's screen whose file could not be downloaded.
 - an AutoQueue job waits for a printer without swap mode when one could print it, busy or not, and fails the same
   way only when none could.
 
-**Saving an archive to the library** carries its known declaration across. An unknown one is refused, and so is a
-file the library already holds under the other declaration — the archive itself stays.
+**Saving an archive to the library** carries its known declaration across — yours included, see below. An unknown
+one is refused, and so is a file the library already holds under the other declaration — the archive itself stays.
+
+### :material-account-check: Declaring a file yourself
+
+When the name does not say, or says wrong, you can say it: **Swap declaration…** in an archive's menu and in the
+menu of a 3MF or G-code library file, or **Declare this source…** in the print dialog's unknown note. You need the right to edit that
+archive or file.
+
+1. BamDude **reads the file** a reprint would print and shows its name, size, content hash and what is declared now.
+2. You choose **The file carries its own plate-change sequence** or **The file does not carry its own plate-change
+   sequence** — neither is chosen for you. This is your statement about the file, not an analysis of its G-code:
+   "does not carry" lets the swap macros a job asks for run; "carries its own" means BamDude adds none of its swap
+   macros. Your saved swap settings are not changed.
+3. **Save declaration** reads the file again and saves the declaration only for **exactly the bytes you saw**. If
+   the file changed in between, or someone declared it first, nothing is saved — read it again and decide again.
+   Who declared it and when is kept with it.
+
+For an archive this is a declaration of its **file**, for future reprints. What the print that was archived ran with
+— and anything still owed at its end, such as a held table swap — stays exactly as it was recorded.
+
+**Jobs already queued keep their own answer.** A job captured the declaration together with its bytes when it was
+queued, so a new declaration does not reach it by itself. After saving — or when you open the dialog on a file that
+already has your declaration — it lists the waiting and failed jobs that print this file and lets you **apply** the declaration to the ones you select — none is selected for you. Only a
+job whose own answer is unknown, that holds exactly these bytes and that was never sent to a printer can take it; a
+job that already has its own answer is never overwritten (queue the file again to print with the new one). The
+selected jobs change together or not at all. Applying is not a retry: a failed job stays failed until you press
+**Retry**.
 
 ### :material-pause-circle: A held table swap
 
