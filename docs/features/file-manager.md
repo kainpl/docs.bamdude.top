@@ -264,7 +264,7 @@ Only users who may update all library files can generate STEP thumbnails (`libra
 
 ### Priority and limits
 
-Sliced files and STL/OBJ previews always go first. A STEP picture runs in its own time budget, and a slicing job can interrupt it; one interrupted too often ends with *slicing kept interrupting it — try again when the farm is quieter*. A model that is too large, takes too long or cannot be read ends with a reason of its own, and **the previous thumbnail stays** whenever a new one fails.
+Sliced files and STL/OBJ previews always go first. A STEP picture runs in its own time budget, and a slicing job can interrupt it; one interrupted too often ends with *slicing kept interrupting the conversion — try again when the farm is quieter*. A model that is too large, takes too long or cannot be read ends with a reason of its own, and **the previous thumbnail stays** whenever a new one fails.
 
 ### When no picture comes
 
@@ -273,16 +273,16 @@ The upload dialog, the toast and the file's menu all use the same sentences:
 | The sentence | When |
 |---|---|
 | *the background queue is full — try again later* | The queue of background jobs has no room now; nothing was queued. |
-| *slicing kept interrupting it — try again when the farm is quieter* | Slicing, which goes first, interrupted the job too many times. |
-| *it waited too long to start* · *it ran out of time* | The job's time budget ran out — before it started, or while it ran. |
+| *slicing kept interrupting the conversion — try again when the farm is quieter* | Slicing, which goes first, interrupted the job too many times. |
+| *waited too long to start* · *ran out of time* | The job's time budget ran out — before it started, or while it ran. |
 | *a backup kept the thumbnails paused for too long — try again once it has finished* | A backup paused the thumbnails while the job's time ran out; see [Backups](#step-thumbnails-and-backups) below. |
-| *the permission it needs is gone* | The right the job was queued with is no longer held. |
+| *the permission needed is gone* | The right the job was queued with is no longer held. |
 | *STEP thumbnails are made in the background* | A STEP file was asked for a picture on the spot; STEP pictures come only from the background queue. |
 | *the STEP component is not available on this server* | The Open CASCADE component is missing — Docker on 32-bit ARM, or a native install that declined it. See [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails). |
 | *the model took too long to convert* · *the model is too large or too complex for a thumbnail* · *the model could not be converted completely* · *the file is too small to contain a usable mesh* · *the file is not a STEP model* | The model itself is over the limits or not readable. The previous thumbnail stays. |
 | *the file changed meanwhile* · *the file has no verified content hash* · *the file is missing on disk* | The file is not the one the job was queued for, has no verified content hash, or is gone from disk. |
 | *the preview service is not available right now* · *the preview service is busy* | The local preview service is down or busy; see [Local preview service](../reference/troubleshooting.md#local-preview-service). |
-| *it was canceled* · *the thumbnail is already being saved and can no longer be canceled* | A cancel from the menu — in time, or after the picture had started saving. |
+| *canceled* · *the thumbnail is already being saved and can no longer be canceled* | A cancel from the menu — in time, or after the picture had started saving. |
 | *an internal error occurred* · *something went wrong* | An internal error, or a reason this version of the page does not know (a newer server's). |
 
 ### STEP thumbnails and backups {#step-thumbnails-and-backups}

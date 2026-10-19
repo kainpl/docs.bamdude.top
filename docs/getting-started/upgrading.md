@@ -148,13 +148,17 @@ After 0.7.0, `update.sh` runs git — the rollback included —, pip and npm **a
 
 - **the install's owner is not the user the service runs as** (the unit's `User=`; a unit without one runs as root) — give the install to that user, e.g. `sudo chown -R bamdude: /opt/bamdude`, or correct the unit's `User=`, then run the update again;
 - **something outside `data/`, `logs/`, `backups/` and `runtime/` belongs to someone else** — files an earlier update run as root left behind; the first such file is named, and `sudo chown -R bamdude: /opt/bamdude` hands them back;
-- **the owner of the install, or the unit's `User=`, cannot be read** — the update stops rather than guess.
+- **the owner of the install, or the unit's `User=`, cannot be read** — the update stops rather than guess;
+- **`npm` runs for root but not for the owner** — one from nvm or asdf, say: the frontend is built as the owner, through `sudo`'s own `PATH`, so install Node.js system-wide (from the distribution or NodeSource);
+- **the state of the working tree cannot be read** (`git status` fails as the owner) — the question about local edits is never skipped on a failed read.
+
+An install reached through a symlink is checked through the link: the owner and the files are the tree's.
 
 The update never changes ownership on its own.
 
 ### The STEP preview component on update {#step-component-on-update}
 
-Updates keep an enabled [STEP preview component](installation.md#step-previews) current (after 0.7.0): `update.sh` and an update from Settings refresh it, never install one you declined, and never fail because of it. `update.sh` removes the older version of the component only when it can prove the service stopped (cgroup v2: the unit's group is empty); otherwise it keeps it and says so. A refresh that fails ends in `STEP preview update failed; run install/step-preview.sh status to see why.` — the update itself goes on. An update from Settings says **The STEP preview component was not updated (reason); BamDude itself was.** under its result; the reasons and their repairs are in [Installation → STEP previews](installation.md#step-previews).
+Updates keep an enabled [STEP preview component](installation.md#step-previews) current (after 0.7.0): `update.sh` and an update from Settings refresh it, never install one you declined, and never fail because of it. `update.sh` removes the older version of the component last, just before it starts the service again, and only when it can prove the service stopped — right after the stop and again then (cgroup v2: the unit's group is empty); otherwise it keeps it and says so. A failed frontend build that rolls the code back therefore still finds the older version. A refresh that fails ends in `STEP preview update failed; run install/step-preview.sh status to see why.` — the update itself goes on. An update from Settings says **The STEP preview component was not updated (reason); BamDude itself was.** under its result; the reasons and their repairs are in [Installation → STEP previews](installation.md#step-previews).
 
 ---
 
