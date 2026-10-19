@@ -485,6 +485,28 @@ The parent log records each attempt as `Part render attempt=<id> … started` an
 
 Rendered pictures are kept in `DATA_DIR/part-renders`. It is a cache: it is deliberately left out of backups, and after a restore the pictures are rendered again.
 
+### STEP thumbnails {#step-thumbnails}
+
+!!! info "After 0.7.0"
+    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+A STEP thumbnail that ends with **the STEP component is not available on this server** (`cad_unavailable`) means the Open CASCADE component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) is missing. The file is kept in the library; it just gets no picture.
+
+- **Docker on 32-bit ARM:** the image has no build of the component for this architecture. There is nothing to repair; everything else keeps working.
+- **A native install that declined it** — at the installer's question, or with `--yes` on a fresh install: from the install directory run `sudo install/step-preview.sh enable` (without `sudo` on macOS). BamDude may keep running; the next STEP thumbnail uses the component. On Arch Linux and openSUSE install libGL, libX11 and expat yourself first; the script installs the system libraries only on Debian/Ubuntu and Fedora/RHEL.
+
+`sudo install/step-preview.sh status` checks that the component really renders and says what to do if not — the System page's **STEP preview component** line shows *Installed*, never *works*. Both commands exit `0` when done (or when the component works), `1` on a failure, with its reason, and `3` when the component is not available for this machine or its Python.
+
+| Reason | What to do |
+|---|---|
+| `smoke_failed:system_library:<soname>` | A system library is missing: install the package `status` names, then run `enable`. |
+| `permission` | Something under `runtime/` is not writable by the install's owner (often left by an earlier `sudo` run): `sudo chown -R <owner> <install>/runtime`, then `enable`. |
+| `lock_timeout` | Another install of the component held its lock for 15 minutes: let it finish, then run `enable` again. |
+| `helper_unproven` | An update from Settings could not prove an earlier run of the helper ended: restart BamDude, then update again or run `enable`. |
+| `pip_timeout`, `pip_failed` | The download did not complete: check the network, then run `enable`. |
+
+Every other sentence a STEP thumbnail can end with — the model too large or too slow to convert, a job out of time, a backup in the way — is explained under [File Manager → STEP thumbnails](../features/file-manager.md#step-thumbnails); the previous thumbnail stays in every one of those cases. *The preview service is not available right now* is the [local preview service](#local-preview-service), not the STEP component.
+
 ### Reporting an issue
 
 When reporting issues, include:

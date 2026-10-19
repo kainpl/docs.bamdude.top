@@ -208,7 +208,7 @@ Progress reporting shows the per-file count during extraction; failures are repo
 
 ## :material-cube-outline: STL thumbnail generation
 
-STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline.
+STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline. A STEP file has no mesh for it to draw: after 0.7.0 its picture takes a different path, described under [STEP thumbnails](#step-thumbnails) below.
 
 ### Auto on upload
 
@@ -244,6 +244,52 @@ The toolbar **Generate Thumbnails** button opens a scope picker:
 | **Priority** | Background task, low priority — won't block uploads or browsing |
 
 Both ASCII and binary STL formats are supported. Complex meshes may be simplified; preview work has size, time and memory limits. An oversized or failed preview can leave a valid file without a thumbnail.
+
+---
+
+## :material-cube-scan: STEP thumbnails {#step-thumbnails}
+
+!!! info "After 0.7.0"
+    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+A STEP or STP model gets a picture of its shape, made in the background by the **Open CASCADE** geometry kernel. That kernel is an optional component: the Docker image and the Windows installer carry it, and a native install chooses it at install time — see [Installation → STEP previews](../getting-started/installation.md#step-previews). Without it the file is still kept in the library; it just gets no thumbnail, and the reason says so.
+
+### What queues a picture
+
+Every door a new STEP file comes in by queues one, as long as thumbnails are on for the upload (the dialog's **Generate thumbnails for STL files** box, or the install-wide setting under **Settings → File Manager**): a direct upload, a member of an extracted ZIP, a file sent to the Telegram bot, and a product import. The upload dialog says **STEP thumbnail queued — it is made in the background**, or **STEP thumbnail not queued:** with the reason; the card updates when the picture lands.
+
+For a file already in the library, **Generate Thumbnail** in its menu queues one, and the toolbar button — **Generate thumbnails for STL, OBJ and STEP files missing them** — covers STEP files too. The batch queues one batch at a time: when **More STEP files are still missing thumbnails — press again to queue the next batch** appears, press it again. A running job is cancelled from the same menu entry, **Cancel thumbnail**; a picture that is already being saved can no longer be cancelled, and says so.
+
+Only users who may update all library files can generate STEP thumbnails (`library:update_all`) — the menu entry says exactly that to anyone else.
+
+### Priority and limits
+
+Sliced files and STL/OBJ previews always go first. A STEP picture runs in its own time budget, and a slicing job can interrupt it; one interrupted too often ends with *slicing kept interrupting it — try again when the farm is quieter*. A model that is too large, takes too long or cannot be read ends with a reason of its own, and **the previous thumbnail stays** whenever a new one fails.
+
+### When no picture comes
+
+The upload dialog, the toast and the file's menu all use the same sentences:
+
+| The sentence | When |
+|---|---|
+| *the background queue is full — try again later* | The queue of background jobs has no room now; nothing was queued. |
+| *slicing kept interrupting it — try again when the farm is quieter* | Slicing, which goes first, interrupted the job too many times. |
+| *it waited too long to start* · *it ran out of time* | The job's time budget ran out — before it started, or while it ran. |
+| *a backup kept the thumbnails paused for too long — try again once it has finished* | A backup paused the thumbnails while the job's time ran out; see [Backups](#step-thumbnails-and-backups) below. |
+| *the permission it needs is gone* | The right the job was queued with is no longer held. |
+| *STEP thumbnails are made in the background* | A STEP file was asked for a picture on the spot; STEP pictures come only from the background queue. |
+| *the STEP component is not available on this server* | The Open CASCADE component is missing — Docker on 32-bit ARM, or a native install that declined it. See [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails). |
+| *the model took too long to convert* · *the model is too large or too complex for a thumbnail* · *the model could not be converted completely* · *the file is too small to contain a usable mesh* · *the file is not a STEP model* | The model itself is over the limits or not readable. The previous thumbnail stays. |
+| *the file changed meanwhile* · *the file has no verified content hash* · *the file is missing on disk* | The file is not the one the job was queued for, has no verified content hash, or is gone from disk. |
+| *the preview service is not available right now* · *the preview service is busy* | The local preview service is down or busy; see [Local preview service](../reference/troubleshooting.md#local-preview-service). |
+| *it was canceled* · *the thumbnail is already being saved and can no longer be canceled* | A cancel from the menu — in time, or after the picture had started saving. |
+| *an internal error occurred* · *something went wrong* | An internal error, or a reason this version of the page does not know (a newer server's). |
+
+### STEP thumbnails and backups {#step-thumbnails-and-backups}
+
+A backup taken while pictures are being made neither fails because of them nor holds up the preview queue: a picture the backup catches is made again once the backup is done, and slicing never waits for it. A STEP job that runs out of time meanwhile says *a backup kept the thumbnails paused for too long*. A restore waits for pictures still being written and says so when it cannot — and keeps saying so until BamDude restarts when the picture service could not be confirmed stopped.
+
+STEP files still have no 3D view.
 
 ---
 

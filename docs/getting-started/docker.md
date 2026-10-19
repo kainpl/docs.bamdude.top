@@ -31,6 +31,8 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 The image carries the pinned Node.js that renders part thumbnails (after 0.7.0) — a layer of about 124 MB (measured 2026-10-12, Node v24.17.0) — so nothing is downloaded at start-up.
 
+It also carries the CAD component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) (after 0.7.0) — about 380 MB. On an architecture it has no build for — 32-bit ARM — everything else keeps working: STEP files are kept in the library, they just get no thumbnail, and the reason reads *the STEP component is not available on this server*. There is nothing to install by hand in a container; see [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails).
+
 ---
 
 ## :material-cog: Configuration
