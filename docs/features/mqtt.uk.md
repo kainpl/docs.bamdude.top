@@ -51,7 +51,8 @@ BamDude може публікувати події до зовнішнього M
 
 | Топік | Опис |
 |-------|------|
-| `bambuddy/printers/{serial}/status` | Стан принтера в реальному часі (з обмеженням частоти) |
+| `bambuddy/printers/{serial}/status` | Стан принтера (з обмеженням частоти, retained), включно з `awaiting_plate_clear` |
+| `bambuddy/printers/{serial}/plate_clear` | Retained-стан очищення плити: `awaiting: true` означає очікування підтвердження оператора; оновлюється після перепідключення, зокрема для офлайн-принтерів |
 | `bambuddy/printers/{serial}/online` | Принтер щойно зайшов у мережу. Спрацьовує на **межі з'єднання**, тобто це перехід, а не heartbeat. |
 | `bambuddy/printers/{serial}/offline` | Принтер щойно вийшов із мережі — та сама межа, в інший бік. |
 | `bambuddy/printers/{serial}/print/started` | Друк розпочато |
@@ -129,7 +130,10 @@ BamDude може публікувати події до зовнішнього M
   "speed_level": 2,
   "cooling_fan_speed": 100,
   "big_fan1_speed": 50,
-  "big_fan2_speed": 50
+  "big_fan2_speed": 50,
+  "left_aux_fan_speed": null,
+  "exhaust_fan_present": null,
+  "awaiting_plate_clear": false
 }
 ```
 

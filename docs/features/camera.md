@@ -652,10 +652,12 @@ Adjust which part of the camera view is analysed:
 1. Open the plate-detection modal.
 2. Scroll to **Detection Area (ROI)**.
 3. Click **Edit**.
-4. Use the X / Y / Width / Height sliders to size and position the green ROI box.
+4. Choose **Rectangle** and adjust X / Y / Width / Height, or choose **Polygon** and place the vertices around the plate on the original camera image. Vertices can be moved or deleted; numeric coordinates also allow precise editing.
 5. Save.
 
-The green box in the preview shows the detection area. Focus it on the build plate to avoid false positives from the printer frame, AMS unit, or background.
+The preview shows the detection area. A polygon compares only pixels inside its contour, which helps exclude the frame or background around a perspective view of the plate. It must have at least three distinct vertices, a nonzero area and no crossing edges. Returning to Rectangle clears the polygon and restores rectangular comparison. Editing the area does not rewrite calibration images.
+
+For polygon checks, a missing or unreadable reference, changed image dimensions or camera failure is **unavailable**, not an empty plate. A normal print detected at print start is paused for inspection in that case; internal firmware calibration jobs are excluded. Existing rectangular checks retain their legacy start policy. Prepared-file auto-eject dispatch uses a fresh camera check and waits on any unavailable result, for either shape.
 
 ### Detection mechanics
 

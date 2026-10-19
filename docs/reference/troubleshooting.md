@@ -396,6 +396,12 @@ Neither failure stops unrelated printing or queues; a mandatory camera check
 can hold its job until cameras recover. Check the application log,
 local disk permissions and free space before restarting the service.
 
+### Uploads and folder scans fail together
+
+Check **System → Library file worker**, **3MF analysis worker** and **Local preview service**. They share the bundled broker, so several unavailable panels can have one startup cause. Read the first startup error, free space and access to the runtime directory. A missing `broker/logs/nats.log` does not rule out broker failure: startup can fail before a log is created.
+
+After 0.7.0, the bundled broker manager restores private permissions (`0700` on POSIX) on its own service directories before startup, including directories previously created with `0755`. It does not repair a wrong owner or a read-only mount. Update to a version containing the fix and restart normally; do not recursively change permissions on the entire data directory or remove ownership records to force startup.
+
 ### Local preview service {#local-preview-service}
 
 Open **System → Local preview service** to see whether it is available,
@@ -453,6 +459,53 @@ aside as a recovery copy and restart. This cache contains temporary artifacts,
 not library files; never remove the library/archive or other service stores.
 Keep the recovery copy until the new service works. Retry missing thumbnails
 explicitly; interrupted preview attempts are not replayed after restart.
+
+### Part thumbnail worker {#part-thumbnail-worker}
+
+!!! info "After 0.7.0"
+    The part thumbnail worker is in the current development branch after 0.7.0. It is not in the `0.7.0` release image.
+
+Open **System → Part thumbnail worker**. It renders the [part pictures](../features/projects.md#part-pictures) with a pinned Node.js runtime, through the same bundled broker as the preview service. The panel shows its state, the reason as a sentence with its code, the pinned Node.js version, the queue and the last attempt.
+
+**While it is down, nothing else stops.** Products, orders and stock keep working; parts show **being prepared** or the picture they already had; queued plates wait, and attempts that could not start are not counted as failures. When the worker is back, the queue carries on by itself.
+
+| Reason | What to do |
+|---|---|
+| `runtime_provisioning` | Nothing to do: a native install that started without its pinned Node.js is installing it in the background, once per start, and part thumbnails start by themselves when it is in place. The log says `Render runtime provisioning … started (startup)` and then how it ended. If it ends in `runtime_missing`, see the next row. |
+| `runtime_missing` | The pinned Node.js is not installed. A native install tries this by itself at every start, and the log says how the last try ended: `Render runtime provisioning … failed after …` with the reason, `… timed out after …` with the last thing it said, `… did not start after …` with the error's type, or `… no official Node.js build …`. **Docker:** pull the current image — it carries Node.js. **Native:** run `install/update.sh`, or from the installation directory with its venv, as the service user, `python -m backend.app.services.render_runtime provision --runtime <install>/runtime`; while another provisioning of the same installation runs, the command waits for it, with no time limit of its own. **Windows:** run the installer again; it replaces the runtime whole. |
+| `runtime_failed` | Node.js is installed but does not start: an antivirus blocking `node`, an install directory mounted `noexec`, or a binary for another architecture. The log says `Part render runtime_failed: Node … does not start`. The worker probes it again by itself and logs `Part render runtime recovered: Node … starts again` when it works. |
+| `bundle_mismatch` | The render bundle does not match this version — an update that did not finish. Update or reinstall again. |
+| `no_runtime` | Nothing to repair: there is no official Node.js build for this machine (armv6 — Pi 1 / Zero, an armel or musl 32-bit system, RISC-V; 32-bit Raspberry Pi OS is supported). Parts get only the fallback picture a 3MF carries — the plate's top view and object masks; a raw `.gcode` gets none. |
+| `staging_full` | Results of earlier renders under `DATA_DIR/.cache/part-render-service/staging` have not been cleaned up, and new renders wait until they are. Look for `Part render main staging is over its budget` and `staging retained` in the log, then check free disk space and write access. |
+| `ownership_uncertain` | BamDude could not prove that an earlier render process is gone, so it takes no new renders. Restart BamDude normally. Do **not** kill processes by a PID from a file. If it repeats after a clean restart, keep the directory and ask for support. |
+| `starting`, `not_started`, `startup_failed`, `broker_disconnected`, `worker_restarting`, `circuit_open` | The worker or its broker is starting or recovering, and it retries by itself. After several failures in a row it pauses before the next try. A start that failed before the worker could retry stays at `starting` or `not_started`: look for `Part render service unavailable at startup` in the log and restart BamDude. If it never becomes available, read the first `Part render worker …` error in the log; it often has the same cause as the other panels on the shared broker (see [Uploads and folder scans fail together](#uploads-and-folder-scans-fail-together)). |
+| `stopped` | BamDude is shutting down, or a backup was restored — restart BamDude to resume rendering. |
+
+The parent log records each attempt as `Part render attempt=<id> … started` and `Part render attempt=<id> outcome=<outcome> … elapsed_ms=…`, and the worker as `Part render worker ready pid=… node=…`. BamDude removes the staging of earlier runs once it has proven them over. It keeps and logs (`staging retained`) whatever it cannot prove, and that is never removed by hand while BamDude runs.
+
+Rendered pictures are kept in `DATA_DIR/part-renders`. It is a cache: it is deliberately left out of backups, and after a restore the pictures are rendered again.
+
+### STEP thumbnails {#step-thumbnails}
+
+!!! info "After 0.7.0"
+    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+A STEP thumbnail that ends with **the STEP component is not available on this server** (`cad_unavailable`) means the Open CASCADE component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) is missing. The file is kept in the library; it just gets no picture.
+
+- **Docker on 32-bit ARM:** the image has no build of the component for this architecture. There is nothing to repair; everything else keeps working.
+- **A native install that declined it** — at the installer's question, or with `--yes` on a fresh install: from the install directory run `sudo install/step-preview.sh enable` (without `sudo` on macOS). BamDude may keep running; the next STEP thumbnail uses the component. On Arch Linux and openSUSE install libGL, libX11 and expat yourself first; the script installs the system libraries only on Debian/Ubuntu and Fedora/RHEL.
+
+`sudo install/step-preview.sh status` checks that the component really renders and says what to do if not — the System page's **STEP preview component** line shows *Installed*, never *works*. Both commands exit `0` when done (or when the component works), `1` on a failure, with its reason, and `3` when the component is not available for this machine or its Python.
+
+| Reason | What to do |
+|---|---|
+| `smoke_failed:system_library:<soname>` | A system library is missing: install the package `status` names, then run `enable`. |
+| `permission` | Something under `runtime/` is not writable by the install's owner (often left by an earlier `sudo` run): `sudo chown -R <owner> <install>/runtime`, then `enable`. |
+| `lock_timeout` | Another install of the component held its lock for 15 minutes: let it finish, then run `enable` again. |
+| `helper_unproven` | An update from Settings could not prove an earlier run of the helper ended: restart BamDude, then update again or run `enable`. |
+| `pip_timeout`, `pip_failed` | The download did not complete: check the network, then run `enable`. |
+
+Every other sentence a STEP thumbnail can end with — the model too large or too slow to convert, a job out of time, a backup in the way — is explained under [File Manager → STEP thumbnails](../features/file-manager.md#step-thumbnails); the previous thumbnail stays in every one of those cases. *The preview service is not available right now* is the [local preview service](#local-preview-service), not the STEP component.
 
 ### Reporting an issue
 

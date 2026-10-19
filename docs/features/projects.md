@@ -38,6 +38,8 @@ An order carries a name, an optional customer, a description, a colour badge, ta
 
 ### Order lines
 
+Orders also have a stage and a responsible operator, separate from active/completed/cancelled status. Use the list's cards, table, kanban, workspace or deadline view to follow the same work. The readiness forecast names missing estimates or unplaceable plates instead of treating them as zero; the order detail shows machine-hours by printer model. See [When will it be ready?](../scenarios/when-will-it-be-ready.md).
+
 A line is **`product × quantity`**, plus three optional fields:
 
 | Field | Behaviour |
@@ -141,6 +143,19 @@ Purchased parts are tracked **per order**, not per product: the order's procurem
 
 Parts belong to a product, not to a global catalog: the same bracket in two products is two rows with two independent quantities. Within a product, merging one part into another moves its aliases across and the historical prints resolve to the survivor through the union — nothing is rewritten. Removing an alias makes that name its own part again on the next sync; renaming changes only the name.
 
+### Additional printed parts
+
+!!! info "After 0.7.0"
+    Saved extra percentages are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+In a printed part's editor, set an **additional percentage** to include spare parts in new order lines. For ten products containing three A parts each, 10% adds three A parts: the plan needs 33 A parts in total. The extra quantity rounds up once for the whole order line. Purchased parts and lines ordered in **parts mode** do not receive implicit extras.
+
+Each new line keeps its percentage. Changing the catalog default affects future lines; it does not rewrite existing orders. Changing a part's base count, ignoring it, deleting it or merging it is refused when that would invalidate a saved extra-part obligation. Configure the order line before receiving or issuing its goods.
+
+Extras are received and issued separately in **Stock and issue**. A customer order must include them in its delivery before it can close. An order without a customer can close to free stock once its main units have been received or assembled and its extras received. These planned extras are not surplus available to bank a second time.
+
+The base kit composition stays unchanged. In the example above, a kit still needs three A parts, not 3.3: the three additional A parts are a separate obligation for the line. Stock offers and assembly use the base composition; the plan and delivery also account for the extras.
+
 ### Plates as recipes
 
 Linking a library **file or folder** to a product does everything else by itself: the product gains a plate row for every plate of every linked file, and every object name on those plates resolves to exactly one printed part — a name no part covers creates one, with the count on the plate where it was first seen as its per-unit figure. You review and correct it; editing a row clears the *from file* badge.
@@ -165,6 +180,29 @@ What a thing *is* — its description, designer, licence, source page and design
 Any 3MF in the library shows the same card, read-only, from its **Model card** entry in the [File Manager](file-manager.md), with **Create product from this file** on it.
 
 The product page also reports **Printed for orders** — units of this product made across every order it appears in, of any status. It is not "how many times this file was printed": a print outside an order does not count here.
+
+### Part pictures
+
+!!! info "After 0.7.0"
+    Part pictures are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+Every printed part gets its **own picture**, rendered by the server in the background from the sliced G-code of the plates that give it, in that part's filament colours. Nothing is rendered in the browser. While its plate waits in the queue the part shows **being prepared**. When the G-code cannot tell the part apart — several objects on a plate sliced without object labels, say — the picture is cut out of the plate's own top view by the part's mask from the 3MF.
+
+The **Picture** section of a part's editor decides what is shown:
+
+| Choice | What it shows |
+|---|---|
+| **Automatic** | The first ready picture from the plates that give the part. |
+| **An object of a plate** | That one instance — useful when two plates draw the same part differently. A pin that stops holding (its file unlinked or trashed, the object gone) falls back to automatic and says why. |
+| **Photo** | A photo you upload. It is shown instead of any render. |
+
+A **purchased** part has no plates, so it takes a photo only. A photo is re-encoded on the server: EXIF (GPS, the camera's serial), XMP and other embedded metadata are not kept. **Re-render** in the same section queues every plate of the product again; the old pictures stay on screen until the new ones are ready.
+
+A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in issuing and receiving, and in the Stock section.
+
+**Export** carries each part's choice and photo; **import** restores them, re-pinning an instance to the imported file. Rendered pictures are a cache under `DATA_DIR/part-renders`, deliberately left out of backups: after a restore they are rendered again.
+
+On a machine with no official Node.js build — 32-bit ARM, for example — parts get only the fallback picture a 3MF can give, and a raw `.gcode` gets none. The System page says so; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker).
 
 ### Export and import
 
@@ -245,13 +283,14 @@ A print started from the printer's own screen is filed afterwards: the archive e
 
 A plate makes four lids and the order needed three. The fourth is not a rounding error, it is a thing on a shelf — and this is where it lives.
 
-Stock is a **ledger of movements**, never a counter. A part's balance is the sum of its movements; a product's **kits** are the whole units the shelf can already make — the minimum across counted parts of balance ÷ per unit, the same "scarcest part decides" rule that drives a line's progress. There are exactly five reasons, and the reason decides the sign:
+Stock is a **ledger of movements**, never a counter. A part's balance is the sum of its movements; a product's **kits** are the whole units the shelf can already make — the minimum across counted parts of balance ÷ per unit, the same "scarcest part decides" rule that drives a line's progress. Each movement has a reason that decides its sign. Common examples:
 
 | Reason | Sign | When |
 |---|---|---|
 | **Surplus banked** | + | You pressed **Bank the surplus** on an order. |
 | **Print without an order** | + | A print completed belonging to no order. |
 | **Reserved for an order** | − | A line took kits off the shelf. |
+| **Individual parts reserved** | − | A line took loose parts, including incomplete kits or additional parts. |
 | **Reservation released** | + | That line gave them back. |
 | **Hand correction** | ± | You counted the shelf yourself. |
 
@@ -271,6 +310,15 @@ It is deliberately not automatic. A surplus is sometimes shipped with the order 
 A print that completes filed under **no** order is credited to stock automatically, good parts only — printed minus defective. The accounting then follows you if you change your mind: file that print under an order afterwards and the credit is taken back; take it back out and it returns. A reversal that would push a part below zero is refused, but the print is still filed — those parts were already spent, and refusing the filing would punish you for the books not balancing.
 
 Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that **finished successfully** and belongs to no order, one at a time, when you say so — a failed or cancelled print made nothing there is anything to count.
+
+### Taking individual parts from stock
+
+!!! info "After 0.7.0"
+    Reserving incomplete kits by individual component is available after 0.7.0. The `0.7.0` release supports finished goods and complete stock kits; it does not implement the loose-component flow below.
+
+**Take from stock** can reserve incomplete kits as well as finished products and complete kits. If ten products need A×3 and B×1, taking A30 from stock leaves only B10 to print. When B10 is printed, the receipt uses the reserved A parts to complete the ten products.
+
+The banner names the individual parts and quantities. Reservations belong to the order; simply viewing its plan does not consume free stock. A later delivery offers only the components still missing, including planned additional parts. Repeating the action does not reserve the same parts twice. Cancellation or a reduced quantity returns unused reservations, and the activity journal records what was taken.
 
 ### Taking kits from stock
 
@@ -303,6 +351,24 @@ Deleting a part removes its ledger; **merging** two parts moves the movements on
 An issue from an order or directly from stock creates a numbered **dispatch note**. Its recipient, units and waybill are recorded when the issue is made; the waybill can be edited later. Orders can receive finished printed units into stock and issue them in batches, so issuing some units does not close the rest of the order. Stock movements and corrections have separate permissions; see below.
 
 ---
+
+## Print parameters by sliced model
+
+In an order's **Print plan**, expand **Print parameters for this order**, select a sliced printer model and enable custom parameters. Each model has independent calibration, timelapse and preheat choices; unsupported controls are hidden. Save before using **Queue** or **Queue entire plan**. Cancel restores the saved choices, and unsaved or saving changes disable those queue buttons.
+
+Only new plan jobs receive the settings. Existing jobs and saved operator profiles stay unchanged; clearing a model's override restores profile inheritance. **To printer…** opens its own interactive print dialog.
+
+Auto Queue keeps the settings for the captured file's sliced model even if you change its routing target to a compatible printer. Editing one job or a batch updates that source model's settings. Rebalancing to a different sliced file selects the new model's entry from the job's saved settings, without rereading the current order.
+
+## Prepared-file auto-ejection
+
+An order can enable **Auto-eject** for newly created queue jobs. This experimental mode is for hardware and sliced files prepared by the operator: the file's finish G-code must perform the ejection. BamDude adds no ejection motion and does not validate that sequence. Enabling requires acknowledgement of the hardware, prepared files and camera calibration; it cannot be combined with Swap Mode.
+
+Calibrate the empty-plate detector for the actual camera and the plate's position after ejection. By default, dispatch waits for a fresh image from that camera. A retained object, unavailable check or changed printer context keeps the job waiting. After a successful auto-eject print, this check may answer its plate-clear gate; ordinary, failed, cancelled or uncertain predecessors still require a manual answer.
+
+The order can adjust the image-difference threshold. It is not a probability of an empty plate, and raising it may miss a retained part. **Skip OpenCV plate check** is an explicit opt-out behind two warnings; jobs then display a red no-check badge, and BamDude cannot verify ejection. Camera errors never enable this option automatically.
+
+Mode and camera policy are copied into each new job. Later order edits do not change existing jobs; copies and repeats retain their saved policy. Details and the operator-supplied reference setup: [prepared-file auto-eject guide](https://github.com/kainpl/bamdude/blob/feature/v0.7.0-fixes/docs/order-auto-eject-mvp.md).
 
 ## :material-shield-key: Permissions
 

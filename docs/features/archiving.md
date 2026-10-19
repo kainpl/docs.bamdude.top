@@ -172,6 +172,8 @@ An archive's 3MF can be copied into the library from the archive's own menu — 
 
 ⚠️ **An archive may have no file to copy.** A print started from the printer's own screen whose 3MF could not be pulled has a real archive row and an empty file — the action explains that instead of failing quietly. The same applies to reprint and to opening in a slicer.
 
+⚠️ **The print's swap declaration travels with the file** ([Swap Mode](swap-mode.md#a-files-own-swap-sequence)). It is the archive's own record, checked against the bytes really copied — never re-guessed from the file name. An archive whose declaration is unknown is refused, and so is a file the library already holds under the other declaration; the library's copy is left as it is and the archive stays.
+
 Read-only external folders are left out of the picker: the library refuses to write into them, and offering a choice that cannot work is worse than not offering it.
 
 ---
@@ -220,7 +222,7 @@ While the row has no file yet:
 - **MQTT-reported metadata still gets recorded** — filament use, layer counts, energy, timing all flow in even without the 3MF.
 - **The filament weight may be missing** — without the 3MF it comes only from the built-in inventory's measured spool drop, and only for slots with a spool assigned. If the file never arrives, type the figure in **Edit archive → Filament used (g)**: statistics, cost and order figures read it, and **no spool is debited** — it is the archive's number, not an inventory movement. A cost that was empty, or was the farm rate applied to the old figure, follows the new one; a cost from spool tracking stays.
 
-When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity` / `swap_compatible`, and clears the `no_3mf_available` flag and its reason. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
+When the file lands, `ArchiveService.attach_3mf_to_archive()` fills the existing row in place: copies the file to a fresh archive dir, reparses the 3MF, extracts the thumbnail, fills `content_hash` / `print_name` / `bed_type` / all metadata fields, backfills `cost` / `quantity`, finishes the [swap declaration](swap-mode.md#a-files-own-swap-sequence) only for an external print still waiting for one — from the name of the file that actually downloaded; an archive that already has a declaration keeps it — and clears the `no_3mf_available` flag and its reason. `plate_index` is backfilled only when the row doesn't already carry one — a row created at print start takes it from live MQTT state, which knows which plate is actually running, and a multi-plate container cannot overrule that.
 
 !!! tip "Archives-page banner — why a print has no 3MF"
     When a print of the last 30 days was left without its 3MF, the Archives page shows a dismissible banner that says **why**, because the fix depends on it. BamDude records the reason at every failed fetch, and the banner speaks to the most urgent one, linking the matching troubleshooting entry:
@@ -566,6 +568,10 @@ The **build-plate icon** sits next to the printer / model name and reflects the 
     Reprint / Schedule / Slice labels appear only at viewport ≥ 1280 px where the responsive grid (`md:2 lg:3 xl:4`) gives cards real horizontal room. Below that the buttons render icon-only and the existing `title=` attribute serves as the hover tooltip — fixes the previous `"Re..."` / `"Sc..."` label-truncation on narrow viewports.
 
 ---
+
+### Correcting filament used
+
+**Edit → Filament used (g)** can supply or correct an archive's weight, including a print whose 3MF was never recovered. Statistics, cost and order figures read this value; saving it does **not** debit any spool. A missing cost or one calculated using the farm rate follows the new weight; a cost already calculated from spool tracking stays. Both decimal point and comma are accepted.
 
 ## :material-view-grid: View Modes
 

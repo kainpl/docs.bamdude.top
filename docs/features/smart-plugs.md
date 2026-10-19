@@ -448,6 +448,8 @@ When a queued print is ready, BamDude turns on the plug that powers the printer,
 
 ### Auto Power Off
 
+After 0.7.0, completion automation remains active while its own print finishes background work. Starting a new print permanently cancels the old run's delayed power-off authority, so a late timer cannot switch off the next print. This does not enable auto-off: the plug's own settings still decide whether to use it.
+
 After a print completes, BamDude waits for bed cooldown, checks for more queued prints, then powers off.
 
 Configure in **Settings → Smart Plugs** with cooldown temperature and time settings.

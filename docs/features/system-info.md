@@ -20,6 +20,14 @@ locally and sends only its bounded result through the bundled broker; it does
 not upload the whole 3MF to a remote service. A previously calculated print
 context remains cached until that print is released.
 
+The **Library file worker** prepares uploaded and mounted files and their 3MF plate metadata. Its outage prevents new file preparation and folder scans; existing files remain available. Check this panel when upload or scan logs say `library file service unavailable`.
+
+The **Part thumbnail worker** (after 0.7.0) renders the [part pictures](projects.md#part-pictures). Its panel shows **Available**, **Fallback only** (no official Node.js build for this machine) or **Unavailable**; the reason in a sentence with its code beside it; the pinned Node.js version and its date; the queue — plates waiting and failed; and the last attempt's outcome and time. When it is not available, the panel links to [its troubleshooting](../reference/troubleshooting.md#part-thumbnail-worker). An outage stops only new pictures: products, orders and stock keep working, and waiting plates are not counted as failed.
+
+The **STEP preview component** line (after 0.7.0), in the same preview section, shows the component that makes [STEP thumbnails](file-manager.md#step-thumbnails): the administrator's choice — **Enabled by the administrator: updates keep it current**, **Disabled by the administrator: updates leave it alone** or **Not chosen yet** — and the component's state — **Installed**, **Not installed**, **Not available for this machine**, **State unknown** or **Not usable (reason)**. *Installed* is not *works*: only `install/step-preview.sh status`, run on the server, checks that it really renders. On a native install the line also shows the two commands — **To install or repair it, run on the server:** `install/step-preview.sh enable`, and **To check that it renders:** `install/step-preview.sh status`; Docker and the Windows installer carry the component and show its state only. See [Installation → STEP previews](../getting-started/installation.md#step-previews) and [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails).
+
+Database health is shown independently of these workers. After 0.7.0, a failed SQL check no longer aborts the other checks: missing `pg_stat_statements` leaves a statistics warning while version, size and other readable fields remain available. See [PostgreSQL setup](postgresql.md) for enabling it; updating only BamDude does not configure an external PostgreSQL server.
+
 ## :material-tag-outline: Version info
 
 | Field | Source |
@@ -211,14 +219,14 @@ Docker installs reject `/apply` with `is_docker: True` — running `git fetch` /
 # docker-compose.yml
 image: kainpl/bamdude:0.4.5b1     # for betas — explicit pin required
 # OR
-image: kainpl/bamdude:latest      # for stable (latest only tracks main)
+image: kainpl/bamdude:latest      # latest stable release tag
 ```
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-The hint text in the UI explicitly explains why `:latest` won't pick up a beta — the `:latest` Docker tag tracks `main`, betas are tagged on `dev` and ship as `:X.Y.ZbN` only.
+The hint explains why `:latest` will not pick up a beta: a stable release tag updates `:latest`, while beta tags publish `:X.Y.ZbN` and update `:dev`. A branch push alone does not update either release channel.
 
 **Source-build** — for operators who cloned the repo and use `build:` in compose:
 
@@ -244,6 +252,25 @@ This is the BamDude self-update path. For **printer firmware** updates, see [Fir
 There is no `system:maintenance` or `support_bundle:create` permission — the support bundle and log endpoints sit under the `settings` namespace.
 
 ## :material-api: API reference
+
+### Print-state diagnostics and recovery
+
+**Print state diagnostics** lists unresolved differences between queue claims and execution archives. It checks the current records and fresh printer observations; **Check again** repeats the check without changing data. Offline telemetry alone does not prove a print is stuck. Continue through all pages when the list is partial.
+
+An operator can preview an addressed correction, review **Before → After**, and confirm it. Depending on the evidence, the panel can align an old item with its terminal archive, release an orphan queue header, or fill a missing completion time from the archive start plus the slicer duration. The last action requires explicit confirmation that this archive belongs to that completed print. Its time remains visibly **estimated** and cannot authorize deletion.
+
+**Remove stale item, keep archive** appears only for a proven completed execution with an actual end time and no dependent AutoQueue, calibration, receipt or order records. Ambiguous identity, unresolved completion/swap effects or an uncertain printer state remove the action entirely. There is no forced delete. Archives, accounting and source files are preserved.
+
+A repair on an inactive printer leaves its queue paused: inspect the plate before resuming. A proven old item can also be corrected while a positively identified newer print continues; that print and its queue header are preserved. The panel sends no printer commands and does not repeat completion accounting or macros. A changed or expired preview must be prepared and confirmed again. Successful actions appear in the printer's recovery history.
+
+Reading requires `system:read`, `printers:read`, `queue:read_all` and `archives:read_all`. Repairs additionally require `queue:update_all` and `printers:control`; an estimated end also requires `archives:update_all`, and deletion requires `queue:delete_all`. API-key printer restrictions apply to the list and each action.
+
+```
+GET  /api/v1/system/print-state-issues
+POST /api/v1/system/printers/{printer_id}/print-state/preview
+POST /api/v1/system/printers/{printer_id}/print-state/apply
+GET  /api/v1/system/printers/{printer_id}/print-state/history
+```
 
 ```
 GET    /api/v1/system/info             # full system snapshot

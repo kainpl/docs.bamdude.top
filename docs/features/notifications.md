@@ -514,7 +514,10 @@ The `{finish_photo_url}` placeholder puts a camera snapshot of the finished plat
     For **email** providers, when the rendered body contains the substituted `{finish_photo_url}` **and** a finish photo was actually captured, BamDude sends the message as a `multipart/related` email with the JPEG embedded inline (via a `Content-ID` referenced from the HTML part) — the photo shows in the mail body itself, not as a bare link. The plain-text alternative still carries the clickable URL for text-only clients. When the template doesn't reference `{finish_photo_url}` (or no photo exists), the original single-part text email is used — no surprise attachment. Non-email channels (WhatsApp / webhook / …) still receive the link, which is why the External URL below has to be reachable.
 
 !!! note "External URL prerequisite"
-    Without a configured External URL the placeholder renders empty. Camera snapshots also gate on the [stream-token camera flow](authentication.md) — the URL embeds a short-lived token so recipients can fetch the JPEG without an Authorization header.
+    Without a configured External URL the placeholder renders empty. Saved archive photos linked in notifications are public URLs, so delivery services can fetch them without signing in. They are distinct from a live camera snapshot, which requires camera authorization. Keep notification links private if the finished plate contains sensitive work.
+
+!!! info "Start and completion fixes after 0.7.0"
+    Current development restores the once-per-run start notification for queued dispatches and lets finish-photo capture and completion delivery finish after the live print state is cleared. A camera failure can still leave a message without a photo. Starting a new print cancels the previous run's permission to capture the printer or perform delayed post-print actions.
 
 ---
 

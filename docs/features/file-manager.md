@@ -208,7 +208,7 @@ Progress reporting shows the per-file count during extraction; failures are repo
 
 ## :material-cube-outline: STL thumbnail generation
 
-STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline.
+STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline. A STEP file has no mesh for it to draw: after 0.7.0 its picture takes a different path, described under [STEP thumbnails](#step-thumbnails) below.
 
 ### Auto on upload
 
@@ -239,11 +239,57 @@ The toolbar **Generate Thumbnails** button opens a scope picker:
 | Property | Value |
 |---|---|
 | **Renderer** | Trimesh isometric view + matplotlib raster |
-| **Colour** | Bambu green (`#00AE42`) on dark background |
+| **Colour** | Shaded Bambu green (`#00AE42`) with a transparent background |
 | **Format** | PNG, optimised for thumbnail-card size |
 | **Priority** | Background task, low priority — won't block uploads or browsing |
 
-Both ASCII and binary STL formats are supported. Very complex meshes (100k+ vertices) render without crashing, just take longer.
+Both ASCII and binary STL formats are supported. Complex meshes may be simplified; preview work has size, time and memory limits. An oversized or failed preview can leave a valid file without a thumbnail.
+
+---
+
+## :material-cube-scan: STEP thumbnails {#step-thumbnails}
+
+!!! info "After 0.7.0"
+    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
+
+A STEP or STP model gets a picture of its shape, made in the background by the **Open CASCADE** geometry kernel. That kernel is an optional component: the Docker image and the Windows installer carry it, and a native install chooses it at install time — see [Installation → STEP previews](../getting-started/installation.md#step-previews). Without it the file is still kept in the library; it just gets no thumbnail, and the reason says so.
+
+### What queues a picture
+
+Every door a new STEP file comes in by queues one, as long as thumbnails are on for the upload (the dialog's **Generate thumbnails for STL files** box, or the install-wide setting under **Settings → File Manager**): a direct upload, a member of an extracted ZIP, a file sent to the Telegram bot, and a product import. The upload dialog says **STEP thumbnail queued — it is made in the background**, or **STEP thumbnail not queued:** with the reason; the card updates when the picture lands.
+
+For a file already in the library, **Generate Thumbnail** in its menu queues one, and the toolbar button — **Generate thumbnails for STL, OBJ and STEP files missing them** — covers STEP files too. The batch queues one batch at a time: when **More STEP files are still missing thumbnails — press again to queue the next batch** appears, press it again. A running job is cancelled from the same menu entry, **Cancel thumbnail**; a picture that is already being saved can no longer be cancelled, and says so.
+
+Only users who may update all library files can generate STEP thumbnails (`library:update_all`) — the menu entry says exactly that to anyone else.
+
+### Priority and limits
+
+Sliced files and STL/OBJ previews always go first. A STEP picture runs in its own time budget, and a slicing job can interrupt it; one interrupted too often ends with *slicing kept interrupting the conversion — try again when the farm is quieter*. A model that is too large, takes too long or cannot be read ends with a reason of its own, and **the previous thumbnail stays** whenever a new one fails.
+
+### When no picture comes
+
+The upload dialog, the toast and the file's menu all use the same sentences:
+
+| The sentence | When |
+|---|---|
+| *the background queue is full — try again later* | The queue of background jobs has no room now; nothing was queued. |
+| *slicing kept interrupting the conversion — try again when the farm is quieter* | Slicing, which goes first, interrupted the job too many times. |
+| *waited too long to start* · *ran out of time* | The job's time budget ran out — before it started, or while it ran. |
+| *a backup kept the thumbnails paused for too long — try again once it has finished* | A backup paused the thumbnails while the job's time ran out; see [Backups](#step-thumbnails-and-backups) below. |
+| *the permission needed is gone* | The right the job was queued with is no longer held. |
+| *STEP thumbnails are made in the background* | A STEP file was asked for a picture on the spot; STEP pictures come only from the background queue. |
+| *the STEP component is not available on this server* | The Open CASCADE component is missing — Docker on 32-bit ARM, or a native install that declined it. See [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails). |
+| *the model took too long to convert* · *the model is too large or too complex for a thumbnail* · *the model could not be converted completely* · *the file is too small to contain a usable mesh* · *the file is not a STEP model* | The model itself is over the limits or not readable. The previous thumbnail stays. |
+| *the file changed meanwhile* · *the file has no verified content hash* · *the file is missing on disk* | The file is not the one the job was queued for, has no verified content hash, or is gone from disk. |
+| *the preview service is not available right now* · *the preview service is busy* | The local preview service is down or busy; see [Local preview service](../reference/troubleshooting.md#local-preview-service). |
+| *canceled* · *the thumbnail is already being saved and can no longer be canceled* | A cancel from the menu — in time, or after the picture had started saving. |
+| *an internal error occurred* · *something went wrong* | An internal error, or a reason this version of the page does not know (a newer server's). |
+
+### STEP thumbnails and backups {#step-thumbnails-and-backups}
+
+A backup taken while pictures are being made neither fails because of them nor holds up the preview queue: a picture the backup catches is made again once the backup is done, and slicing never waits for it. A STEP job that runs out of time meanwhile says *a backup kept the thumbnails paused for too long*. A restore waits for pictures still being written and says so when it cannot — and keeps saying so until BamDude restarts when the picture service could not be confirmed stopped.
+
+STEP files still have no 3D view.
 
 ---
 
@@ -271,7 +317,7 @@ Every file in the library is a row in the `library_files` table. The row carries
 - **`print_count` + `last_printed_at`** — usage counters maintained by dispatch. `print_count` counts **completed** prints only, so a file that was attempted and failed still reads as never printed; a reprint from the archive does advance it. The count appears on the card and in the list beside the file's other facts, and clicking it opens that file's print history. Nothing is shown at zero — the **Not printed** filter above answers that question instead. Backfilled retroactively on upgrade by migration `m014`.
 - **`file_metadata` JSON column** — stores parsed slicer metadata: filament weights per spool, object count, sliced-for printer model, plus the `gcode_label_objects` / `exclude_object` flags from the source 3MF's `Metadata/project_settings.config` (extracted in 0.4.1, backfilled by migration `m022`). The label-object flags gate the **skip-objects** button on the printer page during a print — both must be `true` for the button to light up. Bambu Studio has no *Label objects* setting at all and enables *Exclude objects* by default; OrcaSlicer exposes both, with *Label objects* on and ***Exclude objects* off** — so on an OrcaSlicer file that one switch is usually what needs turning on (see [Troubleshooting](../reference/troubleshooting.md) for the slicer-side checklist).
 - **`is_multi_plate` + `plates[]` per-plate cache (m023)** — for multi-plate sliced 3MFs (a single `.gcode.3mf` with several `Metadata/plate_N.gcode` entries) BamDude pre-extracts the full per-plate breakdown — thumbnail, print time, filament weight, object count, filament stack, label-object flags — into the same `file_metadata` JSON. The file list returns this without re-opening the 3MF on every query.
-- **`swap_compatible` flag** — detected from a `.swap.` or `.swaps.` marker in the filename, e.g. `MyPart.swap.gcode.3mf` or `Tray.swaps.3mf`. The marker must be **dot-delimited**, not underscore-delimited — `MyPart_swap.gcode.3mf` will not be flagged. Swap-compatible files are surfaced separately in the swap-mode picker.
+- **`swap_compatible` flag** — the file's [declaration](swap-mode.md#a-files-own-swap-sequence) that it carries its own plate-swap sequence, read once from its **own file name** when it comes in (an upload, a ZIP member — the member's name, not the ZIP's —, an external folder scan, the Virtual Printer): a `.swap.` or `.swaps.` marker, e.g. `MyPart.swap.gcode.3mf` or `Tray.swaps.3mf`. The marker must be **dot-delimited**, not underscore-delimited — `MyPart_swap.gcode.3mf` will not be flagged, and neither will a marker in a folder name. Renaming the file later declares nothing; a scan reads the name again only when the file's content changed. A file without a content hash counts as **unknown** until a scan has read it. Swap-compatible files are surfaced separately in the swap-mode picker.
 - **Composite `file_tags` column (m036 / m037)** — an unordered JSON list of identity tags drives the badge row on each file. Since m128 the same vocabulary also exists as `is_system` rows in `library_tags`, which is what the tag filter and the tag catalog query; the column stays as a derived cache so the badges and the preview-tab logic read a column on the row they already have. Both are written by one function, `sync_system_tags`. Four semantic groups: **format** (`gcode` / `3mf` / `stl` / `obj` / `step` — sliced `.gcode.3mf` keeps the composite `gcode + 3mf` pair so the visual distinction survives `file_type` collapse), **readiness** (mutually exclusive: `sliced` for slicer-output, `project` for unsliced `.3mf` packages, `geometry` for raw mesh / CAD source — one toggle for "what still needs slicing?"), **modifiers** (`swap` / `multiplate`), **provenance** (`makerworld`). Frontend `sortTagsForDisplay` projects onto an explicit precedence so the row reads right-to-left format → readiness → modifiers → provenance.
 
 ## :material-tag-multiple: Tags
@@ -538,6 +584,8 @@ External folder scanning discovers: `.3mf`, `.gcode`, `.stl`, `.obj`, `.step`, `
 ---
 
 ## :material-link: Linking files and folders to products
+
+**Add to order…** in a file's menu or plate gallery opens the order-line dialog with the one-off-from-a-file tab and source already selected. From the gallery, the current plate is preselected too. Choose an active order; the action requires permission to update orders and read that library file. A file moved to Trash meanwhile is refused rather than attached silently.
 
 Right-click a folder (or use its three-dot menu) → **Link to products** to attach it to any number of [products](projects.md#products); the picker is a chip multi-select, so several products are chosen in one go. Every file row offers the same thing for a single file.
 

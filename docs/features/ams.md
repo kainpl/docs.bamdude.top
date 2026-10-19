@@ -15,6 +15,7 @@ Each AMS slot displays:
 
 - **Filament color** -- Visual color swatch
 - **Material type** -- PLA, PETG, ABS, etc.
+- **K value** -- Known pressure-advance calibration, such as `K 0.024`, directly on the slot card; no guessed default when calibration is unknown.
 - **Remaining** -- Estimated filament left
 - **Active** -- Currently feeding indicator
 - **Slot number** -- 1-based number with auto-contrast text
@@ -24,6 +25,8 @@ Each AMS slot displays:
 Refresh filament information for individual slots by hovering and clicking the menu button. Useful when you've swapped a spool but the AMS hasn't detected the change.
 
 ### Configure AMS Slot
+
+For repeated loading of full, untagged reels, the optional per-printer [automatic stock assignment](inventory.md#automatic-stock-assignment) links a spool from a selected inventory group when insertion is observed. The guide covers setup, manual/RFID priority and returning a partial reel after runout. This option is in current development, not the `0.7.0` image.
 
 Manually configure slots for third-party filaments:
 
