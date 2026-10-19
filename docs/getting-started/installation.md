@@ -26,6 +26,9 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 
 ## :material-download: Manual Install
 
+!!! note "Optional STEP thumbnails"
+    `git clone`, creating a Python venv and `pip install -r requirements.txt` do **not** install the CAD component. For STEP thumbnails, complete the separate [STEP component setup](#step-previews) below. Starting BamDude does not download this optional component either.
+
 === ":material-ubuntu: Ubuntu/Debian"
 
     ```bash
@@ -82,7 +85,9 @@ Which Node.js a machine gets: Linux and macOS on x64 or arm64, and Windows x64, 
 - It is offered on Debian/Ubuntu and Fedora/RHEL — the script installs the system libraries it needs, as root: `libgl1 libx11-6 libexpat1 zlib1g` or `mesa-libGL libX11 expat zlib` — and on macOS (nothing extra), on x86_64 and arm64. On Arch Linux and openSUSE it is not offered: install libGL, libX11 and expat yourself, then run `install/step-preview.sh enable`.
 - Without it STEP files are still kept in the library; they just get no thumbnail, and the job ends with *the STEP component is not available on this server* (`cad_unavailable`).
 
-To enable it later, or repair it, run from the install directory — BamDude may keep running, and the next STEP thumbnail uses the component:
+For a manual Git + venv installation, first install the ordinary Python requirements, then enable the CAD component separately. The helper downloads the pinned packages into the installation's `runtime/` directory, separately from the main venv. It also records your choice so updates from Settings can maintain the component.
+
+**Linux / macOS:** to enable it later, or repair it, run from the install directory — BamDude may keep running, and the next STEP thumbnail uses the component:
 
 ```bash
 sudo install/step-preview.sh enable    # records the choice, installs the libraries, then the component
@@ -90,6 +95,26 @@ sudo install/step-preview.sh status    # checks that it really renders, and says
 ```
 
 On macOS run both without `sudo`. `--path DIR` points them at another install. They exit `0` when done (or when the component works), `1` on a failure, with its reason, and `3` when the component is not available for this machine or its Python. `enable` waits at most 15 minutes for another install of the component, 15 minutes for the download and 120 seconds for each check of it; reading its files and proving its processes ended are not bounded.
+
+**Windows Git checkout with a Python venv:** use PowerShell in the repository root, with the same venv that runs BamDude. Activating the venv is not required when using these explicit paths:
+
+```powershell
+# Record the choice for future updates
+.\venv\Scripts\python.exe -m backend.app.step_runtime choose enabled --by cli
+
+# Download and install the pinned CAD component
+.\venv\Scripts\python.exe -m backend.app.step_runtime install
+
+# Verify the files and a real STEP-to-PNG conversion
+.\venv\Scripts\python.exe -m backend.app.step_runtime status --check
+```
+
+Check that each command succeeds before continuing. The final check reports `"bundle": "works"` on success. If BamDude is already running the code that supports STEP thumbnails, installing the component does not require a restart. Existing STEP files can then use **Generate Thumbnail** in the library.
+
+After a manual `git pull` and requirements update, run `install` and `status --check` again with that installation's Python to install and check the current pin. `pip install` alone does not refresh the CAD component.
+
+!!! note "Development branches with a candidate pin"
+    If a development checkout still has a `candidate` CAD pin, local testing requires `install --allow-candidate` in place of `install`. This flag is for development only; use the ordinary command with a release pin. You do not need it for a released Docker image or Windows installer.
 
 | Reason | What to do |
 |--------|------------|
