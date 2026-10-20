@@ -7,6 +7,10 @@ description: Browse and manage your local library of print files
 
 Browse, upload, and manage files in your local BamDude library. Print directly or add to queue.
 
+The card grid adapts to the width available beside the folder tree, up to six columns. Each card keeps file size,
+printer model and print time on the first information row, followed by material, filament weight and counters on
+the second. Narrow layouts use fewer columns so values and actions stay visible.
+
 ## Model previews
 
 STL/OBJ preview generation and missing previews after server-side slicing run
