@@ -233,6 +233,10 @@ A closed order plans nothing, and the block says so rather than disappearing —
 
 ### Alternative files per printer model
 
+The Forecast panel recalculates the selected files and run counts after a short pause while you edit. **Plan machine-hours** come first: ten two-hour runs mean twenty machine-hours whether one printer or five will do them. Queue occupancy, pauses and operator availability affect the completion date, not this nominal slicer-time total.
+
+The date describes the selected work. If the draft covers only 80 of 100 required parts, the panel shows the missing 20 rather than claiming the order will be ready on that date. Missing file times remain unknown. A temporary live-forecast failure leaves known machine-hours visible, and previewing changes neither queues nor stock. The filament estimate follows the same edited files and quantities.
+
 When a part is sliced for two machines there are two files with the same yield, and a plan that picked one of them would hide the other — even where half the farm can print nothing else.
 
 Each row therefore carries a **File** switch listing the other candidate plates whose yield of the parts *this line counts* is identical, each labelled with the printer model its file was sliced for. Choosing one re-does that row's time, filament and cost while the count stays exactly where it was, because the two files make the same parts.
