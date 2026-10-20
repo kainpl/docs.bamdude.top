@@ -231,6 +231,24 @@ A plan that stops at its safety limit says so, instead of looking exactly like a
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 
+### Shared working draft and saved comparison
+
+Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning.
+
+**Save plan** confirms a separate comparison baseline. Autosave and reload never move it. For example, save twenty machine-hours, then edit to eighteen and seventeen: the panel shows two and three fewer machine-hours against the same saved plan. Saving seventeen explicitly makes it the new baseline. Calendar comparisons recalculate both variants against the same current farm; different part coverage is labelled and is not presented as an efficiency gain.
+
+**Plan the remainder** previews automatic additions around your protected manual work and current printed/queued/stock facts. Applying replaces the automatic portion rather than adding it repeatedly. **Rebuild whole draft** replaces manual choices too and requires confirmation. Both change the draft only. **Discard draft changes** restores the explicitly saved entries, not old files, order quantities, stock or printer state.
+
+If another editor changes the shared draft, a stale save is refused and your local input stays on screen. Read the shared plan again deliberately to replace it. The editor warns before leaving with unsaved local changes. A changed or missing source remains an addressed issue: review the current source or remove that draft entry; the saved comparison is not silently rewritten.
+
+### Submitting saved work
+
+Row, line and whole-plan queue actions register an addressed submission. Each committed part creates queue jobs, a durable receipt and the corresponding reduction of the remaining draft together. A lost response can therefore be checked without submitting the same part twice. Reload and server restart never continue a pending submission automatically: read its status, then continue the same operation or cancel only its unsubmitted remainder. Existing queue jobs remain unchanged. In the library’s Calculate dialog, Cancel removes only an order with no submitted work. If jobs already committed, even when their response was lost, the order is kept and the dialog offers Close.
+
+After the first committed part, comparisons and discard against the previous baseline stop: they would otherwise count submitted work as a false saving or restore it to the draft. Finish or cancel the submission, then explicitly save the remaining plan for a new comparison. Queue cleanup or a failed job does not put copies back into the draft automatically; use remainder planning if demand is still outstanding. **To printer…** remains the independent print dialog and does not consume a draft by matching a file name.
+
+Working drafts, saved baselines and receipts are included in full database backups and portable SQLite/PostgreSQL moves. Selective/Git backups do not export them. Restoring a full backup still requires an explicit decision for pending submissions.
+
 ### Alternative files per printer model
 
 The Forecast panel recalculates the selected files and run counts after a short pause while you edit. **Plan machine-hours** come first: ten two-hour runs mean twenty machine-hours whether one printer or five will do them. Queue occupancy, pauses and operator availability affect the completion date, not this nominal slicer-time total.
