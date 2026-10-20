@@ -63,6 +63,12 @@ G28             ; Home all axes
 
 Swap intent is **persisted to disk**, not held in memory. Restarting BamDude mid-print never loses a pending plate-swap.
 
+If a print is still running when BamDude reconnects, its active execution archive and the printer queue's existing
+started job restore ownership of that print. Its later successful finish executes the pending change-table macro;
+the printer does not have to supply a unique job ID. This uses the surviving queue claim, not just a matching filename.
+An already attempted change-table command is never sent a second time. A global recovery pause keeps the macro owed
+until the operator resumes the farm.
+
 **How it works**
 
 - At dispatch, every swap event the job is going to fire is added to `print_archives.extra_data["swap_macro_events_pending"]` (a JSON list).
