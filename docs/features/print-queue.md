@@ -608,3 +608,9 @@ You won't see "queue stuck" reports from this any more, including immediately af
     Combine scheduling with auto power-off for hands-free operation.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
+
+## A transfer was cancelled or failed
+
+Cancelling before the print command is sent closes that attempt as cancelled and leaves the queue paused for review. A failed upload or an explicit refusal to start reports its original cause. A late cancel is not proof that a command already sent to the printer was cancelled: check the printer's live state.
+
+If database cleanup itself fails, the log records the affected attempt; this does not turn a cancellation into a failed print or automatically resend it. Use the print-state diagnostics on the System page to review any remaining inconsistent records. Reprinting never changes the source archive's result.
