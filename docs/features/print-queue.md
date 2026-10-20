@@ -43,6 +43,10 @@ The print queue lets you:
 
 ---
 
+## After an unconfirmed shutdown
+
+New automatic starts wait for an explicit farm-wide confirmation. Your individual queue pauses and plate checks remain in place; prints restored by firmware are observed rather than sent again. See [Farm restart recovery](farm-startup.md).
+
 ## :material-list-status: Queue states
 
 Two different things carry a status here, and they are easy to confuse. The **queue** belongs to the printer — every printer has exactly one, and the queue's id *is* the printer's id. The **items** are the jobs sitting in it. They have separate state sets that do not overlap.

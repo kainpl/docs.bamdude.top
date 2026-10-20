@@ -109,6 +109,7 @@ plugins:
             "AMS & Humidity": "AMS та вологість"
             Print Queue: Черга друку
             "Per-Printer Queues": Черги друку
+            Farm restart recovery: Відновлення ферми після перезапуску
             Auto-Queue Routing: Авто-черга
             Filament Routing: Призначення філаменту
             "Slice settings": "Налаштування слайсингу"
@@ -278,6 +279,7 @@ nav:
       - AMS & Humidity: features/ams.md
     - Print Queue:
       - Per-Printer Queues: features/print-queue.md
+      - Farm restart recovery: features/farm-startup.md
       - Auto-Queue Routing: features/auto-queue.md
       - Filament Routing: features/filament-routing.md
       - Slice settings: features/slicer-pipelines.md
