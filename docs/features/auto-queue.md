@@ -254,3 +254,13 @@ Checks repeat before preparation and immediately before the start command. A cha
 Per-printer queues remain the way to choose a specific machine; Auto-Queue defers that choice. Both paths apply complete filament checks before starting.
 
 After an upgrade, older jobs retain established source restrictions and physical selections. If there is not enough saved evidence to recover their rules, mapping review is required. Schedule edits, copies, and repeats retain the rules; a different printer or plate requires a new answer for a manual mapping. See [Editing and repeats](filament-routing.md#editing).
+
+## Notifications about obstacles
+
+Busy printers are normal: AutoQueue keeps its waiting reason visible without sending a waiting notification. Missing suitable printers, incompatible filament or nozzles, mapping review, a failed previous print, and unavailable printer/feed state can still need attention. If other printers are busy, an alert names only the observed obstacle; it does not claim the whole farm has stopped.
+
+A completed routing pass sends at most one **AutoQueue needs attention** event, listing up to five new facts and the count of the rest. The existing provider and Telegram-chat subscriptions still apply. Changing candidate order, printer names, language or copy count does not send the same obstacle again. Progress on unrelated jobs does not reset it. Once a successful pass no longer sees an obstacle, its return may generate a new alert.
+
+A successful automatic wake suppresses that printer's offline-only fact for that pass. If it remains offline at the next pass, the observation can be reported. No extra power-on timer is added. Jobs already failed by source/swap policy do not also generate a waiting alert.
+
+This deduplication is held in memory: after restarting BamDude, one alert about a current obstacle is possible. Failed delivery and enabling a provider do not replay previously observed incidents. Existing custom notification templates keep `{job_name}`, `{target_model}` and `{waiting_reason}`. A farm recovery hold has its [own banner](farm-startup.md).

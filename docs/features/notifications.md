@@ -335,7 +335,8 @@ The pause-state is also visualised on the Printers page in real time — a pause
 
 | Event | Fires when |
 |-------|------------|
-| `queue_job_added` / `queue_job_started` / `queue_job_waiting` / `queue_job_skipped` / `queue_job_failed` | Self-explanatory queue lifecycle events. Only the events you opt into. |
+| `queue_job_added` / `queue_job_started` / `queue_job_skipped` / `queue_job_failed` | Self-explanatory queue lifecycle events. Only the events you opt into. |
+| `queue_job_waiting` | New actionable AutoQueue obstacles, aggregated once per routing pass. Ordinary busy printers stay silent; see [AutoQueue notifications](auto-queue.md#notifications-about-obstacles). |
 | `queue_completed` | The **entire install's** queues drain — fires only once every printer is idle with nothing pending. |
 | `printer_queue_completed` | An **individual printer's own** queue drains — fires the moment that printer finishes its last pending job, regardless of what other printers are doing. |
 
