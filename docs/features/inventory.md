@@ -358,6 +358,13 @@ A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only it
 
 Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
 
+**Refilling an inactive slot after a backup switch.** A repeated autoswitch status is not a second empty spool.
+When the journal shows the backup in another slot of the same four-slot AMS, a different replacement reel
+is positively present, and feeding has not returned to the original slot, BamDude ignores that repeated
+status for the new reel. This also protects accounting from matching events saved before the fix.
+A real return to the refilled slot allows its next runout normally. The check uses sensor and feeding
+history, not a time delay; it does not infer this condition from another AMS unit or an external holder.
+
 ### Archive a spool closed by runout
 
 Since 0.7.0, **Settings → Filament → Usage accuracy → Archive the spool it closed** can archive an empty spool after its unambiguous runout episode closes and the printer has demonstrably moved to a backup or replacement. It is **off by default** and works with built-in inventory and Spoolman. A spool reinserted to continue the same print stays active; a low or negative accounting balance alone does not prove a physical runout.
