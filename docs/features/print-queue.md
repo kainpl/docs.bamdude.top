@@ -534,6 +534,8 @@ The confirmed list is one server transaction: the scheduler sees the whole block
 
 ---
 
+Once the printer has accepted a start, a later bookkeeping, transient-file cleanup or dispatch-panel error does not mark the running print failed or release its queue claim. The print keeps its archive and completes through the ordinary printer events. Pre-start failures still fail normally; logs identify bookkeeping failures without exposing database statements.
+
 ## :material-history: Queue history & archives
 
 In 0.4.0 the live queue and the durable history were split apart (migration `m019`).
