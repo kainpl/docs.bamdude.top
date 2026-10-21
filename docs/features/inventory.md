@@ -365,6 +365,8 @@ status for the new reel. This also protects accounting from matching events save
 A real return to the refilled slot allows its next runout normally. The check uses sensor and feeding
 history, not a time delay; it does not infer this condition from another AMS unit or an external holder.
 
+The live check first resolves the spool from the journal when the current slot assignment has already disappeared. It uses one frozen sensor reading for both its decision and the new event. Repeated or folded reports of the same open episode do not notify again; a newly confirmed switch from pause to backup does. The original layer and spool identity stay fixed, and weaker replays do not erase confirmed autoswitch evidence.
+
 ### Archive a spool closed by runout
 
 Since 0.7.0, **Settings → Filament → Usage accuracy → Archive the spool it closed** can archive an empty spool after its unambiguous runout episode closes and the printer has demonstrably moved to a backup or replacement. It is **off by default** and works with built-in inventory and Spoolman. A spool reinserted to continue the same print stays active; a low or negative accounting balance alone does not prove a physical runout.
