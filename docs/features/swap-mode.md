@@ -313,4 +313,12 @@ Lights cycle only on actual swap-mode runs; manual prints from the same printer 
     operation and get notified on queue completion or failure. See
     [Telegram Bot](telegram-bot.md) and [Camera](camera.md).
 
+## After a restart or connection gap
+
+BamDude keeps the execution archive, queue claim and selected unfinished table change. It compares a fresh printer job ID with the ID saved when that print was sent. A matching filename or an old cached ID cannot establish that the printer is still running the same job.
+
+If the ID is missing, open **System → Print state diagnostics**, select the affected printer and review **Confirm this is the queued print**. Confirm only after checking that the physical print is the exact queue item and archive shown. Preview and Apply are separate steps, and the confirmation is recorded in recovery history. If the printer reports a different positive ID, confirmation is unavailable.
+
+Confirmation applies only to the current connection and print. For a running print, its selected completion actions wait for FINISH. For an already finished print, its owed table change may proceed through the normal resolver. This does not repeat print-start events or material accounting and does not release farm or manual queue pauses. Another disconnect requires fresh proof again; a previously attempted table change is never resent automatically.
+
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
