@@ -251,6 +251,9 @@ Once everything is queued or printed, **Print plan** shows a brief status instea
 
 Working drafts, saved baselines and receipts are included in full database backups and portable SQLite/PostgreSQL moves. Selective/Git backups do not export them. Restoring a full backup still requires an explicit decision for pending submissions.
 
+The editor reads quantities and the revision from the same shared-draft snapshot. A delayed or failed context refresh cannot put already submitted copies back. The original author alone can continue a pending submission. An administrator with order-update, all-queue update/read rights and current access to every affected source and printer can cancel another author’s unpublished remainder, giving a reason recorded in the order journal; committed jobs and receipts remain unchanged. A reviewed remainder/rebuild applies exactly the displayed entries even if farm load changes before Apply. Leaving with local changes requires an explicit discard decision, including Back and closing the Calculate dialog. Automatic plate-fit candidates omit unavailable draft rows and explicit zero exclusions; choose another file explicitly if needed.
+
+
 ### Alternative files per printer model
 
 The Forecast panel recalculates the selected files and run counts after a short pause while you edit. **Plan machine-hours** come first: ten two-hour runs mean twenty machine-hours whether one printer or five will do them. Queue occupancy, pauses and operator availability affect the completion date, not this nominal slicer-time total.
