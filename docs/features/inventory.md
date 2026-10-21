@@ -322,6 +322,8 @@ The inventory page colour-codes each spool by remaining percentage, with a confi
 
 If a print fails partway through, the deducted amount is the slicer-estimate × completion ratio (best effort) rather than the full estimate. External-print fallback archives — the ones from prints started directly on the printer touchscreen — get reconciled the same way once their 3MF is recovered.
 
+Deleting a usage entry returns its weight to the spool. Runout closure and AMS-sync corrections affect lifetime spool consumption, not the print archive’s grams; deleting them leaves the archive unchanged. Ordinary print entries still reduce the archive’s grams when removed. Recalculate Costs also excludes these corrections from print costs. History, export and backup retain them as separate entries.
+
 ### Usage tracking detail
 
 The deduction pipeline is more nuanced than a flat "subtract slicer estimate at print end". BamDude picks the most accurate source available per scenario:
