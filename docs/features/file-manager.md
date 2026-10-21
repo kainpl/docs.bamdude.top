@@ -19,7 +19,7 @@ resets the search and filters together. The desktop layout keeps its controls ex
 
 Upload and the view switch remain visible. The **More library actions** menu contains thumbnail generation,
 folder creation/linking, the tag catalog, Select all and trash actions, subject to your permissions.
-Selection actions appear after you select files. Storage statistics are compact, but low-space warnings remain visible.
+Disabled menu commands keep their explanations and Trash shows its count. Closing a dialog after rotating the screen returns keyboard focus to the current toolbar. Selection actions appear after you select files. Storage statistics are compact, but low-space warnings remain visible.
 
 ## Model previews
 
