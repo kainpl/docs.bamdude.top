@@ -530,7 +530,7 @@ The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Re
 
 In a printer's **Issues** section, **Retry all…** loads all issue pages and asks you to confirm the printer and failed-job count. It returns those jobs to the end of that printer's queue, using the same source checks as individual Retry. Cancelled and skipped jobs stay unchanged; queue pauses and print checks still apply. The action requires permission to update all queue jobs.
 
-Keep the page open until the progress finishes. One job's refusal does not block the rest, and the result counts only confirmed returns. A lost connection, server failure or loss of permission stops further attempts without automatically repeating an uncertain request. Check the remaining issue rows before trying again. Leaving the page stops requests that have not started yet.
+The confirmed list is one server transaction: the scheduler sees the whole block together, even for jobs that require a successful predecessor. Jobs that became cancelled or active meanwhile stay unchanged; later failures are not added. The operation continues if its card unmounts. The summary counts every refusal category; a lost response asks you to refresh before retrying.
 
 ---
 
@@ -620,3 +620,4 @@ You won't see "queue stuck" reports from this any more, including immediately af
 Cancelling before the print command is sent closes that attempt as cancelled and leaves the queue paused for review. A failed upload or an explicit refusal to start reports its original cause. A late cancel is not proof that a command already sent to the printer was cancelled: check the printer's live state.
 
 If database cleanup itself fails, the log records the affected attempt; this does not turn a cancellation into a failed print or automatically resend it. Use the print-state diagnostics on the System page to review any remaining inconsistent records. Reprinting never changes the source archive's result.
+
