@@ -360,6 +360,8 @@ A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only it
 
 Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
 
+**A print that moves between trays** — an AMS backup that later returns to the refilled slot, or a loader that reports another tray for a moment on every load (a P1S with a BMCU reports the external holder that way) — is charged stretch by stretch: each stretch once, to the spool the journal recorded for it, so a reel loaded into the same slot after a runout gets its share. A tray reported within a single layer fed nothing the layer count can see and is not charged. Grams no spool can be named for are reported in the **Filament not charged** notification, in built-in inventory and in Spoolman alike.
+
 **Refilling an inactive slot after a backup switch.** A repeated autoswitch status is not a second empty spool.
 When the journal shows the backup in another slot of the same four-slot AMS, a different replacement reel
 is positively present, and feeding has not returned to the original slot, BamDude ignores that repeated
