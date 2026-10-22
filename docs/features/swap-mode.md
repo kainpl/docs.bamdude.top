@@ -63,12 +63,6 @@ G28             ; Home all axes
 
 Swap intent is **persisted to disk**, not held in memory. Restarting BamDude mid-print never loses a pending plate-swap.
 
-If a print is still running when BamDude reconnects, its active execution archive and the printer queue's existing
-started job restore ownership of that print. Its later successful finish executes the pending change-table macro;
-the printer does not have to supply a unique job ID. This uses the surviving queue claim, not just a matching filename.
-An already attempted change-table command is never sent a second time. A global recovery pause keeps the macro owed
-until the operator resumes the farm.
-
 **How it works**
 
 - At dispatch, every swap event the job is going to fire is added to `print_archives.extra_data["swap_macro_events_pending"]` (a JSON list).
@@ -242,18 +236,28 @@ shown. Applying is not a retry: a failed job stays failed until you press
 
 ### :material-pause-circle: A held table swap
 
-BamDude runs its selected change-table macro only after a proved successful completion of the exact print, on a printer still in swap mode, over a source known not to contain its own swap sequence.
+When a print ends, BamDude runs its own `swap_mode_change_table` only for a print it can prove it started (its own
+dispatch, a start from the printer's screen it saw, or the printer's exact job id), that **completed**, on a printer
+still in swap mode with its change-table macro, over a file known to declare **no** sequence of its own. Otherwise —
+an unknown or self-swapping file, a finish BamDude cannot tie to its print, a failed or cancelled print, swap mode
+off, no macro, an outcome left uncertain by an outage —:
 
-If the change is refused, fails or has an uncertain outcome, the printer gets a **plate inspection gate**, even when ordinary plate confirmation is off. The printer card and queue show the inspection without needing another queued job. An uncertain or partial attempt asks you to inspect the mechanism as well as the plate. BamDude does not automatically resend that macro.
+- nothing is sent, and the step stays owed — it is never fired later by itself;
+- the plate is not cleared;
+- the printer's queue is **paused**, even when plate confirmation is off, with a reason on the job that ran, on the
+  next waiting job, and as a **Swap held** badge on the print in the archive. The reason says whether the swap cycle
+  had **started**, **may have started**, or did not start.
 
-After inspecting the mechanism and freeing the plate, press **Checked, plate is clear** on the current inspection. This records your answer, closes the old swap obligation and releases its gate together. It does not report the macro as successful. **Repeat print** also answers the inspection before queuing a fresh print. Old tabs and Telegram buttons cannot clear a newer inspection.
+BamDude sends the change-table macro at most once per print. Two reconnects at the same moment, a restart in the
+middle of it, or an error while it runs hold the queue the same way instead of sending it again; a print whose printer
+another job has already taken leaves that job's queue alone; and if BamDude stops while settling a table swap, the
+next connection to the printer finishes the settlement or holds the queue.
 
-The gate itself blocks dispatch; this condition does not add a queue pause. Any existing manual queue pause or farm recovery hold remains in force. Legacy queue pauses are not resumed automatically because their original cause cannot be established reliably.
-
-A table change deferred solely by farm recovery remains owed under its execution claim. Once the farm and printer are admitted, its normal resolver may perform that still-unattempted change once. A final manual inspection is a separate state and is not automatically retried after recovery.
-
-If the print identity is unresolved, use **System → Print state diagnostics** first. A clean plate does not prove which print finished. Confirmation of identity does not bypass an existing manual inspection. A successful, proved table swap does not create an inspection gate.
-
+Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. A completed job
+that ran stays in the queue with its reason: with plate confirmation on, confirming the plate removes it; with it off,
+remove it yourself. Likewise a
+print whose file declares its own sequence clears the plate only for such a proven, completed print — never one
+BamDude matched only by its name, and never an order with auto-eject, which keeps its own plate handling.
 
 ---
 
@@ -302,13 +306,5 @@ Lights cycle only on actual swap-mode runs; manual prints from the same printer 
     Camera streaming + the Telegram bot let you watch the swap
     operation and get notified on queue completion or failure. See
     [Telegram Bot](telegram-bot.md) and [Camera](camera.md).
-
-## After a restart or connection gap
-
-BamDude keeps the execution archive, queue claim and selected unfinished table change. It compares a fresh printer job ID with the ID saved when that print was sent. A matching filename or an old cached ID cannot establish that the printer is still running the same job.
-
-If the ID is missing, open **System → Print state diagnostics**, select the affected printer and review **Confirm this is the queued print**. Confirm only after checking that the physical print is the exact queue item and archive shown. Preview and Apply are separate steps, and the confirmation is recorded in recovery history. If the printer reports a different positive ID, confirmation is unavailable.
-
-Confirmation applies only to the current connection and print. For a running print, its selected completion actions wait for FINISH. For an already finished print, its still-unattempted owed table change may proceed through the normal resolver, unless it already requires a manual plate inspection. This does not repeat print-start events or material accounting and does not release farm or manual queue pauses. Another disconnect requires fresh proof again; a previously attempted table change is never resent automatically.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
