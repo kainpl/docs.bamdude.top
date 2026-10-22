@@ -236,10 +236,11 @@ shown. Applying is not a retry: a failed job stays failed until you press
 
 ### :material-pause-circle: A held table swap
 
-When a print ends, BamDude runs its own `swap_mode_change_table` only for a print it can prove it started (its own
-dispatch, a start from the printer's screen it saw, or the printer's exact job id), that **completed**, on a printer
-still in swap mode with its change-table macro, over a file known to declare **no** sequence of its own. Otherwise —
-an unknown or self-swapping file, a finish BamDude cannot tie to its print, a failed or cancelled print, swap mode
+When a queued print **completes successfully**, its saved, unexecuted `swap_mode_change_table` remains owed after
+a BamDude restart or printer reconnect. The linked queue execution and archive carry that obligation; losing the
+in-memory dispatch binding does not cancel it. The printer must still be in swap mode with its change-table macro,
+and the file must be known to declare **no** sequence of its own. Otherwise —
+an unknown or self-swapping file, no linked execution still owning the queue, a failed or cancelled print, swap mode
 off, no macro, an outcome left uncertain by an outage —:
 
 - nothing is sent, and the step stays owed — it is never fired later by itself;
@@ -256,8 +257,10 @@ next connection to the printer finishes the settlement or holds the queue.
 Inspect the swap mechanism and the plate, clear the plate if it needs it, then resume the queue as usual. A completed job
 that ran stays in the queue with its reason: with plate confirmation on, confirming the plate removes it; with it off,
 remove it yourself. Likewise a
-print whose file declares its own sequence clears the plate only for such a proven, completed print — never one
+print whose file declares its own sequence clears the plate only for a proven, completed print — never one
 BamDude matched only by its name, and never an order with auto-eject, which keeps its own plate handling.
+
+Updating BamDude does not automatically execute old swaps already recorded as held after completion.
 
 ---
 
