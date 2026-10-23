@@ -157,6 +157,10 @@ Prints you (or the queue) stopped are **not** counted as failures. `stopped`, `c
 - The **failure-rate report** (and its weekly trend) uses the same rule — cancelled / stopped / skipped prints are excluded from both sides of the ratio.
 - They **still count toward Total Prints**, and stay visible on their own **Cancelled** line in the Success Rate breakdown, so nothing silently vanishes.
 
+### Dispatch errors are not failed prints
+
+An attempt to start a print that ended before anything was printed — the upload or the start was refused, the printer never acknowledged it, or it took the file but did not start — is a **dispatch error**, not a failed print. It is left out of the Success Rate, the failure-rate report and its weekly trend, the daily charts and the Success Streak, and shows on its own **Dispatch errors** line. Like cancelled prints, dispatch errors still count toward **Total Prints** and appear in the export. Failed prints from before this was recorded, with no cause stored, still count as failed. The Telegram `/stats` command counts the same way: failed means a failure the printer detected, and stopped or cancelled prints and dispatch errors have lines of their own.
+
 ### Per-User filtering
 
 When you hold the `stats:filter_by_user` permission (Administrators only by default), a **user dropdown** appears in the stats header next to the timeframe selector. Selecting a user filters every widget, the failure-analysis report, and CSV/Excel exports to that user's prints — useful for universities, makerspaces, or any environment that needs per-person accountability or cost tracking.

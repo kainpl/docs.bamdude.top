@@ -371,6 +371,14 @@ history, not a time delay; it does not infer this condition from another AMS uni
 
 The live check first resolves the spool from the journal when the current slot assignment has already disappeared. It uses one frozen sensor reading for both its decision and the new event. Repeated or folded reports of the same open episode do not notify again; a newly confirmed switch from pause to backup does. The original layer and spool identity stay fixed, and weaker replays do not erase confirmed autoswitch evidence.
 
+#### Replacing a reel while the tube still feeds the old one
+
+When an AMS slot runs dry, the printer keeps printing the filament still in the feed tube and reports the external spool's id meanwhile. You can put the new reel into the slot during that time — and assign it — without moving the books. The tube's filament stays on the **old** reel until the printer feeds from the slot again; the new reel is charged from **that layer**, not from the moment you assigned it. Assigning a reel only names the reel in the slot; the feed boundary comes from the printer. The late runout of the tube is charged to the old reel, and a later runout of the new reel still counts as its own. Internal inventory and Spoolman split the print the same way.
+
+While a print is running, the usage journal records these as separate events — the tail starting and the feed coming back — next to tray changes and runouts. They decide how the print is split at completion; the spool's usage history still shows only what each spool was charged.
+
+If BamDude restarts in the middle of this, it picks the tail back up from the journal. If the feed came back while BamDude was not watching, the layer it first sees is used as the boundary and the stretch it did not see is reported as **not recorded** — it is given to neither reel. There is deliberately no "the tube is still feeding" question in the app: an assignment and a feed are different facts, and a dialog could not name the right layer.
+
 ### Archive a spool closed by runout
 
 Since 0.7.0, **Settings → Filament → Usage accuracy → Archive the spool it closed** can archive an empty spool after its unambiguous runout episode closes and the printer has demonstrably moved to a backup or replacement. It is **off by default** and works with built-in inventory and Spoolman. A spool reinserted to continue the same print stays active; a low or negative accounting balance alone does not prove a physical runout.
