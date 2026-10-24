@@ -184,6 +184,10 @@ BamDude enforces that on two axes:
     print from these images, and a stale frame is worse than a slow one — a finish
     photo showing the bed already lowered is the failure this avoids.
 
+### A printer that reports no camera
+
+*After 0.7.1.* A printer says in its own status (`ipcam_dev`) whether it has a usable built-in camera. When it explicitly reports none, BamDude no longer asks it for single frames — snapshots and the Camera Wall's snapshot tiles, the finish photo, the plate check, AI failure detection, Telegram and cloud snapshots — so they no longer each wait out the capture timeout, and the chamber light is not switched on for them. A frame that is already here — the live view's buffer or a recent snapshot — is still served, and an external camera is not affected. **Diagnose** still really tries the camera, so you can check a printer whose report looks wrong. The skip begins only once the printer has said so on its current connection, ends as soon as it reports a camera again, and the log names it once as `builtin_camera_unavailable`. The live view itself is unchanged.
+
 ---
 
 ## :material-application-cog: Isolated camera worker
