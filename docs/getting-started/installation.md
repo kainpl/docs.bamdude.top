@@ -124,6 +124,8 @@ After a manual `git pull` and requirements update, run `install` and `status --c
 | `helper_unproven` | An update from Settings could not prove an earlier run of the helper ended: restart BamDude, then update again or run `enable` |
 | `pip_timeout`, `pip_failed` | The download did not complete: check the network, then run `enable` |
 
+An install or update that finds a half-finished folder of an earlier run of the component, and cannot prove that run has ended, keeps the folder for a later install. The log then has one warning per such folder, starting `bamdude-step-staging-kept`, with the reason as a closed code: the helper prints it to its error output, and an update from Settings writes it to BamDude's log. It names no path or user, and nothing about the folder changes because of it.
+
 Updates keep an enabled component current — `update.sh` and an update from Settings refresh it, never install one you declined and never fail because of it; see [Upgrading → The STEP preview component on update](upgrading.md#step-component-on-update). Choosing *no* (or `disabled`) stops updates from touching the component; it does not remove one that is already installed. The System page shows the component's state — installed or not, never "works", which only `status` checks — and, on a native install, these two commands; see [System Info](../features/system-info.md#what-it-is).
 
 !!! note "Where the component's source is"
