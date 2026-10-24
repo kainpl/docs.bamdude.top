@@ -270,6 +270,10 @@ Each row therefore carries a **File** switch listing the other candidate plates 
 
 With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the split is a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
 
+### Quantities that fit whole plates
+
+**Adjust without surplus** in a line's plan proposes the nearest quantities the line's plates make exactly, without spare parts, given what the order already has. It searches for six seconds; *After 0.7.1*, **Extended search — up to 30 seconds** gives a large order more time, for that one calculation only. An unfinished search says so — *the calculation reached its limit* — and that does not mean no such quantity exists. Applying a proposal checks it again against the farm as it is then, more briefly than the search: if it can no longer be checked in time, or the farm or the order changed, the dialog drops it and asks you to calculate again.
+
 ### Sending the plan to the queue
 
 A single row goes to the auto-queue on its own, the whole plan goes at once, or **To printer…** opens the usual print dialog for one machine. That dialog opens at one copy — set the number there.
