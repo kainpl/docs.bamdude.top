@@ -32,6 +32,18 @@ mkdocs serve
 - **`main`** — production. The published site at <https://docs.bamdude.top/> tracks this branch.
 - **`dev`** — active development; default working branch. Promote to `main` (fast-forward merge) when a doc set is ready to publish.
 
+## Dependency updates
+
+`.github/dependabot.yml` checks Python requirements and GitHub Actions weekly,
+on Mondays. Version updates are grouped into one PR per ecosystem and target
+the default branch (`main`). PRs run the strict docs build; merging and deployment
+remain manual maintainer decisions. Existing Dependabot security updates stay enabled.
+
+GitHub reads this configuration from `main`, so a change on `dev` takes effect
+after promotion. `requirements.txt` uses ranges rather than a lockfile: a new
+release already allowed by a range may be installed by the next build without
+a version-update PR. An empty PR list does not mean the checks are disabled.
+
 ## Contributing
 
 Pages are language-paired: `topic.md` (English) + `topic.uk.md` (Ukrainian). Keep them in sync — every English change should land with a matching Ukrainian update in the same PR. Add new pages in both locales, then register them once in the `nav:` tree of `mkdocs.yml`.
