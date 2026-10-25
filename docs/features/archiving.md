@@ -91,7 +91,7 @@ Each archive row carries the file, the parsed metadata, the run state, and full 
     |-------|-------------|
     | `content_hash` | SHA256 of the bytes actually stored in the archive directory. |
     | `source_content_hash` | SHA256 of the chain-root (unpatched) source. **Always populated** since 0.4.2: when no chain ancestor exists, this archive becomes the chain root and the column is seeded with its own `content_hash`. Patched variants of a library file inherit this from the library row's hash. Migration **m039** backfills legacy NULLs to the same invariant. |
-    | `applied_patches` | JSON list of patch identifiers the dispatch pipeline applied before upload, e.g. `["mesh_mode_fast_check_off"]`. Informational only — never used to infer disk-file state. |
+    | `applied_patches` | JSON list of the patches the dispatch pipeline applied before upload — plain identifiers and descriptor objects side by side, e.g. `["mesh_mode_fast_check_off", {"name": "gcode_injection", "plate_id": 2}]`. The API returns it exactly as recorded. Informational only — never used to infer disk-file state. |
 
 === "Skip-objects metadata"
 

@@ -104,6 +104,8 @@ When you open the Configure AMS Slot modal for a slot that already has a configu
 
 Up to 4 AMS units per printer (16 total slots). External spool holders supported for printers without AMS.
 
+On the printer card the filament section has three rows, each laid out by the card's own width: regular AMS units up to two per row, AMS-HT units in a row of their own up to three per row, and the external spool(s) in a row of their own. A card too narrow for that shows fewer per row rather than squeezing the slots, and the units grow with the L and XL card sizes.
+
 ### Assign Spool from Inventory
 
 The AMS slot menu's **Assign Spool** option pairs a physical inventory row (from [Filaments](spoolman.md)) with the slot. The picker now includes:
@@ -147,6 +149,8 @@ Give your AMS units friendly names so you can tell them apart in multi-AMS setup
    - **Firmware Version** — parsed from the printer's `get_version` response.
    - **Friendly Name** — editable text field.
 3. Type a name (e.g. *Silk Colours*, *Workshop AMS*) → press **Enter** or click **Save**. Clear the field + save to remove the label.
+
+A name longer than the unit's header — on an AMS or an AMS-HT — stays on one line and ends in "…"; the full name is in the same popover.
 
 **Labels persist by AMS serial number, not slot position** — move an AMS between printers and the label follows it. If the AMS serial isn't reported (older firmware), BamDude falls back to a `(printer_id, ams_position)` key. Custom labels appear in the [Inventory](inventory.md) location column too, so finding spools across a print farm is one glance.
 

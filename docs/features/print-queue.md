@@ -43,6 +43,10 @@ The print queue lets you:
 
 ---
 
+## After an unconfirmed shutdown
+
+New automatic starts wait for an explicit farm-wide confirmation. Your individual queue pauses and plate checks remain in place; prints restored by firmware are observed rather than sent again. See [Farm restart recovery](farm-startup.md).
+
 ## :material-list-status: Queue states
 
 Two different things carry a status here, and they are easy to confuse. The **queue** belongs to the printer — every printer has exactly one, and the queue's id *is* the printer's id. The **items** are the jobs sitting in it. They have separate state sets that do not overlap.
@@ -494,6 +498,16 @@ The active-job toast in the bottom-right tracks each dispatch independently — 
 
 The earlier "one job at a time across the whole farm" gate that landed in mid-0.4.1 was scrapped once the startup-lock was in (`c485db1`).
 
+### When a dispatch fails {#dispatch-failure}
+
+Once the start command has gone out, only the printer's own answer decides the attempt. A problem afterwards — saving the dispatched filament mapping, registering macros, cleaning up a temporary file — is logged, and the print keeps printing; it is never put back in the queue and printed a second time. If BamDude itself cannot read the printer's answer, it keeps looking for as long as a printer normally takes to answer, the job still holding the printer. When it still cannot tell, the job keeps the printer, the start is never sent again, and **Information → Print state diagnostics** offers to close the attempt once you have checked the printer — no restart needed.
+
+A dispatch that ends without a print marks the job **failed** with a reason class shown before the detail: the source was unavailable, the upload or the start was refused, the printer did not acknowledge the start, or it took the file but never started. That printer's queue then stops with an error and waits for **Resume** — it does not try again by itself, because a start that may have reached the printer can only be checked at the printer. You are told once, through the usual *queue job failed* notification — also when the job's dispatch attempts are used up. **Retry** gives the job a fresh set of dispatch attempts and keeps the record that it was started before; the halted queue still needs Resume.
+
+A refusal before anything was sent — the printer busy or disconnected at the last moment, a filament slot not ready — is not a failure: the job waits in the queue and the attempt it used is given back. The exception is our swap-start macro: if it already ran (or may have), the job fails instead of waiting, so the table is never moved twice. A refusal that ends the job (a **Print now** job, an unavailable source) marks it failed, and its attempt is counted under **Dispatch errors** in Statistics, never as a print.
+
+If BamDude stopped while it was starting a job, a job whose start command was provably never sent returns to the queue on its own once its printer reports idle and new work is allowed — also when the printer becomes idle only later, on the same connection — keeping its file, plate, filament mapping and the attempt it used. A **Print now** job is the exception: it is marked failed instead and never starts later by itself; use Retry when you want it. A start that may already have reached the printer is never repeated automatically; **Information → Print state diagnostics** shows it and closes it after you check the printer ([System Info](system-info.md)).
+
 ---
 
 ## :material-cancel: Cancel during dispatch — what happens to the queue
@@ -520,7 +534,13 @@ Every cancelled item in the Issues section gets a **Restart** button (`RotateCcw
 - Re-appends it to the **end** of the queue (so it doesn't jump ahead of anything you queued in the meantime).
 - Leaves the archive trail intact — the old cancelled archive stays for forensics; a fresh `printing` archive is created when the item actually dispatches.
 
-The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items — it now accepts both `failed` and `cancelled` as source states. The bulk-restart from the Issues section uses `PATCH /api/v1/queue/bulk` with the same retry verb.
+The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items. Cancelled jobs are restarted individually; **Retry all…** covers failed jobs only.
+
+### Retry all failed jobs
+
+In a printer's **Issues** section, **Retry all…** loads all issue pages and asks you to confirm the printer and failed-job count. It returns those jobs to the end of that printer's queue, using the same source checks as individual Retry. Cancelled and skipped jobs stay unchanged; queue pauses and print checks still apply. The action requires permission to update all queue jobs.
+
+The confirmed list is one server transaction: the scheduler sees the whole block together, even for jobs that require a successful predecessor. Jobs that became cancelled or active meanwhile stay unchanged; later failures are not added. The operation continues if its card unmounts. The summary counts every refusal category; a lost response asks you to refresh before retrying.
 
 ---
 

@@ -11,9 +11,9 @@ description: Знаходьте патерни у невдалих друках 
 
 ## :material-information: Що це
 
-Дашборд Failure Analysis читає кожен рядок таблиці `print_archives`, чий `status` дорівнює `failed`, `aborted` або `cancelled`, і групує його за кількома вимірами — щоб ви побачили, чи якийсь конкретний принтер, філамент або час доби тягне ваш success-rate донизу.
+Дашборд Failure Analysis читає кожен рядок таблиці `print_archives`, чий `status` дорівнює `failed` або `aborted` — без помилок відправки, тобто спроб, що закінчились до друку, — і групує його за кількома вимірами — щоб ви побачили, чи якийсь конкретний принтер, філамент або час доби тягне ваш success-rate донизу.
 
-Дані рахуються наживо у `FailureAnalysisService` (`backend/app/services/failure_analysis.py`) — окремої агрегованої таблиці немає. Кожен запит враховує обраний діапазон дат і опціональні фільтри printer / project.
+Дані рахуються наживо у `FailureAnalysisService` (`backend/app/services/statistics/failure_analysis.py`) — окремої агрегованої таблиці немає. Кожен запит враховує обраний діапазон дат і опціональні фільтри printer / project.
 
 !!! info "Потрібен дозвіл"
     Усі вьюхи Failure Analysis закриті дозволом `stats:read`. Viewers і Operators мають його за замовчуванням; Administrators — завжди.
@@ -27,8 +27,9 @@ description: Знаходьте патерни у невдалих друках 
 | Метрика | Опис |
 |---------|------|
 | **Total prints** | Кожен архів, що не був чистим аплоудом (status `archived` виключено) |
-| **Failed prints** | Сума `failed` + `aborted` + `cancelled` |
-| **Failure rate (%)** | `failed / total × 100`, до однієї десяткової |
+| **Failed prints** | Сума `failed` + `aborted`, без помилок відправки |
+| **Помилки відправки** | Спроби запустити друк, що закінчились до друку, — окремо, поза кожним rate |
+| **Failure rate (%)** | `failed / (completed + failed) × 100`, до однієї десяткової; зупинені, скасовані й пропущені друки та помилки відправки не входять ні в чисельник, ні в знаменник |
 | **Trend** | Тижневий бакет failure-rate за період — improving, stable, worsening |
 
 ```

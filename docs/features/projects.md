@@ -214,7 +214,7 @@ Orders have no export: they are local to the farm that took them.
 
 ## :material-lightbulb-on: What to print next
 
-Under the lines, each line carries a plan: the plates that would cover what it still needs. Where the farm has a usable lane for more than one recipe, the first choice is a **finish-sooner heuristic**: its printer models, how many lanes they have and work already occupying them come before the old useful-parts-per-hour tie-break. This can deliberately spend more machine-hours to finish the order earlier; it is not an optimisation proof or a dispatch reservation. Everything already printed, running, queued for that line or reserved from stock is subtracted first, so a plan you have half-sent stops asking for the prints you already sent.
+Under the lines, each line carries a plan: the plates that would cover what it still needs. Where the farm has a usable lane for more than one recipe, the first choice is a **finish-sooner heuristic**: its printer models, how many lanes they have and work already occupying them come before the old useful-parts-per-hour tie-break. Plates that make the same still-needed parts are compared by when they would finish **all** of that work, not just their next print — so one printer gets a single 10-piece plate rather than two 5-piece prints that end later, while several printers still share the work. On a farm with operator hours this comparison is bounded per plan, and a very large line is planned the old way until what is left of it is small enough to compare. This can deliberately spend more machine-hours to finish the order earlier; it is not an optimisation proof or a dispatch reservation. Everything already printed, running, queued for that line or reserved from stock is subtracted first, so a plan you have half-sent stops asking for the prints you already sent.
 
 | Element | Behaviour |
 |---|---|
@@ -231,7 +231,34 @@ A plan that stops at its safety limit says so, instead of looking exactly like a
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 
+### Shared working draft and saved comparison
+
+Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning.
+
+**Save plan** confirms a separate comparison baseline. Autosave and reload never move it. For example, save twenty machine-hours, then edit to eighteen and seventeen: the panel shows two and three fewer machine-hours against the same saved plan. Saving seventeen explicitly makes it the new baseline. Calendar comparisons recalculate both variants against the same current farm; different part coverage is labelled and is not presented as an efficiency gain.
+
+**Plan the remainder** previews automatic additions around your protected manual work and current printed/queued/stock facts. Applying replaces the automatic portion rather than adding it repeatedly. **Rebuild whole draft** replaces manual choices too and requires confirmation. Both change the draft only. **Discard draft changes** restores the explicitly saved entries, not old files, order quantities, stock or printer state.
+
+If another editor changes the shared draft, a stale save is refused and your local input stays on screen. Read the shared plan again deliberately to replace it. The editor warns before leaving with unsaved local changes. A changed or missing source remains an addressed issue: review the current source or remove that draft entry; the saved comparison is not silently rewritten.
+
+### Submitting saved work
+
+Row, line and whole-plan queue actions register an addressed submission. Each committed part creates queue jobs, a durable receipt and the corresponding reduction of the remaining draft together. A lost response can therefore be checked without submitting the same part twice. Reload and server restart never continue a pending submission automatically: read its status, then continue the same operation or cancel only its unsubmitted remainder. Existing queue jobs remain unchanged. In the library’s Calculate dialog, Cancel removes only an order with no submitted work. If jobs already committed, even when their response was lost, the order is kept and the dialog offers Close.
+
+After the first committed part, comparisons and discard against the previous baseline stop: they would otherwise count submitted work as a false saving or restore it to the draft. Finish or cancel the submission; if work remains, explicitly save that remainder to begin a new comparison. Queue cleanup or a failed job does not put copies back into the draft automatically; use remainder planning if demand is still outstanding. **To printer…** remains the independent print dialog and does not consume a draft by matching a file name.
+
+Once everything is queued or printed, **Print plan** shows a brief status instead of a zero-work forecast and planning controls. The editor returns when more work is needed. The saved baseline stays unchanged; pending submissions and unresolved read or source problems remain visible.
+
+Working drafts, saved baselines and receipts are included in full database backups and portable SQLite/PostgreSQL moves. Selective/Git backups do not export them. Restoring a full backup still requires an explicit decision for pending submissions.
+
+The editor reads quantities and the revision from the same shared-draft snapshot. A delayed or failed context refresh cannot put already submitted copies back. The original author alone can continue a pending submission. An administrator with order-update, all-queue update/read rights and current access to every affected source and printer can cancel another author’s unpublished remainder, giving a reason recorded in the order journal; committed jobs and receipts remain unchanged. A reviewed remainder/rebuild applies exactly the displayed entries even if farm load changes before Apply. Leaving with local changes requires an explicit discard decision, including Back and closing the Calculate dialog. Automatic plate-fit candidates omit unavailable draft rows and explicit zero exclusions; choose another file explicitly if needed.
+
+
 ### Alternative files per printer model
+
+The Forecast panel recalculates the selected files and run counts after a short pause while you edit. **Plan machine-hours** come first: ten two-hour runs mean twenty machine-hours whether one printer or five will do them. Queue occupancy, pauses and operator availability affect the completion date, not this nominal slicer-time total.
+
+The date describes the selected work. If the draft covers only 80 of 100 required parts, the panel shows the missing 20 rather than claiming the order will be ready on that date. Missing file times remain unknown. A temporary live-forecast failure leaves known machine-hours visible, and previewing changes neither queues nor stock. The filament estimate follows the same edited files and quantities.
 
 When a part is sliced for two machines there are two files with the same yield, and a plan that picked one of them would hide the other — even where half the farm can print nothing else.
 
@@ -242,6 +269,10 @@ Each row therefore carries a **File** switch listing the other candidate plates 
 - A file a row already offers this way is no longer listed under **Add a plate…**, where it would put the same work on screen twice.
 
 With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the split is a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
+
+### Quantities that fit whole plates
+
+**Adjust without surplus** in a line's plan proposes the nearest quantities the line's plates make exactly, without spare parts, given what the order already has. It searches for six seconds; *After 0.7.1*, **Extended search — up to 30 seconds** gives a large order more time, for that one calculation only. An unfinished search says so — *the calculation reached its limit* — and that does not mean no such quantity exists. Applying a proposal checks it again against the farm as it is then, more briefly than the search: if it can no longer be checked in time, or the farm or the order changed, the dialog drops it and asks you to calculate again.
 
 ### Sending the plan to the queue
 

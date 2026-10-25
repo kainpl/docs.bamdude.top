@@ -11,9 +11,9 @@ Understand *why* prints fail by analysing patterns across materials, printers, t
 
 ## :material-information: What It Is
 
-The Failure Analysis dashboard reads every row in your `print_archives` table whose `status` is `failed`, `aborted`, or `cancelled` and groups it across multiple dimensions, so you can spot whether a particular printer, filament, or time-of-day is dragging your success rate down.
+The Failure Analysis dashboard reads every row in your `print_archives` table whose `status` is `failed` or `aborted` — leaving out dispatch errors, attempts that ended before anything printed — and groups it across multiple dimensions, so you can spot whether a particular printer, filament, or time-of-day is dragging your success rate down.
 
-The data is computed live by `FailureAnalysisService` (`backend/app/services/failure_analysis.py`) — no separate aggregation table. Every query honours your selected date range and optional printer / project filters.
+The data is computed live by `FailureAnalysisService` (`backend/app/services/statistics/failure_analysis.py`) — no separate aggregation table. Every query honours your selected date range and optional printer / project filters.
 
 !!! info "Permission Required"
     All failure-analysis views are gated by `stats:read`. Viewers and Operators have it by default; Administrators always do.
@@ -27,8 +27,9 @@ Top of the Statistics page shows the overall picture for the selected period:
 | Metric | Description |
 |--------|-------------|
 | **Total prints** | Every archive that wasn't a pure upload (status `archived` is excluded) |
-| **Failed prints** | Sum of `failed` + `aborted` + `cancelled` |
-| **Failure rate (%)** | `failed / total × 100`, rounded to one decimal |
+| **Failed prints** | Sum of `failed` + `aborted`, without dispatch errors |
+| **Dispatch errors** | Attempts to start a print that ended before printing — shown on their own, outside every rate |
+| **Failure rate (%)** | `failed / (completed + failed) × 100`, rounded to one decimal; stopped, cancelled and skipped prints and dispatch errors are on neither side |
 | **Trend** | Weekly bucket of failure-rate over the period — improving, stable, or worsening |
 
 ```

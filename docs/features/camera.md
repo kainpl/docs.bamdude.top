@@ -184,6 +184,10 @@ BamDude enforces that on two axes:
     print from these images, and a stale frame is worse than a slow one — a finish
     photo showing the bed already lowered is the failure this avoids.
 
+### A printer that reports no camera
+
+*After 0.7.1.* A printer says in its own status (`ipcam_dev`) whether it has a usable built-in camera. When it explicitly reports none, BamDude no longer asks it for single frames — snapshots and the Camera Wall's snapshot tiles, the finish photo, the plate check, AI failure detection, Telegram and cloud snapshots — so they no longer each wait out the capture timeout, and the chamber light is not switched on for them. A frame that is already here — the live view's buffer or a recent snapshot — is still served, and an external camera is not affected. **Diagnose** still really tries the camera, so you can check a printer whose report looks wrong. The skip begins only once the printer has said so on its current connection, ends as soon as it reports a camera again, and the log names it once as `builtin_camera_unavailable`. The live view itself is unchanged.
+
 ---
 
 ## :material-application-cog: Isolated camera worker
@@ -598,7 +602,7 @@ Two rules make it safe to leave on:
 - **Only a light that is off is switched on.** A light that was already on — you switched it, or the firmware did at print start — is never touched, before or after.
 - **Only a light BamDude switched on is switched off**, and only once nobody is using the camera any more. If you switch the light off yourself during a stream, BamDude does not switch it back on; if you switch it on yourself, BamDude does not switch it off after.
 
-How it behaves in practice: a one-off photo waits for the printer to confirm the light before the frame is taken (no fixed pause, no dark first photo), and the light goes off about ten seconds after the last use, so two photos in a row do not blink it. Several browser tabs on one printer are one switch-on and one switch-off. The Camera Wall in snapshot mode keeps the light on for as long as the wall is open, and lets it go within one refresh interval after the wall is closed. The layer-based timelapse deliberately does not take the light — it would flash on every layer; leave the light on yourself if the timelapse needs it. The printer's own timelapse lights itself.
+How it behaves in practice: a one-off photo waits for the printer to confirm the light before the frame is taken (no fixed pause, no dark first photo), and the light goes off about ten seconds after the last use, so two photos in a row do not blink it. Several browser tabs on one printer are one switch-on and one switch-off. The Camera Wall in snapshot mode keeps the light on for as long as the wall is open, and lets it go within one refresh interval after the wall is closed. The layer-based timelapse deliberately does not take the light — it would flash on every layer; leave the light on yourself if the timelapse needs it. Neither does the frame BamDude keeps during a print for the finish photo (with **Capture finish photo** on, it is refreshed every few layers): the finish photo itself still takes the light when it shoots, but when it comes from that kept frame — an A1 Mini, whose firmware never marks the end of printing, gets it that way — it shows the chamber as it was lit during the print. The printer's own timelapse lights itself.
 
 One use does not wait for the toggle: the **build plate check** (below) lights the plate for its comparison whatever the settings say, as it always did — its reference was calibrated with the light on, and a check in the dark would pause a print for nothing. It now does so through the same mechanism: confirmed by the printer instead of a fixed pause, and never touching a light that was already on.
 

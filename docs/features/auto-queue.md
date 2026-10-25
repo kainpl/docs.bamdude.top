@@ -254,3 +254,13 @@ Checks repeat before preparation and immediately before the start command. A cha
 Per-printer queues remain the way to choose a specific machine; Auto-Queue defers that choice. Both paths apply complete filament checks before starting.
 
 After an upgrade, older jobs retain established source restrictions and physical selections. If there is not enough saved evidence to recover their rules, mapping review is required. Schedule edits, copies, and repeats retain the rules; a different printer or plate requires a new answer for a manual mapping. See [Editing and repeats](filament-routing.md#editing).
+
+## Notifications about obstacles
+
+Busy printers and temporarily unavailable feed/nozzle telemetry are normal waiting states: AutoQueue keeps the reason visible without sending a waiting notification. Missing suitable printers, incompatible filament or nozzles, mapping review and a failed previous print can need attention. Permanent target-model refusals have their own reason rather than appearing as a busy printer.
+
+A completed routing pass sends at most one **AutoQueue needs attention** event, listing up to five new facts and the count of the rest. Provider and Telegram-chat subscriptions still apply. Each due pending job contributes its observed obstacles. Busy, offline or unknown telemetry does not prove an earlier filament mismatch was corrected; the incident ends only after its last current contributor disappears or a complete fresh observation resolves it. Other placements, names, languages, unrelated AMS-slot metadata and copy counts do not rearm it. Queue placements and their UI updates commit before optional rebalancing and the separate notification read; a failed digest cannot undo them.
+
+Only positive acknowledgements from all configured automatic-on plugs create a bounded **waking up** grace. It survives subsequent passes until the existing cooldown deadline; further ON attempts while the printer stays offline do not extend it. After the deadline the offline obstacle may be reported once. A refused or failed plug gives no grace, and does not skip the other plugs. Known incompatible filament in an offline printer continues to prevent unnecessary wake attempts. Source/swap failures already marked failed do not also send a waiting alert. Automatic rebalancing rechecks farm admission after file capture; explicit manual planning remains available during recovery hold.
+
+This deduplication is held in memory: after restarting BamDude, one alert about a current obstacle is possible. Failed delivery and enabling a provider do not replay previously observed incidents. Existing custom notification templates keep `{job_name}`, `{target_model}` and `{waiting_reason}`. A farm recovery hold has its [own banner](farm-startup.md).

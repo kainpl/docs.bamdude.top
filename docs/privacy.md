@@ -20,7 +20,7 @@ Once a day BamDude sends a small anonymized snapshot to `https://bamdude.top/api
 - Aggregate counts: archives, printers, spools, projects, smart plugs, users, AMS units
 - Printer **models** (e.g. `P1S`, `A1`)
 - Enabled integrations (Spoolman, Obico, Telegram, OIDC, Git backup, slicer API) as on/off flags
-- Daily print counts (completed / failed)
+- Daily print counts (completed / failed / dispatch errors — attempts that never started printing) for the prints created on the current day of the server's time zone (`TZ`; UTC when it is not set), and that day's date
 
 ### What is never sent or stored
 

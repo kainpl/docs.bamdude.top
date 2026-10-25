@@ -7,6 +7,20 @@ description: Browse and manage your local library of print files
 
 Browse, upload, and manage files in your local BamDude library. Print directly or add to queue.
 
+The card grid adapts to the width available beside the folder tree, up to six columns. Each card keeps file size,
+printer model and print time on the first information row, followed by material, filament weight and counters on
+the second. Narrow layouts use fewer columns so values and actions stay visible.
+
+## On a phone
+
+Search and Filters open only when needed. Closing them keeps the query, file type, user, tags and sorting;
+a collapsed search still shows its query, and Filters shows the number of active conditions. Clear filters
+resets the search and filters together. The desktop layout keeps its controls expanded.
+
+Upload and the view switch remain visible. The **More library actions** menu contains thumbnail generation,
+folder creation/linking, the tag catalog, Select all and trash actions, subject to your permissions.
+Disabled menu commands keep their explanations and Trash shows its count. Closing a dialog after rotating the screen returns keyboard focus to the current toolbar. Selection actions appear after you select files. Storage statistics are compact, but low-space warnings remain visible.
+
 ## Model previews
 
 STL/OBJ preview generation and missing previews after server-side slicing run

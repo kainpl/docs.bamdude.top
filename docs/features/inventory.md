@@ -322,6 +322,8 @@ The inventory page colour-codes each spool by remaining percentage, with a confi
 
 If a print fails partway through, the deducted amount is the slicer-estimate × completion ratio (best effort) rather than the full estimate. External-print fallback archives — the ones from prints started directly on the printer touchscreen — get reconciled the same way once their 3MF is recovered.
 
+Deleting a usage entry returns its weight to the spool. Runout closure and AMS-sync corrections affect lifetime spool consumption, not the print archive’s grams; deleting them leaves the archive unchanged. Ordinary print entries still reduce the archive’s grams when removed. Recalculate Costs also excludes these corrections from print costs. History, export and backup retain them as separate entries.
+
 ### Usage tracking detail
 
 The deduction pipeline is more nuanced than a flat "subtract slicer estimate at print end". BamDude picks the most accurate source available per scenario:
@@ -357,6 +359,25 @@ What happens, in order:
 A ends at exactly 0 g remaining (250 + 1750 = its 2 kg label); B carries only its honest 350 g. The archive still records the print as 600 g at 600 g's cost — the close-out is the spool's lifetime drift being recognised, not this print's consumption. If you *don't* assign B, the whole 600 g stays on A and the close-out shrinks to 1400 g — A still ends at zero, B stays untracked, which is why the notification nudges you to assign.
 
 Two runouts of the same slot in one long print (two short reels back-to-back) are handled as separate episodes, each with its own boundary and close-out. Everything works identically in Spoolman mode. Tune it under **Settings → Filament → Usage accuracy**: the close-out toggle, an optional per-auto-switch purge charge (the emergency purge isn't in the slicer's estimate), the two-way AMS sync below, and how long the per-print event journal is kept for troubleshooting (72 h default).
+
+**A print that moves between trays** — an AMS backup that later returns to the refilled slot, or a loader that reports another tray for a moment on every load (a P1S with a BMCU reports the external holder that way) — is charged stretch by stretch: each stretch once, to the spool the journal recorded for it, so a reel loaded into the same slot after a runout gets its share. A tray reported within a single layer fed nothing the layer count can see and is not charged. Grams no spool can be named for are reported in the **Filament not charged** notification, in built-in inventory and in Spoolman alike.
+
+**Refilling an inactive slot after a backup switch.** A repeated autoswitch status is not a second empty spool.
+When the journal shows the backup in another slot of the same four-slot AMS, a different replacement reel
+is positively present, and feeding has not returned to the original slot, BamDude ignores that repeated
+status for the new reel. This also protects accounting from matching events saved before the fix.
+A real return to the refilled slot allows its next runout normally. The check uses sensor and feeding
+history, not a time delay; it does not infer this condition from another AMS unit or an external holder.
+
+The live check first resolves the spool from the journal when the current slot assignment has already disappeared. It uses one frozen sensor reading for both its decision and the new event. Repeated or folded reports of the same open episode do not notify again; a newly confirmed switch from pause to backup does. The original layer and spool identity stay fixed, and weaker replays do not erase confirmed autoswitch evidence.
+
+#### Replacing a reel while the tube still feeds the old one
+
+When an AMS slot runs dry, the printer keeps printing the filament still in the feed tube and reports the external spool's id meanwhile. You can put the new reel into the slot during that time — and assign it — without moving the books. The tube's filament stays on the **old** reel until the printer feeds from the slot again; the new reel is charged from **that layer**, not from the moment you assigned it. Assigning a reel only names the reel in the slot; the feed boundary comes from the printer. The late runout of the tube is charged to the old reel, and a later runout of the new reel still counts as its own. Internal inventory and Spoolman split the print the same way.
+
+While a print is running, the usage journal records these as separate events — the tail starting and the feed coming back — next to tray changes and runouts. They decide how the print is split at completion; the spool's usage history still shows only what each spool was charged.
+
+If BamDude restarts in the middle of this, it picks the tail back up from the journal. The reports it receives while it rejoins the print keep the layer each one was reported at and the order they came in, so every stretch goes to the reel that was in the slot when it was fed: a reel assigned in that moment still leaves the tube's filament to the old reel, and if you assign twice, the reel between the two assignments keeps its own stretch. An assignment made right after the rejoin waits until those reports are written, so it cannot rename a stretch fed before it. If they cannot be written, what they covered is reported as **not recorded** instead of being charged to the reel in the slot by the end of the print; what came before keeps its reels. This holds even when the printer's connection was down at that moment, or still is when the print is charged; when nothing tells how the print's grams divide over its layers, its filament is reported as **not recorded** rather than split by a guess. A late report of the previous print never lands in the next one and does not disturb what this print remembers. If the print's history cannot be read back, BamDude retries a few times; what it then could not see is reported as **not recorded** instead of being charged to the last reel it knew — also when that unknown stretch is all the print has, and the estimate from the AMS remaining percentage does not charge it afterwards either. A cancelled single-colour print is split the same way in Spoolman as in the internal inventory. If the feed came back while BamDude was not watching, the layer it first sees is used as the boundary and the stretch it did not see is reported as **not recorded** — it is given to neither reel. There is deliberately no "the tube is still feeding" question in the app: an assignment and a feed are different facts, and a dialog could not name the right layer.
 
 ### Archive a spool closed by runout
 

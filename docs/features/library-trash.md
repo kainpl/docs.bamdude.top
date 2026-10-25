@@ -28,6 +28,8 @@ When you delete a library file or an archive (manually, or via auto-purge):
 5. **Hard-delete now** removes the row + bytes immediately (admin only).
 6. After the configured retention window, a background sweeper hard-deletes anything that's been in the trash longer than the threshold.
 
+**Deleting a folder** sends the files BamDude stores in it, subfolders included, to the trash; the folder itself has no trash and is gone. External files are the exception, as everywhere: their library entry is removed without the trash, and the original on the disk stays. Files already in the trash — binned before, or in the same multi-select delete — stay there with their original delete time, so their retention does not restart. Restored files land at the library root, since their folder no longer exists.
+
 ---
 
 ## :material-shield-alert: Reference-aware hard-delete
