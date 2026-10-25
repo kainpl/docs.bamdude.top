@@ -172,6 +172,21 @@ BamDude now recognises the code, shows it with the same four-group form the prin
 3. **Scheduled time?** Check if print has a future schedule
 4. **Queue Only mode?** Check for purple "Staged" badge
 
+### A queued print is deferred again and again {#dispatch-stalled}
+
+**Symptom.** The printer is connected and idle, its queue is not paused, a job is waiting — and nothing starts. Each pass tries the job and gives it back. **System Health** lists *A print start keeps being deferred*; older logs show the same line over and over, `Dispatch … deferred before publish: dispatch_claim_changed`, without saying which printer or job.
+
+**What it means.** A healthy *connection* is not a healthy *status*. One cause is established: a print ended while the link was down, the reconnect check closed it in the archive and the queue, and its run stayed in BamDude's memory, so every new start on that printer is refused before it is sent. Older log lines that name no printer or job show only that starts were deferred repeatedly; they do not establish the cause.
+
+**What to do.**
+
+1. Open **System → Print state diagnostics**. A stalled start is shown with its job, how many times it was deferred and for how long, and a link to the row that holds the printer.
+2. If that row offers **Release the finished context**, preview it and confirm. Only that finished run leaves memory; the archive and accounting stay; nothing is sent to the printer; the queue is paused. If the row explains why there is no button (a swap still owed, a start or completion still running, a printer whose state is not fresh, …), deal with that first or wait and **Check again**.
+3. Check the printer and the plate — the release is not a plate confirmation — then **Resume queue**. The waiting job starts the ordinary way.
+4. If heating was left requested by a refused start, the row says so; the pause does not turn heaters off.
+
+If the result reads *not recorded*, look at the printer's recovery history before doing anything else. Restarting BamDude also empties its memory, and with it the evidence: download the support bundle **before** restarting. Details: [System Info → Print-state diagnostics and recovery](../features/system-info.md#print-state-diagnostics-and-recovery).
+
 ### Second printer waits a few seconds before starting
 
 Not a bug — but the diagnostic changed. Since `c485db1`, BamDude's dispatch runs **in parallel across printers**; only the brief DB-insert phase is wrapped in a startup-lock. The two printers really do receive their jobs simultaneously, and the dispatch toast shows two FTP progress bars side-by-side. The earlier "one job at a time across the whole farm" gate that landed in mid-0.4.1 was scrapped once the startup-lock was in. See [Per-Printer Queues → Dispatch behaviour](../features/print-queue.md#dispatch-behaviour) for the full description.
