@@ -231,9 +231,17 @@ A plan that stops at its safety limit says so, instead of looking exactly like a
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 
+### Printers for this order
+
+**Printers for this order** above the plan lets you restrict one order to selected models, specific machines, or both. When both are selected, a printer must match both lists. The selection does not reserve those machines exclusively: other orders can still use them. If a selected machine is unavailable, the order does not silently expand to other printers.
+
+Saving restrictions keeps existing jobs and files. New planning and assignments use the selection, and a pending job already on an excluded printer waits rather than starting there. Work already claimed for dispatch continues normally.
+
+To move the remaining work, review the proposed replacement first. It lists the replaceable jobs from AutoQueue and printer queues, preserves started and protected work, and shows the new draft. Applying removes only the reviewed replaceable jobs and replaces the working draft; it does not send that draft to print. Review it, then use **Whole plan to queue**. This action requires permission to read and delete all queue jobs as well as edit the order. Orders with restrictions are excluded from automatic cross-model rebalancing; use this reviewed replan instead.
+
 ### Shared working draft and saved comparison
 
-Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning.
+Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning. When the recommendation uses equivalent plates sliced for different printer models, the draft preserves their separate files and counts, including after remainder planning or rebuilding.
 
 **Save plan** confirms a separate comparison baseline. Autosave and reload never move it. For example, save twenty machine-hours, then edit to eighteen and seventeen: the panel shows two and three fewer machine-hours against the same saved plan. Saving seventeen explicitly makes it the new baseline. Calendar comparisons recalculate both variants against the same current farm; different part coverage is labelled and is not presented as an efficiency gain.
 
@@ -265,10 +273,10 @@ When a part is sliced for two machines there are two files with the same yield, 
 Each row therefore carries a **File** switch listing the other candidate plates whose yield of the parts *this line counts* is identical, each labelled with the printer model its file was sliced for. Choosing one re-does that row's time, filament and cost while the count stays exactly where it was, because the two files make the same parts.
 
 - **To printer…** on such a row asks which machine first, then opens the usual print dialog already holding the file that machine was sliced for, with the printer pinned. A printer in maintenance mode is not offered; an archived one never appears.
-- **Split across files** shares one row's count between them. The auto-queue routes an item by the model its file names, so this is the only way one order line's work reaches two printer models at once — and the numbers have to add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
+- **Split across files** lets you divide one row's count manually. The auto-queue routes each item by the model its file names. The numbers must add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
 - A file a row already offers this way is no longer listed under **Add a plate…**, where it would put the same work on screen twice.
 
-With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the split is a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
+For orders without printer restrictions, **Rebalance across printer models** (Settings → Printing → Auto-Queue Routing) makes the split a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
 
 ### Quantities that fit whole plates
 
