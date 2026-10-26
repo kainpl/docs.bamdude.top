@@ -88,6 +88,12 @@ Each line expands into a row per printed part:
 
 **Printing** is a count of live print archives; **Queued** is a count of pending jobs, not an estimate of product units. A shared plate can contribute to more than one line, so neither counter is added up from line rows.
 
+### Recounting actual loose parts
+
+In an order line's expanded parts table, **Recount actual parts** records how many loose printed parts you physically have. Enter the actual quantities and a reason, review the differences, then confirm. The correction changes what remains to print; it does not invent defects for a particular print, move free stock or alter queued and running jobs. Received goods and banked surplus are excluded. Later completed prints add their output normally.
+
+When several lines share printed output, including parts from a mixed-product print filed under another line, a recount may be refused because the physical share is ambiguous. An existing correction also blocks edits that would redistribute that output. Reverse the correction explicitly before making those edits; when shared output prevents an ordinary recount, **Review reversal of existing corrections** offers a full reversal with a reason and confirmation. The order journal preserves the change.
+
 ### Which order a print belongs to
 
 The unit of attribution is a print's **part row**, not the print. One plate can carry parts of two products (two different lids on one bed) and one file can belong to two products (a shared flask), so a single print can feed several lines. Three steps, in this order:
