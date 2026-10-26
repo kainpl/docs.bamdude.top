@@ -181,7 +181,7 @@ BamDude now recognises the code, shows it with the same four-group form the prin
 **What to do.**
 
 1. Open **System → Print state diagnostics**. A stalled start is shown with its job, how many times it was deferred and for how long, and a link to the row that holds the printer.
-2. If that row offers **Release the finished context**, preview it and confirm. Only that finished run leaves memory; the archive and accounting stay; nothing is sent to the printer; the queue is paused. If the row explains why there is no button (a swap still owed, a start or completion still running, a printer whose state is not fresh, …), deal with that first or wait and **Check again**.
+2. If that row offers **Release the finished context**, preview it and confirm. Only that finished run leaves memory; the archive and accounting stay; nothing is sent to the printer; the queue is paused. If the row explains why there is no button (a swap still owed, a layer timelapse of that print still open, a start or completion still running, a printer whose state is not fresh, …), deal with that first or wait and **Check again**.
 3. Check the printer and the plate — the release is not a plate confirmation — then **Resume queue**. The waiting job starts the ordinary way.
 4. If heating was left requested by a refused start, the row says so; the pause does not turn heaters off.
 
