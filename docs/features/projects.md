@@ -142,7 +142,7 @@ The catalog carries an **In catalog** flag. A product outside it is not offered 
 | **Printed** | Name, **per unit**, aliases (the object names on the plates that mean this part), and a *from file* badge while the row is still the seeded default. |
 | **Purchased** | Name, per unit, unit price, where to buy, remarks. |
 
-Purchased parts are tracked **per order**, not per product: the order's procurement checklist holds need / acquired / remaining, so *"printed, waiting on screws"* is a state the page can show.
+Purchased parts are tracked **per order**, not per product: the order's procurement checklist holds need / acquired / remaining, so *"printed, waiting on screws"* is a state the page can show. Each row shows the part's photo from its editor beside the name — a click or a tap opens it larger for anyone who can see the order, even without the right to change the counts.
 
 !!! tip "Per unit `0` means «out of the kit»"
     The part is still counted for the product and can be ordered separately, but it does not contribute to a standard kit. Use **Not counted** for a calibration cube or another object that is not a product part at all.
@@ -204,7 +204,9 @@ The **Picture** section of a part's editor decides what is shown:
 
 A **purchased** part has no plates, so it takes a photo only. A photo is re-encoded on the server: EXIF (GPS, the camera's serial), XMP and other embedded metadata are not kept. **Re-render** in the same section queues every plate of the product again; the old pictures stay on screen until the new ones are ready.
 
-A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in issuing and receiving, and in the Stock section.
+A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in its procurement list, in issuing and receiving, and in the Stock section.
+
+A finished render, a new or removed photo or another picture chosen in the editor updates the pictures on open pages and dialogs by itself, and nothing else: an open *Assemble* or stock-move dialog keeps its figures and its button, and an order's plan stays as it was. A real change of stock, reservations or a product's parts still reads the figures again and holds the action until they are back.
 
 **Export** carries each part's choice and photo; **import** restores them, re-pinning an instance to the imported file. Rendered pictures are a cache under `DATA_DIR/part-renders`, deliberately left out of backups: after a restore they are rendered again.
 
