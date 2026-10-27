@@ -7,6 +7,10 @@ description: Monitor AMS filament systems, humidity, and remote drying
 
 BamDude provides comprehensive monitoring for your AMS (Automatic Material System) units.
 
+**AMS Lite works with both A1 and A1 mini.** Both models support slot configuration, filament selection for printing, inventory/Spoolman assignments and the printer's filament-backup groups. An external spool is also supported; A1 mini is not restricted to external feeding.
+
+Features depend on the connected unit: AMS Lite supports [RFID identification of Bambu filaments](https://eu.store.bambulab.com/en-cz/products/ams-lite), but does not provide humidity readings or active drying. Those controls apply only to hardware and firmware that support them. A missing humidity or drying control does not mean AMS Lite is unsupported.
+
 ---
 
 ## :material-tray-full: AMS Slot Status
@@ -22,7 +26,7 @@ Each AMS slot displays:
 
 ### RFID Re-read
 
-Refresh filament information for individual slots by hovering and clicking the menu button. Useful when you've swapped a spool but the AMS hasn't detected the change.
+Where the slot menu offers RFID re-reading, use it to refresh a tagged spool after a change. AMS Lite also identifies Bambu spools by RFID; untagged and third-party spools can be configured manually. The visibility of an auto-read setting is separate from the presence of an RFID reader.
 
 ### Configure AMS Slot
 
@@ -102,7 +106,7 @@ When you open the Configure AMS Slot modal for a slot that already has a configu
 
 ### Multi-AMS Support
 
-Up to 4 AMS units per printer (16 total slots). External spool holders supported for printers without AMS.
+On supported printer/AMS combinations, multiple units provide additional slots. AMS Lite on A1 and A1 mini provides four slots in one unit; do not apply the four-unit limit of a full AMS setup to AMS Lite. External feeding is available independently of whether an AMS is attached; the print's feed policy decides which source may be used.
 
 On the printer card the filament section has three rows, each laid out by the card's own width: regular AMS units up to two per row, AMS-HT units in a row of their own up to three per row, and the external spool(s) in a row of their own. A card too narrow for that shows fewer per row rather than squeezing the slots, and the units grow with the L and XL card sizes.
 
@@ -177,16 +181,16 @@ Toggle the same AMS-level behaviours Bambu Studio exposes — without leaving Ba
 
 Each row is gated by what the printer actually supports — there's no point showing **AMS firmware type** on an X1C, or **air-print detection** on a P1S.
 
-Most of this is answered by **the AMS attached right now**, not by the printer model. That distinction is the whole point: an A1 ships with the AMS Lite, but plug in an AMS 2 Pro and the machine genuinely gains RFID-driven features. A model name cannot know that; the printer's own report can.
+Most of this is answered by **the AMS attached right now** and its firmware reports, not by the printer model alone. Both A1 and A1 mini can use AMS Lite. The table describes settings shown by BamDude, not a hardware purchasing guide: a hidden insertion-update switch does not mean the unit lacks RFID.
 
-| Row | X1 family | P1 / P2 / X2D | A1 + AMS Lite | A1 + full AMS | A1 Mini | H2D family |
+| Row | X1 family | P1 / P2 / X2D | A1 + AMS Lite | A1 + full AMS | A1 mini + AMS Lite | H2D family |
 |---|---|---|---|---|---|---|
 | Insertion update | yes | yes | — | yes | — | yes |
 | Power on update | yes | yes | yes | yes | yes | yes |
 | Update remaining capacity | yes | yes | — | yes | — | yes |
 | AMS filament backup | yes | yes | yes | yes | yes | yes |
 | Air printing detection | — | — | yes | yes | yes | — |
-| AMS firmware type | — | — | yes | yes | — | — |
+| AMS firmware type | reported list only | reported list only | reported list only | reported list only | reported list only | reported list only |
 | Arrange AMS order | — | — | — | — | — | yes |
 | Calibrate AMS | when ≥1 AMS connected, all models |
 

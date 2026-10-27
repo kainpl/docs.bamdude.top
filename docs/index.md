@@ -163,6 +163,8 @@ Always on. Permission groups per user, TOTP and email 2FA, OIDC single sign-on, 
 | **A2 Series** | A2L |
 | **A1 Series** | A1, A1 Mini |
 
+**AMS Lite is supported on both A1 and A1 mini**, alongside external-spool printing. Available functions depend on the connected hardware and firmware; see the [printer capability matrix](reference/printers.md) and [AMS guide](features/ams.md).
+
 ---
 
 ## :wrench: Tech Stack

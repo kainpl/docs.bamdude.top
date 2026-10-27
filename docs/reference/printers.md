@@ -25,7 +25,7 @@ BamDude supports the Bambu Lab 3D printers listed below when Developer Mode is a
 | **P2S** | P2 | :material-check: | :material-check: |
 | **X2D** | X2 | :material-check: | :material-check: |
 | **A1** | A1 | :material-check: | AMS Lite |
-| **A1 Mini** | A1 | :material-check: | :material-close: |
+| **A1 Mini** | A1 | :material-check: | AMS Lite |
 | **A2L** | A2 | :material-check:[^a2l] | :material-check:[^a2l] |
 
 BambuStudio `v02.08.04.57` also includes an **N8** model description. BamDude
@@ -39,9 +39,9 @@ the supported-model table or feature matrix yet.
 
 ### X1 Series
 
-- Chamber heating
+- Active chamber heating on X1E; X1 and X1 Carbon have a chamber sensor but no active heater
 - Up to 4 AMS units
-- Full camera support (up to 30 FPS)
+- RTSP live camera support; frame rate depends on the printer and connection
 
 ### H2 Series
 
@@ -53,13 +53,13 @@ the supported-model table or feature matrix yet.
 
 - P1P requires add-on camera
 - Up to 4 AMS units
-- Camera limited to ~5 FPS
+- Low-frame-rate image camera
 
 ### A1 Series
 
-- A1: AMS Lite support
-- A1 Mini: External spool only, primary target for [swap mode](../features/swap-mode.md)
-- Camera limited to ~5 FPS
+- A1 and A1 mini: AMS Lite support, including slot configuration, filament routing and filament backup when enabled on the printer
+- Both also support an external spool. A1 mini is a primary target for [swap mode](../features/swap-mode.md); swap mode does not mean the model lacks AMS support
+- Low-frame-rate image camera
 
 ### X2 Series
 
@@ -85,17 +85,17 @@ state in those cases.
 | Capability | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | A2L | H2D / H2D Pro | H2C | H2S |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | Camera (built-in) | :material-check: | add-on | :material-check: | :material-check: | :material-check: | :material-check: | :material-check:[^a2l] | :material-check: | :material-check: | :material-check: |
-| 30 FPS stream | :material-check: | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| Ethernet port | X1C/X1E only | — | :material-check: | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
-| Chamber heating | :material-check: | — | passive | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
-| Door-open sensor (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
-| Dual nozzle (L/R) | — | — | — | — | — | — | — | :material-check: | — | — |
+| RTSP live stream | :material-check: | — | — | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Ethernet port [^network] | X1E only | — | — | X2D only | — | — | — | :material-check: | :material-check: | :material-check: |
+| Active chamber heating | X1E only | — | — | X2D only | — | — | — | :material-check: | :material-check: | :material-check: |
+| Door-open sensor (MQTT) [^door] | :material-check: | n/a [^opentop] | — | :material-check:[^door] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
+| Dual nozzle (L/R) | — | — | — | X2D only | — | — | — | :material-check: | :material-check: | — |
 | 6-slot tool changer | — | — | — | — | — | — | — | — | :material-check: | — |
-| AMS Pro (4-slot) | up to 4 | up to 4 | up to 4 | up to 4 | — | — | :material-check:[^a2l] | up to 4 | up to 4 | up to 4 |
-| AMS Lite | — | — | — | — | :material-check: | — | — | — | — | — |
-| External spool | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | only | :material-check: | :material-check: | :material-check: | :material-check: |
+| Four-slot AMS [^ams] | up to 4 | up to 4 | up to 4 | up to 4 | see note | see note | :material-check:[^a2l] | up to 4 | up to 4 | up to 4 |
+| AMS Lite | — | — | — | — | :material-check: | :material-check: | — | — | — | — |
+| External spool | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 | AMS-HT (single-slot 128–135) | — | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| AMS humidity / temperature notifications | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: | :material-check: |
+| AMS humidity / temperature notifications [^ams] | :material-check: | :material-check: | :material-check: | :material-check: | — with Lite | — with Lite | :material-check: | :material-check: | :material-check: | :material-check: |
 | Maintenance — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — | — |
 | Maintenance — Steel Rods | — | — | — | :material-check: | — | — | — | — | — | — |
 | Maintenance — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
@@ -103,20 +103,16 @@ state in those cases.
 | Vibration-cali skip patcher | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 | Print-by-object skip | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 
-[^door]: Door-state is parsed from `home_flag` bit 23 on MQTT. Only X1 family
-firmware has been reverse-engineered to publish a trustworthy value;
-non-listed enclosed models report a permanently-zero bit on observed
-firmware, so BamDude refuses to show a misleading "Door closed" badge for
-them. See `backend/app/utils/printer_models.py::DOOR_SENSOR_MODELS`.
+[^door]: BamDude reads `home_flag` bit 23 for X1 models and `stat` bit 23 for X2D/P2S. X2D was verified on hardware; P2S support uses the same interpretation and remains inferred. P1S has no door sensor. See `backend/app/utils/printer_models.py::door_sensor_field`.
 
 [^opentop]: Open-frame printers physically have no door — there is nothing
 to sense.
 
-[^bit23]: Enclosed model whose `home_flag` bit 23 has not been confirmed to
-flip. Will be enabled once verified against a real printer; do not request
-on speculation.
+[^bit23]: The hardware sensor and a usable MQTT report are separate capabilities. BamDude does not show a door badge for these models until the correct telemetry field is verified.
 
-[^lite]: AMS Lite reports humidity but not the AMS-HT sub-stream.
+[^ams]: AMS support does not imply every AMS feature. AMS Lite on **both A1 and A1 mini** supports filament feeding and slot management, including RFID identification of Bambu spools, but does not provide humidity readings or active drying. Other AMS variants and their available controls depend on the connected hardware, adapter and firmware; see [AMS settings](../features/ams.md). Humidity, temperature and drying controls require the corresponding reported capability.
+
+[^network]: Ethernet is not implied by LAN mode. The manufacturer's [X1/X1C guide](https://cdn1.bambulab.com/documentation/quick-start-2024-01-17/Quick-Start-X1%26X1C_en.pdf), [P1S guide](https://cdn1.bambulab.com/documentation/quick-start-2024-01-17/Quick-Start-P1S_en.pdf) and [P2S guide](https://csm.bblcdn.com/hub/2ddc44d3a72443ba914efe0f963fbbc5.pdf) list wireless connectivity; [X1E](https://cdn1.bambulab.com/x1e/spec/Bambu%20Lab%20X1E%20Technical%20Specification.pdf) includes Ethernet.
 
 [^swap]: Swap mode is officially supported on A1 series. Other models can
 opt in by writing custom swap-mode G-code macros, but no factory profiles
