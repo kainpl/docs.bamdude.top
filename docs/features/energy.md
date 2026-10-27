@@ -61,6 +61,47 @@ Captured on `PrintArchive`:
 
 ---
 
+## :material-alert-decagram: When a Plug's Counter Stops
+
+Some plugs keep reporting their watts while their lifetime energy counter stands still. Every print on such a plug used to read **0 kWh** — a frozen counter makes the start and end readings equal. BamDude now compares the counter with the plug's own power history.
+
+**What counts as a suspected stall.** The counter held one value for at least **30 minutes** while the power history of the same plug covers that stretch (at least 95 %) and adds up to at least the plug's **missed-energy threshold** — 100 Wh unless you raise it on the plug. It is a suspicion, not a verdict about the device: a counter that only moves in coarse steps, or a stale cache, looks the same from here. A short or light print whose counter did not step (3 minutes at 120 W is 6 Wh) is not a stall and keeps its measured zero.
+
+**What you see.**
+
+- The plug's card says the counter is suspected stalled, since when, and roughly how much energy the history shows it missed — whether or not anyone subscribed to the warning.
+- One **in-app** warning (*Plug energy counter stalled*, group *Sensors*) per episode — not per print or per check. External channels (Telegram, email, …) are not offered for it.
+- The episode closes when the counter moves up again. A drop is a counter reset: a new baseline, never a recovery. Changing what the plug measures closes it as *source changed*, not as repaired.
+
+**What happens to a print's energy.**
+
+| Archive shows | When | `energy_kwh` |
+|---------------|------|--------------|
+| `≈ $0.04`, tooltip *estimated from the plug's power history* with the coverage | The print's measured window meets a suspected stall and the power history covers it well | The whole window integrated **once** from the power history — never the counter's part plus an integral on top |
+| *Energy unknown* with the reason | The history does not cover the window, the end of the print was not observed (a print closed after a restart), the plug was reconfigured during the print, or there was too much history to evaluate | empty — **not** zero |
+| the figure as before | The counter moved normally | the counter's difference, as always |
+
+Estimated and unknown prints are counted where print energy is shown: the Statistics page says how many prints are estimated from the power history and how many have no reliable figure (and are not counted as zero), and an order's cost line marks its electricity *≈* when it contains estimates. The plug totals, *Energy At The Plug* and date-range totals never contain an estimate — they are what the counters said. Archives recorded before this version are not recalculated, and a figure once written this way is never overwritten by a later callback.
+
+**Measurement source.** When you change what a plug measures — its address, entity, topic, JSON path, multiplier, Zigbee device, printer, or the phantom-watts setting below — BamDude starts a new measurement source. Readings and counter snapshots from before the change never feed an estimate made after it; a print that spans the change gets *Energy unknown — source changed*. Renaming a plug changes nothing.
+
+**What the power history must look like.** Readings further apart than the plug's gap limit are a gap, never a straight line between them: 3 minutes for Zigbee, three sampling intervals (at least 3 minutes) for Tasmota, REST and Home Assistant, and three publish intervals (at least 3 minutes) for MQTT — set the plug's *publish interval* if it is not Tasmota's default 300 s. A reading BamDude received but cannot trust stays in the history as a hole: a value that is no number, a burst it could not store, a database write whose outcome is unknown, and — on a plug that may keep repeating old watts after its relay opens (Zigbee by default) — any reading while the relay state is unknown. A known *off* is 0 W on every plug. The power chart shows these holes as gaps.
+
+**Plug settings** (*Settings → Smart plugs → Edit → Energy counter watch*):
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| Missed energy before a stall is suspected | 100 Wh | Raise it for a plug whose counter moves in coarse steps; it cannot go below 100 Wh |
+| How often the plug publishes its power (MQTT only) | 300 s | Sets the MQTT gap limit (three intervals, at least 3 minutes) |
+| Watts after the relay opens | the type's default | *May keep repeating old watts* makes readings with an unknown relay state unusable (the Zigbee default); *Reports what it measures* trusts them |
+
+!!! warning "Restarting a hung plug"
+    BamDude never sends a command because of a suspected stall. If the device has hung, **wait until prints on it have finished**, then unplug it from the mains and plug it back in — the relay button does not restart its electronics. Never cut a printer's power in the middle of a print.
+
+Detection runs at most every five minutes, and only when a new counter reading has arrived — usually the next hourly snapshot or the end of a print, so it is not a promise to notice within half an hour. It reads the last day of history.
+
+---
+
 ## :material-counter: Lifetime kWh and Date Ranges
 
 The hourly snapshot loop (`SmartPlugManager._snapshot_loop`) records one row per plug into `smart_plug_energy_snapshots`. A snapshot is **also** written at the start of every print, from the same reading that seeds the archive's baseline — so a print's own start is a real boundary in the history rather than whichever hour the loop last happened to fire:
@@ -191,6 +232,8 @@ The Statistics page surfaces energy in three places:
 - **Energy used** (kWh) for the selected date range, respecting `energy_tracking_mode`
 - **Energy cost** in your configured currency
 - **Per-printer breakdown** so you can see which machine is drawing most
+
+When some prints' energy is estimated from the power history, or unknown, the printing figures say how many — see [When a Plug's Counter Stops](#when-a-plugs-counter-stops).
 
 Charts and totals are kept in sync with the `print` vs `total` switch — toggling rebuilds them server-side. See [Statistics](stats.md) for the full widget tour.
 
