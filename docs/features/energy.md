@@ -70,7 +70,7 @@ Some plugs keep reporting their watts while their lifetime energy counter stands
 **What you see.**
 
 - The plug's card says the counter is suspected stalled, since when, and roughly how much energy the history shows it missed — whether or not anyone subscribed to the warning.
-- One **in-app** warning (*Plug energy counter stalled*, group *Sensors*) per episode — not per print or per check. External channels (Telegram, email, …) are not offered for it.
+- One **in-app** warning (*Plug energy counter stalled*, group *Sensors*) per episode — not per print or per check — with a link to the smart plugs. External channels (Telegram, email, …) are not offered for it.
 - The episode closes when the counter moves up again. A drop is a counter reset: a new baseline, never a recovery. Changing what the plug measures closes it as *source changed*, not as repaired.
 
 **What happens to a print's energy.**
@@ -85,7 +85,7 @@ Estimated and unknown prints are counted where print energy is shown: the Statis
 
 **Measurement source.** When you change what a plug measures — its address, entity, topic, JSON path, multiplier, Zigbee device, printer, or the phantom-watts setting below — BamDude starts a new measurement source. Readings and counter snapshots from before the change never feed an estimate made after it; a print that spans the change gets *Energy unknown — source changed*. Renaming a plug changes nothing.
 
-**What the power history must look like.** Readings further apart than the plug's gap limit are a gap, never a straight line between them: 3 minutes for Zigbee, three sampling intervals (at least 3 minutes) for Tasmota, REST and Home Assistant, and three publish intervals (at least 3 minutes) for MQTT — set the plug's *publish interval* if it is not Tasmota's default 300 s. A reading BamDude received but cannot trust stays in the history as a hole: a value that is no number, a burst it could not store, a database write whose outcome is unknown, and — on a plug that may keep repeating old watts after its relay opens (Zigbee by default) — any reading while the relay state is unknown. A known *off* is 0 W on every plug. The power chart shows these holes as gaps.
+**What the power history must look like.** Readings further apart than the plug's gap limit are a gap, never a straight line between them: 3 minutes for Zigbee, three sampling intervals (at least 3 minutes) for Tasmota, REST and Home Assistant, and three publish intervals (at least 3 minutes) for MQTT — set the plug's *publish interval* if it is not Tasmota's default 300 s. A reading BamDude received but cannot trust stays in the history as a hole: a value that is no number, a burst it could not store, a database write whose outcome is unknown, and — on a plug that may keep repeating old watts after its relay opens (Zigbee by default) — any reading while the relay state is unknown. A known *off* is 0 W on every plug. The power chart shows these holes as gaps. An estimate is the area under the readings, not under the load: whatever changed between two readings — short peaks that happened to land on them, or a dip between them — is drawn as a straight line, so neither the 100 Wh threshold nor an estimate is a guarantee of what the printer drew.
 
 **Plug settings** (*Settings → Smart plugs → Edit → Energy counter watch*):
 
