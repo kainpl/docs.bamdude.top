@@ -188,14 +188,22 @@ A printer that *is* ready still wins when there's a choice.
 
 An order line's work is split between printer models when it is queued — by hand, or with the farm's proposal — and a queued copy belongs to its file's model. When the P1S machines free up faster than the forecast assumed, the X1C copies keep waiting in their own pile. Rebalancing lets the auto-queue **move still-pending copies of an order line to idle printers of another model** when that finishes the line sooner — including a model whose plate makes a different number of parts, in which case the plates and the number of prints are recalculated.
 
-**The rule.** A pending copy moves only when *all* of these hold: its own model has no printer ready right now; the other model has at least one printer that is idle *and* ready (an empty queue is not enough — a printer still waiting for a plate clear only looks free); the line has a sliced file for that model with a print-time estimate; and the prints needed to cover the same parts there would finish no later than waiting at home. Among several models that qualify, the earliest finish wins, then the least surplus.
+**The rule.** Every printer is asked about *this* copy — its own file, colour and profile rules, feed (AMS or external spool) and nozzle, through the same filament check routing and dispatch use — never about its model alone. A pending copy moves only when *all* of these hold:
+
+- no printer of its own model is free *and able to print it* right now — a free printer holding the wrong filament does not keep the work home;
+- the line has a sliced plate for another model, with a print-time estimate, and at least one printer of that model is free, ready and able to print **that plate** — an empty queue is not enough: a printer still waiting for a plate clear, held by a Home Assistant sensor, or offline only looks free;
+- the prints needed to cover the same parts there finish no later than waiting at home, where «home» is the earliest printer of the copy's model that can print it with the filament it holds now — a busy one by its forecast. When no home printer can print the copy at all, any able target wins.
+
+Among several models that qualify, the earliest finish wins, then the least surplus. Each free printer is counted once, across plates and lines: copies of the more urgent orders take the free printers first, and a faster plate nobody free can print never hides a slightly slower one that can be printed.
+
+**When it waits.** If a free printer of the copy's own model has not reported its filament yet, the copy waits for the next pass instead of moving on a guess. If the farm changes while the target file is being copied — the spool is taken out, the printer gets other work, the copy's settings change — the move is called off before anything is written and decided again on the next pass.
 
 **Parts, not prints.** A copy is a claim on covering N parts. Moving a 6-part P1S plate to an A1 mini whose plate makes 2 parts turns one print into three; moving 2 parts onto a bigger bed turns them into one print with a surplus of less than one plate's worth, which lands on the shelf like any other surplus.
 
 **Three ways to run it.**
 
-- **Automatically** — Settings → Printing → Auto-Queue Routing → **Rebalance across printer models** (off by default). The scheduler checks after every placement pass, moves at most one copy per idle printer per pass, and leaves a line alone for five minutes after a move.
-- **Per line** — the **Rebalance** button on an order line's plan, shown while the line has pending auto-queue copies. It runs regardless of the setting and ignores the five-minute pause.
+- **Automatically** — Settings → Printing → Auto-Queue Routing → **Rebalance across printer models** (off by default). The scheduler checks after every placement pass, moves at most one copy per idle printer per pass, and leaves a line alone for five minutes after a move. The pause is not a promise that the next move comes five minutes later: a pass only moves what the farm allows at that moment.
+- **Per line** — the **Rebalance** button on an order line's plan, shown while the line has pending auto-queue copies. It runs regardless of the setting and ignores the five-minute pause — nothing else: it never overrides a filament, colour or model rule.
 - **Per copy** — **Rebalance** on a pending row or a collapsed `×N` block of the auto-queue panel. A row that cannot move says why.
 
 **What is never moved.** A copy that is already handed to a printer, scheduled for a time, staged for a manual start, pinned to specific filament slots, aimed at a location, queued from an archive rather than a library file, or not filed under an order line. Those either belong to a printer already or carry a decision of yours.
@@ -204,6 +212,9 @@ An order line's work is split between printer models when it is queued — by ha
 
 !!! note "Estimates decide"
     Rebalancing compares the same print-time estimates the ETA uses. A file without an estimate is never chosen as a target, and a copy without one is treated as if it could start at home the moment a printer frees.
+
+!!! note "What it does not promise"
+    The home's finish time counts the work already on that model's printers, not the copies of the same model still waiting in the auto-queue — for the last of a long list home looks sooner than it is, so a move that would have helped can be skipped. A printer of the copy's model that drops off the network for a moment does not count as home either, so a short disconnect can let several copies move at once; the number of free printers able to take them and the five-minute pause per line bound that. Rebalancing is an estimate made pass by pass, not a farm-wide optimiser.
 
 ---
 

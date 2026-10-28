@@ -284,7 +284,7 @@ Each row therefore carries a **File** switch listing the other candidate plates 
 - **Split across files** lets you divide one row's count manually. The auto-queue routes each item by the model its file names. The numbers must add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
 - A file a row already offers this way is no longer listed under **Add a plate…**, where it would put the same work on screen twice.
 
-For orders without printer restrictions, **Rebalance across printer models** (Settings → Printing → Auto-Queue Routing) makes the split a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
+For orders without printer restrictions, **Rebalance across printer models** (Settings → Printing → Auto-Queue Routing) makes the split a starting point: still-pending copies can later move to a free printer of another model that can print them — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
 
 ### Quantities that fit whole plates
 
