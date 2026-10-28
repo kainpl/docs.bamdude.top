@@ -196,7 +196,7 @@ An order line's work is split between printer models when it is queued — by ha
 
 Among several models that qualify, the earliest finish wins, then the least surplus. Each free printer is counted once, across plates and lines: copies of the more urgent orders take the free printers first, and a faster plate nobody free can print never hides a slightly slower one that can be printed.
 
-**When it waits.** If a free printer of the copy's own model has not reported its filament yet, the copy waits for the next pass instead of moving on a guess. If the farm changes while the target file is being copied — the spool is taken out, the printer gets other work, the copy's settings change — the move is called off before anything is written and decided again on the next pass.
+**When it waits.** If a free printer of the copy's own model has not reported its filament yet, the copy waits for the next pass instead of moving on a guess. If the farm changes while the target file is being copied — the spool is taken out, the printer gets other work, the copy's settings change, the "compatible models" setting is switched off, the target file is re-sliced or its recorded yield or print time changes — the move is called off before anything is written and decided again on the next pass. When the scheduled pass and a button both decide to move the same copy, only one of them moves it, and a copy that was assigned or cancelled meanwhile is left alone.
 
 **Parts, not prints.** A copy is a claim on covering N parts. Moving a 6-part P1S plate to an A1 mini whose plate makes 2 parts turns one print into three; moving 2 parts onto a bigger bed turns them into one print with a surplus of less than one plate's worth, which lands on the shelf like any other surplus.
 
