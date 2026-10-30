@@ -257,6 +257,8 @@ Edits to counts, files and splits are autosaved to one shared working draft for 
 
 If another editor changes the shared draft, a stale save is refused and your local input stays on screen. Read the shared plan again deliberately to replace it. The editor warns before leaving with unsaved local changes. A changed or missing source remains an addressed issue: review the current source or remove that draft entry; the saved comparison is not silently rewritten.
 
+Adding or editing an order line refreshes the plan's inputs automatically, even if the draft itself has not changed. Your entered counts stay in place. Autosave waits for the current draft read to finish; if reading fails or the two views still disagree after refreshing, use **Read shared plan again**.
+
 ### Submitting saved work
 
 If a plan stops with a save conflict, choose **Read shared plan again** and confirm replacing your unsaved edits. A failed read keeps your entered quantities and lets you retry in the dialog. Background refreshes do not interrupt this recovery.
