@@ -534,11 +534,11 @@ Every cancelled item in the Issues section gets a **Restart** button (`RotateCcw
 - Re-appends it to the **end** of the queue (so it doesn't jump ahead of anything you queued in the meantime).
 - Leaves the archive trail intact — the old cancelled archive stays for forensics; a fresh `printing` archive is created when the item actually dispatches.
 
-The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items. Cancelled jobs are restarted individually; **Retry all…** covers failed jobs only.
+The same `POST /api/v1/queue/{id}/retry` endpoint that powers the failed-item Retry button also handles cancelled items. Cancelled jobs can be restarted individually or together with failed jobs using **Retry all…**.
 
-### Retry all failed jobs
+### Retry all failed and cancelled jobs
 
-In a printer's **Issues** section, **Retry all…** loads all issue pages and asks you to confirm the printer and failed-job count. It returns those jobs to the end of that printer's queue, using the same source checks as individual Retry. Cancelled and skipped jobs stay unchanged; queue pauses and print checks still apply. The action requires permission to update all queue jobs.
+In a printer's **Issues** section, **Retry all…** loads all issue pages and asks you to confirm the printer, failed-job count and cancelled-job count separately. It returns those jobs to the end of that printer's queue, using the same source checks as individual Retry. Jobs whose state changed since the review and skipped jobs stay unchanged; queue pauses and print checks still apply. The action requires permission to update all queue jobs.
 
 The confirmed list is one server transaction: the scheduler sees the whole block together, even for jobs that require a successful predecessor. Jobs that became cancelled or active meanwhile stay unchanged; later failures are not added. The operation continues if its card unmounts. The summary counts every refusal category; a lost response asks you to refresh before retrying.
 
