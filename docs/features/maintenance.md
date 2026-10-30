@@ -127,3 +127,10 @@ Telegram bot users receive actionable notifications with a **Mark Done** inline 
     Follow intervals rather than waiting for problems. Preventive maintenance avoids costly failures.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
+
+
+### Sidebar attention
+
+The sidebar shows a dot without a number: yellow when maintenance is due soon, red when any maintenance is overdue. Overdue takes priority. The scope is active, non-archived printers, further restricted by an API key's printer list. A printer in Maintenance Mode is inactive and does not contribute; an offline active printer still does.
+
+The menu reads a compact summary without creating maintenance assignments or default types. A new release's default type appears after the existing detail, overview or background workflow seeds it. The summary refreshes periodically, and maintenance actions refresh it immediately.

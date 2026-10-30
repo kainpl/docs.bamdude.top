@@ -624,3 +624,18 @@ You won't see "queue stuck" reports from this any more, including immediately af
     Combine scheduling with auto power-off for hands-free operation.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
+
+
+## Queue attention and pending estimates
+
+The printer card shows its **queue state** separately from the printer's physical state, including when the queue is empty or the printer is offline. In the sidebar, the existing job count remains; a separate dot at the right edge is yellow for a paused printer queue and red for a queue error. Error takes priority. A physical printer pause and an old failed job alone do not set this dot.
+
+Pending jobs show their selected captured plate's **slicer estimate**, not a completion time. Missing estimates are shown as **—**. An auto-queue group shows the time of one print only when every copy has the same known estimate; otherwise expand it to see individual estimates. Long names shorten with an ellipsis so the time and actions remain visible.
+
+### Move one job to the auto queue
+
+Use **Move to auto queue** on a pending copy in the printer queue card or list. It works for a job queued directly to a printer as well as one assigned by the distributor. The server requires a ready captured sliced source and proof that the job has never started. Legacy jobs without a captured source, previous dispatch attempts and calibration jobs cannot be moved this way.
+
+Review the proposal before confirming. The job keeps its source bytes, order line, author, schedule and one-copy quantity. Print options use the original creator's standard profile; the server lists changes. A manually staged job requires consent to automatic assignment and start. Physical filament pins require consent to automatic filament selection. Macros and physical mappings are resolved again when a printer is chosen.
+
+The distributor can assign the job immediately, even back to this printer. Moving does not resume the source queue or clear a plate gate. It does not return quantities to an order's working plan. If the response is lost, check both queues before taking another action; do not assume the move failed.
