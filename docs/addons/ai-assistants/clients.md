@@ -11,7 +11,7 @@ This matrix was checked on **1 November 2026**. It describes a development build
 |---|---|---|---|
 | Codex CLI app-server 0.166.0, Windows | Portable skill plugin plus separately configured direct MCP | Installed/removed through the package's bundled local catalog in an isolated profile; installed skill discovered; real BamDude capabilities, guide and refusal after revoke; no model turn | Desktop and other OSes unverified |
 | Claude Code 2.1.314, Windows | Claude plugin ZIP, local Node 22.19+ | Installed/removed through the package's bundled local catalog in an isolated profile; skill loaded; user configuration accepted; bundled connector connected and advertised both tools | Model-mediated calls, Desktop and other OSes unverified |
-| Claude Desktop, Windows/macOS | MCPB connector plus separate skill ZIP | Manifest schema; bundled connector independently tested | Desktop installation and bundled Node compatibility unverified |
+| Claude Desktop 4.4212.0, Windows | MCPB connector plus separate skill ZIP | Real MCPB install/remove; built-in Node enabled; configuration with empty CA; separate skill installed and used; one model request called capabilities and guide through an isolated loopback server | Desktop updates, LAN TLS, refusal after revoke through Desktop and macOS unverified |
 | ChatGPT web / cloud | None supported in v1 | No key-only network path verified | Private LAN reachability, client auth/account availability |
 
 ## Codex
@@ -59,10 +59,12 @@ The setup panel's **Manual connection** HTTP example connects directly, bypassin
 ## Claude Desktop
 
 1. Download the `.mcpb` package from the setup panel.
-2. In Desktop's local **Extensions** installation UI, select that package and review its local connector permission request.
-3. Enter the farm address and key in the extension's configuration. For a self-signed certificate, select its CA file. The package requires the host's bundled Node to meet its declared minimum; this still needs Desktop acceptance.
-4. Download the **skill ZIP** separately and install it through the client's Skills UI. Installing MCPB alone does not install the skill.
-5. Restart the connection and request capabilities and guide. Check the selected key's MCP marker in BamDude.
+2. Open **Settings → Extensions → Advanced settings → Install extension**, select the package, review it and confirm **Install**. The tested host had **Use built-in Node.js for MCP** enabled; its built-in Node met the package's minimum.
+3. Enter the farm address and key in **Configure**, save, then enable the extension. Leave the optional **Trusted CA file** empty for a normally trusted certificate. For a self-signed certificate, select its CA file. **Settings → Developer → BamDude AI** should show **Running**; this alone does not prove a tool call.
+4. Download the **skill ZIP** separately. Use **Skills → Add → Upload skill**, select the ZIP and confirm **Upload**. The skill appears as `bamdude-diagnostics`; its **Contents** includes `SKILL.md` and the references. Installing MCPB alone does not install the skill. Uploading the skill stores its instructions in your Claude account.
+5. Start a fresh chat with the skill (or use **Try in chat**) and request capabilities and guide. Approve the named read-only tool calls when prompted. Check the selected key's MCP marker in BamDude.
+
+The Windows check used an isolated test database, an ephemeral key and a loopback server, not a live farm. The connector was removed after the key was revoked; the installed skill and test chat were kept. Updating an existing Desktop extension and connecting over LAN TLS were not tested.
 
 Desktop's cloud **remote connector** is a different route: its requests may come from the provider's infrastructure, not your computer. See [local MCP servers on Desktop](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 

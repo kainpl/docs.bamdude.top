@@ -71,6 +71,6 @@ After updating BamDude, download its matching client ZIP. For a **local Codex or
 
 4. Check that the installed version matches the new package. Start a **new client session**: an existing session can retain the old skill. Check the key/CA configuration, then request capabilities and the guide again.
 
-`codex plugin marketplace upgrade` refreshes Git catalogs; it is not the update command for this local ZIP. If you move the permanent folder, register its new path using the [installation steps](clients.md). Package replacement does not rotate or revoke the key. Claude Desktop update/install remains [unverified](clients.md); the CLI proof does not establish it. If contracts are incompatible, update the server/client package together; do not bypass the check.
+`codex plugin marketplace upgrade` refreshes Git catalogs; it is not the update command for this local ZIP. If you move the permanent folder, register its new path using the [installation steps](clients.md). Package replacement does not rotate or revoke the key. Claude Desktop installation was checked separately on Windows, but its update path remains [unverified](clients.md); the CLI update proof does not establish it. If contracts are incompatible, update the server/client package together; do not bypass the check.
 
 To rotate a key, create its replacement, configure and verify it, then revoke the old key. To disconnect fully: **revoke the key in BamDude → remove the client plugin/connector → optionally disable MCP**. Uninstalling a plugin alone leaves its key valid.
