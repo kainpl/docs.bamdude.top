@@ -284,6 +284,19 @@ POST /api/v1/system/printers/{printer_id}/print-state/apply
 GET  /api/v1/system/printers/{printer_id}/print-state/history
 ```
 
+### Queue leftovers
+
+**Queue leftovers** lists queue rows that nothing will clean up any more. A finished row normally disappears when its print ends. A printer that confirms its plate keeps it until **Clear plate** or **Repeat**, and a held table swap keeps it as the record of the hold. Once another print has started on the same printer, neither can still happen, so the row — and the AutoQueue assignment that pointed at it — is only clutter. The panel also lists AutoQueue assignments whose printer job is gone.
+
+BamDude removes these by itself when a printer reconnects and after each print finishes; the panel shows what is left and lets you remove it now. A row that may still be answered stays, with the reason: it is its queue's current job, the printer is waiting for a plate answer about it, its archive is not finished, its table swap is still owed, or the archive does not have its own copy of the file yet. Removing deletes only these queue records — archives, photos, accounting and print history stay, and nothing is sent to printers. Failed, cancelled and skipped jobs are never leftovers: they stay for **Retry**.
+
+Listing requires `queue:read_all`; removing requires `queue:delete_all`. A key limited to some printers sees and removes only those printers' rows, and never orphan assignments.
+
+```
+GET  /api/v1/queue/leftovers
+POST /api/v1/queue/leftovers/retire
+```
+
 ```
 GET    /api/v1/system/info             # full system snapshot
 GET    /api/v1/system/storage-usage    # bucketed storage breakdown
