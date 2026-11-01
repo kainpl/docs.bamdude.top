@@ -9,14 +9,21 @@ This matrix was checked on **1 November 2026**. It describes a development build
 
 | Client / route | Package | What is verified | Remaining boundary |
 |---|---|---|---|
-| Codex CLI app-server 0.166.0, Windows | Direct MCP plus workspace skill; portable plugin separately | Real BamDude connection: capabilities, guide, discovered skill, refusal after revoke; no model turn | Plugin installation and other OSes unverified |
-| Claude Code 2.1.314, Windows | Claude plugin ZIP, local Node 22.19+ | Strict manifest validation; bundled connector socket tests | Installation and client execution pending |
+| Codex CLI app-server 0.166.0, Windows | Portable skill plugin plus separately configured direct MCP | Installed/removed through the package's bundled local catalog in an isolated profile; installed skill discovered; real BamDude capabilities, guide and refusal after revoke; no model turn | Desktop and other OSes unverified |
+| Claude Code 2.1.314, Windows | Claude plugin ZIP, local Node 22.19+ | Installed/removed through the package's bundled local catalog in an isolated profile; skill loaded; user configuration accepted; bundled connector connected and advertised both tools | Model-mediated calls, Desktop and other OSes unverified |
 | Claude Desktop, Windows/macOS | MCPB connector plus separate skill ZIP | Manifest schema; bundled connector independently tested | Desktop installation and bundled Node compatibility unverified |
 | ChatGPT web / cloud | None supported in v1 | No key-only network path verified | Private LAN reachability, client auth/account availability |
 
 ## Codex
 
-1. Download the portable plugin ZIP and extract it. Install the skill/plugin through the client's local plugin flow. The package contains guidance; it does not install credentials or silently configure a server.
+The ZIP includes a local catalog, not a published marketplace. Extract it to a permanent folder such as `C:\BamDude-AI`; keep that folder for updates. The same path is used below as `<extracted-folder>`.
+
+1. Download and extract the portable plugin ZIP, then run these commands with your actual folder path. They install the skill; they do not configure credentials or a server:
+
+    ```powershell
+    codex plugin marketplace add "<extracted-folder>"
+    codex plugin add bamdude-ai@bamdude-ai-local
+    ```
 2. In BamDude's **Manual connection** section, copy the PowerShell command for the saved address. It contains an environment-variable name, not your key.
 3. Supply `BAMDUDE_MCP_KEY` to the Codex process through your normal private environment configuration. Do not put it in chat or commit it to a project. This is an environment secret, not a claim of OS-vault storage.
 4. Alternatively, add the following configuration using your own address:
@@ -33,12 +40,19 @@ The ChatGPT desktop app's local Codex MCP settings are a different route from Ch
 
 ## Claude Code
 
-1. Extract the Claude plugin ZIP and install that directory through Claude Code's plugin flow. For a temporary test, `claude --plugin-dir <extracted-directory>` loads it for that session.
+1. Extract the Claude plugin ZIP to a permanent folder and register its bundled local catalog, then install:
+
+    ```powershell
+    claude plugin marketplace add "<extracted-folder>"
+    claude plugin install bamdude-ai@bamdude-ai-local
+    ```
+
+    For a temporary test, `claude --plugin-dir <extracted-folder>` loads it for that session.
 2. Enter **BamDude MCP address**, **BamDude MCP key** and, when needed, **Trusted CA file** in the plugin's user configuration. The key field is marked sensitive; the client manages its storage.
 3. This plugin uses the local Node connector. Node 22.19+ must be available on that computer.
 4. Start a fresh client connection and request capabilities and guide. The plugin includes the canonical skill.
 
-This package has no registered marketplace; do not use a made-up repository install command. See [Claude's plugin reference](https://code.claude.com/docs/en/plugins-reference).
+This package has no public marketplace; do not use a made-up GitHub install command. Its local catalog is already in the ZIP. See [Claude's plugin reference](https://code.claude.com/docs/en/plugins-reference).
 
 The setup panel's **Manual connection** HTTP example connects directly, bypassing the local connector: its CA-file setting, redirect/OAuth protections and connector limits do not apply; for a self-signed server, configure trust in Claude Code itself and never disable TLS verification.
 
