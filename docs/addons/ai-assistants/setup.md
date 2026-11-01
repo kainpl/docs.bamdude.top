@@ -49,6 +49,28 @@ Check **I installed the skill in this client** only after installing it in that 
 
 ## Update, rotate or disconnect
 
-After updating BamDude, download matching packages and update them through the client's normal installation flow. If contracts are incompatible, update the server/client package together; do not bypass the check.
+After updating BamDude, download its matching client ZIP. For a **local Codex or Claude Code installation**, use this procedure (verified on Windows with Codex CLI 0.166.0 and Claude Code 2.1.314):
+
+1. Close the client and its MCP connection. Keep the previous extracted folder as a backup.
+2. Extract the new ZIP into a fresh folder at the **same permanent path** you registered earlier. Replace the contents completely; do not merge into the old folder or create an extra nested directory.
+3. Run the commands for your client:
+
+    **Codex CLI**
+
+    ```powershell
+    codex plugin add bamdude-ai@bamdude-ai-local
+    codex plugin list --json
+    ```
+
+    **Claude Code**
+
+    ```powershell
+    claude plugin update bamdude-ai@bamdude-ai-local
+    claude plugin list --json
+    ```
+
+4. Check that the installed version matches the new package. Start a **new client session**: an existing session can retain the old skill. Check the key/CA configuration, then request capabilities and the guide again.
+
+`codex plugin marketplace upgrade` refreshes Git catalogs; it is not the update command for this local ZIP. If you move the permanent folder, register its new path using the [installation steps](clients.md). Package replacement does not rotate or revoke the key. Claude Desktop update/install remains [unverified](clients.md); the CLI proof does not establish it. If contracts are incompatible, update the server/client package together; do not bypass the check.
 
 To rotate a key, create its replacement, configure and verify it, then revoke the old key. To disconnect fully: **revoke the key in BamDude → remove the client plugin/connector → optionally disable MCP**. Uninstalling a plugin alone leaves its key valid.
