@@ -89,6 +89,12 @@ plugins:
           build: true
           site_description: Самостійно хостоване керування фермою 3D-друку для принтерів Bambu Lab
           nav_translations:
+            Add-ons: Додатки
+            AI assistants: AI-асистенти
+            AI overview: Огляд AI-підключення
+            Connect an assistant: Підключення асистента
+            AI clients: AI-клієнти
+            AI troubleshooting: Усунення проблем AI
             Home: Головна
             Why BamDude: Чому BamDude
             Getting Started: Початок роботи
@@ -351,6 +357,11 @@ nav:
   - Add-ons:
     - addons/index.md
     - BamDude Bridge: addons/bridge.md
+    - AI assistants:
+      - AI overview: addons/ai-assistants/index.md
+      - Connect an assistant: addons/ai-assistants/setup.md
+      - AI clients: addons/ai-assistants/clients.md
+      - AI troubleshooting: addons/ai-assistants/troubleshooting.md
 
   - Reference:
     - reference/index.md

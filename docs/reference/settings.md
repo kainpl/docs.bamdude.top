@@ -5,6 +5,10 @@ description: Every key under Settings → System / Print / Archive / Inventory /
 
 # Settings reference
 
+## Optional AI assistant connection (development preview)
+
+The [AI assistant setup panel](../addons/ai-assistants/setup.md) is under Settings → API Keys. `mcp_enabled` defaults to `false`; `mcp_endpoint_url` is the operator's saved canonical address; `mcp_allowed_hosts` and `mcp_allowed_origins` are exact allowlists. These settings do not grant a key MCP access or increase owner permissions.
+
 This is the comprehensive index of every persistent setting BamDude exposes — what each one does, its default, and where it shows up in the UI. Settings live in the `settings` key-value table; most are surfaced under **Settings** in the side nav, but a few are read-only mirrors of env vars (the env value wins).
 
 The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a setting isn't on this page, check there before assuming it doesn't exist — defaults below were verified against that schema.

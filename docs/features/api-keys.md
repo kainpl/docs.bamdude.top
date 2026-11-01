@@ -5,6 +5,8 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 # API Keys
 
+For the optional MCP connection and its separate diagnostic preset, use the [AI assistant setup guide](../addons/ai-assistants/setup.md). Existing keys have MCP and MCP log access disabled; enabling either never increases the owner's permissions.
+
 API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bd_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
 
 The auth stack is **always on** (see [Authentication](authentication.md)) — a key is the headless equivalent of a logged-in user, not a bypass.
