@@ -40,6 +40,8 @@ The ChatGPT desktop app's local Codex MCP settings are a different route from Ch
 
 This package has no registered marketplace; do not use a made-up repository install command. See [Claude's plugin reference](https://code.claude.com/docs/en/plugins-reference).
 
+The setup panel's **Manual connection** HTTP example connects directly, bypassing the local connector: its CA-file setting, redirect/OAuth protections and connector limits do not apply; for a self-signed server, configure trust in Claude Code itself and never disable TLS verification.
+
 ## Claude Desktop
 
 1. Download the `.mcpb` package from the setup panel.
