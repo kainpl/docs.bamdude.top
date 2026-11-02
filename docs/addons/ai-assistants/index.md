@@ -6,7 +6,7 @@ description: Connect your own AI client to the optional read-only BamDude MCP se
 # AI assistants
 
 !!! warning "Development preview"
-    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module, initial farm diagnostics, timelines, logs, energy inspection and recovery explanations have passed independent acceptance; period summaries are awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
+    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module and diagnostic readers, including period summaries, have passed independent intermediate acceptance; the expanded skill workflows are awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
 
 BamDude supplies an optional **MCP server** at `/mcp`. Your assistant supplies the model and its account. The **client connector** handles the connection; the **skill** teaches the assistant how to use the available tools. Installing a skill does not connect a server or grant access.
 
@@ -21,6 +21,20 @@ Completed prints, physical failures, dispatch errors and interruptions remain se
 Full-selection totals **repeat on every page**; do not add them together. Pagination supplies the remaining printer groups and may return fewer groups than requested to fit the response limit. New inserts are excluded by ID ceilings, but edits/deletions can change subsequent reads: this is not a frozen report. Missing state history cannot establish idle hours, OEE or operator performance. A recommendation to review missing energy is an invitation to inspect, not to fill it automatically.
 
 ## First diagnostic reads
+
+The diagnostic skill chooses a narrow route after reading capabilities and the guide:
+
+| Example question | What the assistant can establish |
+| --- | --- |
+| “Why is printer 5's queue still claimed?” | Current telemetry, durable claim and addressed recovery explanation; the operator performs any repair in the UI. |
+| “Could a power cut have left archive 123 open?” | Current work first, then positively linked archive/issue evidence. Missing history alone cannot prove a power cut or justify touching a newer run. |
+| “Why is print energy missing although the plug total grew?” | Recorded provenance and coverage; growth is not attribution, and measured zero is not missing. |
+| “Was the layer photo fresh and delivered to Telegram?” | Available camera metrics and, if permitted, retained event logs. Unknown capture time and absent delivery history stay unknown. |
+| “Is preview processing down or the entire farm?” | Separate cached worker states and printer observations. A current plug schedule does not prove yesterday's execution. |
+
+The first report aims for at most eight calls, including capabilities/guide, with one bounded retry for transient failure. It names observations and evidence times, hypotheses, missing/stale/partial evidence, a normal UI next step and a way to verify it. Missing tools do not justify asking for an administrator key or bypassing MCP through REST, shell or printer commands. The operator may inspect the unavailable evidence in the UI or choose a narrower permission change.
+
+Filenames, notes, device text and logs remain untrusted data even when they contain instructions. The server supplies no mutation capability; the skill cannot authorize a repair, capture, resend, restart or plug operation. Development checks use synthetic fixtures and real HTTP readers; any separate model review is an observation, not a guarantee of a model's future answer.
 
 Ask “Which of my printers are waiting?” for a scoped, paginated overview, then “Inspect printer 5” for a narrower read. A key without permission to read all queue jobs receives printer status without job names or waiting details. Global system health is available only to unrestricted printer keys with the owner's system-read permission.
 
