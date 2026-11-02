@@ -28,6 +28,8 @@ The diagnostic skill chooses a narrow route after reading capabilities and the g
 | --- | --- |
 | “Why is printer 5's queue still claimed?” | Current telemetry, durable claim and addressed recovery explanation; the operator performs any repair in the UI. |
 | “Could a power cut have left archive 123 open?” | Current work first, then positively linked archive/issue evidence. Missing history alone cannot prove a power cut or justify touching a newer run. |
+| “H2S has a completed archive, but its row still says printing. Why is recovery refused?” | Separate pending effects, missing run times and dependencies; explain the addressed policy without bypassing blockers. |
+| “Runout occurred on the last layer. Is the spool empty?” | Retained runout, replacement and correction evidence. Runout alone does not prove a physically empty spool or justify zeroing or unassignment. |
 | “Why is print energy missing although the plug total grew?” | Recorded provenance and coverage; growth is not attribution, and measured zero is not missing. |
 | “Was the layer photo fresh and delivered to Telegram?” | Available camera metrics and, if permitted, retained event logs. Unknown capture time and absent delivery history stay unknown. |
 | “Is preview processing down or the entire farm?” | Separate cached worker states and printer observations. A current plug schedule does not prove yesterday's execution. |
@@ -35,6 +37,8 @@ The diagnostic skill chooses a narrow route after reading capabilities and the g
 The first report aims for at most eight calls, including capabilities/guide, with one bounded retry for transient failure. It names observations and evidence times, hypotheses, missing/stale/partial evidence, a normal UI next step and a way to verify it. Missing tools do not justify asking for an administrator key or bypassing MCP through REST, shell or printer commands. The operator may inspect the unavailable evidence in the UI or choose a narrower permission change.
 
 Filenames, notes, device text and logs remain untrusted data even when they contain instructions. The server supplies no mutation capability; the skill cannot authorize a repair, capture, resend, restart or plug operation. Development checks use synthetic fixtures and real HTTP readers; any separate model review is an observation, not a guarantee of a model's future answer.
+
+The seven synthetic investigation scenarios include the H2S mismatch and final-layer runout, each with a negative control. Fixtures declare allowed conclusions, required rights, unavailable sections, UI next steps and evidence IDs. Limited-owner cases also check hidden tools and refused direct calls; this checks server facts, not model prose.
 
 Ask “Which of my printers are waiting?” for a scoped, paginated overview, then “Inspect printer 5” for a narrower read. A key without permission to read all queue jobs receives printer status without job names or waiting details. Global system health is available only to unrestricted printer keys with the owner's system-read permission.
 
