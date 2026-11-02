@@ -6,11 +6,19 @@ description: Connect your own AI client to the optional read-only BamDude MCP se
 # AI assistants
 
 !!! warning "Development preview"
-    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module, initial farm diagnostics, timelines, logs and energy inspection have passed independent acceptance; recovery explanations are awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
+    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module, initial farm diagnostics, timelines, logs, energy inspection and recovery explanations have passed independent acceptance; period summaries are awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
 
 BamDude supplies an optional **MCP server** at `/mcp`. Your assistant supplies the model and its account. The **client connector** handles the connection; the **skill** teaches the assistant how to use the available tools. Installing a skill does not connect a server or grant access.
 
-The base module provides two operations: read capabilities and read the usage guide. It also provides the same guide as a resource and a short prompt. Diagnostics add **farm overview, printer inspection, local-service health, print timelines, opt-in application logs, persisted energy evidence and recovery explanations**. The assistant must read capabilities: permissions can hide tools, and period summaries are not available yet.
+The base module provides two operations: read capabilities and read the usage guide. It also provides the same guide as a resource and a short prompt. Diagnostics add **farm overview, printer inspection, local-service health, print timelines, opt-in application logs, persisted energy evidence, recovery explanations and period summaries**. The assistant must read capabilities: permissions can hide tools.
+
+## Period summaries
+
+Ask for a period summary with offset-aware start and end times and an IANA timezone, for example `Europe/Kyiv`. The range is at most 31 days, includes the start and excludes the end. Archives are selected by **creation time**, rather than completion time, with the same trash/source-only exclusions and outcome classification as Statistics. Printer-read, all-archives-read and statistics-read rights are required; the key's printer list narrows every count. Explicit hidden or missing printer IDs are refused together. Archives without a visible printer are excluded and this gap is named.
+
+Completed prints, physical failures, dispatch errors and interruptions remain separate. Physical success rate divides completed by completed plus physical failures. Measured duration is separate from slicer estimates, estimated closures, missing time and invalid intervals. Durations are sums for the selected archives, without clipping to the requested window; overlaps are warnings, not utilization. Print energy retains its recorded provenance and known-value/cost coverage. Nothing polls plugs or recalculates accounting.
+
+Full-selection totals **repeat on every page**; do not add them together. Pagination supplies the remaining printer groups and may return fewer groups than requested to fit the response limit. New inserts are excluded by ID ceilings, but edits/deletions can change subsequent reads: this is not a frozen report. Missing state history cannot establish idle hours, OEE or operator performance. A recommendation to review missing energy is an invitation to inspect, not to fill it automatically.
 
 ## First diagnostic reads
 
