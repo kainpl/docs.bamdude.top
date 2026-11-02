@@ -42,6 +42,8 @@ The seven synthetic investigation scenarios include the H2S mismatch and final-l
 
 Ask “Which of my printers are waiting?” for a scoped, paginated overview, then “Inspect printer 5” for a narrower read. A key without permission to read all queue jobs receives printer status without job names or waiting details. Global system health is available only to unrestricted printer keys with the owner's system-read permission.
 
+If printing rows and the queue header disagree, the assistant receives an ambiguity finding and no asserted current job. The header is retained as evidence, not proof of what is physically printing. Inspect the addressed recovery issue in the UI before choosing an action.
+
 These tools read existing observations. They do not reconnect printers, capture photos, poll plugs, run active diagnostics or run the scheduler. The report separates current telemetry from persisted queue claims. A claim alone is not proof that a printer is busy or that the claim is stale; inspect it in BamDude before taking action. An unknown camera timestamp stays unknown, and plug schedules describe current rules rather than yesterday's execution history.
 
 ## Print timelines and logs
