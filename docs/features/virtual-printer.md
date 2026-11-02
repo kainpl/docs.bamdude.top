@@ -75,7 +75,7 @@ The nozzle source follows the **printer binding**, not the mode name:
 | File Manager, Queue or automatic queue without a target | Diameter and flow saved on this VP |
 
 !!! info "Slicer compatibility: source review, not live Send verification"
-    The client behavior described below is inferred from BambuStudio 2.8.2.61 and OrcaSlicer 2.4.2 source code. Live Send acceptance (A10), including cold-bound behavior and source changes, is still pending. These are reviewed source versions, not versions verified by sending a file from an installed client.
+    The client behavior described below is inferred from BambuStudio 2.8.2.61 and OrcaSlicer 2.4.2 source code. Live Send verification, including cold-bound behavior and source changes, is still pending. These are reviewed source versions, not versions verified by sending a file from an installed client.
 
 For an unbound VP, choose **Nozzle diameter** (0.2, 0.4, 0.6 or 0.8 mm) and **Flow type** (Standard, High Flow, TPU High Flow or E3D High Flow). The defaults are 0.4 mm / Standard. These settings advertise the **main/right nozzle only**; they do not change physical hardware. The legacy VP report carries the flow code, but Bambu Studio and Orca do **not display or compare flow** for this report format. They check the diameter.
 
