@@ -6,11 +6,11 @@ description: Connect your own AI client to the optional read-only BamDude MCP se
 # AI assistants
 
 !!! warning "Development preview"
-    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module and first farm diagnostics slice have passed independent acceptance; timelines and logs are awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
+    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module, initial farm diagnostics, timelines and logs have passed independent acceptance; energy inspection is awaiting review. The [support matrix](clients.md) separates package validation from a verified client connection.
 
 BamDude supplies an optional **MCP server** at `/mcp`. Your assistant supplies the model and its account. The **client connector** handles the connection; the **skill** teaches the assistant how to use the available tools. Installing a skill does not connect a server or grant access.
 
-The base module provides two operations: read capabilities and read the usage guide. It also provides the same guide as a resource and a short prompt. Diagnostics add **farm overview, printer inspection, local-service health, print timelines and opt-in application logs**. The assistant must read capabilities: permissions can hide tools, and energy, period summaries and recovery explanations are not available yet.
+The base module provides two operations: read capabilities and read the usage guide. It also provides the same guide as a resource and a short prompt. Diagnostics add **farm overview, printer inspection, local-service health, print timelines, opt-in application logs and persisted energy evidence**. The assistant must read capabilities: permissions can hide tools, and period summaries and recovery explanations are not available yet.
 
 ## First diagnostic reads
 
@@ -27,6 +27,14 @@ For a narrow application-log query, the key needs both an unrestricted printer s
 MCP is disabled by default. A separate API key must opt in, have an active owner and satisfy that owner's existing permissions. Choose only the printers needed. Logs require an additional opt-in. The diagnostic preset grants no queue-write, printer-control, inventory-write, cloud-token or label-printing permissions.
 
 The integration does not start prints, switch plugs, execute shell/SQL, fetch arbitrary URLs, repair the database or run a background AI agent. Repairs remain in BamDude's normal UI.
+
+## Energy evidence
+
+Ask for energy evidence for one printer and an explicit time interval, for example “Inspect printer 5's energy from October 24 to October 26, with Kyiv's UTC offsets.” The maximum range is 31 days. The owner's printer-read, all-archives-read, smart-plug-read and statistics-read rights are required; printer restrictions still apply.
+
+Prints are selected by archive creation time. Returned print totals cover only that page, with measured, approximate, estimated and legacy figures separated; missing or unavailable energy stays unknown, while stored zero remains zero. Follow the cursor for more records. Repeated power-quality summaries describe the requested range and must not be added across pages.
+
+Counter deltas describe sampled windows of the currently bound plug after its measurement-source cutoff. They are not exact requested-period consumption or the printer's historical total. Older source history is omitted after reassignment; archive-owned print figures remain available. Decreasing readings are evidence of a decrease, without guessing a reset. Counter growth beside missing print accounting is an observed coincidence, not proof that those prints consumed the delta: idle usage also contributes. The tool reads persisted meter suspicions and quality gaps without polling plugs, recalculating energy or changing accounting.
 
 ## Choose the next step
 
