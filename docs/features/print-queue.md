@@ -86,11 +86,16 @@ Every queue item carries one of exactly six statuses (visible on the queue card 
 
 There is **no `paused` item status.** A print paused *on the printer* — operator pause, filament runout, an AMS issue — is a printer state, read live off the machine; the queue item stays `printing` throughout.
 
-**Waiting is not a state of its own either.** An item the scheduler looked at and decided not to start yet stays `pending` and carries a separate `waiting_reason` text, shown on the row — *"Printer offline"*, *"Drying in progress"*, *"Plate not cleared"*, a staggered-start line naming what it is waiting behind, or *"Swap macro failed: …"*. The reason is rewritten on every pass and cleared the moment the printer is ready, so it always reflects the most recent tick rather than a status the row is stuck in.
+**Waiting is not a state of its own either.** An item the scheduler looked at and decided not to start yet stays `pending` and carries a separate `waiting_reason` text, shown on the row — *"Printer offline"*, *"Drying in progress"*, *"Plate not cleared"*, a staggered-start line naming what it is waiting behind, or *"Swap macro failed: …"*. The reason is checked on every pass, updated when the decision changes, and cleared when the printer is ready, so it always reflects the most recent tick rather than a status the row is stuck in.
 
 The queue card header shows counters in two flavours. **Pending** and **Skipped** are cached on the queue row and recounted whenever it changes; **Total / Completed / Failed / Cancelled** are computed from `print_archives` through `archive.queue_id` at read time, so they stay right even after the live rows auto-clean.
 
 ---
+
+!!! warning "A previous print context is blocking a start"
+    The job stays pending before another upload or preheat begins. A direct send is refused before its source is copied. Use **Check print states** to open the System page for that printer; the link only reads diagnostics. If a safe release is offered, review and confirm it, inspect the printer, then resume its queue separately. A brief finishing race can also cause this refusal: retrying after the context ends is allowed.
+
+    A missing archive or unfinished work can make a safe release unavailable. Save a support bundle for the responsible operator. This warning does not automatically clear a print context or authorize deleting and re-adding the printer.
 
 ## :material-plus: Adding to Queue
 
