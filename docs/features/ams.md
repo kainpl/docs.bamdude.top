@@ -39,8 +39,15 @@ Manually configure slots for third-party filaments:
 3. Choose a **filament family** — the same identity Bambu Studio uses; see
    [Filament Families](filament-families.md)
 4. Select a matching K profile
-5. Optionally set a custom color — the suggestions are the distinct colours
-   of your own non-archived spools of that family, not a global colour chart
+5. Optionally set a color. **Manufacturer colors** offers catalog shades for
+   the exact selected family, even if you do not own a spool yet. **Colors from
+   your spools** separately shows distinct colors of your non-archived spools
+   linked to that family. Quick colors and manual input remain available.
+
+For example, choose **Bambu PETG HF → Cream** from Manufacturer colors for that
+product's exact shade. Generic Cream in the quick palette is a different RGB.
+The catalog does not mix product series or guess a palette for an unrecognized
+custom family. Choosing a catalog color does not assign an inventory spool.
 
 The per-printer preset and its temperatures are resolved from the catalog for
 the printer and the **nozzle actually fitted** — with a 0.6 mm nozzle the tray
