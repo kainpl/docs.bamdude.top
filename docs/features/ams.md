@@ -44,6 +44,10 @@ Manually configure slots for third-party filaments:
    your spools** separately shows distinct colors of your non-archived spools
    linked to that family. Quick colors and manual input remain available.
 
+The **Manufacturer colors** group appears only when the color catalog contains
+that exact series. If it has no matching series, use your spool colors, the
+quick palette or manual input.
+
 For example, choose **Bambu PETG HF → Cream** from Manufacturer colors for that
 product's exact shade. Generic Cream in the quick palette is a different RGB.
 The catalog does not mix product series or guess a palette for an unrecognized
