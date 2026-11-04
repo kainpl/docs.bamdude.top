@@ -130,6 +130,14 @@ Current-log download uses `GET /api/v1/support/logs/download` and requires `sett
 |---|---|
 | `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymised settings, dependency versions, log-file size, network interfaces with masked subnets, WebSocket connection count, Docker memory limit (if containerised), **and the BamDude process itself** — see below. |
 | `bamdude.log` | The tail of `bamdude.log`, sanitised. |
+| `push-status/printer-N.json` | The last status report of printer N, structurally redacted — the shape of that model's firmware payload. |
+| `mqtt/printer-N/…` | Only when you tick a printer's raw MQTT recording: the **unsanitised** capture, under its original file name. |
+
+### How printers are numbered in a bundle
+
+A bundle never names a printer. Each one is a number from 1, given by its place among the bundle's printers ordered by id, and the **same machine has the same number everywhere in that bundle**: the printers list, the per-printer queue rows, the connection diagnostics (where `index` sits beside the printer's `printer_id`), `push-status/printer-N.json` and `mqtt/printer-N/`. The printers are read once per bundle, so a printer added, removed or re-added while the bundle is being made never shifts another one's number or lends it its data.
+
+The number means something only inside its own bundle — printer 2 of today's bundle may be another machine in next week's. `support-info.json` says so in its `printer_index` key; bundles made before that key existed matched sections by position, which was not always the same machine.
 
 ### The BamDude process itself
 

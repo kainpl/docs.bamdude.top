@@ -130,6 +130,8 @@ Multi-line entry-ї (особливо stack traces) пересобираютьс
 |---|---|
 | `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymized settings, dependency versions, log-file size, network interfaces з masked subnets, WebSocket connection count, Docker memory limit (якщо containerised) — **і сам процес BamDude**, див. нижче. |
 | `bamdude.log` | Tail `bamdude.log`, sanitised. |
+| `push-status/printer-N.json` | Останній звіт стану принтера N, структурно очищений — форма payload прошивки цієї моделі. |
+| `mqtt/printer-N/…` | Лише коли ви позначили сирий MQTT-запис принтера: **неочищений** запис під своєю оригінальною назвою файла. |
 
 Bundle вимагає, щоб **debug logging був наразі ввімкнений** — endpoint відмовляється генерувати інакше (`400 Debug logging must be enabled before generating a support bundle`). Workflow:
 
@@ -137,6 +139,12 @@ Bundle вимагає, щоб **debug logging був наразі ввімкне
 2. Відтвори issue.
 3. Згенеруй bundle.
 4. Перемкни DEBUG logging back off (інакше залишається on — стан персистить у `Settings`-таблиці і re-apply при рестарті).
+
+### Як нумеруються принтери в бандлі
+
+Бандл ніколи не називає принтер. Кожен — це номер від 1 за його місцем серед принтерів бандла, впорядкованих за id, і **та сама машина має той самий номер усюди в цьому бандлі**: у списку принтерів, у рядках черги, у діагностиці з'єднання (де `index` стоїть поруч із `printer_id` принтера), у `push-status/printer-N.json` і `mqtt/printer-N/`. Принтери читаються один раз на бандл, тож принтер, доданий, видалений чи доданий знову під час збирання, не зсуває чужий номер і не позичає йому своїх даних.
+
+Номер має сенс лише всередині свого бандла — принтер 2 сьогоднішнього бандла може бути іншою машиною в наступному. `support-info.json` каже про це ключем `printer_index`; бандли без цього ключа зіставляли розділи за позицією, і це не завжди була та сама машина.
 
 ### Сам процес BamDude
 
