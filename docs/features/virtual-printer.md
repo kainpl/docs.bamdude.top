@@ -65,6 +65,32 @@ How it works (operator-relevant subset):
 
 ## :material-cog: Setup
 
+### Nozzle diameter and flow
+
+The nozzle source follows the **printer binding**, not the mode name:
+
+| VP configuration | Nozzle source |
+|---|---|
+| Proxy or any VP with a target printer, including a specific printer queue | The real printer's reported nozzles |
+| File Manager, Queue or automatic queue without a target | Diameter and flow saved on this VP |
+
+!!! info "Slicer compatibility: source review, not live Send verification"
+    The client behavior described below is inferred from BambuStudio 2.8.2.61 and OrcaSlicer 2.4.2 source code. Live Send, including cold-bound behavior and source changes, has not been tested. These are reviewed source versions, not versions verified by sending a file from an installed client.
+
+For an unbound VP, choose **Nozzle diameter** (0.2, 0.4, 0.6 or 0.8 mm) and **Flow type** (Standard, High Flow, TPU High Flow or E3D High Flow). The defaults are 0.4 mm / Standard. These settings advertise the **main/right nozzle only**; they do not change physical hardware. The legacy VP report carries the flow code, but Bambu Studio and Orca do **not display or compare flow** for this report format. They check the diameter.
+
+For dual-nozzle or rack printing, bind a real printer. One manual pair does not describe the left nozzle or rack positions; the existing Bambu Studio restriction on left-nozzle printing through an unbound VP remains.
+
+When a target is present, the card names that printer and offers **Unbind printer**, even when its target selector is hidden in File Manager or automatic mode. Changing mode keeps the binding. Unbinding restores the last saved manual pair; for a fixed-printer queue it also turns off auto-dispatch, since there is no fixed destination. Deleting the real printer clears its VP bindings; a proxy without a target stops.
+
+!!! warning "Restart the slicer after changing the nozzle source"
+    After binding or unbinding a printer, fully restart Bambu Studio or Orca. A reconnect alone can retain nozzle information from the previous target, including its left nozzle and rack.
+
+!!! info "A bound printer has not reported yet"
+    Until the target first reports its nozzle data to this VP after startup, BamDude explicitly advertises **unknown**, rather than using the manual pair. Bambu Studio then refuses Send with “Invalid nozzle information”; Orca 2.4.x accepts the upload. This means Bambu Studio cannot enqueue for a switched-off target after a BamDude/VP restart until that printer reports. Once real nozzle data has been received, losing the connection does not switch the source to manual settings.
+
+Changing an unbound pair does not restart the VP or disconnect the slicer. Uploaded files keep their own sliced-nozzle requirements. Queue selection skips printers with a known different diameter; unknown diameter does not exclude a candidate. If no suitable queue is found, the file stays in the library. Final routing and dispatch still check physical compatibility before printing.
+
 **Settings → Virtual Printer → Add Virtual Printer**:
 
 | Field | Notes |

@@ -204,6 +204,7 @@ nano .env
 | `LOG_DIR` | `<repo>/logs` | Override the log directory |
 | `PORT` | `8000` | Port the bundled `python -m backend.app.main` entrypoint binds to |
 | `TZ` | system | Timezone string passed to Python (e.g. `Europe/Kyiv`) |
+| `BAMDUDE_GC_STARTUP_FREEZE` | `on` | `off` keeps Python's stock garbage collector. By default BamDude takes everything it loaded at start-up out of the collector's walks once, before it opens the database, so a full collection no longer goes through the ~0.8 million objects of the application itself — pauses of ~400 ms become tens of milliseconds. Applied on CPython 3.12 (the Docker image and the Windows installer); another interpreter keeps the stock collector and says so in the log. Any value other than `on` or `off` stops the start. |
 
 #### Database
 

@@ -524,6 +524,8 @@ Readings are kept for a month while the chart window reaches a week. The gap is 
 
     There is deliberately **no de-duplication**: a plug that keeps reporting the same wattage and a plug that has gone silent must not look alike on the chart.
 
+A reading BamDude received but cannot trust — no number, a relay state it does not know on a plug that may repeat old watts, a write that may not have landed — is a **gap** on the chart, never a zero and never joined to its neighbours. The same history checks whether the plug's energy counter keeps up: see [When a Plug's Counter Stops](energy.md#when-a-plugs-counter-stops).
+
 ---
 
 ## :material-wrench-cog: Reliability and Maintenance

@@ -131,7 +131,21 @@ The detection panel under **Settings → Integrations → Obico AI** is split in
     - Smoothed score (the post-EWM number that's compared against the threshold)
     - Frames seen so far this print (so you can see the warmup countdown)
 
-**Recent detections** — a chronological list of the last events with timestamp, printer, classification, score, and a thumbnail of the frame that crossed the threshold. Useful for tuning sensitivity without waiting for a real failure.
+**Recent signals** — the last events held in memory, with date/time, printer, classification and score. Restarting BamDude clears this list. A frame is available only when it was successfully saved; BamDude never substitutes a newer camera image.
+
+### Saved detection frames
+
+Turn on **Save detection frames** to keep evidence locally. This separate switch is **off by default**. The **Saved frames** tab survives restarts, and **View detection** opens the exact original JPEG sent to ML, with optional boxes and each detection's confidence. Turning recording off keeps existing evidence and does not stop live detection or its actions. Old recent signals cannot recover their missing frames.
+
+- Saved observations include `warning`/`failure` even when no boxes were returned, and `safe` when detections were returned. An ML/camera error is not a safe or failed print verdict.
+- The displayed score is a sum/smoothed value, **not a probability**; it can exceed 1. Box percentages are confidence for individual detections, not confirmation of physical defects.
+- Boxes are shown **as the ML server returned them**. Some upstream Obico backends calculate box height using frame width; BamDude cannot identify the backend from the response and does not guess a correction. The original JPEG and raw box tuples remain unchanged. The viewer ignores EXIF rotation, matching the encoded pixel grid ML decoded.
+- Frame source and live-buffer arrival are shown separately. **Camera exposure time is unknown**: a buffered image may predate the inference request, and arrival is not capture time. A recorded job name/context is not proof the frame belongs to that physical run.
+- Limits are **15 days, 1 GB and 10,000 events for the farm**, whichever requires cleanup first. At capacity, safe events are removed first, then warnings, then the oldest failures. New safe events cannot evict warning/failure evidence. The panel shows the actual oldest saved frame; it does not promise a full 15 days.
+- Backups include exactly the ready originals referenced by their database snapshot, with hashes checked. Recording continues during backup. Physical deletion is deferred while backup copies protected files; if this fills the store, new frames (including failures) may be skipped. The warning concerns saved coverage, not whether live detection is running.
+- **Clear saved history** requires confirmation and `settings:update`; it removes evidence, not archives/jobs. Existing backups keep their copies. Deleting a printer removes its history too. API keys cannot change this setting or clear history. History metadata requires `printers:read`; frame/details also require `camera:view`, with the key owner's rights and printer allowlist still enforced.
+
+Frames contain camera imagery and enter normal backups: grant access and retain backups accordingly. A missing, expired or unreadable original is reported as unavailable; viewing history never starts another capture or sends a printer command.
 
 ### The AI badge on the printer cards
 
@@ -143,8 +157,8 @@ The badge never claims a print is watched when it is not. While a monitored prin
 
 !!! info "The badge needs no settings permission"
     It is readable by anyone who can see printers. It deliberately carries no
-    configuration — the ML server address and the detection history stay behind
-    `settings:read`, where they were.
+    configuration — the ML server address stays behind `settings:read`.
+    Saved history has separate printer/camera permissions as described above.
 
 ---
 
@@ -170,7 +184,7 @@ The badge never claims a print is watched when it is not. While a monitored prin
 : The ML API isn't reachable from BamDude. Check `docker compose ps ml_api` and try `curl http://<obico-host>:3333/hc/` from the BamDude host. If `/hc/` works but Test doesn't, double-check the URL field uses the same scheme (`http://` vs `https://`) and port.
 
 **Service is running but no detections appear**
-: No news is good news — entries only land in history when classification leaves `safe` or an action fires. If you genuinely think Obico's missing a real failure, check the Status card to confirm the print is being polled, then raise sensitivity.
+: No entry does not prove the print is safe. Entries appear for non-safe verdicts or returned detections; saved frames also require recording to be enabled and space available. Check the Status card to confirm the print is being polled before tuning sensitivity.
 
 **False positives on normal prints**
 : Drop sensitivity High → Medium → Low. Also check the camera angle — if the frame includes too much non-print background (filament spools, AMS, the operator's cat) the model has more chances to see "spaghetti" in random shapes.

@@ -5,7 +5,7 @@ description: Companion apps that extend BamDude beyond what a container can reac
 
 # Add-ons
 
-BamDude itself is a self-hosted server — and some things are structurally out of a container's reach: your workstation's local disk, USB hardware on your desk. Add-ons are separate companion apps that cover exactly those gaps and talk to the server over its ordinary API. They are bridges, not second products: no databases of their own, no separate state to keep in sync.
+BamDude is a self-hosted server. Add-ons connect it to applications and hardware on your computer. BamDude Bridge handles slicer files and USB labels; AI assistant packages connect your chosen assistant to the server's optional read-only MCP endpoint.
 
 <div class="grid cards" markdown>
 
@@ -18,3 +18,7 @@ BamDude itself is a self-hosted server — and some things are structurally out 
     [:octicons-arrow-right-24: Documentation](bridge.md)
 
 </div>
+
+## AI assistants — development preview
+
+The MCP server runs inside BamDude. The client package and skill are installed in your assistant, not on a printer. Start with the [AI assistant guide](ai-assistants/index.md); installation and client support are checked separately.

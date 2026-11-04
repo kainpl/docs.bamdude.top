@@ -25,7 +25,7 @@ BamDude підтримує наведені нижче 3D-принтери Bambu
 | **P2S** | P2 | :material-check: | :material-check: |
 | **X2D** | X2 | :material-check: | :material-check: |
 | **A1** | A1 | :material-check: | AMS Lite |
-| **A1 Mini** | A1 | :material-check: | :material-close: |
+| **A1 Mini** | A1 | :material-check: | AMS Lite |
 | **A2L** | A2 | :material-check:[^a2l] | :material-check:[^a2l] |
 
 У BambuStudio `v02.08.04.57` також зʼявився опис моделі **N8**. BamDude
@@ -39,9 +39,9 @@ BamDude підтримує наведені нижче 3D-принтери Bambu
 
 ### Серія X1
 
-- Обігрів камери
+- Активний обігрів камери на X1E; X1 і X1 Carbon мають сенсор камери, але не активний нагрівач
 - До 4 блоків AMS
-- Повна підтримка камери (до 30 FPS)
+- Підтримка RTSP-відео; частота кадрів залежить від принтера й підключення
 
 ### Серія H2
 
@@ -53,13 +53,13 @@ BamDude підтримує наведені нижче 3D-принтери Bambu
 
 - P1P потребує додаткової камери
 - До 4 блоків AMS
-- Камера обмежена ~5 FPS
+- Камера з низькою частотою кадрів
 
 ### Серія A1
 
-- A1: підтримка AMS Lite
-- A1 Mini: лише зовнішня котушка, основна ціль для [режиму заміни](../features/swap-mode.md)
-- Камера обмежена ~5 FPS
+- A1 та A1 mini: підтримка AMS Lite, зокрема налаштування слотів, призначення філаменту та його резервування, коли воно ввімкнене на принтері
+- Обидві моделі також підтримують зовнішню котушку. A1 mini — основна ціль для [режиму заміни](../features/swap-mode.uk.md); swap mode не означає відсутність підтримки AMS у моделі
+- Камера з низькою частотою кадрів
 
 ### Серія X2
 
@@ -85,17 +85,17 @@ BamDude підтримує наведені нижче 3D-принтери Bambu
 | Можливість | X1 | P1P | P1S | P2S / X2D | A1 | A1 Mini | A2L | H2D / H2D Pro | H2C | H2S |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | Камера (вбудована) | :material-check: | додатково | :material-check: | :material-check: | :material-check: | :material-check: | :material-check:[^a2l] | :material-check: | :material-check: | :material-check: |
-| 30 FPS-стрім | :material-check: | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| Ethernet-порт | лише X1C/X1E | — | :material-check: | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
-| Обігрів камери | :material-check: | — | пасивна | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
-| Сенсор дверей (MQTT) [^door] | :material-check: | n/a [^opentop] | — [^bit23] | — [^bit23] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
-| Подвійне сопло (L/R) | — | — | — | — | — | — | — | :material-check: | — | — |
+| RTSP-відеопотік | :material-check: | — | — | :material-check: | — | — | — | :material-check: | :material-check: | :material-check: |
+| Ethernet-порт [^network] | лише X1E | — | — | лише X2D | — | — | — | :material-check: | :material-check: | :material-check: |
+| Активний обігрів камери | лише X1E | — | — | лише X2D | — | — | — | :material-check: | :material-check: | :material-check: |
+| Сенсор дверей (MQTT) [^door] | :material-check: | n/a [^opentop] | — | :material-check:[^door] | n/a [^opentop] | n/a [^opentop] | — | — [^bit23] | — [^bit23] | — [^bit23] |
+| Подвійне сопло (L/R) | — | — | — | лише X2D | — | — | — | :material-check: | :material-check: | — |
 | 6-слотовий tool changer | — | — | — | — | — | — | — | — | :material-check: | — |
-| AMS Pro (4-слотовий) | до 4 | до 4 | до 4 | до 4 | — | — | :material-check:[^a2l] | до 4 | до 4 | до 4 |
-| AMS Lite | — | — | — | — | :material-check: | — | — | — | — | — |
-| Зовнішня котушка | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | лише вона | :material-check: | :material-check: | :material-check: | :material-check: |
+| Чотирислотовий AMS [^ams] | до 4 | до 4 | до 4 | до 4 | див. примітку | див. примітку | :material-check:[^a2l] | до 4 | до 4 | до 4 |
+| AMS Lite | — | — | — | — | :material-check: | :material-check: | — | — | — | — |
+| Зовнішня котушка | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 | AMS-HT (single-slot 128–135) | — | — | — | — | — | — | — | :material-check: | :material-check: | :material-check: |
-| AMS humidity / temperature alerts | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: [^lite] | — | :material-check: | :material-check: | :material-check: | :material-check: |
+| Сповіщення про вологість / температуру AMS [^ams] | :material-check: | :material-check: | :material-check: | :material-check: | — із Lite | — із Lite | :material-check: | :material-check: | :material-check: | :material-check: |
 | Обслуговування — Carbon Rods | :material-check: | :material-check: | :material-check: | — | — | — | — | — | — | — |
 | Обслуговування — Steel Rods | — | — | — | :material-check: | — | — | — | — | — | — |
 | Обслуговування — Linear Rails | — | — | — | — | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
@@ -103,20 +103,16 @@ BamDude підтримує наведені нижче 3D-принтери Bambu
 | Vibration-cali skip патчер | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 | Skip-objects посеред друку | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: | :material-check: |
 
-[^door]: Стан дверей парситься з `home_flag` біт 23 у MQTT. Лише X1-сімейство
-прошивки реверс-енджинірно публікує надійне значення; не позначені у
-списку enclosed-моделі публікують біт як завжди-нуль на спостережуваних
-прошивках, тому BamDude відмовляється показувати оманливий бейдж "Двері
-зачинені". Див. `backend/app/utils/printer_models.py::DOOR_SENSOR_MODELS`.
+[^door]: BamDude читає `home_flag` біт 23 для X1 та `stat` біт 23 для X2D/P2S. X2D перевірено на залізі; для P2S використовується те саме трактування, поки що як припущення. P1S не має сенсора дверей. Див. `backend/app/utils/printer_models.py::door_sensor_field`.
 
 [^opentop]: Open-frame принтери фізично не мають дверей — нічого
 сенсорити.
 
-[^bit23]: Enclosed-модель, у якої `home_flag` біт 23 не підтверджено
-flip-ається. Буде ввімкнено, як тільки звіримо на реальному принтері; не
-запитуйте на спекуляції.
+[^bit23]: Апаратний сенсор і придатний MQTT-звіт — різні можливості. BamDude не показує бейдж дверей для цих моделей, доки правильне поле телеметрії не перевірено.
 
-[^lite]: AMS Lite звітує humidity, але не AMS-HT sub-стрім.
+[^ams]: Підтримка AMS не означає наявності всіх його функцій. AMS Lite на **A1 та A1 mini** підтримує подачу філаменту й керування слотами, зокрема RFID-ідентифікацію котушок Bambu, але не надає показників вологості чи активного сушіння. Інші варіанти AMS та доступні команди залежать від підключеного обладнання, адаптера й прошивки; див. [налаштування AMS](../features/ams.uk.md). Вологість, температура й керування сушінням потребують відповідної можливості, яку повідомляє пристрій.
+
+[^network]: LAN-режим не означає наявності Ethernet. У документах виробника для [X1/X1C](https://cdn1.bambulab.com/documentation/quick-start-2024-01-17/Quick-Start-X1%26X1C_en.pdf), [P1S](https://cdn1.bambulab.com/documentation/quick-start-2024-01-17/Quick-Start-P1S_en.pdf) та [P2S](https://csm.bblcdn.com/hub/2ddc44d3a72443ba914efe0f963fbbc5.pdf) зазначено бездротове підключення; [X1E](https://cdn1.bambulab.com/x1e/spec/Bambu%20Lab%20X1E%20Technical%20Specification.pdf) має Ethernet.
 
 [^swap]: Swap mode офіційно підтримується на серії A1. Інші моделі можуть
 опт-ін через власні swap-mode G-code макроси, але фабричних профілів для

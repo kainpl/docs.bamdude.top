@@ -130,6 +130,14 @@ Current-log download uses `GET /api/v1/support/logs/download` and requires `sett
 |---|---|
 | `support-info.json` | Version, OS info, DB row counts, sanitised printer/integration info, anonymised settings, dependency versions, log-file size, network interfaces with masked subnets, WebSocket connection count, Docker memory limit (if containerised), **and the BamDude process itself** — see below. |
 | `bamdude.log` | The tail of `bamdude.log`, sanitised. |
+| `push-status/printer-N.json` | The last status report of printer N, structurally redacted — the shape of that model's firmware payload. |
+| `mqtt/printer-N/…` | Only when you tick a printer's raw MQTT recording: the **unsanitised** capture, under its original file name. |
+
+### How printers are numbered in a bundle
+
+A bundle never names a printer. Each one is a number from 1, given by its place among the bundle's printers ordered by id, and the **same machine has the same number everywhere in that bundle**: the printers list, the per-printer queue rows, the connection diagnostics (where `index` sits beside the printer's `printer_id`), `push-status/printer-N.json` and `mqtt/printer-N/`. The printers are read once per bundle, so a printer added, removed or re-added while the bundle is being made never shifts another one's number or lends it its data.
+
+The number means something only inside its own bundle — printer 2 of today's bundle may be another machine in next week's. `support-info.json` says so in its `printer_index` key; bundles made before that key existed matched sections by position, which was not always the same machine.
 
 ### The BamDude process itself
 
@@ -265,13 +273,36 @@ A repair on an inactive printer leaves its queue paused: inspect the plate befor
 
 **A dispatch that was interrupted.** If BamDude stopped while it was starting a queued job, the job and its archive can still read *printing* although the printer was never seen running it. Such a job is never closed as completed because the printer shows the previous print of the same file as finished. A job whose start command was provably never sent goes back to the queue by itself once the printer reports that it is idle and new work is allowed. Otherwise the panel lists *A dispatch was interrupted before the printer was seen printing*. **Close the interrupted attempt** is offered only when the BamDude process that owned the attempt has ended, the printer is idle and nothing else is running on it — or when this BamDude process itself could not read the printer's answer to a start it sent and stopped watching it (the printer must still be idle, with nothing but this attempt bound to it). It marks the job and its archive failed and stops that printer's queue with an error; it does not prove that nothing was printed, so check the printer and the plate first. To print the job again, use **Retry** on it, then resume the queue.
 
-Reading requires `system:read`, `printers:read`, `queue:read_all` and `archives:read_all`. Repairs additionally require `queue:update_all` and `printers:control`; an estimated end also requires `archives:update_all`, and deletion requires `queue:delete_all`. API-key printer restrictions apply to the list and each action.
+**A finished print still held in memory.** A printer's *connection* can be healthy while BamDude's view of its *status* is not: besides the archive and the queue, BamDude keeps in memory the run it believes the printer is on. When a print ends while the link is down, the reconnect check closes it in the archive and the queue, but that in-memory run can stay behind — and then every next start on the printer is deferred before it is sent, again and again, while the printer and its queue both look idle. The panel shows *A finished print is still held in memory* ("The printer is free. Archive #123 has finished, but its context is still active.") and, beside it, *A start keeps being deferred without progress* with the number of attempts, how long it has lasted, the job, and a link to the row that holds the printer. A row appears once the same state has been seen twice, at least ten seconds apart. A start or completion that is simply still running is not a problem: it is listed only once it outlives the completion's own budget (about seven minutes), as an observation that System Health does not count. A stalled start that went quiet — after a repair, or with the queue paused — stays listed as inactive, with how long no attempt came, until the job starts or is gone. The panel says since when stalled starts are tracked (since BamDude last started) and how many records were dropped if the tracker filled up.
+
+**Release the finished context** is offered only when that run is proven over: its archive finished on this printer and queue, the printer reports a fresh idle status, no start, completion, macro, smart-plug action, file download or bed cooldown still uses it, no plate swap is still owed for it (an unreadable record of one counts as owed), no layer timelapse of that print is still open — it would film the next print — and nothing newer began. Otherwise the row says what keeps it and offers no button. Releasing first pauses the printer's queue, then removes from memory only that run, its recorded start, and the macro selection and swap configuration its dispatch registered — the archive, accounting and the queue's status stay as they are, no command is sent to the printer, and the plate-clear check is left as it is. It is **not** a confirmation that the plate is clear: check the printer and the plate, then **Resume queue** yourself; the next pass starts the waiting job the ordinary way. A pause that was already there is named in the preview, and Resume lifts it too.
+
+The dialog stays open on the result, as it is: *released*; *not changed* — the printer or its context changed after the preview, or BamDude could not check it again; nothing was released, the queue stays paused, no new start is scheduled under the pause, but a start that had already begun is not cancelled; or *not recorded* — check the printer's recovery history before doing anything else. For as long as the queue stays paused — after a reload or a restart, and even once the context is gone — a row on that printer says which release attempt paused it, when, and how it ended; **Resume queue** ends it. It is shown for information and System Health does not count it. The history shows each such repair as one entry with its result, or says the result is unknown, or that the process ended before a result was confirmed.
+
+**Residual preheat.** A start refused after its preheat can leave heating requested. The row names it next to the fresh bed and chamber readings, or says they are unknown. It does not block the release, and neither the release nor the pause turns the heaters off — use the printer's own controls.
+
+**Health.** The **System Health** section mentions how many print-state problems the background check currently sees, on how many printers, and links to these rows; it never offers a repair itself. A check that failed, or that has not yet covered every printer, says so instead of looking healthy. The support bundle carries the same bounded reading, limited to the printers the requesting API key may reach. Collect it **before** restarting BamDude: a restart clears the in-memory state that explains the stall.
+
+Reading requires `system:read`, `printers:read`, `queue:read_all` and `archives:read_all`. Repairs additionally require `queue:update_all` and `printers:control`; an estimated end also requires `archives:update_all`, and deletion requires `queue:delete_all`. Releasing a finished context needs only `queue:update_all` beyond reading — it sends nothing to the printer. API-key printer restrictions apply to the list, each action and the Health mention.
 
 ```
 GET  /api/v1/system/print-state-issues
 POST /api/v1/system/printers/{printer_id}/print-state/preview
 POST /api/v1/system/printers/{printer_id}/print-state/apply
 GET  /api/v1/system/printers/{printer_id}/print-state/history
+```
+
+### Queue leftovers
+
+**Queue leftovers** lists queue rows that nothing will clean up any more. A finished row normally disappears when its print ends. A printer that confirms its plate keeps it until **Clear plate** or **Repeat**, and a held table swap keeps it as the record of the hold. Once another print has started on the same printer, neither can still happen, so the row — and the AutoQueue assignment that pointed at it — is only clutter. The panel also lists AutoQueue assignments whose printer job is gone.
+
+BamDude removes these by itself when a printer reconnects and after each print finishes; the panel shows what is left and lets you remove it now. A row that may still be answered stays, with the reason: it is its queue's current job, the printer is waiting for a plate answer about it, its archive is not finished, its table swap is still owed, or the archive does not have its own copy of the file yet. Removing deletes only these queue records — archives, photos, accounting and print history stay, and nothing is sent to printers. Failed, cancelled and skipped jobs are never leftovers: they stay for **Retry**.
+
+Listing requires `queue:read_all`; removing requires `queue:delete_all`. A key limited to some printers sees and removes only those printers' rows, and never orphan assignments.
+
+```
+GET  /api/v1/queue/leftovers
+POST /api/v1/queue/leftovers/retire
 ```
 
 ```

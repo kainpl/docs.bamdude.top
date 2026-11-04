@@ -88,6 +88,12 @@ Each line expands into a row per printed part:
 
 **Printing** is a count of live print archives; **Queued** is a count of pending jobs, not an estimate of product units. A shared plate can contribute to more than one line, so neither counter is added up from line rows.
 
+### Recounting actual loose parts
+
+In an order line's expanded parts table, **Recount actual parts** records how many loose printed parts you physically have. Enter the actual quantities and a reason, review the differences, then confirm. The correction changes what remains to print; it does not invent defects for a particular print, move free stock or alter queued and running jobs. Received goods and banked surplus are excluded. Later completed prints add their output normally.
+
+When several lines share printed output, including parts from a mixed-product print filed under another line, a recount may be refused because the physical share is ambiguous. An existing correction also blocks edits that would redistribute that output. Reverse the correction explicitly before making those edits; when shared output prevents an ordinary recount, **Review reversal of existing corrections** offers a full reversal with a reason and confirmation. The order journal preserves the change.
+
 ### Which order a print belongs to
 
 The unit of attribution is a print's **part row**, not the print. One plate can carry parts of two products (two different lids on one bed) and one file can belong to two products (a shared flask), so a single print can feed several lines. Three steps, in this order:
@@ -136,7 +142,7 @@ The catalog carries an **In catalog** flag. A product outside it is not offered 
 | **Printed** | Name, **per unit**, aliases (the object names on the plates that mean this part), and a *from file* badge while the row is still the seeded default. |
 | **Purchased** | Name, per unit, unit price, where to buy, remarks. |
 
-Purchased parts are tracked **per order**, not per product: the order's procurement checklist holds need / acquired / remaining, so *"printed, waiting on screws"* is a state the page can show.
+Purchased parts are tracked **per order**, not per product: the order's procurement checklist holds need / acquired / remaining, so *"printed, waiting on screws"* is a state the page can show. Each row shows the part's photo from its editor beside the name — a click or a tap opens it larger for anyone who can see the order, even without the right to change the counts.
 
 !!! tip "Per unit `0` means «out of the kit»"
     The part is still counted for the product and can be ordered separately, but it does not contribute to a standard kit. Use **Not counted** for a calibration cube or another object that is not a product part at all.
@@ -198,7 +204,9 @@ The **Picture** section of a part's editor decides what is shown:
 
 A **purchased** part has no plates, so it takes a photo only. A photo is re-encoded on the server: EXIF (GPS, the camera's serial), XMP and other embedded metadata are not kept. **Re-render** in the same section queues every plate of the product again; the old pictures stay on screen until the new ones are ready.
 
-A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in issuing and receiving, and in the Stock section.
+A picture with transparency sits on a light or a dark mat chosen by the part's own tone, so a black part and a white part both stay readable. Pictures appear beside part names on the product page, in an order's lines and plan, in its procurement list, in issuing and receiving, and in the Stock section.
+
+A finished render, a new or removed photo or another picture chosen in the editor updates the pictures on open pages and dialogs by itself, and nothing else: an open *Assemble* or stock-move dialog keeps its figures and its button, and an order's plan stays as it was. A real change of stock, reservations or a product's parts still reads the figures again and holds the action until they are back.
 
 **Export** carries each part's choice and photo; **import** restores them, re-pinning an instance to the imported file. Rendered pictures are a cache under `DATA_DIR/part-renders`, deliberately left out of backups: after a restore they are rendered again.
 
@@ -231,9 +239,17 @@ A plan that stops at its safety limit says so, instead of looking exactly like a
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 
+### Printers for this order
+
+**Printers for this order** above the plan lets you restrict one order to selected models, specific machines, or both. When both are selected, a printer must match both lists. The selection does not reserve those machines exclusively: other orders can still use them. If a selected machine is unavailable, the order does not silently expand to other printers.
+
+Saving restrictions keeps existing jobs and files. New planning and assignments use the selection, and a pending job already on an excluded printer waits rather than starting there. Work already claimed for dispatch continues normally.
+
+To move the remaining work, review the proposed replacement first. It lists the replaceable jobs from AutoQueue and printer queues, preserves started and protected work, and shows the new draft. Applying removes only the reviewed replaceable jobs and replaces the working draft; it does not send that draft to print. Review it, then use **Whole plan to queue**. This action requires permission to read and delete all queue jobs as well as edit the order. Orders with restrictions are excluded from automatic cross-model rebalancing; use this reviewed replan instead.
+
 ### Shared working draft and saved comparison
 
-Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning.
+Edits to counts, files and splits are autosaved to one shared working draft for the order. Adding another file or changing demand preserves those manual decisions. New inputs can leave missing parts, surplus or a source that needs review; BamDude shows that instead of silently replacing your choices. An explicit zero excludes that file from remainder planning. When the recommendation uses equivalent plates sliced for different printer models, the draft preserves their separate files and counts, including after remainder planning or rebuilding.
 
 **Save plan** confirms a separate comparison baseline. Autosave and reload never move it. For example, save twenty machine-hours, then edit to eighteen and seventeen: the panel shows two and three fewer machine-hours against the same saved plan. Saving seventeen explicitly makes it the new baseline. Calendar comparisons recalculate both variants against the same current farm; different part coverage is labelled and is not presented as an efficiency gain.
 
@@ -241,7 +257,13 @@ Edits to counts, files and splits are autosaved to one shared working draft for 
 
 If another editor changes the shared draft, a stale save is refused and your local input stays on screen. Read the shared plan again deliberately to replace it. The editor warns before leaving with unsaved local changes. A changed or missing source remains an addressed issue: review the current source or remove that draft entry; the saved comparison is not silently rewritten.
 
+Adding or editing an order line refreshes the plan's inputs automatically, even if the draft itself has not changed. Your entered counts stay in place. Autosave waits for the current draft read to finish; if reconciling changed inputs fails or the two views still disagree after refreshing, use **Read shared plan again**. A temporary background read failure when returning to the tab does not block editing; the server still validates each save.
+
 ### Submitting saved work
+
+If a plan stops with a save conflict, choose **Read shared plan again** and confirm replacing your unsaved edits. A failed read keeps your entered quantities and lets you retry in the dialog. Background refreshes do not interrupt this recovery.
+
+Reslicing a linked file is supported: review the changed source before accepting it. Removing and recreating a product does not clear an order's saved draft. If an order line was removed or replaced, remove its old draft entries or choose **Rebuild whole draft**. Review the proposal beside the plan actions, then **Apply to draft** and confirm; calculating the proposal alone does not replace the draft. The proposal shows how many problem entries will be removed or replaced. Existing queued prints and the saved comparison baseline are unaffected. If the proposal becomes outdated, calculate it again.
 
 Row, line and whole-plan queue actions register an addressed submission. Each committed part creates queue jobs, a durable receipt and the corresponding reduction of the remaining draft together. A lost response can therefore be checked without submitting the same part twice. Reload and server restart never continue a pending submission automatically: read its status, then continue the same operation or cancel only its unsubmitted remainder. Existing queue jobs remain unchanged. In the library’s Calculate dialog, Cancel removes only an order with no submitted work. If jobs already committed, even when their response was lost, the order is kept and the dialog offers Close.
 
@@ -265,10 +287,10 @@ When a part is sliced for two machines there are two files with the same yield, 
 Each row therefore carries a **File** switch listing the other candidate plates whose yield of the parts *this line counts* is identical, each labelled with the printer model its file was sliced for. Choosing one re-does that row's time, filament and cost while the count stays exactly where it was, because the two files make the same parts.
 
 - **To printer…** on such a row asks which machine first, then opens the usual print dialog already holding the file that machine was sliced for, with the printer pinned. A printer in maintenance mode is not offered; an archived one never appears.
-- **Split across files** shares one row's count between them. The auto-queue routes an item by the model its file names, so this is the only way one order line's work reaches two printer models at once — and the numbers have to add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
+- **Split across files** lets you divide one row's count manually. The auto-queue routes each item by the model its file names. The numbers must add up to the row's count, or that row and the whole plan refuse to be sent rather than quietly sending the wrong number.
 - A file a row already offers this way is no longer listed under **Add a plate…**, where it would put the same work on screen twice.
 
-With **Rebalance across printer models** on (Settings → Printing → Auto-Queue Routing), the split is a starting point: still-pending copies can later move to whichever model frees up first — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
+For orders without printer restrictions, **Rebalance across printer models** (Settings → Printing → Auto-Queue Routing) makes the split a starting point: still-pending copies can later move to a free printer of another model that can print them — see [Rebalancing across printer models](auto-queue.md#rebalancing-across-printer-models).
 
 ### Quantities that fit whole plates
 
