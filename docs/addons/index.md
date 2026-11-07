@@ -17,6 +17,14 @@ BamDude is a self-hosted server. Add-ons connect it to applications and hardware
 
     [:octicons-arrow-right-24: Documentation](bridge.md)
 
+-   :material-brain:{ .lg .middle } **Obico ML**
+
+    ---
+
+    A standalone container for AI print-failure detection. Install and update just the ML API, without the full Obico stack.
+
+    [:octicons-arrow-right-24: Installation and updates](obico-ml.md)
+
 </div>
 
 ## AI assistants — development preview

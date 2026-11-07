@@ -7,6 +7,7 @@ The companion code repository lives at [kainpl/bamdude](https://github.com/kainp
 ## Layout
 
 - `docs/` — Markdown pages, structured by topic (`getting-started/`, `features/`, `reference/`). Each English page has a sibling `*.uk.md` with the Ukrainian translation.
+- `docs/assets/downloads/obico-ml.sh` — downloadable Linux installer/updater for a standalone Obico ML container. User guide: `docs/addons/obico-ml{,.uk}.md`; offline regression tests: `tests/test_obico_ml.py` (run on Linux with `python3 -m unittest discover -s tests -v`).
 - `overrides/` — small theme overrides (custom partials).
 - `mkdocs.yml` — site config (theme, navigation tree, i18n plugin, markdown extensions).
 - `requirements.txt` — MkDocs and plugin version ranges used by local and CI builds; this repo owns these requirements.
