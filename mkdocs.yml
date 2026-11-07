@@ -90,6 +90,7 @@ plugins:
           site_description: Самостійно хостоване керування фермою 3D-друку для принтерів Bambu Lab
           nav_translations:
             Add-ons: Додатки
+            Obico ML server: Сервер Obico ML
             AI assistants: AI-асистенти
             AI overview: Огляд AI-підключення
             Connect an assistant: Підключення асистента
@@ -357,6 +358,7 @@ nav:
   - Add-ons:
     - addons/index.md
     - BamDude Bridge: addons/bridge.md
+    - Obico ML server: addons/obico-ml.md
     - AI assistants:
       - AI overview: addons/ai-assistants/index.md
       - Connect an assistant: addons/ai-assistants/setup.md

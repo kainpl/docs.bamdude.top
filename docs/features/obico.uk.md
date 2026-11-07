@@ -24,52 +24,21 @@ Obico найбільше виграє на unattended нічних прогон�
 
 Тобі потрібен лише `ml_api` контейнер зі стека Obico. Web app, Django site і реєстрація принтера **не потрібні** — BamDude не говорить Obico printer-protocol-ом, тільки сирим classification HTTP-endpoint-ом.
 
-### 1. Клонуй Obico server
-
-```bash
-git clone -b release https://github.com/TheSpaghettiDetective/obico-server.git
-cd obico-server
-```
-
-### 2. Виставь порт 3333
-
-Відредагуй `docker-compose.yml` і додай `ports` мапінг на сервісі `ml_api`:
-
-```yaml
-ml_api:
-  ports:
-    - "3333:3333"
-```
-
-### 3. Запусти лише `ml_api`
-
-```bash
-docker compose up -d ml_api
-```
-
-Перший старт скачує YOLO-модель (~100 MB) і алокує приблизно 4 GB RAM у runtime. Плануй capacity відповідно, якщо хостиш на маленькому сервері.
-
-### 4. Перевір
-
-```bash
-curl http://<obico-host>:3333/hc/
-# → "ok"
-```
-
-Якщо `/hc/` повертає `ok` — ML API готовий до BamDude.
+Встановлення, оновлення й типові проблеми описані в окремій інструкції [Сервер Obico ML](../addons/obico-ml.md). Там є скрипт для завантаження: він запускає лише `ml_api`, створює API-токен і зберігає його під час оновлень.
 
 ---
 
 ## :material-cog: Налаштування
 
-1. Підніми Obico ML-сервер за кроками вище.
-2. Відкрий **Settings → Integrations → Obico AI**.
+1. Підніми Obico ML-сервер за окремою інструкцією вище.
+2. Відкрий **Налаштування → Виявлення збоїв**.
 3. Постав галочку **Enable Obico failure detection**.
 4. Заповни:
 
     | Налаштування | Примітки |
     |---|---|
-    | **ML API URL** | Повний URL, який Obico публікує для класифікації (наприклад `https://obico.example.com/api/v1/octo/`). |
+    | **ML API URL** | Базовий URL ML-контейнера, наприклад `http://10.0.0.20:3333`, без шляху ендпоінта. |
+    | **Токен ML API** | Токен, створений скриптом встановлення (команда `token`). |
     | **Sensitivity** | `low` / `medium` / `high`. Контролює поріг, на якому окремий кадр класифікується як "warning" чи "failure". |
     | **Action on sustained failure** | `notify`, `pause` або `pause_and_off`. Деталі нижче. |
     | **Poll interval** | Секунди між захопленням кадрів (5–120). Менше = швидша реакція, більше bandwidth + витрат на ML. |
@@ -120,7 +89,7 @@ curl http://<obico-host>:3333/hc/
 
 ## :material-eye: Що бачить Obico
 
-Detection panel під **Settings → Integrations → Obico AI** розбита на Status card і стрічку Recent detections:
+Detection panel під **Налаштування → Виявлення збоїв** розбита на Status card і стрічку Recent detections:
 
 **Status card**
 

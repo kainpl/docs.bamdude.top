@@ -17,6 +17,14 @@ BamDude — self-hosted сервер. Додатки з’єднують йог�
 
     [:octicons-arrow-right-24: Документація](bridge.md)
 
+-   :material-brain:{ .lg .middle } **Obico ML**
+
+    ---
+
+    Окремий контейнер для AI-виявлення збоїв друку. Встановлення й оновлення лише ML API, без повного стека Obico.
+
+    [:octicons-arrow-right-24: Встановлення й оновлення](obico-ml.md)
+
 </div>
 
 ## AI-асистенти — попередня версія в розробці
