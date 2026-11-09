@@ -15,11 +15,15 @@ In BamDude, open **Settings → API Keys → Connect an AI assistant**. You need
 
 *Development preview with test data; no live farm or real key is shown.*
 
-## 2. Save the server address
+## 2. Save the server address { #server-address }
 
 Enable MCP and enter the exact address the **client** will use, for example `https://farm.example/mcp`. Click **Save MCP settings**. Saving also adds that address's exact host and port to the allowed hosts. The panel never derives a public address from the browser's request headers.
 
-Use HTTP only when the connector runs on the same computer as BamDude: `http://127.0.0.1:8000/mcp`. On a different computer, use HTTPS. `localhost` refers to the computer making the request, not automatically the farm server.
+HTTP on the same computer works without an extra opt-in: `http://127.0.0.1:8000/mcp`. On a different computer, HTTPS remains recommended. `localhost` refers to the computer making the request, not automatically the farm server.
+
+**Development after 0.7.3:** a build containing the trusted-LAN HTTP option can also use an unencrypted address on a private network you control. Enable **Allow unencrypted HTTP addresses for MCP**, accept both warnings and the network-risk checkbox, enter the exact HTTP address and click **Save MCP settings**. API keys and diagnostic data travel in plain text; never use this option on a public network or an Internet-facing address.
+
+The local connector has a separate **Allow unencrypted HTTP** setting (`BAMDUDE_MCP_ALLOW_HTTP=true` for a manual adapter configuration); install a matching updated package if it is missing. Direct clients use the HTTP URL without that adapter flag. This does not enable MCP, expand key permissions, change host/origin checks, configure a firewall or give a cloud client access to a private farm. HTTPS certificate verification stays enabled. To return to HTTPS, save an HTTPS address with HTTP permission off, update the client's address and turn off its HTTP option. Turning off the server's UI switch clears an HTTP address; enter the HTTPS replacement before saving.
 
 Under **Allowed hosts and browser origins**, add other exact hosts and ports only when needed. Browser origins are usually empty for local clients; if a client sends one, add its exact `https://host:port` origin. Do not use wildcards or the origin `null`.
 

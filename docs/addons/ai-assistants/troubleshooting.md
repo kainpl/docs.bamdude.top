@@ -12,7 +12,7 @@ Use the status, error code and client log together. Do not paste an API key, aut
 | Server disabled / `/mcp` gives 404 | Enable MCP and save settings. Use exactly `/mcp`, without a trailing slash. `/mcp/` deliberately returns 404, without a redirect. |
 | Server unavailable at startup | Install the current BamDude requirements through your normal update procedure, then restart. The new MCP dependency is needed; the rest of BamDude can start without it. |
 | Held after restore / readers still stopping | Finish recovery and restart BamDude as directed. An enable toggle cannot bypass the restore hold. |
-| `invalid_endpoint` | Use HTTPS outside loopback, with exact `/mcp`. Remove user info, query strings and fragments. |
+| `invalid_endpoint` | Use HTTPS outside loopback, with exact `/mcp`. In builds with the trusted-LAN HTTP option, a private HTTP address requires the explicit [server and connector opt-ins](setup.md#server-address). Remove user info, query strings and fragments. |
 | `network_or_tls_error` | Check DNS/IP, port, reachability, certificate name and trust. A private LAN address cannot be reached by a cloud connector merely because its UI runs locally. |
 | `redirect_forbidden` | Point directly at the final `/mcp`. Fix proxy HTTP-to-HTTPS or trailing-slash redirects; the connector never forwards credentials through a redirect. |
 | `unauthorized` / 401 | Replace an expired, disabled or revoked key in client settings. Do not start OAuth discovery or put a key in the URL. |
