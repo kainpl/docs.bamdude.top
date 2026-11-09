@@ -292,11 +292,31 @@ POST /api/v1/system/printers/{printer_id}/print-state/apply
 GET  /api/v1/system/printers/{printer_id}/print-state/history
 ```
 
+### Duplicate queue claims after a restart {#duplicate-queue-claims}
+
+!!! info "Development after 0.7.3"
+    This section describes `feature/v0.7.3-fixes`, not stable 0.7.3. Use a build containing these changes; older builds offer fewer recovery actions.
+
+If the printer has finished but its queue still says **Printing**, use **Print state diagnostics** on the Info page and filter by printer ID. Changing the queue header to Idle alone does not release the execution claims or resolve an owed plate swap. Reconnecting is not a repair for conflicting persisted claims.
+
+The updated recovery path rejoins a print already in progress when BamDude restarts, including a paused print. If it ends during reconnect, a delayed recovery callback does not create another print or clear the plate check. If the live run cannot be identified, the panel explains the uncertainty and preserves the records; it does not invent a completed print or offer a forced repair.
+
+For old claims that refer to one ended execution:
+
+1. Check the actual printer and plate. **Cancel stale claims** is offered only with a fresh idle observation and established ownership of the complete group. A missing or conflicting archive, unfinished effects or more than 100 active claims prevents the action; there is no partial-group repair.
+2. If the panel shows **The plate swap requires manual settlement**, perform the missing physical work yourself: remove the print and prepare the plate and swap mechanism. Choose **Record manual plate swap**, confirm that the printer is idle and that you performed the work, then review and apply the preview. This records a manual settlement; BamDude does not send the old swap command. The action can be available even with automatic swap mode turned off.
+3. Choose **Check again**. Prepare a **new preview** for **Cancel stale claims**, confirm idle, review every affected row and **Before → After**, then confirm applying it. Only the named claims are cancelled; the archive outcome, filament/energy accounting, source files and pending jobs are preserved. The action is recorded in recovery history.
+4. Resolve any remaining **finished context** issue separately. The queue remains paused. Inspect the physical plate and any plate-clear request before resuming the queue yourself.
+
+These cancelled claims describe an execution that must not be repeated through recovery. **Retry**, **Clone**, their bulk/batch variants and plate-clear **Repeat** cannot rearm them; cloning a batch containing such a claim is also refused. If you intentionally need another copy, review the execution archive and submit a new job through the normal print flow.
+
+The existing read permissions above apply. Group cancellation also requires `queue:update_all` and `printers:control`; recording a manual swap additionally requires `archives:update_all`. If a blocker remains, keep its explanation and collect a support bundle instead of guessing which database rows to clear.
+
 ### Queue leftovers
 
 **Queue leftovers** lists queue rows that nothing will clean up any more. A finished row normally disappears when its print ends. A printer that confirms its plate keeps it until **Clear plate** or **Repeat**, and a held table swap keeps it as the record of the hold. Once another print has started on the same printer, neither can still happen, so the row — and the AutoQueue assignment that pointed at it — is only clutter. The panel also lists AutoQueue assignments whose printer job is gone.
 
-BamDude removes these by itself when a printer reconnects and after each print finishes; the panel shows what is left and lets you remove it now. A row that may still be answered stays, with the reason: it is its queue's current job, the printer is waiting for a plate answer about it, its archive is not finished, its table swap is still owed, or the archive does not have its own copy of the file yet. Removing deletes only these queue records — archives, photos, accounting and print history stay, and nothing is sent to printers. Failed, cancelled and skipped jobs are never leftovers: they stay for **Retry**.
+BamDude removes these by itself when a printer reconnects and after each print finishes; the panel shows what is left and lets you remove it now. A row that may still be answered stays, with the reason: it is its queue's current job, the printer is waiting for a plate answer about it, its archive is not finished, its table swap is still owed, or the archive does not have its own copy of the file yet. Removing deletes only these queue records — archives, photos, accounting and print history stay, and nothing is sent to printers. Failed, cancelled and skipped jobs are never leftovers: they remain visible for review. Ordinary failed or cancelled jobs can offer **Retry**; the stale-claim recovery exceptions are described above.
 
 Listing requires `queue:read_all`; removing requires `queue:delete_all`. A key limited to some printers sees and removes only those printers' rows, and never orphan assignments.
 

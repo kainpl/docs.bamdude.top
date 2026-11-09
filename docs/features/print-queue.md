@@ -82,7 +82,7 @@ Every queue item carries one of exactly six statuses (visible on the queue card 
 | `completed` | The print finished. The row normally goes immediately — its history lives on in the archive — but where the plate-clear gate will arm, it stays until you answer: **Clear Plate** drops it, **Repeat print** re-arms the same row for another copy. |
 | `failed` | Dispatch or print failed; verbose `error_message` on hover. |
 | `skipped` | The `require_previous_success` gate refused it because the last print on that printer failed. `error_message` reads *"Previous print failed"*. **Unskip** clears the gate for it. |
-| `cancelled` | Cancelled before completion — by you, or automatically when the source disappears: trashing an archive cancels its still-`pending` items with the reason *"Source archive deleted"*, and trashing a library file does the same with *"Source file deleted"*. The row stays visible with its reason rather than vanishing, because a job that disappeared silently is indistinguishable from one that was never queued. |
+| `cancelled` | Queue row cancelled — by you, or automatically when the source disappears: trashing an archive cancels its still-`pending` items with the reason *"Source archive deleted"*, and trashing a library file does the same with *"Source file deleted"*. The row stays visible with its reason rather than vanishing, because a job that disappeared silently is indistinguishable from one that was never queued. |
 
 There is **no `paused` item status.** A print paused *on the printer* — operator pause, filament runout, an AMS issue — is a printer state, read live off the machine; the queue item stays `printing` throughout.
 
@@ -644,3 +644,9 @@ Expand a collapsed batch first, then use **Move to auto queue** on one pending c
 Review the proposal before confirming. The job keeps its source bytes, order line, author, schedule and one-copy quantity. Print options use the original creator's standard profile; the server lists changes. A manually staged job requires consent to automatic assignment and start. Physical filament pins require consent to automatic filament selection. Macros and physical mappings are resolved again when a printer is chosen.
 
 The distributor can assign the job immediately, even back to this printer. Moving does not resume the source queue or clear a plate gate. It does not return quantities to an order's working plan. If the response is lost, check both queues before taking another action; do not assume the move failed.
+
+## Restart recovery and duplicate claims {#restart-claims}
+
+In development after 0.7.3, a restart during an already running print's pause rejoins that execution. Reconnect after completion does not create another printing claim. When old claims conflict, the queue stays paused and Info explains the records it cannot safely resolve.
+
+Use [duplicate-claim recovery](system-info.md#duplicate-queue-claims) for the complete-group preview, manual SWAP settlement and the final plate inspection. A queue row cancelled as a stale claim does not mean the physical print was cancelled: the archive keeps its outcome. Retry, Clone and plate-clear Repeat are unavailable for those rows, including batch operations. Resetting the queue status alone does not resolve an execution claim. These changes are not included in stable 0.7.3.
