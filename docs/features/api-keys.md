@@ -5,6 +5,9 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 # API Keys
 
+!!! info "Current development after 0.7.3"
+    A deleted printer is removed from a key's allowed-printer list; an empty restricted list allows **no printers**, rather than becoming unrestricted. For an authorized key manager's PATCH, omitted `printer_ids` preserves the scope, `[]` permits none, and explicit `null` permits all printers. Administrator-only routes remain unavailable to API keys, including keys owned by administrators.
+
 For the optional MCP connection and its separate diagnostic preset, use the [AI assistant setup guide](../addons/ai-assistants/setup.md). Existing keys have MCP and MCP log access disabled; enabling either never increases the owner's permissions.
 
 API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bd_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
@@ -84,7 +87,7 @@ Both reach the same code path. The `bd_` prefix on a `Bearer` token — or `bb_`
 
 Two layers gate every API-keyed call:
 
-1. **The endpoint's required permission** is checked. API keys bypass *user* permission checks (they have no group membership), but…
+1. **The endpoint's required permission** is checked. A key with an owner is limited by that active owner's permissions as well as the key's scopes.
 2. **The key's own flags** are evaluated:
     - `can_queue` — required for `POST /queue` and queue-mutation endpoints (+ archive reprint, which enqueues an existing archive)
     - `can_control_printer` — required for start / pause / stop / cancel (+ smart-plug control)

@@ -5,6 +5,11 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
 # Authentication
 
+!!! info "Current development after 0.7.3"
+    Sensitive authentication, integration and backup controls require an **administrator and the existing permission**. Delegated settings editors can still save ordinary preferences. API keys do not inherit administrator-only access from their owner. The public SSO sign-in list contains only the provider's name and sign-in options.
+
+    Temporary authentication-storage failures return a retryable service error. Browser and camera-wall/overlay/monitor clients preserve their credentials and retry with backoff; an explicit invalid-credential response still ends access. Removing an SSO link is refused when it would leave the account without a usable sign-in method.
+
 BamDude ships with always-on authentication: every API endpoint is protected, the first boot walks you through creating an admin, and from there users sign in with passwords, optional 2FA, or OIDC single sign-on. This page is the single source of truth for the auth stack -- groups, sessions, MFA, SSO, rate limits, and recovery.
 
 ---
@@ -170,7 +175,7 @@ Optional SMTP layer that enables passwordless onboarding, admin-triggered passwo
 | **From address** | Sender address shown to recipients. Some providers require it to match the auth user. |
 | **External URL** | The reachable URL of your BamDude instance -- baked into reset / welcome email links. Has to actually resolve from the user's browser. |
 
-Click **Test email** before flipping the toggle on -- it sends a one-shot to your own admin address and surfaces the SMTP error verbatim if anything's wrong.
+Click **Test email** before flipping the toggle on -- it sends a one-shot to your own admin address and reports whether delivery succeeded. Current development uses a safe failure message rather than returning the raw SMTP exception.
 
 ### Built-in templates
 
@@ -184,6 +189,9 @@ Editable under **Settings -> Email -> Templates**:
 - **Print complete / failed / stopped** -- per-user lifecycle mails
 
 Templates are i18n-aware (en + uk); each template carries a subject line and a body with substitution variables like `{username}`, `{printer_name}`, `{archive_url}`.
+
+!!! note "Account-email templates in current development"
+    Welcome and password-reset credentials and links are appended in a protected block after the editable text. Upgrades refresh unchanged standard EN/UK bodies. If you customized these templates, remove `{password}`, `{login_url}` and `{reset_url}` and their surrounding labels; use the protected block at the end of the email. Custom text is preserved during the upgrade.
 
 ### Self-service password reset
 
@@ -343,7 +351,7 @@ The card is read-only for users without `settings:update`.
 
 ### Frontend behaviour
 
-The frontend `request()` helper transparently retries 401s through `/auth/refresh`, **promise-coalesced** so a wave of parallel queries spawns exactly one refresh call. Coalescing extends **across tabs** via the Web Locks API: whichever tab takes the lock performs the refresh, and the others adopt the token it stored instead of asking again. Proactive renewal is also jittered, so tabs that logged in together do not all wake at the same instant. If refresh also fails, a global `bamdude:auth-invalidated` event clears React state and hard-redirects to `/login`. A visibility-change listener proactively revalidates `/auth/me` when a hidden tab regains focus.
+The frontend `request()` helper transparently retries 401s through `/auth/refresh`, **promise-coalesced** so a wave of parallel queries spawns exactly one refresh call. Coalescing extends **across tabs** via the Web Locks API: whichever tab takes the lock performs the refresh, and the others adopt the token it stored instead of asking again. Proactive renewal is also jittered, so tabs that logged in together do not all wake at the same instant. If refresh confirms that the session is invalid, a global `bamdude:auth-invalidated` event clears React state and hard-redirects to `/login`. A visibility-change listener proactively revalidates `/auth/me` when a hidden tab regains focus.
 
 ### Multiple tabs
 

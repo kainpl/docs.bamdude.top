@@ -5,6 +5,11 @@ description: Information page — version, DB stats, storage breakdown, log view
 
 # System Info & Diagnostics
 
+!!! info "Log safeguards in development after 0.7.3"
+    Live and historical log views, searches and downloads redact credential fields and configured secrets. Large or incomplete records can be omitted. A processing deadline explains how to use the support bundle or narrow the search; a busy reader is a separate retryable refusal. The bundle includes a bounded recent log tail, while a full log download can exceed the processing deadline.
+
+    Stopping bug-report recording restores the previous logging mode even when its log tail is unavailable; the report gets a notice instead. Full database backups still contain credentials and must be kept private.
+
 The **Information** page (sidebar → Information, route `/system`) is BamDude's admin diagnostics surface — version metadata, database row counts, storage breakdown, the log viewer, debug-logging toggle, support bundle generator, and the maintenance buttons (optimize DB, rebuild search index, check for updates).
 
 ## :material-information: What it is
