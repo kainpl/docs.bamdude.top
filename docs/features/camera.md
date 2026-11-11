@@ -7,6 +7,9 @@ description: Watch your prints in real-time with MJPEG streaming
 
 Monitor your prints visually with live camera streaming directly from your Bambu Lab printer.
 
+!!! info "External camera compatibility in development after 0.7.3"
+    HTTP camera redirects are checked before connecting; credentials stay on the original origin and HTTPS cannot downgrade to HTTP. LAN cameras and local restreams remain supported. Snapshot sources must return JPEG, PNG, WebP or BMP; GIF, error pages and JPEG with trailing padding yield no frame. If a camera stops returning snapshots after upgrading, check its output format and configure the final endpoint directly when redirects cross origins. Slow transfers share a budget of received image bytes; many large images can exhaust it and temporarily reject other captures. See the [transport policy](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/camera-transport-policy.md) for limits and validation boundaries.
+
 !!! info "Source privacy in development after 0.7.3"
     Complete stream and snapshot URLs stay private, including for administrators. Editors show whether sources are configured, along with a safe host. Keep, replace or clear the two sources independently; clearing the primary source requires disabling it. Changes are saved explicitly, and a connection test does not save the draft. Testing a stored source requires permission to edit that printer or standalone camera as well as camera-view permission.
 
