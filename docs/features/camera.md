@@ -7,6 +7,10 @@ description: Watch your prints in real-time with MJPEG streaming
 
 Monitor your prints visually with live camera streaming directly from your Bambu Lab printer.
 
+!!! info "Source privacy in development after 0.7.3"
+    Complete stream and snapshot URLs stay private, including for administrators. Editors show whether sources are configured, along with a safe host. Keep, replace or clear the two sources independently; clearing the primary source requires disabling it. Changes are saved explicitly, and a connection test does not save the draft. Testing a stored source requires permission to edit that printer or standalone camera as well as camera-view permission.
+
+
 ---
 
 ## :material-video: Live Streaming

@@ -10,6 +10,10 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
     Temporary authentication-storage failures return a retryable service error. Browser and camera-wall/overlay/monitor clients preserve their credentials and retry with backoff; an explicit invalid-credential response still ends access. Removing an SSO link is refused when it would leave the account without a usable sign-in method.
 
+    Saved integration passwords and tokens are private even to administrators. Editors show whether a value is configured and let you keep, replace or clear it. Keeping a secret requires the same destination and account; a new destination needs a replacement credential. Connection tests use the current draft without saving it. MQTT and metrics changes require an explicit **Save connection**; enabled metrics requires a token.
+
+    API clients should follow the [credential-editing contract](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-edits.md), including explicit secret actions and camera PATCH payloads that contain only editable fields. Private full backups still retain credentials; partial Git restore preserves local integration destinations.
+
 BamDude ships with always-on authentication: every API endpoint is protected, the first boot walks you through creating an admin, and from there users sign in with passwords, optional 2FA, or OIDC single sign-on. This page is the single source of truth for the auth stack -- groups, sessions, MFA, SSO, rate limits, and recovery.
 
 ---
