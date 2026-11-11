@@ -244,7 +244,10 @@ BamDude supports LDAP authentication for environments running Active Directory, 
 | **Search base** | Where to look (e.g. `OU=Users,DC=example,DC=com`). |
 | **User filter** | LDAP filter; `{username}` is substituted at login. AD: `(sAMAccountName={username})`. OpenLDAP / FreeIPA: `(uid={username})`. |
 
-Click **Test connection** before flipping **Enable LDAP** -- it does a dry-run bind + search and shows the raw error if anything's misconfigured.
+Click **Test connection** before flipping **Enable LDAP**. On the current development line after 0.7.3, the test uses your unsaved connection draft without saving it. Failures report safe categories such as StartTLS refusal, TLS certificate/handshake failure, account bind failure or directory search failure, rather than raw driver errors. A refused StartTLS upgrade never falls back to a plaintext bind. If the directory blocks anonymous schema reads, BamDude binds first and discovers the available schema afterward; an unavailable schema alone does not make the connection test fail.
+
+!!! warning "LDAP upgrade action — current development after 0.7.3, unreleased"
+    Older configurations combining **LDAPS (SSL)** with an `ldap://` URL are rejected before connecting. Change the server to a DNS URL such as `ldaps://ad.example.com:636`, or select **StartTLS** with `ldap://ad.example.com:389`. Use the DNS name covered by the server certificate. Re-enter the service-account **Bind password** for the corrected connection, test it, then save. A bare hostname can only be retained from an existing legacy configuration; it cannot be newly saved as the server address.
 
 ### Group mapping
 
@@ -260,7 +263,10 @@ Map directory groups to BamDude groups via a JSON object:
 
 Keys are LDAP group `cn` values (case-insensitive); values are BamDude group names. Both AD-style `memberOf` and POSIX-style `memberUid` are supported. Group membership is **re-synced on every login** -- demoting a user in AD takes effect at most one BamDude login later.
 
-If no mapping is configured, LDAP users are auto-provisioned with no group memberships and have to be assigned manually.
+If no mapping matches, provisioning uses the configured default group; without a default, assign groups manually.
+
+!!! info "Group lookup in current development after 0.7.3, unreleased"
+    Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. This does not add OIDC group synchronization.
 
 ### Provisioning
 
@@ -341,6 +347,9 @@ The login form has a **"Remember me for 30 days"** checkbox.
 |------|------------|-----------------|
 | Default | 24 hours | Session cookie (cleared when browser closes) |
 | Remember me | 30 days | `Max-Age=30d` -- survives browser restarts |
+
+!!! info "SSO Remember Me — current development after 0.7.3, unreleased"
+    The checkbox remains available when local password login is disabled. It starts unchecked on a fresh login page. A manual SSO attempt carries that attempt's choice through the provider callback, optional TOTP/email/backup-code verification, and later refresh rotations. Automatic SSO redirection uses **false**, without reusing a previous checked choice. The administrator's session ceiling still limits the refresh lifetime and persistent cookie, even when it is shorter than 24 hours. Existing safe post-login deep links are preserved.
 
 ### Session lifetime ceiling (Session Policy)
 
@@ -715,7 +724,7 @@ Links last **1 hour** and work **once**. Requesting a new one also retires the p
 
 ### LDAP users can't log in but local admin can
 
-Almost always a directory connectivity issue. Open **Settings -> Authentication -> LDAP -> Test connection** and read the raw error. Common causes: VPN dropped, AD service-account password rotated, LDAPS cert expired, firewall closed 636/389.
+Open **Settings -> Authentication -> LDAP -> Test connection**. On the current development line after 0.7.3, use the safe failure category to distinguish transport, bind and search failures; check the unreleased LDAP upgrade action above for an old LDAPS + `ldap://` configuration. Common causes include a dropped VPN, a rotated service-account password, an expired certificate or a firewall blocking 636/389. An incomplete group lookup also blocks LDAP sign-in so it cannot grant fallback permissions.
 
 ---
 
