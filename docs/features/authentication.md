@@ -255,13 +255,13 @@ Map directory groups to BamDude groups via a JSON object:
 
 ```json
 {
-  "BamDudeAdmins": "Administrators",
-  "BamDudeOps": "Operators",
-  "BamDudeViewers": "Viewers"
+  "cn=BamDudeAdmins,ou=Groups,dc=example,dc=com": "Administrators",
+  "cn=BamDudeOps,ou=Groups,dc=example,dc=com": "Operators",
+  "cn=BamDudeViewers,ou=Groups,dc=example,dc=com": "Viewers"
 }
 ```
 
-Keys are LDAP group `cn` values (case-insensitive); values are BamDude group names. Both AD-style `memberOf` and POSIX-style `memberUid` are supported. Group membership is **re-synced on every login** -- demoting a user in AD takes effect at most one BamDude login later.
+Keys are full LDAP group distinguished names (DNs), matched case-insensitively, not just the group's `cn`; values are BamDude group names. Both AD-style `memberOf` and POSIX-style `memberUid` are supported. Group membership is **re-synced on every login** -- demoting a user in AD takes effect at most one BamDude login later.
 
 If no mapping matches, provisioning uses the configured default group; without a default, assign groups manually.
 

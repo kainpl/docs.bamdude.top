@@ -255,13 +255,13 @@ BamDude підтримує LDAP-автентифікацію для оточен
 
 ```json
 {
-  "BamDudeAdmins": "Administrators",
-  "BamDudeOps": "Operators",
-  "BamDudeViewers": "Viewers"
+  "cn=BamDudeAdmins,ou=Groups,dc=example,dc=com": "Administrators",
+  "cn=BamDudeOps,ou=Groups,dc=example,dc=com": "Operators",
+  "cn=BamDudeViewers,ou=Groups,dc=example,dc=com": "Viewers"
 }
 ```
 
-Ключі — LDAP `cn` груп (case-insensitive); значення — імена BamDude-груп. Підтримані обидва стилі: AD `memberOf` і POSIX `memberUid`. Membership **ре-синкається на кожному login** — пониження в AD доїде максимум один BamDude-логін потому.
+Ключі — повні distinguished names (DN) LDAP-груп, які порівнюються без урахування регістру, а не лише `cn` групи; значення — імена BamDude-груп. Підтримані обидва стилі: AD `memberOf` і POSIX `memberUid`. Membership **ре-синкається на кожному login** — пониження в AD доїде максимум один BamDude-логін потому.
 
 Якщо мапінг не має збігів, provisioning використовує налаштовану default-групу; без неї групи треба призначити вручну.
 
