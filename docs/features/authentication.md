@@ -14,6 +14,13 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
     API clients should follow the [credential-editing contract](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-edits.md), including explicit secret actions and camera PATCH payloads that contain only editable fields. Private full backups still retain credentials; partial Git restore preserves local integration destinations.
 
+!!! warning "Credential upgrade — current development after 0.7.3, unreleased"
+    Upgrading to the current fixes line requires signing in again and replacing **all legacy API keys and long-lived camera/monitor tokens**, including ownerless keys and old `bb_` keys. Old secrets cannot be re-enabled. This is a one-time upgrade action; newly issued credentials survive ordinary restarts.
+
+    An administrator can review the affected counts in **Settings**. Create replacement API keys for a specific active owner, selecting the required permissions and printers, and generate fresh camera/monitor tokens. Removing an inactive token's list entry does not restore its secret or change historical retirement counts.
+
+    Update Home Assistant, scripts/webhooks, BamDude Bridge, MCP/AI adapters, OrcaBamDude and API-key camera clients. Replace saved camera-wall, overlay, monitor and TV links too. The [replacement checklist](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-lifetimes.md#updating-an-existing-installation) identifies each consumer and its replacement setting. Store new secrets privately; do not paste them into logs or support reports.
+
 BamDude ships with always-on authentication: every API endpoint is protected, the first boot walks you through creating an admin, and from there users sign in with passwords, optional 2FA, or OIDC single sign-on. This page is the single source of truth for the auth stack -- groups, sessions, MFA, SSO, rate limits, and recovery.
 
 ---

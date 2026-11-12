@@ -5,6 +5,9 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 # API Keys
 
+!!! warning "Credential upgrade — current development after 0.7.3"
+    The current fixes upgrade retires **every legacy key**, including old `bb_` keys and keys without an owner. Sign in again, issue replacements for specific active owners, and update each integration. Retired secrets cannot be re-enabled. Follow the [authentication upgrade checklist](authentication.md) before updating this development line; stable 0.7.3 does not include this change.
+
 !!! info "Current development after 0.7.3"
     A deleted printer is removed from a key's allowed-printer list; an empty restricted list allows **no printers**, rather than becoming unrestricted. For an authorized key manager's PATCH, omitted `printer_ids` preserves the scope, `[]` permits none, and explicit `null` permits all printers. Administrator-only routes remain unavailable to API keys, including keys owned by administrators.
 
@@ -23,7 +26,7 @@ The auth stack is **always on** (see [Authentication](authentication.md)) — a 
 
 | Field | Value |
 |---|---|
-| **Prefix** | `bd_` (literal). Keys created before this change start with `bb_` — Bambuddy's prefix — and keep working unchanged |
+| **Prefix** | `bd_` (literal). The legacy `bb_` prefix is still recognized, but recognition does not exempt an old key from the current-development retirement described above |
 | **Body** | 32 random bytes, base64-url-encoded — 43 chars |
 | **Full length** | 46 characters |
 | **At rest** | Hashed (`get_password_hash`); only the prefix + name are stored in clear |
