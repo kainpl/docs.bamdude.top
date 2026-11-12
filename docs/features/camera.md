@@ -7,6 +7,9 @@ description: Watch your prints in real-time with MJPEG streaming
 
 Monitor your prints visually with live camera streaming directly from your Bambu Lab printer.
 
+!!! info "API-key cameras in development after 0.7.3"
+    Printer snapshots and streams accept `X-API-Key` or an API key as `Authorization: Bearer`, with the key's owner, camera permission and printer scope checked. A running key stream stops issuing private data within five seconds of revocation or loss of access, including when the camera is stalled; an uncertain access check closes that viewer. Already-issued HTTP, middleware or network buffers cannot be retracted. Key streams also have a five-minute lease. Disabling the slicer connector blocks new key streams; existing streams continue until access changes, restore closes them or the lease ends. Query-token links retain their existing policy.
+
 !!! info "External camera compatibility in development after 0.7.3"
     HTTP camera redirects are checked before connecting; credentials stay on the original origin and HTTPS cannot downgrade to HTTP. LAN cameras and local restreams remain supported. Snapshot sources must return JPEG, PNG, WebP or BMP; GIF, error pages and JPEG with trailing padding yield no frame. If a camera stops returning snapshots after upgrading, check its output format and configure the final endpoint directly when redirects cross origins. Slow transfers share a budget of received image bytes; many large images can exhaust it and temporarily reject other captures. See the [transport policy](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/camera-transport-policy.md) for limits and validation boundaries.
 

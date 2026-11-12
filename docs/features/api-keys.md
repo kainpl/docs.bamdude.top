@@ -10,6 +10,9 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 For the optional MCP connection and its separate diagnostic preset, use the [AI assistant setup guide](../addons/ai-assistants/setup.md). Existing keys have MCP and MCP log access disabled; enabling either never increases the owner's permissions.
 
+!!! info "Slicer connector in development after 0.7.3"
+    The server API for OrcaBamDude accepts uploads into the library and named submissions to a printer queue or Auto-Queue. Repeating the same operation after a lost response does not queue another copy. The key's owner, permissions and printer scope apply; restricted keys cannot use Auto-Queue. Use a new operation when changing keys, since a new key does not inherit the previous key's submission journal. Client packaging and platform support are separate from this server API.
+
 API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bd_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
 
 The auth stack is **always on** (see [Authentication](authentication.md)) — a key is the headless equivalent of a logged-in user, not a bypass.
