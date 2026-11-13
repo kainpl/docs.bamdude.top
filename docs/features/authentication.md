@@ -21,6 +21,11 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
     Update Home Assistant, scripts/webhooks, BamDude Bridge, MCP/AI adapters, OrcaBamDude and API-key camera clients. Replace saved camera-wall, overlay, monitor and TV links too. The [replacement checklist](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-lifetimes.md#updating-an-existing-installation) identifies each consumer and its replacement setting. Store new secrets privately; do not paste them into logs or support reports.
 
+!!! info "Open views and revocation — current development after 0.7.3, unreleased"
+    Open WebSockets, camera views and covered private media recheck current access. Logging out one device ends that session's views; revoking a key or token ends its own views within five seconds. Other device sessions and shared camera viewers keep running. Live events respect current permissions and printer scope. Data already handed to the network cannot be recalled.
+
+    An explicitly supplied API key must be valid, even beside a valid browser session or URL token. Remove an obsolete `X-API-Key` header when using a browser or token-only link. Short-lived WebSocket/media tokens end at their own expiry and can be renewed through a still-valid parent. See the [live access contract](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/live-access.md) for delivery boundaries and retry behavior.
+
 BamDude ships with always-on authentication: every API endpoint is protected, the first boot walks you through creating an admin, and from there users sign in with passwords, optional 2FA, or OIDC single sign-on. This page is the single source of truth for the auth stack -- groups, sessions, MFA, SSO, rate limits, and recovery.
 
 ---
