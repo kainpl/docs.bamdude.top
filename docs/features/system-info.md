@@ -306,6 +306,10 @@ Check the physical printer and plate, confirm that it is idle, then choose **Int
 
 Apply repeats the identity and telemetry checks. A newer print or changed evidence invalidates the preview; it cannot close a successor execution.
 
+Prints with a pending automatic plate swap cannot be closed with this action. It never settles or replays a swap.
+
+After applying, the dialog confirms the committed close and separately reports whether the old process context was released. A release failure leaves the close intact; check the current diagnostics to release any remaining terminal context separately. Repeating a request returns the saved close result without repeating context cleanup, so its release status is not inferred from history. Only the closed archive's in-memory usage session is discarded, allowing AMS remaining-weight synchronization to resume without charging filament; a successor's or unproven session is left alone.
+
 ### Duplicate queue claims after a restart {#duplicate-queue-claims}
 
 !!! info "Development after 0.7.3"
