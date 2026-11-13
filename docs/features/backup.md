@@ -93,9 +93,18 @@ In Docker the failure is quieter: a host path that was never bind-mounted is sti
 
 ---
 
-## :material-source-branch: Git Backup (Profiles to GitHub / GitLab)
+## :material-source-branch: Git Backup (GitHub / GitLab / Gitea / Forgejo)
 
-Distinct from the ZIP flow. **Settings → System → Git Backup** pushes selected printer-profile data to a GitHub or GitLab repository — useful for off-site profile sync, multi-host farm coordination, and PR-based change history of your printer settings.
+Distinct from the ZIP flow. **Settings → Backup & Restore → Git Backup** pushes selected backup categories to a GitHub, GitLab, Gitea or Forgejo repository — useful for off-site profile sync, multi-host farm coordination, and PR-based change history of your printer settings.
+
+!!! warning "Fixes development branch after 0.7.3: approve existing schedules"
+    Git backups can contain integration credentials and private farm data. Use a **private repository**. After upgrading, an active administrator with Git backup permission must explicitly save each existing configuration before exports resume. A successful connection test alone does not approve it.
+
+    Settings shows the block immediately, even before the first scheduled attempt. A blocked attempt is distinct from a no-change `skipped` run; the last attempt and last successful backup are shown separately, with blocked counts in support diagnostics. Each active subscribed administrator receives one in-app notice per continuous blocked period.
+
+    Approval belongs to the approving account. Disabling it or removing its administrator or Git backup access pauses exports. Restoring access to that same account resumes an unchanged configuration; deleting and recreating the account requires a new administrator save. Signing out or resetting its password does not remove configuration approval. A blocked manual run makes no export and does not move the next scheduled slot.
+
+    Partial Git restore validates supported ordinary settings and preserves local destinations, credentials and authentication policy. Preview is advisory: apply rechecks current local state and the original administrator's authority. With **Overwrite** off, final counts and refusal reasons can differ from preview. Full ZIP backup retains its complete snapshot contract.
 
 ### :material-cog-outline: Configuration
 
@@ -112,7 +121,7 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
 
 === ":material-github: GitHub"
 
-    1. **Create a GitHub repository** (private is fine).
+    1. **Create a private GitHub repository**.
     2. **Generate a Personal Access Token (PAT)**:
         - Go to [GitHub Personal Access Tokens](https://github.com/settings/tokens){ target="_blank" rel="noopener" }.
         - Click **Generate new token** → **Generate new token (classic)**.
@@ -130,7 +139,7 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
 
 === ":material-gitlab: GitLab"
 
-    1. **Create a GitLab repository** (private is fine).
+    1. **Create a private GitLab repository**.
     2. **Generate a Personal Access Token**:
         - Go to [GitLab Personal Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens){ target="_blank" rel="noopener" }.
         - Click **Add new token** (Legacy / classic shape).
@@ -147,7 +156,7 @@ Distinct from the ZIP flow. **Settings → System → Git Backup** pushes select
 
 === ":material-git: Gitea"
 
-    1. **Create a new repository** (private is fine).
+    1. **Create a private repository**.
     2. **Generate a Personal Access Token**:
         - **Settings** → **Applications** in your Gitea profile.
         - Under **Access Tokens**, name the token.
@@ -234,7 +243,7 @@ The flat structure makes partial restore unambiguous — you can pull just `kpro
 
 The settings page shows the live status:
 
-- **Last backup** — timestamp, status (`success` / `failed` / `skipped`), commit SHA, and message.
+- **Last backup** — timestamp, status (`success` / `failed` / `skipped`; also `blocked` on the fixes development branch), commit SHA, and message.
 - **Next scheduled run** — when the scheduler will fire next.
 - **Log table** — historical runs with trigger (`manual` / `scheduled`), duration, and any error message.
 - **Run Now** button — fires an immediate push regardless of schedule.
