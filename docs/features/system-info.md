@@ -297,6 +297,15 @@ POST /api/v1/system/printers/{printer_id}/print-state/apply
 GET  /api/v1/system/printers/{printer_id}/print-state/history
 ```
 
+### Closing a stopped print {#close-stopped-print}
+
+!!! info "Current development after 0.7.3"
+    If the printer has stopped but its one proven job and archive still say *printing*, diagnostics can offer **Close the stopped print**. BamDude requires fresh, stable IDLE observations and refuses active effects, ambiguous ownership or a recorded completion. An offline printer alone is not sufficient evidence.
+
+Check the physical printer and plate, confirm that it is idle, then choose **Interrupted** or **Result unknown**. Review the addressed preview and confirm it. Interrupted records become failed; an unknown result becomes cancelled and remains explicitly uncertain. Neither credits good output nor runs completion, filament accounting or table-swap actions. The archive and audit history stay; the queue remains paused and the plate-clear gate is unchanged. Inspect the result before deciding whether to retry or resume.
+
+Apply repeats the identity and telemetry checks. A newer print or changed evidence invalidates the preview; it cannot close a successor execution.
+
 ### Duplicate queue claims after a restart {#duplicate-queue-claims}
 
 !!! info "Development after 0.7.3"

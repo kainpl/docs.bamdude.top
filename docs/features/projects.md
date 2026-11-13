@@ -235,7 +235,7 @@ Under the lines, each line carries a plan: the plates that would cover what it s
 A plan that stops at its safety limit says so, instead of looking exactly like a finished one.
 
 !!! warning "The plan sees capacity; dispatch still decides readiness"
-    A read-only farm snapshot supplies active, unpaused, AutoQueue-eligible lanes and their current work. An offline printer is not discarded merely for being offline; archived, maintenance, paused and AutoQueue-disabled printers receive no new planned work. Filament, live connectivity and every final queue gate remain dispatch-time checks. If no usable lane matches the only recipe, BamDude keeps that recipe visible so the forecast can say why it cannot run yet. See [Auto-Queue → Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
+    A read-only farm snapshot supplies active, unpaused, AutoQueue-eligible lanes and their current work. An offline printer is not discarded merely for being offline; archived, maintenance and AutoQueue-disabled printers receive no new planned work. Paused queues are excluded by default; an order can explicitly include them as described below. Filament, live connectivity and every final queue gate remain dispatch-time checks. If no usable lane matches the only recipe, BamDude keeps that recipe visible so the forecast can say why it cannot run yet. See [Auto-Queue → Routing is not dispatching](auto-queue.md#routing-is-not-dispatching).
 
 A closed order plans nothing, and the block says so rather than disappearing — a section that is simply absent reads as "this order has nothing to print", which is the one thing a failed or closed plan must not say.
 
@@ -246,6 +246,9 @@ A closed order plans nothing, and the block says so rather than disappearing —
 Saving restrictions keeps existing jobs and files. New planning and assignments use the selection, and a pending job already on an excluded printer waits rather than starting there. Work already claimed for dispatch continues normally.
 
 To move the remaining work, review the proposed replacement first. It lists the replaceable jobs from AutoQueue and printer queues, preserves started and protected work, and shows the new draft. Applying removes only the reviewed replaceable jobs and replaces the working draft; it does not send that draft to print. Review it, then use **Whole plan to queue**. This action requires permission to read and delete all queue jobs as well as edit the order. Orders with restrictions are excluded from automatic cross-model rebalancing; use this reviewed replan instead.
+
+!!! info "Current development after 0.7.3"
+    **Include paused printers in the print plan** in the same card is off by default. Enable it to plan for eligible printers after their queues resume, including the work already waiting on them. Rebuild an existing draft to apply the choice. Maintenance, queue errors and AutoQueue opt-outs still exclude printers. The completion forecast uses the actual queue state; this setting neither resumes queues nor starts prints.
 
 ### Shared working draft and saved comparison
 
