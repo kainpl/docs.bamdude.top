@@ -176,6 +176,10 @@ A file sliced for a printer model that cannot run it is refused rather than quie
 
 ---
 
+## :material-view-grid-plus: Assemble project
+
+Select STL, OBJ or STEP models and press **Assemble project** to lay them out densely and save ready project 3MF files for your printers — see [Assemble Project](assemble-project.md).
+
 ## :material-download: Downloading files
 
 ### Single file

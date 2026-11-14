@@ -74,6 +74,11 @@ Automatic 3MF archiving with metadata extraction, 3D preview, and duplicate dete
 Browse, upload, and manage your local library of print files. Print directly or add to queue.
 </div>
 
+<div class="feature-card" markdown>
+### [:material-view-grid-plus: Assemble Project](assemble-project.md)
+Lay STL, OBJ and STEP models out densely — small parts inside larger ones — and save ready project 3MF files for several printers at once.
+</div>
+
 </div>
 
 ---

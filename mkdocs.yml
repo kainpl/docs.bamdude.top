@@ -130,6 +130,7 @@ plugins:
             File Manager: Файловий менеджер
             "Library & Archive Trash": "Корзини бібліотеки і архіву"
             "Library & Slicing": "Бібліотека і слайсинг"
+            "Assemble Project": "Зібрати проєкт"
             "MakerWorld import": "Імпорт з MakerWorld"
             "Slicer API": "Slicer API"
             "Filament Families": "Сім'ї філаментів"
@@ -300,6 +301,7 @@ nav:
       - File Manager: features/file-manager.md
       - Library & Archive Trash: features/library-trash.md
     - Library & Slicing:
+      - Assemble Project: features/assemble-project.md
       - MakerWorld import: features/makerworld.md
       - Slicer API: features/slicer-api.md
       - Filament Families: features/filament-families.md
