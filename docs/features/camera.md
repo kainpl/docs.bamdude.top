@@ -7,13 +7,13 @@ description: Watch your prints in real-time with MJPEG streaming
 
 Monitor your prints visually with live camera streaming directly from your Bambu Lab printer.
 
-!!! info "API-key cameras in development after 0.7.3"
+!!! info "API-key cameras"
     Printer snapshots and streams accept `X-API-Key` or an API key as `Authorization: Bearer`, with the key's owner, camera permission and printer scope checked. A running key stream stops issuing private data within five seconds of revocation or loss of access, including when the camera is stalled; an uncertain access check closes that viewer. Already-issued HTTP, middleware or network buffers cannot be retracted. Key streams also have a five-minute lease. Disabling the slicer connector blocks new key streams; existing streams continue until access changes, restore closes them or the lease ends. Query-token links retain their existing policy.
 
-!!! info "External camera compatibility in development after 0.7.3"
+!!! info "External camera compatibility"
     HTTP camera redirects are checked before connecting; credentials stay on the original origin and HTTPS cannot downgrade to HTTP. LAN cameras and local restreams remain supported. Snapshot sources must return JPEG, PNG, WebP or BMP; GIF, error pages and JPEG with trailing padding yield no frame. If a camera stops returning snapshots after upgrading, check its output format and configure the final endpoint directly when redirects cross origins. Slow transfers share a budget of received image bytes; many large images can exhaust it and temporarily reject other captures. See the [transport policy](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/camera-transport-policy.md) for limits and validation boundaries.
 
-!!! info "Source privacy in development after 0.7.3"
+!!! info "Source privacy"
     Complete stream and snapshot URLs stay private, including for administrators. Editors show whether sources are configured, along with a safe host. Keep, replace or clear the two sources independently; clearing the primary source requires disabling it. Changes are saved explicitly, and a connection test does not save the draft. Testing a stored source requires permission to edit that printer or standalone camera as well as camera-view permission.
 
 
@@ -196,7 +196,7 @@ BamDude enforces that on two axes:
 
 ### A printer that reports no camera
 
-*After 0.7.1.* A printer says in its own status (`ipcam_dev`) whether it has a usable built-in camera. When it explicitly reports none, BamDude no longer asks it for single frames — snapshots and the Camera Wall's snapshot tiles, the finish photo, the plate check, AI failure detection, Telegram and cloud snapshots — so they no longer each wait out the capture timeout, and the chamber light is not switched on for them. A frame that is already here — the live view's buffer or a recent snapshot — is still served, and an external camera is not affected. **Diagnose** still really tries the camera, so you can check a printer whose report looks wrong. The skip begins only once the printer has said so on its current connection, ends as soon as it reports a camera again, and the log names it once as `builtin_camera_unavailable`. The live view itself is unchanged.
+A printer says in its own status (`ipcam_dev`) whether it has a usable built-in camera. When it explicitly reports none, BamDude no longer asks it for single frames — snapshots and the Camera Wall's snapshot tiles, the finish photo, the plate check, AI failure detection, Telegram and cloud snapshots — so they no longer each wait out the capture timeout, and the chamber light is not switched on for them. A frame that is already here — the live view's buffer or a recent snapshot — is still served, and an external camera is not affected. **Diagnose** still really tries the camera, so you can check a printer whose report looks wrong. The skip begins only once the printer has said so on its current connection, ends as soon as it reports a camera again, and the log names it once as `builtin_camera_unavailable`. The live view itself is unchanged.
 
 ---
 

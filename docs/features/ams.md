@@ -30,7 +30,7 @@ Where the slot menu offers RFID re-reading, use it to refresh a tagged spool aft
 
 ### Configure AMS Slot
 
-For repeated loading of full, untagged reels, the optional per-printer [automatic stock assignment](inventory.md#automatic-stock-assignment) links a spool from a selected inventory group when insertion is observed. The guide covers setup, manual/RFID priority and returning a partial reel after runout. This option is in current development, not the `0.7.0` image.
+For repeated loading of full, untagged reels, the optional per-printer [automatic stock assignment](inventory.md#automatic-stock-assignment) links a spool from a selected inventory group when insertion is observed. The guide covers setup, manual/RFID priority and returning a partial reel after runout.
 
 Manually configure slots for third-party filaments:
 

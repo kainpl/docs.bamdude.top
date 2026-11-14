@@ -6,7 +6,7 @@ description: Connect your own AI client to the optional read-only BamDude MCP se
 # AI assistants
 
 !!! warning "Development preview"
-    This describes the MCP implementation under development after v0.7.2. It is not a claim that the published v0.7.2 has these controls. The base module, diagnostic readers and skill workflows have passed independent acceptance; release integration remains separate. The [support matrix](clients.md) separates package validation from a verified client connection.
+    The base module, diagnostic readers and skill workflows have passed independent acceptance. The [support matrix](clients.md) separates package validation from a verified client connection.
 
 BamDude supplies an optional **MCP server** at `/mcp`. Your assistant supplies the model and its account. The **client connector** handles the connection; the **skill** teaches the assistant how to use the available tools. Installing a skill does not connect a server or grant access.
 

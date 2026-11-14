@@ -5,7 +5,7 @@ description: Information page — version, DB stats, storage breakdown, log view
 
 # System Info & Diagnostics
 
-!!! info "Log safeguards in development after 0.7.3"
+!!! info "Log safeguards"
     Live and historical log views, searches and downloads redact credential fields and configured secrets. Large or incomplete records can be omitted. A processing deadline explains how to use the support bundle or narrow the search; a busy reader is a separate retryable refusal. The bundle includes a bounded recent log tail, while a full log download can exceed the processing deadline.
 
     Stopping bug-report recording restores the previous logging mode even when its log tail is unavailable; the report gets a notice instead. Full database backups still contain credentials and must be kept private.
@@ -27,11 +27,11 @@ context remains cached until that print is released.
 
 The **Library file worker** prepares uploaded and mounted files and their 3MF plate metadata. Its outage prevents new file preparation and folder scans; existing files remain available. Check this panel when upload or scan logs say `library file service unavailable`.
 
-The **Part thumbnail worker** (after 0.7.0) renders the [part pictures](projects.md#part-pictures). Its panel shows **Available**, **Fallback only** (no official Node.js build for this machine) or **Unavailable**; the reason in a sentence with its code beside it; the pinned Node.js version and its date; the queue — plates waiting and failed; and the last attempt's outcome and time. When it is not available, the panel links to [its troubleshooting](../reference/troubleshooting.md#part-thumbnail-worker). An outage stops only new pictures: products, orders and stock keep working, and waiting plates are not counted as failed.
+The **Part thumbnail worker** renders the [part pictures](projects.md#part-pictures). Its panel shows **Available**, **Fallback only** (no official Node.js build for this machine) or **Unavailable**; the reason in a sentence with its code beside it; the pinned Node.js version and its date; the queue — plates waiting and failed; and the last attempt's outcome and time. When it is not available, the panel links to [its troubleshooting](../reference/troubleshooting.md#part-thumbnail-worker). An outage stops only new pictures: products, orders and stock keep working, and waiting plates are not counted as failed.
 
-The **STEP preview component** line (after 0.7.0), in the same preview section, shows the component that makes [STEP thumbnails](file-manager.md#step-thumbnails): the administrator's choice — **Enabled by the administrator: updates keep it current**, **Disabled by the administrator: updates leave it alone** or **Not chosen yet** — and the component's state — **Installed**, **Not installed**, **Not available for this machine**, **State unknown** or **Not usable (reason)**. *Installed* is not *works*: only `install/step-preview.sh status`, run on the server, checks that it really renders. On a native install the line also shows the two commands — **To install or repair it, run on the server:** `install/step-preview.sh enable`, and **To check that it renders:** `install/step-preview.sh status`; Docker and the Windows installer carry the component and show its state only. See [Installation → STEP previews](../getting-started/installation.md#step-previews) and [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails).
+The **STEP preview component** line, in the same preview section, shows the component that makes [STEP thumbnails](file-manager.md#step-thumbnails): the administrator's choice — **Enabled by the administrator: updates keep it current**, **Disabled by the administrator: updates leave it alone** or **Not chosen yet** — and the component's state — **Installed**, **Not installed**, **Not available for this machine**, **State unknown** or **Not usable (reason)**. *Installed* is not *works*: only `install/step-preview.sh status`, run on the server, checks that it really renders. On a native install the line also shows the two commands — **To install or repair it, run on the server:** `install/step-preview.sh enable`, and **To check that it renders:** `install/step-preview.sh status`; Docker and the Windows installer carry the component and show its state only. See [Installation → STEP previews](../getting-started/installation.md#step-previews) and [Troubleshooting → STEP thumbnails](../reference/troubleshooting.md#step-thumbnails).
 
-Database health is shown independently of these workers. After 0.7.0, a failed SQL check no longer aborts the other checks: missing `pg_stat_statements` leaves a statistics warning while version, size and other readable fields remain available. See [PostgreSQL setup](postgresql.md) for enabling it; updating only BamDude does not configure an external PostgreSQL server.
+Database health is shown independently of these workers. A failed SQL check no longer aborts the other checks: missing `pg_stat_statements` leaves a statistics warning while version, size and other readable fields remain available. See [PostgreSQL setup](postgresql.md) for enabling it; updating only BamDude does not configure an external PostgreSQL server.
 
 ## :material-tag-outline: Version info
 
@@ -299,7 +299,7 @@ GET  /api/v1/system/printers/{printer_id}/print-state/history
 
 ### Closing a stopped print {#close-stopped-print}
 
-!!! info "Current development after 0.7.3"
+!!! info "When the action is offered"
     If the printer has stopped but its one proven job and archive still say *printing*, diagnostics can offer **Close the stopped print**. BamDude requires fresh, stable IDLE observations and refuses active effects, ambiguous ownership or a recorded completion. An offline printer alone is not sufficient evidence.
 
 Check the physical printer and plate, confirm that it is idle, then choose **Interrupted** or **Result unknown**. Review the addressed preview and confirm it. Interrupted records become failed; an unknown result becomes cancelled and remains explicitly uncertain. Neither credits good output nor runs completion, filament accounting or table-swap actions. The archive and audit history stay; the queue remains paused and the plate-clear gate is unchanged. Inspect the result before deciding whether to retry or resume.
@@ -311,9 +311,6 @@ Prints with a pending automatic plate swap cannot be closed with this action. It
 After applying, the dialog confirms the committed close and separately reports whether the old process context was released. A release failure leaves the close intact; check the current diagnostics to release any remaining terminal context separately. Repeating a request returns the saved close result without repeating context cleanup, so its release status is not inferred from history. Only the closed archive's in-memory usage session is discarded; a successor's or unproven session is left alone. The close itself charges no filament. With the session gone, AMS remaining-weight synchronization resumes as on any idle printer and may record the consumption the AMS reports, without linking it to the archive.
 
 ### Duplicate queue claims after a restart {#duplicate-queue-claims}
-
-!!! info "Development after 0.7.3"
-    This section describes `feature/v0.7.3-fixes`, not stable 0.7.3. Use a build containing these changes; older builds offer fewer recovery actions.
 
 If the printer has finished but its queue still says **Printing**, use **Print state diagnostics** on the Info page and filter by printer ID. Changing the queue header to Idle alone does not release the execution claims or resolve an owed plate swap. Reconnecting is not a repair for conflicting persisted claims.
 

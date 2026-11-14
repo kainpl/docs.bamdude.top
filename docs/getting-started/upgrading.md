@@ -15,7 +15,7 @@ This guide is the operator's safe-upgrade protocol. The DB schema advances **for
 
 Review custom permission groups: Orders, Products, Customers and Stock have independent rights, and filing prints under orders is separate. Integrations creating products from files must read the `{product, notes}` response described in the [API guide](../reference/api.md). PostgreSQL 18 containers mount their data volume at `/var/lib/postgresql`, not the old `/var/lib/postgresql/data` path; keep your existing major version and volume layout when applying an override update.
 
-The [changelog](https://github.com/kainpl/bamdude/blob/main/CHANGELOG.md) separates released changes from **Unreleased**. [Automatic full-stock spool assignment](../features/inventory.md#automatic-stock-assignment), grouped spool sorting, loose-component stock reservations and saved BOM extra percentages documented for current development are not in the `0.7.0` image. Updating only an image does not apply changed Compose files or configure query statistics on an external PostgreSQL server; see [PostgreSQL](../features/postgresql.md).
+The [changelog](https://github.com/kainpl/bamdude/blob/main/CHANGELOG.md) lists what each release changed. Updating only an image does not apply changed Compose files or configure query statistics on an external PostgreSQL server; see [PostgreSQL](../features/postgresql.md).
 
 ## :material-clipboard-check: 1. Pre-upgrade checklist
 
@@ -144,7 +144,7 @@ While the service is stopped, the script also checks that the unit starts uvicor
 
 ### `update.sh` runs as the install's owner {#update-sh-runs-as-the-owner}
 
-After 0.7.0, `update.sh` runs git — the rollback included —, pip and npm **as the install's owner**, and keeps root for systemd only. It used to run git as root in a tree that belongs to the service's user, which git refuses ("dubious ownership"), so on an install made by `install.sh` the update stopped at its first git command; and root-run writes left root-owned files the in-app update later could not change. It now checks, before anything changes, and stops with the repair named, when:
+`update.sh` runs git — the rollback included —, pip and npm **as the install's owner**, and keeps root for systemd only. It used to run git as root in a tree that belongs to the service's user, which git refuses ("dubious ownership"), so on an install made by `install.sh` the update stopped at its first git command; and root-run writes left root-owned files the in-app update later could not change. It now checks, before anything changes, and stops with the repair named, when:
 
 - **the install's owner is not the user the service runs as** (the unit's `User=`; a unit without one runs as root) — give the install to that user, e.g. `sudo chown -R bamdude: /opt/bamdude`, or correct the unit's `User=`, then run the update again;
 - **something outside `data/`, `logs/`, `backups/` and `runtime/` belongs to someone else** — files an earlier update run as root left behind; the first such file is named, and `sudo chown -R bamdude: /opt/bamdude` hands them back;
@@ -158,7 +158,7 @@ The update never changes ownership on its own.
 
 ### The STEP preview component on update {#step-component-on-update}
 
-Updates keep an enabled [STEP preview component](installation.md#step-previews) current (after 0.7.0): `update.sh` and an update from Settings refresh it, never install one you declined, and never fail because of it. `update.sh` removes the older version of the component last, just before it starts the service again, and only when it can prove the service stopped — right after the stop and again then (cgroup v2: the unit's group is empty); otherwise it keeps it and says so. The version the code before the update runs on is always kept — a failed build or a failed start rolls the code back to it — and goes with the next update. A refresh that fails ends in `STEP preview update failed; run install/step-preview.sh status to see why.` — the update itself goes on. An update from Settings says **The STEP preview component was not updated (reason); BamDude itself was.** under its result; the reasons and their repairs are in [Installation → STEP previews](installation.md#step-previews).
+Updates keep an enabled [STEP preview component](installation.md#step-previews) current: `update.sh` and an update from Settings refresh it, never install one you declined, and never fail because of it. `update.sh` removes the older version of the component last, just before it starts the service again, and only when it can prove the service stopped — right after the stop and again then (cgroup v2: the unit's group is empty); otherwise it keeps it and says so. The version the code before the update runs on is always kept — a failed build or a failed start rolls the code back to it — and goes with the next update. A refresh that fails ends in `STEP preview update failed; run install/step-preview.sh status to see why.` — the update itself goes on. An update from Settings says **The STEP preview component was not updated (reason); BamDude itself was.** under its result; the reasons and their repairs are in [Installation → STEP previews](installation.md#step-previews).
 
 ---
 

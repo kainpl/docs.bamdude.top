@@ -5,7 +5,7 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
 # Authentication
 
-!!! info "Current development after 0.7.3"
+!!! info "Administrator-only controls and saved credentials"
     Sensitive authentication, integration and backup controls require an **administrator and the existing permission**. Delegated settings editors can still save ordinary preferences. API keys do not inherit administrator-only access from their owner. The public SSO sign-in list contains only the provider's name and sign-in options.
 
     Temporary authentication-storage failures return a retryable service error. Browser and camera-wall/overlay/monitor clients preserve their credentials and retry with backoff; an explicit invalid-credential response still ends access. Removing an SSO link is refused when it would leave the account without a usable sign-in method.
@@ -14,14 +14,14 @@ description: Always-on authentication with MFA, OIDC SSO, refresh-token sessions
 
     API clients should follow the [credential-editing contract](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-edits.md), including explicit secret actions and camera PATCH payloads that contain only editable fields. Private full backups still retain credentials; partial Git restore preserves local integration destinations.
 
-!!! warning "Credential upgrade — current development after 0.7.3, unreleased"
-    Upgrading to the current fixes line requires signing in again and replacing **all legacy API keys and long-lived camera/monitor tokens**, including ownerless keys and old `bb_` keys. Old secrets cannot be re-enabled. This is a one-time upgrade action; newly issued credentials survive ordinary restarts.
+!!! warning "Credential upgrade"
+    Upgrading requires signing in again and replacing **all legacy API keys and long-lived camera/monitor tokens**, including ownerless keys and old `bb_` keys. Old secrets cannot be re-enabled. This is a one-time upgrade action; newly issued credentials survive ordinary restarts.
 
     An administrator can review the affected counts in **Settings**. Create replacement API keys for a specific active owner, selecting the required permissions and printers, and generate fresh camera/monitor tokens. Removing an inactive token's list entry does not restore its secret or change historical retirement counts.
 
     Update Home Assistant, scripts/webhooks, BamDude Bridge, MCP/AI adapters, OrcaBamDude and API-key camera clients. Replace saved camera-wall, overlay, monitor and TV links too. The [replacement checklist](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/credential-lifetimes.md#updating-an-existing-installation) identifies each consumer and its replacement setting. Store new secrets privately; do not paste them into logs or support reports.
 
-!!! info "Open views and revocation — current development after 0.7.3, unreleased"
+!!! info "Open views and revocation"
     Open WebSockets, camera views and covered private media recheck current access. Logging out one device ends that session's views; revoking a key or token ends its own views within five seconds. Other device sessions and shared camera viewers keep running. Live events respect current permissions and printer scope. Data already handed to the network cannot be recalled.
 
     An explicitly supplied API key must be valid, even beside a valid browser session or URL token. Remove an obsolete `X-API-Key` header when using a browser or token-only link. Short-lived WebSocket/media tokens end at their own expiry and can be renewed through a still-valid parent. See the [live access contract](https://github.com/kainpl/bamdude/blob/feature/v0.7.3-fixes/docs/development/live-access.md) for delivery boundaries and retry behavior.
@@ -191,7 +191,7 @@ Optional SMTP layer that enables passwordless onboarding, admin-triggered passwo
 | **From address** | Sender address shown to recipients. Some providers require it to match the auth user. |
 | **External URL** | The reachable URL of your BamDude instance -- baked into reset / welcome email links. Has to actually resolve from the user's browser. |
 
-Click **Test email** before flipping the toggle on -- it sends a one-shot to your own admin address and reports whether delivery succeeded. Current development uses a safe failure message rather than returning the raw SMTP exception.
+Click **Test email** before flipping the toggle on -- it sends a one-shot to your own admin address and reports whether delivery succeeded. BamDude uses a safe failure message rather than returning the raw SMTP exception.
 
 ### Built-in templates
 
@@ -206,7 +206,7 @@ Editable under **Settings -> Email -> Templates**:
 
 Templates are i18n-aware (en + uk); each template carries a subject line and a body with substitution variables like `{username}`, `{printer_name}`, `{archive_url}`.
 
-!!! note "Account-email templates in current development"
+!!! note "Account-email templates"
     Welcome and password-reset credentials and links are appended in a protected block after the editable text. Upgrades refresh unchanged standard EN/UK bodies. If you customized these templates, remove `{password}`, `{login_url}` and `{reset_url}` and their surrounding labels; use the protected block at the end of the email. Custom text is preserved during the upgrade.
 
 ### Self-service password reset
@@ -256,9 +256,9 @@ BamDude supports LDAP authentication for environments running Active Directory, 
 | **Search base** | Where to look (e.g. `OU=Users,DC=example,DC=com`). |
 | **User filter** | LDAP filter; `{username}` is substituted at login. AD: `(sAMAccountName={username})`. OpenLDAP / FreeIPA: `(uid={username})`. |
 
-Click **Test connection** before flipping **Enable LDAP**. On the current development line after 0.7.3, the test uses your unsaved connection draft without saving it. Failures report safe categories such as StartTLS refusal, TLS certificate/handshake failure, account bind failure or directory search failure, rather than raw driver errors. A refused StartTLS upgrade never falls back to a plaintext bind. If the directory blocks anonymous schema reads, BamDude binds first and discovers the available schema afterward; an unavailable schema alone does not make the connection test fail.
+Click **Test connection** before flipping **Enable LDAP**. The test uses your unsaved connection draft without saving it. Failures report safe categories such as StartTLS refusal, TLS certificate/handshake failure, account bind failure or directory search failure, rather than raw driver errors. A refused StartTLS upgrade never falls back to a plaintext bind. If the directory blocks anonymous schema reads, BamDude binds first and discovers the available schema afterward; an unavailable schema alone does not make the connection test fail.
 
-!!! warning "LDAP upgrade action — current development after 0.7.3, unreleased"
+!!! warning "LDAP upgrade action"
     Older configurations combining **LDAPS (SSL)** with an `ldap://` URL are rejected before connecting. Change the server to a DNS URL such as `ldaps://ad.example.com:636`, or select **StartTLS** with `ldap://ad.example.com:389`. Use the DNS name covered by the server certificate. Re-enter the service-account **Bind password** for the corrected connection, test it, then save. A bare hostname can only be retained from an existing legacy configuration; it cannot be newly saved as the server address.
 
 ### Group mapping
@@ -277,7 +277,7 @@ Keys are full LDAP group distinguished names (DNs), matched case-insensitively, 
 
 If no mapping matches, provisioning uses the configured default group; without a default, assign groups manually.
 
-!!! info "Group lookup in current development after 0.7.3, unreleased"
+!!! info "Group lookup"
     Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. This does not add OIDC group synchronization.
 
 ### Provisioning
@@ -360,7 +360,7 @@ The login form has a **"Remember me for 30 days"** checkbox.
 | Default | 24 hours | Session cookie (cleared when browser closes) |
 | Remember me | 30 days | `Max-Age=30d` -- survives browser restarts |
 
-!!! info "SSO Remember Me — current development after 0.7.3, unreleased"
+!!! info "SSO Remember Me"
     The checkbox remains available when local password login is disabled. It starts unchecked on a fresh login page. A manual SSO attempt carries that attempt's choice through the provider callback, optional TOTP/email/backup-code verification, and later refresh rotations. Automatic SSO redirection uses **false**, without reusing a previous checked choice. The administrator's session ceiling still limits the refresh lifetime and persistent cookie, even when it is shorter than 24 hours. Existing safe post-login deep links are preserved.
 
 ### Session lifetime ceiling (Session Policy)
@@ -736,7 +736,7 @@ Links last **1 hour** and work **once**. Requesting a new one also retires the p
 
 ### LDAP users can't log in but local admin can
 
-Open **Settings -> Authentication -> LDAP -> Test connection**. On the current development line after 0.7.3, use the safe failure category to distinguish transport, bind and search failures; check the unreleased LDAP upgrade action above for an old LDAPS + `ldap://` configuration. Common causes include a dropped VPN, a rotated service-account password, an expired certificate or a firewall blocking 636/389. An incomplete group lookup also blocks LDAP sign-in so it cannot grant fallback permissions.
+Open **Settings -> Authentication -> LDAP -> Test connection**. Use the safe failure category to distinguish transport, bind and search failures; check the LDAP upgrade action above for an old LDAPS + `ldap://` configuration. Common causes include a dropped VPN, a rotated service-account password, an expired certificate or a firewall blocking 636/389. An incomplete group lookup also blocks LDAP sign-in so it cannot grant fallback permissions.
 
 ---
 

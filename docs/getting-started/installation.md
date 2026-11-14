@@ -43,7 +43,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     source venv/bin/activate
     pip install -r requirements.txt
 
-    # The pinned Node.js part thumbnails render with (after 0.7.0; downloaded once)
+    # The pinned Node.js part thumbnails render with (downloaded once)
     python -m backend.app.services.render_runtime provision --runtime runtime
 
     # Run
@@ -63,7 +63,7 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
     source venv/bin/activate
     pip install -r requirements.txt
 
-    # The pinned Node.js part thumbnails render with (after 0.7.0; downloaded once)
+    # The pinned Node.js part thumbnails render with (downloaded once)
     python -m backend.app.services.render_runtime provision --runtime runtime
 
     # Run
@@ -73,13 +73,13 @@ This guide covers installing BamDude manually. For Docker (recommended), see the
 !!! warning "macOS: the printer is unreachable while everything else works"
     macOS grants Local Network access to a code signature, and Homebrew's Python on Intel Macs has none — every connection to the printer is then dropped with no error and no prompt. `install/install.sh` signs the interpreter on a macOS install (only if it is unsigned), and re-running it after `brew upgrade python` signs the new one. By hand: `codesign --force --sign - "$(python3 -c 'import os,sys;print(os.path.realpath(sys._base_executable))')"`. The connection diagnostic's **macOS Local Network permission** check tells you which case you are in.
 
-Part thumbnails (after 0.7.0) render with a pinned Node.js. `install/install.sh`, `update.sh` and the in-app update in Settings download it once into `runtime/` of the installation — 26–30 MiB depending on the platform, about 118 MiB unpacked on Linux — and a manual install runs the `provision` line above. A native install that starts without it — a `git clone` or `git pull` by hand, a development checkout, or the first update from 0.7.0, whose updater predates this step — installs it by itself in the background, once per start; meanwhile the System page shows `runtime_provisioning`. What an interrupted provisioning left behind is removed by the next one. Several machines installing Node.js into one installation directory at the same time — an installation directory on a network share that more than one machine runs from — is not supported; this concerns the installation directory only, not a shared data directory. If it still ends without Node.js, the System page shows **Part thumbnail worker** as `runtime_missing`; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker). The Windows installer and the Docker image carry Node.js already.
+Part thumbnails render with a pinned Node.js. `install/install.sh`, `update.sh` and the in-app update in Settings download it once into `runtime/` of the installation — 26–30 MiB depending on the platform, about 118 MiB unpacked on Linux — and a manual install runs the `provision` line above. A native install that starts without it — a `git clone` or `git pull` by hand, a development checkout, or the first update from 0.7.0, whose updater predates this step — installs it by itself in the background, once per start; meanwhile the System page shows `runtime_provisioning`. What an interrupted provisioning left behind is removed by the next one. Several machines installing Node.js into one installation directory at the same time — an installation directory on a network share that more than one machine runs from — is not supported; this concerns the installation directory only, not a shared data directory. If it still ends without Node.js, the System page shows **Part thumbnail worker** as `runtime_missing`; see [Part thumbnail worker](../reference/troubleshooting.md#part-thumbnail-worker). The Windows installer and the Docker image carry Node.js already.
 
 Which Node.js a machine gets: Linux and macOS on x64 or arm64, and Windows x64, run Node.js 24. A Raspberry Pi with the 32-bit Raspberry Pi OS (armhf — Pi 2, 3, 4, 5, Zero 2 W) runs Node.js 22, the last line Node.js publishes for 32-bit ARM, until its support ends on 30 April 2027; after that, a BamDude update returns it to the fallback picture. 2 GB of RAM or more is recommended there — a Pi with 1 GB is not promised to render a heavy plate beside the service. armv6 (Pi 1, Zero, Zero W), an armel or musl 32-bit system and RISC-V have no official Node.js build: parts get only the fallback picture the file allows.
 
 ### :material-cube-scan: STEP previews {#step-previews}
 
-[STEP thumbnails](../features/file-manager.md#step-thumbnails) (after 0.7.0) need an optional component of about 170 MB — an Open CASCADE build. The Docker image and the Windows installer ship it; on a native install it is the administrator's choice:
+[STEP thumbnails](../features/file-manager.md#step-thumbnails) need an optional component of about 170 MB — an Open CASCADE build. The Docker image and the Windows installer ship it; on a native install it is the administrator's choice:
 
 - `install/install.sh` asks *"Install the STEP preview component?"*. The answer defaults to **yes** when this install already has it enabled and to **no** otherwise, so `--yes` keeps an enabled component and leaves a fresh install without one. `--with-step-preview` installs it without asking.
 - It is offered on Debian/Ubuntu and Fedora/RHEL — the script installs the system libraries it needs, as root: `libgl1 libx11-6 libexpat1 zlib1g` or `mesa-libGL libX11 expat zlib` — and on macOS (nothing extra), on x86_64 and arm64. On Arch Linux and openSUSE it is not offered: install libGL, libX11 and expat yourself, then run `install/step-preview.sh enable`.
@@ -137,9 +137,9 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ## :material-microsoft-windows: Windows (native installer)
 
-Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime, a static `ffmpeg` and — after 0.7.0 — the pinned Node.js that renders part thumbnails (about 21 MiB of the installer; measured 2026-10-12, Node v24.17.0), lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
+Windows 10/11 has a self-contained **`.exe` installer** — no Docker, no WSL, and **no separate Python or Node install**. The setup bundles an embedded Python runtime, a static `ffmpeg` and the pinned Node.js that renders part thumbnails (about 21 MiB of the installer; measured 2026-10-12, Node v24.17.0), lays everything down, and registers BamDude as a **Windows Service** that starts on boot.
 
-After 0.7.0 the installer also carries the component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) (about 167 MB installed) and checks it — a real STEP turned into a picture — before it starts the service: an install whose component fails that check leaves the service stopped and says so, instead of starting with a broken one. Its copyleft parts have their source published with every release; see [STEP previews](#step-previews) above.
+The installer also carries the component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) (about 167 MB installed) and checks it — a real STEP turned into a picture — before it starts the service: an install whose component fails that check leaves the service stopped and says so, instead of starting with a broken one. Its copyleft parts have their source published with every release; see [STEP previews](#step-previews) above.
 
 1. Download the latest **`bamdude-<version>-windows-x64-setup.exe`** from the [Releases page](https://github.com/kainpl/bamdude/releases).
 2. Run it (it needs Administrator rights — it registers a service and writes to `ProgramData`).

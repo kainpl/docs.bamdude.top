@@ -517,8 +517,8 @@ The `{finish_photo_url}` placeholder puts a camera snapshot of the finished plat
 !!! note "External URL prerequisite"
     Without a configured External URL the placeholder renders empty. Saved archive photos linked in notifications are public URLs, so delivery services can fetch them without signing in. They are distinct from a live camera snapshot, which requires camera authorization. Keep notification links private if the finished plate contains sensitive work.
 
-!!! info "Start and completion fixes after 0.7.0"
-    Current development restores the once-per-run start notification for queued dispatches and lets finish-photo capture and completion delivery finish after the live print state is cleared. A camera failure can still leave a message without a photo. Starting a new print cancels the previous run's permission to capture the printer or perform delayed post-print actions.
+!!! info "Start and completion delivery"
+    A queued dispatch sends its start notification once per run, and finish-photo capture and completion delivery finish after the live print state is cleared. A camera failure can still leave a message without a photo. Starting a new print cancels the previous run's permission to capture the printer or perform delayed post-print actions.
 
 ---
 

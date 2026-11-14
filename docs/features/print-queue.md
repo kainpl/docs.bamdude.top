@@ -647,6 +647,6 @@ The distributor can assign the job immediately, even back to this printer. Movin
 
 ## Restart recovery and duplicate claims {#restart-claims}
 
-In development after 0.7.3, a restart during an already running print's pause rejoins that execution. Reconnect after completion does not create another printing claim. When old claims conflict, the queue stays paused and Info explains the records it cannot safely resolve.
+A restart during an already running print's pause rejoins that execution. Reconnect after completion does not create another printing claim. When old claims conflict, the queue stays paused and Info explains the records it cannot safely resolve.
 
-Use [duplicate-claim recovery](system-info.md#duplicate-queue-claims) for the complete-group preview, manual SWAP settlement and the final plate inspection. A queue row cancelled as a stale claim does not mean the physical print was cancelled: the archive keeps its outcome. Retry, Clone and plate-clear Repeat are unavailable for those rows, including batch operations. Resetting the queue status alone does not resolve an execution claim. These changes are not included in stable 0.7.3.
+Use [duplicate-claim recovery](system-info.md#duplicate-queue-claims) for the complete-group preview, manual SWAP settlement and the final plate inspection. A queue row cancelled as a stale claim does not mean the physical print was cancelled: the archive keeps its outcome. Retry, Clone and plate-clear Repeat are unavailable for those rows, including batch operations. Resetting the queue status alone does not resolve an execution claim.

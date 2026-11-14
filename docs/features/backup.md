@@ -97,7 +97,7 @@ In Docker the failure is quieter: a host path that was never bind-mounted is sti
 
 Distinct from the ZIP flow. **Settings → Backup & Restore → Git Backup** pushes selected backup categories to a GitHub, GitLab, Gitea or Forgejo repository — useful for off-site profile sync, multi-host farm coordination, and PR-based change history of your printer settings.
 
-!!! warning "Fixes development branch after 0.7.3: approve existing schedules"
+!!! warning "Approve existing schedules after upgrading"
     Git backups can contain integration credentials and private farm data. Use a **private repository**. After upgrading, an active administrator with Git backup permission must explicitly save each existing configuration before exports resume. A successful connection test alone does not approve it.
 
     Settings shows the block immediately, even before the first scheduled attempt. A blocked attempt is distinct from a no-change `skipped` run; the last attempt and last successful backup are shown separately, with blocked counts in support diagnostics. Each active subscribed administrator receives one in-app notice per continuous blocked period.
@@ -243,7 +243,7 @@ The flat structure makes partial restore unambiguous — you can pull just `kpro
 
 The settings page shows the live status:
 
-- **Last backup** — timestamp, status (`success` / `failed` / `skipped`; also `blocked` on the fixes development branch), commit SHA, and message.
+- **Last backup** — timestamp, status (`success` / `failed` / `skipped`; also `blocked`), commit SHA, and message.
 - **Next scheduled run** — when the scheduler will fire next.
 - **Log table** — historical runs with trigger (`manual` / `scheduled`), duration, and any error message.
 - **Run Now** button — fires an immediate push regardless of schedule.

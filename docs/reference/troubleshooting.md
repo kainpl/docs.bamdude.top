@@ -415,7 +415,7 @@ local disk permissions and free space before restarting the service.
 
 Check **System → Library file worker**, **3MF analysis worker** and **Local preview service**. They share the bundled broker, so several unavailable panels can have one startup cause. Read the first startup error, free space and access to the runtime directory. A missing `broker/logs/nats.log` does not rule out broker failure: startup can fail before a log is created.
 
-After 0.7.0, the bundled broker manager restores private permissions (`0700` on POSIX) on its own service directories before startup, including directories previously created with `0755`. It does not repair a wrong owner or a read-only mount. Update to a version containing the fix and restart normally; do not recursively change permissions on the entire data directory or remove ownership records to force startup.
+The bundled broker manager restores private permissions (`0700` on POSIX) on its own service directories before startup, including directories previously created with `0755`. It does not repair a wrong owner or a read-only mount. Update to a version containing the fix and restart normally; do not recursively change permissions on the entire data directory or remove ownership records to force startup.
 
 ### Local preview service {#local-preview-service}
 
@@ -477,9 +477,6 @@ explicitly; interrupted preview attempts are not replayed after restart.
 
 ### Part thumbnail worker {#part-thumbnail-worker}
 
-!!! info "After 0.7.0"
-    The part thumbnail worker is in the current development branch after 0.7.0. It is not in the `0.7.0` release image.
-
 Open **System → Part thumbnail worker**. It renders the [part pictures](../features/projects.md#part-pictures) with a pinned Node.js runtime, through the same bundled broker as the preview service. The panel shows its state, the reason as a sentence with its code, the pinned Node.js version, the queue and the last attempt.
 
 **While it is down, nothing else stops.** Products, orders and stock keep working; parts show **being prepared** or the picture they already had; queued plates wait, and attempts that could not start are not counted as failures. When the worker is back, the queue carries on by itself.
@@ -501,9 +498,6 @@ The parent log records each attempt as `Part render attempt=<id> … started` an
 Rendered pictures are kept in `DATA_DIR/part-renders`. It is a cache: it is deliberately left out of backups, and after a restore the pictures are rendered again.
 
 ### STEP thumbnails {#step-thumbnails}
-
-!!! info "After 0.7.0"
-    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
 
 A STEP thumbnail that ends with **the STEP component is not available on this server** (`cad_unavailable`) means the Open CASCADE component that makes [STEP thumbnails](../features/file-manager.md#step-thumbnails) is missing. The file is kept in the library; it just gets no picture.
 

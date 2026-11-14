@@ -226,7 +226,7 @@ Progress reporting shows the per-file count during extraction; failures are repo
 
 ## :material-cube-outline: STL thumbnail generation
 
-STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline. A STEP file has no mesh for it to draw: after 0.7.0 its picture takes a different path, described under [STEP thumbnails](#step-thumbnails) below.
+STL / OBJ / STEP files don't carry their own preview, so BamDude can render one for the file card. The renderer uses **Trimesh + matplotlib** at low priority in the background — heavy meshes don't block the upload pipeline. A STEP file has no mesh for it to draw: its picture takes a different path, described under [STEP thumbnails](#step-thumbnails) below.
 
 ### Auto on upload
 
@@ -266,9 +266,6 @@ Both ASCII and binary STL formats are supported. Complex meshes may be simplifie
 ---
 
 ## :material-cube-scan: STEP thumbnails {#step-thumbnails}
-
-!!! info "After 0.7.0"
-    STEP thumbnails are in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
 
 A STEP or STP model gets a picture of its shape, made in the background by the **Open CASCADE** geometry kernel. That kernel is an optional component: the Docker image and the Windows installer carry it, and a native install chooses it at install time — see [Installation → STEP previews](../getting-started/installation.md#step-previews). Without it the file is still kept in the library; it just gets no thumbnail, and the reason says so.
 

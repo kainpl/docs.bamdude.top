@@ -34,8 +34,8 @@ The toolbar above the list combines a free-form search box with chip strips and 
 - **View modes** — **Table** (data-focused, sortable columns), **Cards** (visual swatches), or **[History](#history)** (every consumption record on the farm). *Forecast* sits beside them when you have permission for it.
 - **Group similar** — toggle that visually collapses identical spools into one expandable row with a count badge (e.g. *5 identical spools*). Grouping key is `manufacturer + material + colour name + label weight + subtype`; lot is deliberately **not** part of it, so a batch created with **auto-numbered lots** (see below) still collapses into one row, and a group may span several lots. A spool that is loaded in a printer always appears individually, so you can tell which physical spool is in which slot; a started spool back on the shelf groups with its twins, and the row's remaining weight is the exact sum over the members. Group state persists across sessions.
 
-!!! info "Grouped sorting after 0.7.0"
-    In the current development version, click **ID**, **Lot**, **Purchased**, **Location**, **Label**, **Net** or **Remaining** to sort both groups and their expanded spools. Groups are ordered before pagination. Label and net weights use group totals; remaining percentage uses the group's total remaining divided by its total label weight. ID, lot, purchase date and location use the representative spool (the lowest ID in the group). This extended sorting is not in the `0.7.0` image.
+!!! info "Grouped sorting"
+    Click **ID**, **Lot**, **Purchased**, **Location**, **Label**, **Net** or **Remaining** to sort both groups and their expanded spools. Groups are ordered before pagination. Label and net weights use group totals; remaining percentage uses the group's total remaining divided by its total label weight. ID, lot, purchase date and location use the representative spool (the lowest ID in the group).
 
 ## :material-package-variant: Adding spools
 
@@ -283,7 +283,7 @@ You can assign a spool to a slot **before** loading the filament — useful when
 ### Automatic assignment of a full stock spool {#automatic-stock-assignment}
 
 !!! info "Availability"
-    Available in the current development branch after 0.7.0; not in the `0.7.0` release image. This is an optional feature for **built-in inventory**, not Spoolman, and is off by default on every printer.
+    This is an optional feature for **built-in inventory**, not Spoolman, and is off by default on every printer.
 
 Use this when a printer is routinely loaded with new, full, untagged spools of the same filament. BamDude can assign the next matching inventory spool when it observes filament being inserted into an empty AMS slot, including a replacement after runout.
 

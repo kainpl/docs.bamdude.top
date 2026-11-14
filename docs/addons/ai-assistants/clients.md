@@ -5,7 +5,7 @@ description: Package formats, connection steps and honest client verification st
 
 # AI clients
 
-This matrix was checked on **1 November 2026**. It describes a development build, not features already released in v0.7.2. A validated manifest or SDK test does not prove installation in the named client. No public marketplace approval is claimed.
+This matrix was checked on **1 November 2026**. A validated manifest or SDK test does not prove installation in the named client. No public marketplace approval is claimed.
 
 | Client / route | Package | What is verified | Remaining boundary |
 |---|---|---|---|

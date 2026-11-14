@@ -5,15 +5,15 @@ description: Service-account tokens for headless scripting, integrations, and we
 
 # API Keys
 
-!!! warning "Credential upgrade — current development after 0.7.3"
-    The current fixes upgrade retires **every legacy key**, including old `bb_` keys and keys without an owner. Sign in again, issue replacements for specific active owners, and update each integration. Retired secrets cannot be re-enabled. Follow the [authentication upgrade checklist](authentication.md) before updating this development line; stable 0.7.3 does not include this change.
+!!! warning "Credential upgrade"
+    The upgrade retires **every legacy key**, including old `bb_` keys and keys without an owner. Sign in again, issue replacements for specific active owners, and update each integration. Retired secrets cannot be re-enabled. Follow the [authentication upgrade checklist](authentication.md) before updating.
 
-!!! info "Current development after 0.7.3"
+!!! info "Printer scope and administrator-only routes"
     A deleted printer is removed from a key's allowed-printer list; an empty restricted list allows **no printers**, rather than becoming unrestricted. For an authorized key manager's PATCH, omitted `printer_ids` preserves the scope, `[]` permits none, and explicit `null` permits all printers. Administrator-only routes remain unavailable to API keys, including keys owned by administrators.
 
 For the optional MCP connection and its separate diagnostic preset, use the [AI assistant setup guide](../addons/ai-assistants/setup.md). Existing keys have MCP and MCP log access disabled; enabling either never increases the owner's permissions.
 
-!!! info "Slicer connector in development after 0.7.3"
+!!! info "Slicer connector"
     The server API for OrcaBamDude accepts uploads into the library and named submissions to a printer queue or Auto-Queue. Repeating the same operation after a lost response does not queue another copy. The key's owner, permissions and printer scope apply; restricted keys cannot use Auto-Queue. Use a new operation when changing keys, since a new key does not inherit the previous key's submission journal. Client packaging and platform support are separate from this server API.
 
 API keys are the way you let a non-human caller talk to BamDude — Home Assistant, Node-RED, a CI script, your own dashboards. Each key is a long random `bd_…` token that satisfies the same permission gates as a human session, so a key that can read printers cannot suddenly start a print just because it asked nicely.
@@ -26,7 +26,7 @@ The auth stack is **always on** (see [Authentication](authentication.md)) — a 
 
 | Field | Value |
 |---|---|
-| **Prefix** | `bd_` (literal). The legacy `bb_` prefix is still recognized, but recognition does not exempt an old key from the current-development retirement described above |
+| **Prefix** | `bd_` (literal). The legacy `bb_` prefix is still recognized, but recognition does not exempt an old key from the retirement described above |
 | **Body** | 32 random bytes, base64-url-encoded — 43 chars |
 | **Full length** | 46 characters |
 | **At rest** | Hashed (`get_password_hash`); only the prefix + name are stored in clear |

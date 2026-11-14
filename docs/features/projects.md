@@ -151,9 +151,6 @@ Parts belong to a product, not to a global catalog: the same bracket in two prod
 
 ### Additional printed parts
 
-!!! info "After 0.7.0"
-    Saved extra percentages are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
-
 In a printed part's editor, set an **additional percentage** to include spare parts in new order lines. For ten products containing three A parts each, 10% adds three A parts: the plan needs 33 A parts in total. The extra quantity rounds up once for the whole order line. Purchased parts and lines ordered in **parts mode** do not receive implicit extras.
 
 Each new line keeps its percentage. Changing the catalog default affects future lines; it does not rewrite existing orders. Changing a part's base count, ignoring it, deleting it or merging it is refused when that would invalidate a saved extra-part obligation. Configure the order line before receiving or issuing its goods.
@@ -188,9 +185,6 @@ Any 3MF in the library shows the same card, read-only, from its **Model card** e
 The product page also reports **Printed for orders** — units of this product made across every order it appears in, of any status. It is not "how many times this file was printed": a print outside an order does not count here.
 
 ### Part pictures
-
-!!! info "After 0.7.0"
-    Part pictures are available in the current development branch after 0.7.0. They are not in the `0.7.0` release image.
 
 Every printed part gets its **own picture**, rendered by the server in the background from the sliced G-code of the plates that give it, in that part's filament colours. Nothing is rendered in the browser. While its plate waits in the queue the part shows **being prepared**. When the G-code cannot tell the part apart — several objects on a plate sliced without object labels, say — the picture is cut out of the plate's own top view by the part's mask from the 3MF.
 
@@ -247,7 +241,7 @@ Saving restrictions keeps existing jobs and files. New planning and assignments 
 
 To move the remaining work, review the proposed replacement first. It lists the replaceable jobs from AutoQueue and printer queues, preserves started and protected work, and shows the new draft. Applying removes only the reviewed replaceable jobs and replaces the working draft; it does not send that draft to print. Review it, then use **Whole plan to queue**. This action requires permission to read and delete all queue jobs as well as edit the order. Orders with restrictions are excluded from automatic cross-model rebalancing; use this reviewed replan instead.
 
-!!! info "Current development after 0.7.3"
+!!! info "Paused printers in the plan"
     **Include paused printers in the print plan** in the same card is off by default. Enable it to plan for eligible printers after their queues resume, including the work already waiting on them. Rebuild an existing draft to apply the choice. Maintenance, queue errors and AutoQueue opt-outs still exclude printers. The completion forecast uses the actual queue state; this setting neither resumes queues nor starts prints.
 
 ### Shared working draft and saved comparison
@@ -297,7 +291,7 @@ For orders without printer restrictions, **Rebalance across printer models** (Se
 
 ### Quantities that fit whole plates
 
-**Adjust without surplus** in a line's plan proposes the nearest quantities the line's plates make exactly, without spare parts, given what the order already has. It searches for six seconds; *After 0.7.1*, **Extended search — up to 30 seconds** gives a large order more time, for that one calculation only. An unfinished search says so — *the calculation reached its limit* — and that does not mean no such quantity exists. Applying a proposal checks it again against the farm as it is then, more briefly than the search: if it can no longer be checked in time, or the farm or the order changed, the dialog drops it and asks you to calculate again.
+**Adjust without surplus** in a line's plan proposes the nearest quantities the line's plates make exactly, without spare parts, given what the order already has. It searches for six seconds; **Extended search — up to 30 seconds** gives a large order more time, for that one calculation only. An unfinished search says so — *the calculation reached its limit* — and that does not mean no such quantity exists. Applying a proposal checks it again against the farm as it is then, more briefly than the search: if it can no longer be checked in time, or the farm or the order changed, the dialog drops it and asks you to calculate again.
 
 ### Sending the plan to the queue
 
@@ -368,9 +362,6 @@ A print that completes filed under **no** order is credited to stock automatical
 Prints from before this existed are **not** swept up: a farm with years of history would grow a shelf nobody has ever seen. The archive editor offers **Count into stock** for a print that **finished successfully** and belongs to no order, one at a time, when you say so — a failed or cancelled print made nothing there is anything to count.
 
 ### Taking individual parts from stock
-
-!!! info "After 0.7.0"
-    Reserving incomplete kits by individual component is available after 0.7.0. The `0.7.0` release supports finished goods and complete stock kits; it does not implement the loose-component flow below.
 
 **Take from stock** can reserve incomplete kits as well as finished products and complete kits. If ten products need A×3 and B×1, taking A30 from stock leaves only B10 to print. When B10 is printed, the receipt uses the reserved A parts to complete the ten products.
 
