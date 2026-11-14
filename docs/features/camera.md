@@ -29,6 +29,9 @@ BamDude provides MJPEG video streaming from your printer's built-in camera, or f
 2. The icon opens the camera the way this browser last chose. The arrow beside it offers both — an **embedded overlay** on the page or a **separate window** — opens it that way and remembers the pick for this browser, so two people watching one farm can each keep their own. **Settings → Camera → Camera View Mode** is only the default for a browser that has not chosen yet
 3. Stream starts automatically
 
+!!! note "iPhone / iPad home-screen app"
+    When BamDude runs as a web app added to the iOS home screen, a camera always opens over the page, as the embedded overlay — such an app has no second window to open. A camera page opened directly there has a **Back** button, or a link to **Printers** when there is nothing to go back to.
+
 ### Stream Controls
 
 | Button | Action |
@@ -44,12 +47,13 @@ BamDude provides MJPEG video streaming from your printer's built-in camera, or f
 
 The Printers page has two layouts, switched with the **Cards / Cam wall** toggle in the page header. **Cam wall** replaces the printer cards with a responsive grid of camera tiles — one glance at every camera in the farm.
 
-To conserve bandwidth and `ffmpeg` processes, the wall streams intelligently rather than opening every camera at once:
+The wall is an overview first: it shows snapshots, and one camera at a time goes live — the one you pick.
 
-- **Only on-screen tiles go live.** An `IntersectionObserver` marks a tile "visible" once ≥40% of it is on screen — the 40% floor stops a scroll-boundary sliver from spinning up a stream.
-- **Live is capped by the browser transport.** The saved *max live* preference defaults to 4. HTTP/1.x or an unknown protocol permits at most **2 live streams per tab**, shared with the floating camera. Confirmed HTTP/2 or HTTP/3 permits the chosen maximum (up to 16). Extra visible tiles show snapshots; off-screen tiles pause. The UI explains a lower effective limit without changing your saved preference.
-- **Snapshots for the rest.** Over-cap tiles refresh a still frame every **8 seconds** by default (the *snapshot interval* setting).
-- **Off-screen tiles pause.** Scroll a tile out of view and it stops all network activity until it returns. Disconnected printers also render paused — no live slot is burned on a camera that has nothing to stream.
+- **Tiles start as snapshots.** Every tile on screen refreshes a still frame, every **8 seconds** by default (the *snapshot interval* setting; the `/camwall` page starts at 10).
+- **One live tile, and you choose it.** Click a tile to make it the live camera; click it again, or click another tile, and it returns to snapshots. Nothing ever picks a live camera for you, and scrolling the live tile off screen ends its stream.
+- **Off-screen tiles pause.** A tile counts as visible once ≥40% of it is on screen. Scroll a tile out of view and it stops all network activity until it returns. Disconnected printers also render paused.
+- **The live tile shares the tab's stream budget with the floating camera.** A tab holds at most **2 live camera streams** on HTTP/1.x or an unknown protocol, and up to 16 on confirmed HTTP/2 or HTTP/3; the wall's live tile and the floating camera viewer count together. When no stream is left for the wall, the tile you picked stays on snapshots and the wall says why.
+- **A token (kiosk) wall has no live tile.** Its tiles cannot be clicked, so a wall opened with `?token=` shows snapshots only.
 
 
 The protocol comes from completed browser API requests, including the browser-facing
@@ -70,10 +74,15 @@ Each tile shows:
 - an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
 - an **HMS-error badge** when the printer has active (non-noise) HMS errors;
 - **click** switches the tile between its live stream and snapshots; the card button on a printer's tile opens that printer's card. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
+- a **live tile whose stream ends** shows **Reconnecting…** and opens the stream again by itself. After several attempts in a row without a picture it shows **No signal** with a **Retry** button, instead of holding a frozen frame until the page is reloaded — see [Cameras reconnect by themselves](#cameras-reconnect).
+
+### Tile size
+
+The **S / M / L / XL** switch sets how many tiles fit in a row; **XL** is one tile per row. On the Printers page it is the same switch that sizes the cards: in wall view it sizes the tiles, and the two sizes are remembered separately in the browser. On `/camwall` the switch is in the wall's settings, under **Tile size**. The size changes the grid and nothing else.
 
 ### Wall settings
 
-A gear button on the wall opens per-browser settings: **max live** (1–16), **snapshot interval** (2–60 s), and **status overlay** mode (*off* / *compact* / *full*). All three persist in the browser's local storage — they're per-device, not synced to the account, since a Pi 4 install caps the live count lower than a NUC.
+A gear button on the wall opens per-browser settings: **snapshot interval** (2–60 s) and **status overlay** mode (*off* / *compact* / *full*) — and, on `/camwall`, the **tile size**. They persist in the browser's local storage: per-device, not synced to the account.
 
 !!! note "Permission"
     The Cam wall toggle needs the `camera:view` permission — the same one the camera viewer uses. Without it the toggle is disabled.
@@ -177,6 +186,8 @@ It applies to **everything BamDude produces from that camera**:
 
     A frame that was already rotated on capture is never rotated a second time.
 
+In the browser, a camera turned on its side (`90` or `270`) is fitted whole into its frame — in the floating window, on the camera page, on Cam Wall tiles (live and snapshot) and on the stream overlay — rather than being cut off along one side.
+
 ---
 
 ## :material-numeric-1-circle: One camera, one reader
@@ -187,12 +198,16 @@ BamDude enforces that on two axes:
 
 - **Background capture vs a viewer.** While anyone is watching the live view, every background consumer — layer timelapse, finish photo, AI failure detection, the plate check, notification snapshots — **reuses the live view's frame** instead of opening its own connection. This has always been true for the built-in printer camera; **external cameras now publish their frames the same way**. Before that, watching an external camera during a print meant the layer timelapse recorded almost nothing and the finish photo arrived empty.
 - **Background capture vs background capture.** With nobody watching, each consumer correctly concluded it was competing with no one — and then opened its own connection at the same moment as the next one. Two captures 207 ms apart were enough to knock over a running camera-wall stream. **Simultaneous captures now share one connection:** the first opens it, the rest wait for the same frame.
+- **A single picture vs a viewer.** A snapshot request, the camera test, a notification photo and a Telegram photo are answered with the live view's frame while somebody is watching — a printer's camera and a standalone one alike — never by a second connection. A view that is still starting has no frame to lend yet: for that moment a snapshot answers *busy — try again in a moment* (HTTP `503` with `Retry-After`), and the camera test says the camera is in use by its live view.
 
 !!! note "It coalesces; it does not cache"
     A capture that arrives *after* the shared one finished still takes a fresh
     frame. Plate detection and the finish photo decide things about a running
     print from these images, and a stale frame is worse than a slow one — a finish
     photo showing the bed already lowered is the failure this avoids.
+
+!!! note "Only a fresh frame counts"
+    A live frame older than ten seconds is not used at all, and a stream that keeps repeating one frame is not taken for a fresh picture: the plate check before auto-eject, finish photos and AI failure detection are never handed a stale one.
 
 ### A printer that reports no camera
 
@@ -285,7 +300,7 @@ graph LR
 
 ## :material-video-box: OBS Overlay
 
-BamDude includes a streaming overlay at `/overlay/{printer_id}` combining camera feed with real-time print status. No login required.
+BamDude includes a streaming overlay at `/overlay/{printer_id}` combining camera feed with real-time print status. It opens in a browser where you are signed in, or anywhere else — OBS included — with a long-lived Streaming Overlay token in its address: see [OBS Streaming Overlay](#obs-streaming-overlay).
 
 Customize with query parameters: `?size=large&fps=30&show=progress,eta,filename`
 
@@ -389,6 +404,8 @@ http://your-bamdude:8000/camwall?token=bblt_<prefix>_<secret>
 A token wall is deliberately reduced to what a passive display needs:
 
 - **No settings popover, no click-through.** Nobody is standing at a TV.
+- **Snapshots only.** No tile goes live on a token wall: every tile on screen
+  refreshes a still frame on the snapshot interval.
 - **Compact status overlay only.** The state badge is shown; the print filename
   is not. The feed behind the page doesn't serve filenames *at all*, so the part
   on the bed is never named to a room anyone can walk into.
@@ -401,15 +418,15 @@ wall-mounted TV), the wall's settings can come from the URL:
 
 | Parameter | Meaning | Range |
 |---|---|---|
-| `maxLive` | How many tiles stream live at once; the rest poll snapshots | 1–16 |
-| `interval` | Seconds between snapshot refreshes on non-live tiles | 2–60 |
+| `interval` | Seconds between snapshot refreshes | 2–60 |
 | `status` | Status overlay: `off` or `compact` (a token wall cannot select `full`) | — |
+| `size` | Tile size: `s`, `m`, `l` or `xl`. Wins over the size this browser remembers — the only way to size a wall on a TV | — |
 
 ```
-http://your-bamdude:8000/camwall?token=bblt_…&maxLive=9&interval=10
+http://your-bamdude:8000/camwall?token=bblt_…&interval=10&size=l
 ```
 
-Out-of-range or unreadable values fall back to the defaults rather than producing
+An out-of-range number is brought into its range and an unreadable value falls back to the default, rather than producing
 a wall you can't fix from the same URL. A kiosk never writes these back to the
 browser, so opening a kiosk link once won't overwrite your own wall preferences.
 
@@ -521,6 +538,27 @@ interrupts that wait; it does not leave a reconnect task behind.
 !!! tip "Network blips"
     If your network briefly drops, the stream will automatically recover once the connection is restored — no manual intervention needed.
 
+### Cameras reconnect by themselves {#cameras-reconnect}
+
+A camera connection that drops is dialled again by BamDude itself, for as long as somebody is watching — nobody has to reload a page:
+
+- **Built-in cameras of every series.** Both the RTSP camera of the X1 / X2 / H2 / P2 series and the chamber-image camera of the A1, A1 mini and P1 series are redialled.
+- **External cameras.** MJPEG and RTSP streams are redialled the same way.
+- **Reconnects are counted in a row, not over the stream's whole life.** A connection that delivered pictures for a while gives the attempts back, so a camera that drops now and then keeps coming back. A camera that never delivered a picture is not retried — the view ends at once instead of keeping you waiting through every attempt.
+- **A stream that repeats one frame is redialled.** An RTSP stream — a printer's or an external camera's — that keeps sending the very same picture is closed and dialled again. If the fresh connection shows that same picture, the scene is simply still: the camera is alive, and it is only checked again much later.
+
+What a viewer sees meanwhile:
+
+| View | While the stream is away |
+|---|---|
+| **Cam Wall live tile** | **Reconnecting…**, then the picture again. After several attempts in a row without a picture: **No signal** with a **Retry** button. |
+| **Stream overlay** | The picture is taken down and the stream opened again. After several attempts: **No signal** — and the overlay keeps trying on its own. |
+| **Camera window and floating viewer** | The stall detection and automatic recovery described above. |
+
+A view opens exactly one stream and closes it when it goes; a retry never runs beside a stream that is still open.
+
+**A changed camera takes effect at once.** When a printer's camera source is saved — a new external camera, or a switch back to the built-in one — the running stream is ended and the views already open reconnect to the new source; nobody keeps watching the old camera until they reload.
+
 ---
 
 ## :material-stethoscope: Camera diagnostics
@@ -583,7 +621,7 @@ An external camera above is a **replacement** for one printer's camera: that pri
 
 Where it then appears:
 
-- **The camera wall**, after the printers and in name order, on both the signed-in wall and a `?token=` kiosk wall. The tile can go live like any other and counts against the same live budget; it carries no print status, because there is no print.
+- **The camera wall**, after the printers and in name order, on both the signed-in wall and a `?token=` kiosk wall. On the signed-in wall the tile can be picked as the live one like any other, and a kiosk wall shows its snapshots; it carries no print status, because there is no print.
 - **The Printers page**, as a button on the heading of the location you filed it under, beside that location's sensor readings. Clicking it opens the floating window or a browser window, following the same **Camera view mode** setting the printer cards use.
 
 **Show on the wall** switches a camera off without deleting it: the tile and the button disappear and its stream and snapshot routes stop answering, while the settings stay for later.
@@ -592,7 +630,7 @@ Where it then appears:
     It does not take finish photos, check the build plate, feed Obico's failure detection, record a layer timelapse, or switch a chamber light on: every one of those belongs to a printer, and this camera has none. It also never replaces a printer's camera — if you want that, use **External Cameras** above.
 
 !!! tip "One connection per camera"
-    Everyone watching the same standalone camera shares one upstream connection, so a USB camera — which allows exactly one reader — does not drop the first viewer when a second opens it. A snapshot taken while somebody is watching reuses the live frame rather than opening a competing reader.
+    Everyone watching the same standalone camera shares one upstream connection, so a USB camera — which allows exactly one reader — does not drop the first viewer when a second opens it. A snapshot taken while somebody is watching reuses the live frame rather than opening a competing reader. Closing one view of a standalone camera does not stop it for the others.
 
 !!! warning "The kiosk list carries no URL"
     A kiosk wall authenticates with a token in its URL, and an RTSP camera's credentials live inside its own URL. The kiosk feed therefore serves a name, a rotation and a location and nothing else — the same reason it never serves a printer's serial number.
@@ -615,6 +653,10 @@ Two rules make it safe to leave on:
 How it behaves in practice: a one-off photo waits for the printer to confirm the light before the frame is taken (no fixed pause, no dark first photo), and the light goes off about ten seconds after the last use, so two photos in a row do not blink it. Several browser tabs on one printer are one switch-on and one switch-off. The Camera Wall in snapshot mode keeps the light on for as long as the wall is open, and lets it go within one refresh interval after the wall is closed. The layer-based timelapse deliberately does not take the light — it would flash on every layer; leave the light on yourself if the timelapse needs it. Neither does the frame BamDude keeps during a print for the finish photo (with **Capture finish photo** on, it is refreshed every few layers): the finish photo itself still takes the light when it shoots, but when it comes from that kept frame — an A1 Mini, whose firmware never marks the end of printing, gets it that way — it shows the chamber as it was lit during the print. The printer's own timelapse lights itself.
 
 One use does not wait for the toggle: the **build plate check** (below) lights the plate for its comparison whatever the settings say, as it always did — its reference was calibrated with the light on, and a check in the dark would pause a print for nothing. It now does so through the same mechanism: confirmed by the printer instead of a fixed pause, and never touching a light that was already on.
+
+The plate check lights the chamber even while somebody is watching the camera. It judges only a frame taken after the light came on — never one from the dark moments before — and then gives the chamber back to the dark it found.
+
+An explicit "light on" is yours to keep. If you switch the light on — from the printer card, the API or a macro — while it is lit only because BamDude lit it for the camera, it stays on afterwards instead of going off with the camera's own timer.
 
 !!! note "A1 / A1 mini"
     These printers do not switch their light on at print start the way the X1 and P1 series do, so a photo from the bot on a dark A1 was always dark. This setting is what fixes that.
@@ -730,6 +772,12 @@ For polygon checks, a missing or unreadable reference, changed image dimensions 
 - Check the printer's WiFi signal strength (poor signal causes erratic frame delivery).
 - Try snapshot mode instead — it doesn't depend on a continuous stream.
 
+**A Cam Wall tile or the overlay shows *No signal***
+
+- The view lost its stream and several reconnects in a row brought no picture — see [Cameras reconnect by themselves](#cameras-reconnect). On the wall press **Retry**; the overlay keeps trying on its own.
+- Run **Diagnose** from the camera viewer to see which stage fails.
+- A snapshot that answers *busy — try again in a moment* means a live view of that camera is still starting. Ask again.
+
 **High latency (1–3 second lag)**
 
 This is normal for MJPEG over HTTP and stems from RTSP buffering, ffmpeg processing pipeline, and HTTP-stream chunk boundaries. Cannot be eliminated entirely. Reduce by:
@@ -821,8 +869,26 @@ poll — the token can't open a WebSocket, and the poll is the feed.
     Anyone who can read that URL can watch the printer's stream and see the print
     filename. It cannot reach the printer's address, serial number or access
     code, and it cannot enumerate your other printers — a Streaming Overlay token
-    opens one printer's overlay and nothing else. Revoke it from the same
+    opens the overlay of the printers its owner may view, and nothing else. Revoke it from the same
     Settings page to cut the overlay off.
+
+### Overlay builder
+
+You do not have to write the address by hand. The **Streaming Overlay** card under **Settings → API Keys**, below the tokens, builds it: pick the **Printer**, tick the **Fields to show**, set the options, and press **Copy** beside the **Overlay URL** — or **Open** to see it in a tab. **Show preview** draws the overlay right in the card; it opens a real camera stream, so it stays off until you ask for it.
+
+| In the builder | What it sets |
+|---|---|
+| **Fields to show** | `show`, and **Camera feed** for `camera` |
+| **Design** — *Classic* / *Version 2* | `design` |
+| **Background transparency** (Version 2 only) | `backgroundTransparency` |
+| **Layout** — *Fit the browser source* / *Landscape (1920 × 1080)* / *Portrait (1080 × 1920)* / *Both: landscape and portrait* | `layout`. *Both* gives two addresses, each labelled with the browser source size to set in OBS. |
+| **Text size**, **Frame rate** | `size`, `fps` |
+| **Custom progress colours** — **Start colour**, **End colour** | `progressFrom`, `progressTo` |
+
+- **Creating a token.** **Create token** beside the token field asks for a **Token name** and **Valid for (days)** — 90 by default, 365 at most — creates a Streaming Overlay token for your account and puts it into the address. It then appears in the token list above, where you can revoke it. The button needs the `camera:view` permission. Copy the address straight away: once you leave the page, the token cannot be shown again.
+- **The token stays hidden until asked for.** The address on screen shows `****` in place of the token, and the eye button (**Show token** / **Hide token**) reveals it. **Copy** and **Open** always use the real address.
+- **Importing an existing address.** Paste an address from a scene into **Import an overlay address** and press **Import** to edit it. Only its settings are read: the address built here always points at this server, and a token in it is used as it is.
+- **Your choices are remembered in this browser** — printer, fields, design, layout, sizes and colours — so the builder reopens as you left it. **The token never is**: it is kept in the open page only and is never stored in the browser, so after a reload you paste or create it again. **Reset choices** returns to the defaults and leaves the token in place.
 
 ### What's included
 
@@ -836,15 +902,31 @@ poll — the token can't open a WebSocket, and the poll is the feed.
 | **Layer count** | Current layer / total layers. |
 | **Time remaining** | Estimated time left. |
 | **ETA** | Estimated completion time. |
+| **Printer name and model** | The printer's name and its model — opt-in, see `show` below. |
+| **Temperatures** | Nozzle, bed and chamber — opt-in, see `show` below. |
 
 ### Customising via query parameters
 
 | Param | Values | Effect |
 |-------|--------|--------|
+| `token` | a **Streaming Overlay** token | Needed wherever the overlay opens without a signed-in session — OBS, a kiosk. |
+| `show` | comma-separated, any of: `printer`, `model`, `filename`, `status`, `progress`, `layers`, `eta`, `nozzle`, `bed`, `chamber` | Which elements appear. Without the parameter the overlay shows `progress,layers,eta,filename,status`. |
 | `size` | `small` / `medium` / `large` | Text and logo scale. `medium` is default. |
 | `fps` | `1`–`30` | Live-stream FPS. Clamped server-side per camera type. |
 | `camera` | `true` (default), `false`/`0` | `false` hides the camera feed and shows status on a black background. |
-| `show` | comma-separated: `progress`, `layers`, `eta`, `filename`, `status`, `printer` | Which status elements appear. |
+| `progressFrom`, `progressTo` | a colour as six hex digits, e.g. `00ae42` | Your own progress-bar colours: a gradient from `progressFrom` on the left to `progressTo` on the right. Give only one, or the same colour twice, for a plain bar. A leading `#` is accepted, but leave it out of an address — there it starts the fragment. |
+| `design` | `2` | Selects the **Version 2** design. Absent, or anything else: **Classic**. |
+| `backgroundTransparency` | a whole number `0`–`100` | Version 2 only: how see-through its dark panels are, in percent. `0` is solid; at `100` only the text and the bar are left. |
+| `layout` | `landscape` / `portrait` | Draws the overlay on a fixed canvas — 1920 × 1080 or 1080 × 1920 — and scales it to the browser source. Without the parameter the overlay is sized by its window. |
+
+A value the overlay does not understand is ignored, never an error: that option simply keeps its default. Every option above is opt-in, so an overlay address already pasted into a scene keeps working and looks exactly as it did.
+
+Notes on the fields:
+
+- `model` draws the printer's model beside its name; `show=model` alone draws only the model.
+- `nozzle`, `bed` and `chamber` are shown whether or not a print is running, and only when the printer reports them: a second nozzle appears on a two-nozzle printer, and the chamber only on models with a real chamber sensor.
+
+The two designs: **Classic** lays the text over the picture. **Version 2** frames it — printer and model in a corner, the job in a panel below, and a stacked arrangement in a portrait source — and its dark panels can be faded with `backgroundTransparency` so another source in your scene shows through them.
 
 Examples:
 
@@ -857,11 +939,25 @@ Examples:
 
 # Maximum quality, full screen
 /overlay/1?size=large&fps=30&show=progress,layers,eta,filename,status,printer
+
+# Version 2 with half-transparent panels, as a portrait output for a vertical stream
+/overlay/1?design=2&backgroundTransparency=50&layout=portrait&show=printer,model,filename,progress,eta
+
+# Your own progress colours, plus temperatures
+/overlay/1?show=progress,layers,eta,nozzle,bed&progressFrom=ff6a00&progressTo=ffd000
 ```
 
 ### Idle state
 
 When no print is running, the overlay still works — it shows the camera feed plus an "idle" / "offline" message and the BamDude logo. Useful for streaming farm cleanup, plate swaps, or off-hours.
+
+### Offline printer
+
+When the printer goes offline — in the middle of a print too — the overlay says **Printer offline** (in Version 2, in the status field) and takes progress, layers, time and temperatures off the screen, so a broadcast never shows frozen figures that look live. The file name stays: it still names the job that was running.
+
+### When the camera stream drops {#when-the-camera-stream-drops}
+
+The overlay does not hold a frozen frame until somebody reloads the source. When its stream ends it takes the picture down and opens the stream again by itself. After several attempts in a row without a picture the camera area reads **No signal** — and, because nobody can press a button on a broadcast, the overlay keeps trying on its own. The print data keeps updating all the while. A token that was revoked or has expired is not retried.
 
 ### Troubleshooting overlay
 
@@ -883,6 +979,12 @@ When no print is running, the overlay still works — it shows the camera feed p
 - Confirm camera streaming works in BamDude directly first — the overlay uses the same stream.
 - Signed in, status updates over WebSocket; in token mode it always polls every
   2 seconds instead (a token can't open a WebSocket).
+
+**Camera area shows *No signal***
+
+- The overlay lost its camera stream and several reconnects in a row brought no picture. It keeps trying on its own — see [When the camera stream drops](#when-the-camera-stream-drops).
+- Check the camera in BamDude itself: the overlay uses the same stream.
+- A token that was revoked or has expired is not retried. Create a new one and update the address in OBS.
 
 ---
 

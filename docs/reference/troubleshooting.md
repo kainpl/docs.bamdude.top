@@ -150,6 +150,15 @@ BamDude now recognises the code, shows it with the same four-group form the prin
 - Try lowering FPS
 - Use snapshot mode instead
 
+### No Signal or a Frozen Picture
+
+- A camera view reconnects by itself: a Cam Wall live tile shows **Reconnecting…** and then the picture again. After several attempts in a row without a picture it shows **No signal** — press **Retry**
+- The stream overlay in OBS shows **No signal** the same way and keeps trying on its own; a revoked or expired token is not retried
+- A stream that keeps repeating one frame is redialled by BamDude, so a picture that stays frozen points at the camera or the network — run **Diagnose** from the camera viewer
+- A snapshot that answers *busy — try again in a moment* means a live view of that camera is still starting; ask again
+
+See [Cameras reconnect by themselves](../features/camera.md#cameras-reconnect).
+
 ---
 
 ## :material-archive: Archiving Issues
