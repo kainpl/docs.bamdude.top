@@ -5,9 +5,6 @@ description: Lay library models out densely and save ready project 3MF files for
 
 # Assemble Project
 
-!!! info "Current development after 0.7.3"
-    Assemble project is in the development line after 0.7.3. It is not in the `0.7.3` release image.
-
 Pick models in the [File Manager](file-manager.md), and BamDude lays them out on plates and saves **project 3MF files** next to the sources — one per printer you name, each with the printer, process and filament presets already inside, so it opens in Bambu Studio or OrcaSlicer ready to slice.
 
 The layout is denser than a slicer's own auto-arrange: small parts go **into the holes and hollows of larger ones**. A frame with a lid lying inside it takes one place on the plate, not two.
