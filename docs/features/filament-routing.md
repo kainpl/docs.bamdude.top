@@ -52,7 +52,7 @@ Material names are compared case-insensitively through the small compatibility t
 
 ## Decide which colors matter {#colors}
 
-!!! info "In development — not included in stable 0.7.3"
+!!! info "Default colour policy"
     **Settings → Printing → Force color match by default** can select exact colours for new order-plan jobs and the initial checkbox in a fresh Print/Schedule dialog. It starts off. You can change the dialog's choice; existing jobs, copied routing choices and virtual-printer policies keep their own settings. A registered plan submission keeps the choice it captured even if the setting changes before execution or retry. Direct API clients keep their existing defaults and should send an explicit `force_color_match` when colour matters.
 
 **Force exact color match** is off by default. With it off, an exact RGB colour is still preferred over another compatible colour; it is not required. Turning it on requires the colour for every used channel. The colour comparison is exact after normalising `#RRGGBB` / `#RRGGBBAA`; it does not use a “similar colour” threshold.
