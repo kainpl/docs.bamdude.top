@@ -248,3 +248,14 @@ description: Кожен ключ під Settings → System / Print / Archive / 
 | Refresh-cookie `Secure` flag | env `AUTH_REFRESH_COOKIE_SECURE` | Auto-detect зі схеми запиту, коли не задано. |
 | Trusted reverse-proxy IPs | env `TRUSTED_PROXY_IPS` | Comma-separated. Потрібно для коректного per-IP rate-limit за nginx / Caddy. |
 | MFA-secret encryption key | env `MFA_ENCRYPTION_KEY` | Plaintext fallback працює без нього, але логує warning. |
+
+
+## :material-database: Змінні середовища підключення до БД
+
+Це параметри процесу, не редаговані рядки налаштувань. Після зміни потрібен рестарт. Межі й поведінка мертвих підключень описані на сторінці [PostgreSQL](../features/postgresql.md).
+
+| Змінна | Типово | Дія |
+|---|---|---|
+| `DB_POOL_SIZE` | SQLite `10`, PostgreSQL `20` | Постійні підключення пулу на engine. |
+| `DB_MAX_OVERFLOW` | SQLite `90`, PostgreSQL `60` | Додаткові підключення понад розмір пулу. Явні значення зберігають чинний зміст. |
+| `DB_POOL_PRE_PING` | PostgreSQL `true` | Перевіряти підключення перед використанням; SQLite ігнорує. З `false` перше використання мертвого підключення може впасти. Транзакції не перевиконуються. |

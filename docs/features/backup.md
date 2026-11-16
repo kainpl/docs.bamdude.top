@@ -464,3 +464,27 @@ docker run -d \
     [`UPDATING.md`](https://github.com/kainpl/bamdude/blob/main/UPDATING.md) recommends a fresh manual backup before every minor-version upgrade. Migrations are idempotent and one-shot but a downgrade has no automatic path.
 
 > Originally based on [Bambuddy](https://github.com/maziggy/bambuddy) documentation.
+
+
+## Restore admission and recovery
+
+Restore requires an idle farm: stop printing and file-changing work first. Before replacement, BamDude closes new work and proves that accepted Virtual Printer uploads have finished publishing their library and queue records. Accepted local uploads are not cancelled. Transparent proxy connections, including persistent MQTT sessions, are disconnected; the result reports their counts. If shutdown cannot be proven in the deadline, restore returns 409 before replacing data. The farm and Virtual Printers can remain stopped: restart when the refusal requires it; a restart does not resume an interrupted transaction.
+
+ZIP backup/restore and Git backup/restore share one operation guard. A busy scheduled local ZIP backup keeps its scheduled slot and retries no more frequently than once a minute. Restoring is separate from a backup schedule's successful completion.
+
+Git restores preserve execution identity and event time. A backup of a print still running cannot replace a newer local result or its attached-file metadata; only operator notes, tags and favourites may overwrite that advanced row. A new row without a proven result is marked uncertain. Usage links are accepted only for the same print identity, never by its name. Two rows with different print UUIDs but identical filename and start time can conflict when their printers cannot be distinguished; the skipped row is reported. Spool inventory includes archived spools; history and spool bookkeeping travel together.
+
+### Database repair maintenance
+
+SQLite-to-PostgreSQL import requires a database from BamDude v0.4.2 or newer. Source/schema checks happen before restore stops services. Old SQLite-to-SQLite restores keep their migration path. A completed data replacement carries a durable repair obligation: a crash cannot make an incomplete schema look ready merely because its migration marker is current.
+
+An unrepaired technical failure keeps the application in maintenance, with health 503. Two automatic attempts are recorded durably; process restarts do not replenish them. Stop the application and use the same application version, DATA_DIR and DATABASE_URL for offline recovery:
+
+```sh
+python -m backend.app.cli schema_repair status
+python -m backend.app.cli schema_repair retry
+```
+
+`status` is read-only. `retry` makes one explicit attempt and returns a nonzero status when incomplete; neither command clears debt by force. In Docker use a one-shot container of the same image with the same mounts, environment and UID after stopping the app container. For a Windows service, stop the service and invoke its bundled Python from the application directory. Keep an external database service running. Complete pending repair before a schema-changing application upgrade; an incompatible repair manifest requires the original application version.
+
+Recognised data violations can remain as reported residuals rather than silently changing rows. A restore of duplicate active filament calibrations needs fresh, explicit operator confirmation; the backup cannot supply its own consent. A later retry can recreate the missing guard after the data is fixed. Keep private backups and diagnostic logs private: legacy auto-import and foreign-key helpers can include raw database-driver errors.
