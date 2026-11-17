@@ -54,6 +54,14 @@ The library trash sweeper applies the same gate at retention time: a row past it
 
 ---
 
+## :material-shield-check: Archives retained by print work
+
+Archive **Empty trash** deletes each removable archive and reports both the deleted count and the retained count, with reasons. An active print, running or finishing job, owed table swap, **Clear plate / Repeat** gate, or current printer-queue item can keep an archive and its files. A retained archive does not stop the rest of the bin from being emptied. Deleting that archive individually returns `409 archive_retained` with the reasons.
+
+Resolve the named work through the printer queue or print recovery, then retry. Retention cleanup follows the same rule. If another operator restores an archive while cleanup is waiting, cleanup leaves that restored archive and its video files intact.
+
+---
+
 ## :material-cog-outline: Settings
 
 **Settings → Printing → File Manager** has two stacked sub-blocks (auto-purge first, trash retention at the bottom — same order as Archive Settings):
