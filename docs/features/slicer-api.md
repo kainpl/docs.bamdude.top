@@ -190,6 +190,10 @@ For multi-plate 3MFs the modal embeds an **inline plate selector** at the top of
 **Re-slicing for a different printer** — you can slice a 3MF that was built for another printer model. Pick any printer profile and the slicer re-slices for that target (bed, kinematics, nozzle count and start-gcode all come from the chosen profile). When the target crosses a nozzle class (single-nozzle ↔ dual-nozzle H2D/H2C/X2D), BamDude forwards the slicer's `--arrange` so BambuStudio repositions objects for the target bed and reconciles the embedded project settings; a cross-class "slice all plates" run slices each plate independently and merges them. If the slicer still can't produce a valid result, its reason is shown in a dismissible dialog rather than a vanishing toast.
 
 
+### Process parameter language
+
+The process-settings panel follows the interface language. In Ukrainian, tabs, groups, parameter names, tooltips, choices and units use OrcaSlicer’s Ukrainian translations, with reviewed supplements for the bundled parameter schema. Search accepts Ukrainian text, English names and original keys such as `layer_height`; it also finds translated choice names such as Gyroid. Switching language keeps your edits. Only displayed text changes: settings submitted to the slicer retain their original keys and values. Unavailable translations fall back to English; imported preset names stay as you named them.
+
 ### Preset lists: groups, order and search { #preset-lists }
 
 Each preset dropdown is grouped by **source**, your own first:
