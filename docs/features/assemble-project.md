@@ -45,7 +45,8 @@ No slicer sidecar is needed for assembling. The presets are read by BamDude itse
 | Setting | Default | Meaning |
 |---|---|---|
 | **Gap between parts, mm** | 2 | 0 to 50. |
-| **Rotation of parts on the plate** | In steps of 90° | *Do not rotate*, *Only by 180°*, 90° or 45° steps. Finer steps pack tighter and take longer. |
+| **Rotation of parts on the plate** | Any angle | Arbitrary Z rotations, or no rotation / steps of 180°, 90°, 45°, 15° or 5°. Saved projects retain their previous choice. Fast search samples arbitrary angles at 15°; long search also tries continuous rotations. |
+| **Search for a denser layout — up to 5 minutes** | off | Several methods keep the best validated layout. The search budget is shared across printer rows; an in-progress native attempt may finish a few seconds later. |
 | **Centre the group on the plate** | on | Off leaves the parts where the packing put them, starting from the corner. |
 | **A separate file for each plate** | off | Off: one multi-plate project. On: a file per plate. |
 | **Name of the result** | from the first file | The printer's model is added to the name. A name that is already taken in the folder gets a number, never overwrites. |
@@ -57,6 +58,8 @@ Assembling is a background job in its own worker; you can close the dialog and k
 The dialog shows where the job is: waiting behind another assembly, converting STEP files, placing parts for each printer, saving. **Stop** ends it and saves nothing. Once the job has started saving files it can no longer be stopped — a stop at that moment would leave files behind a message saying nothing was saved.
 
 One assembly runs at a time; the next ones wait in a queue.
+
+During long search the dialog shows the best copy and plate counts and elapsed time. **Stop searching and use the best layout** finishes at the next solver boundary and saves normally; **Stop** still cancels and saves nothing. The search only translates and rotates on the plate: no mirroring, scaling or automatic tilting. It may improve density but does not prove an optimum or guarantee an improvement.
 
 ## :material-check-circle-outline: The result
 
