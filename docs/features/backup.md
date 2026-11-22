@@ -282,6 +282,10 @@ Perform restore during a maintenance window, without uploads or other file-chang
 
 API: `POST /api/v1/settings/restore` (multipart `file=…`, requires `settings:restore`).
 
+When you restore a Windows ZIP on Linux or macOS, BamDude converts separators in managed archive and library paths when the backup contains the matching file. This covers relative paths under the configured archive and library directories inside the data directory. External library sources and host-specific paths can be configured for the destination installation.
+
+Temporary backup and restore files are cleared in a background worker. The operation keeps its lock until cleanup finishes, including when the request is cancelled.
+
 ### :material-database-arrow-right: Cross-backend restore
 
 The portable SQLite dump means you can:
