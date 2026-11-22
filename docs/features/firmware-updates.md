@@ -256,6 +256,9 @@ If your printer reports an SSDP model code that isn't in `MODEL_TO_API_KEY`, the
 
 ## :material-help-circle: Troubleshooting
 
+??? question "MQTT updates pause during a firmware upload"
+    A printer can go quiet on MQTT while it receives the firmware file. During single and bulk uploads, BamDude keeps the connection's usual grace period from the end of the transfer. An A1 or A1 Mini that loses the FTP completion reply must confirm the file's size before the upload can finish.
+
 ??? question "`… is unreachable` in the logs"
     Bambu Lab's site could not be reached. The log says so **once per outage** — firmware checks keep retrying quietly and use what is cached — and says once more when the site answers again. Nothing to do unless the outage is on your side (DNS, outbound firewall).
 
