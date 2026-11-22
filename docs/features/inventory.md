@@ -81,6 +81,8 @@ CSV headers are case- and spacing-tolerant, so a column titled `Label Weight`, `
 
 The file carries the `material_number` and `last_dried_at` columns as well; `last_dried_at` is an ISO date/time. A blank `material_number` cell means "no number" — an imported spool does not inherit one from its filament.
 
+Spool exports list the cells protected as spreadsheet text in the final `__bamdude_text_escapes_v1` column. Keep this column when re-importing a BamDude export. It lets the importer preserve apostrophes you typed into notes and other text fields. Earlier CSV files still import using their original quoting rules.
+
 CSV import/export is **local-inventory only**. In **Spoolman mode** both buttons are disabled, with a hint pointing you at Spoolman's own CSV tools instead.
 
 ### Storage locations catalog
