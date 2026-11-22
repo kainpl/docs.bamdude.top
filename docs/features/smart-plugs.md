@@ -438,10 +438,10 @@ When state / energy / power live on **the same topic** (Zigbee2MQTT default), us
 
     The payloads are free text on purpose, because they belong to the device: Zigbee2MQTT expects `{"state": "ON"}` on `<name>/set`, Tasmota a bare `ON` on `cmnd/<name>/POWER`.
 
-    Without it nothing can switch the plug: auto-on at print start, auto-off afterwards, schedules, the manual buttons and Obico's pause-and-power-off are all affected alike.
+    Power automation skips a plug with an empty command topic. It still reports measurements, while the queues can use a controllable plug to wake the printer. Obico reports the pause alone when its attempt to switch off the printer's mains did not succeed.
 
 !!! tip "Per-print energy needs the Lifetime Energy block"
-    **Lifetime JSON path** is separate from the ordinary energy path because a plug may publish either a counter that resets at midnight (Tasmota's `ENERGY.Today`) or a running total that never resets (Zigbee2MQTT's `energy`), and only you know which yours points at. Per-print energy and cost need the running total: a print that crosses midnight would otherwise measure as **negative**.
+    Set **Lifetime JSON path** to a cumulative counter such as Zigbee2MQTT's `energy`. BamDude uses the difference between the start and end readings for per-print energy, including across midnight. A daily counter such as Tasmota's `ENERGY.Today` feeds the live daily reading and resets at midnight.
 
 ---
 

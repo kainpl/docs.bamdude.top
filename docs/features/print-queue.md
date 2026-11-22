@@ -533,6 +533,8 @@ The active-job toast in the bottom-right tracks each dispatch independently — 
 
 On A1 and A1 Mini, a lost FTP completion reply triggers a size check on a fresh connection. BamDude gives a short copy up to two minutes to finish writing. The upload can proceed to print preparation once the size matches. An unreadable or incomplete copy enters the normal upload failure and retry path.
 
+`FTP 421` in a queue upload issue means the printer reported that it has run out of file-transfer sessions. For recovery steps, see [Troubleshooting](../reference/troubleshooting.md#ftp-421).
+
 ### When a dispatch fails {#dispatch-failure}
 
 Once the start command has gone out, only the printer's own answer decides the attempt. A problem afterwards — saving the dispatched filament mapping, registering macros, cleaning up a temporary file — is logged, and the print keeps printing; it is never put back in the queue and printed a second time. If BamDude itself cannot read the printer's answer, it keeps looking for as long as a printer normally takes to answer, the job still holding the printer. When it still cannot tell, the job keeps the printer, the start is never sent again, and **Information → Print state diagnostics** offers to close the attempt once you have checked the printer — no restart needed.

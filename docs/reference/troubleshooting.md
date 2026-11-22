@@ -363,6 +363,12 @@ Close other programs that browse or send files to this printer and try again. If
 
 The **Connection Diagnostic** sees this state too: it completes a TLS handshake on port 990 (no login, so it works before a printer is added), and an open port that turns the handshake away is reported as a warning of its own rather than a green port. While it lasts, BamDude does not walk the card's directories for a missing 3MF — the connection those listings need is the one that was just refused; the archive's recovery triggers come back for the file.
 
+### Printer file-transfer sessions exhausted { #ftp-421 }
+
+If the printer reports `421 Too many connections`, BamDude records `FTP 421` in the upload error. Close other applications using the printer's file service and give the sessions time to expire. If the refusal persists, restart the printer when it is safe to do so.
+
+After a refusal or a listing timeout, automatic timelapse scans wait before trying the card again. You can still request a manual scan or file transfer during that wait. A successful manual scan clears the wait, and a supported internal catalogue remains available to automatic scans.
+
 ### FTPS TLS failure
 
 The TLS handshake with the printer's file-transfer server failed after the printer had started speaking TLS. Check that nothing between BamDude and the printer intercepts port 990 (a proxy or a security appliance) and try again; the sample line names the exact TLS error — include it in a report.
