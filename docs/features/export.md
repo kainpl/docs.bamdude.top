@@ -20,6 +20,8 @@ Two endpoints, each backed by `ExportService` (`backend/app/services/export.py`)
 
 Both produce CSV by default and accept `?format=xlsx` for native Excel `.xlsx`.
 
+XLSX stores names and notes as text and keeps quantities and measurements numeric. CSV adds a leading apostrophe to formula-looking text so spreadsheet apps read it as text.
+
 !!! info "Permissions"
     - **Archive export** requires `archives:read`
     - **Stats export** requires `stats:read`
