@@ -151,7 +151,7 @@ Click the trash icon. If the user owns content (archives, queue items, library f
 | **Delete user, keep items** | Removes the user; their content becomes ownerless and only `*_all` holders can modify it afterwards. Activity-tracking history (e.g. "Started by alice") is preserved -- the username is shown as-recorded, even though the user row is gone. |
 | **Re-assign to admin** | Transfers ownership of every owned row to the chosen admin in one transaction. Useful for offboarding employees. |
 
-You cannot delete yourself, and you cannot delete the last administrator -- the UI greys those out with a tooltip explaining why.
+You cannot delete your own account. Removing a user from **Administrators** also clears their legacy admin role. An existing session uses the reduced permissions on its next request. BamDude refuses a demotion, deactivation, or deletion that would leave no active administrator.
 
 ---
 
@@ -279,7 +279,7 @@ Keys are full LDAP group distinguished names (DNs), matched case-insensitively, 
 If no mapping matches, provisioning uses the configured default group; without a default, assign groups manually.
 
 !!! info "Group lookup"
-    Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. This does not add OIDC group synchronization.
+    Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. If the sync would remove the last active administrator, that sign-in is refused until the directory grants the admin group again or another active administrator is available. This does not add OIDC group synchronization.
 
 ### Provisioning
 
