@@ -45,7 +45,7 @@ The database snapshot does not freeze the accompanying directories. For a comple
 2. Click **Download**
 3. Browser downloads `bamdude-backup-YYYYMMDD-HHMMSS.zip`
 
-The ZIP is streamed from a temp file rather than buffered in memory, so multi-gigabyte backups don't OOM the process. The temp file is deleted automatically once the response finishes.
+The server streams the ZIP from a temporary file, so even multi-gigabyte backups use bounded memory. It closes and removes that file when delivery ends, including if the download is cancelled or the connection drops.
 
 API: `GET /api/v1/settings/backup` (requires `settings:backup`).
 
@@ -284,7 +284,7 @@ API: `POST /api/v1/settings/restore` (multipart `file=…`, requires `settings:r
 
 When you restore a Windows ZIP on Linux or macOS, BamDude converts separators in managed archive and library paths when the backup contains the matching file. This covers relative paths under the configured archive and library directories inside the data directory. External library sources and host-specific paths can be configured for the destination installation.
 
-Temporary backup and restore files are cleared in a background worker. The operation keeps its lock until cleanup finishes, including when the request is cancelled.
+The backup or restore keeps its lock until a background worker finishes cleaning up its staging files, including when the request is cancelled. A manual backup releases that lock before the download starts.
 
 ### :material-database-arrow-right: Cross-backend restore
 
