@@ -9,7 +9,7 @@ BamDude provides comprehensive monitoring for your AMS (Automatic Material Syste
 
 **AMS Lite works with both A1 and A1 mini.** Both models support slot configuration, filament selection for printing, inventory/Spoolman assignments and the printer's filament-backup groups. An external spool is also supported; A1 mini is not restricted to external feeding.
 
-On A2L, the printer card can show a regular AMS and an AMS Lite together. A partial status update changes the reported slots and keeps the other slot details. When you configure the external spool on A1 or A1 mini, a color-only update keeps the material visible. BamDude confirms the preset when the external slot reports its filament ID.
+On A2L, the printer card can show a regular AMS and an AMS Lite together. A partial status update changes the reported slots and keeps the other slot details. When you configure the external spool on A1 or A1 mini, a color-only update keeps the material visible. BamDude confirms the preset when the external slot reports its filament ID. On H2D, a status update for one external holder keeps the other holder visible.
 
 Features depend on the connected unit: AMS Lite supports [RFID identification of Bambu filaments](https://eu.store.bambulab.com/en-cz/products/ams-lite), but does not provide humidity readings or active drying. Those controls apply only to hardware and firmware that support them. A missing humidity or drying control does not mean AMS Lite is unsupported.
 
