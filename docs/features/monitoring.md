@@ -278,7 +278,7 @@ A fault of severity *Fatal* or *Serious* is sent through the `printer_error` not
 
 - **Once per appearance.** Each fault is announced on its own — two faults on the same part of the printer are two notifications.
 - **A flicker is not repeated.** A fault that disappears and comes back within 10 minutes is not announced again — unless the print state changed in between (the print was resumed, for example), or the fault was gone for 10 minutes or longer.
-- **After a restart of BamDude**, faults it already announced stay quiet if the printer is still reporting them. A partial status update leaves the record in place until the printer reports the fault source. A report can confirm that a fault cleared even if the rest of the printer card looks the same, including when a new print starts.
+- **After a restart of BamDude**, faults it already announced stay quiet if the printer is still reporting them. A partial status update leaves the record in place until the printer reports the fault source. A report can confirm that a fault cleared even if the rest of the printer card looks the same, including when a new print starts. The clear still counts when another report brings back the same code immediately afterward.
 - **The code is the one on the printer's screen.** A fault from the printer's HMS list is named by its full four-group code — `0500-0600-0002-0070` — in the notification title and in a queue job's failure reason. A `print_error` keeps its short `XXXX_XXXX` form.
 
 ### Where the descriptions come from
