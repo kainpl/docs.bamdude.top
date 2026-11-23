@@ -188,9 +188,9 @@ The bundle requires **debug logging to be currently enabled** — the endpoint r
 - Subnets in network info → first two octets become `x.x` (so `192.168.1.0/24` → `x.x.1.0/24`).
 - Settings values — keys containing any of `access_code`, `password`, `token`, `secret`, `api_key`, `cloud_token`, `mqtt_password`, `email`, `username`, `vapid`, `private_key`, `public_key`, `webhook`, `url`, `path`, `config`, `_ip`, `host`, `credential` are redacted to `[REDACTED]` (or `""` if empty). Any other settings pass through as-is, so feature flags and themes are visible in the bundle.
 
-Printer summaries and push-status snapshots preserve catalog model names when a printer has that same display name. The display name is still masked in free text. The export also masks serials of configured virtual printers, including serials from before a model change.
+Printer summaries and push-status snapshots preserve catalog model names when a printer has that same display name. The export masks configured physical and virtual printer names in free text. Short names match whole tokens. It also masks virtual printer serials from before and after a model change.
 
-The debug log records selected numeric tray and tool parameters and sequence IDs from printer command reports. The command summary omits arbitrary payload data and download URLs. Slicer dispatch entries retain the source and selected print flags. Opt-in MQTT recordings contain the captured messages themselves.
+Printer command entries record selected tray and tool parameters, sequence IDs, recognized results and numeric verdict codes. Slicer dispatch entries can show the source, a recognized plate number, tray positions and print flags. Opt-in MQTT recordings contain the captured messages themselves.
 
 The bundle is the right thing to attach to a [GitHub issue](https://github.com/kainpl/bamdude/issues) when reporting a bug.
 
