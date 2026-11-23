@@ -7,6 +7,8 @@ description: Per-user Bambu Cloud вхід з регіональним розд�
 
 Cloud Profiles — міст між твоїм Bambu Cloud аккаунтом і BamDude. Після входу твої filament / process / printer presets з'являються у slice modal поряд з локально імпортованими (див. [Local Profiles](local-profiles.md)), printer-firmware checks отримують доступ до списку Bambu-девайсів, а slicing-пайплайни можуть резолвити ті самі імена presets, що й Bambu Studio.
 
+Якщо Bambu Cloud повертає порожню категорію пресетів, решта категорій і далі доступна в Cloud Profiles. У діалозі нарізки відображаються доступні хмарні та локальні пресети.
+
 Інтеграція **per-user**. Кожен BamDude-акк тримає свій Bambu Cloud token — твій колега, що логіниться у свій Bambu-акк, не вибиває тебе, і твій токен не тече до нього.
 
 !!! tip "Користуєшся ще й хмарою OrcaSlicer?"

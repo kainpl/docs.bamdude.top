@@ -21,6 +21,8 @@ One control serves the spool form, the AMS slot dialog and the K-profile editor.
 
 Spools link to a family directly, and existing spools are migrated automatically on first start after upgrading: whatever the old preset field held is resolved into a family, and anything unresolvable is left honestly unlinked rather than guessed. K-profile auto-matching keys on the family too — which is what finally makes **custom filaments match their own calibration profiles** instead of collapsing onto Generic.
 
+When editing or copying a spool, use **Clear filament family or preset** next to the picker to remove its saved family or older slicer preset. The spool keeps its material and other details. Opening or searching the picker leaves the saved choice in place until you select a family or clear it.
+
 ## :material-flask-plus: Creating your own filament
 
 The dialog mirrors Bambu Studio's *Create Filament*: **vendor + type + serial** (reserved vendor names refused, the same fixed type list), and the new family gets a **Bambu-Studio-compatible id** — creating the same-named filament in the slicer later converges on the same identity instead of minting a duplicate.
