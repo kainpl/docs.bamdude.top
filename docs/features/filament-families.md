@@ -23,6 +23,8 @@ Spools link to a family directly, and existing spools are migrated automatically
 
 When editing or copying a spool, use **Clear filament family or preset** next to the picker to remove its saved family or older slicer preset. The spool keeps its material and other details. Opening or searching the picker leaves the saved choice in place until you select a family or clear it.
 
+In Spoolman mode, a saved preset with only a name can also be cleared. Clearing the preset keeps the spool linked to its catalog filament. Copy Spool carries forward a saved preset unless you clear it. A catalog filament name on its own leaves the new spool without a preset.
+
 ## :material-flask-plus: Creating your own filament
 
 The dialog mirrors Bambu Studio's *Create Filament*: **vendor + type + serial** (reserved vendor names refused, the same fixed type list), and the new family gets a **Bambu-Studio-compatible id** — creating the same-named filament in the slicer later converges on the same identity instead of minting a duplicate.
