@@ -365,9 +365,9 @@ The **Connection Diagnostic** sees this state too: it completes a TLS handshake 
 
 ### Printer file-transfer sessions exhausted { #ftp-421 }
 
-If the printer reports `421 Too many connections`, BamDude records `FTP 421` in the upload error. Close other applications using the printer's file service and give the sessions time to expire. If the refusal persists, restart the printer when it is safe to do so.
+If the printer reports `421 Too many connections`, BamDude records `FTP 421` in the upload error, including when the printer sends its refusal after receiving the file data. Close other applications using the printer's file service and give the sessions time to expire. If the refusal persists, restart the printer when it is safe to do so.
 
-After a refusal or a listing timeout, automatic timelapse scans wait before trying the card again. You can still request a manual scan or file transfer during that wait. A successful manual scan clears the wait, and a supported internal catalogue remains available to automatic scans.
+After a refusal or a listing timeout, including during a check of the parent directory, automatic timelapse scans wait before trying the card again. You can still request a manual scan or file transfer during that wait. A successful manual scan clears the wait, and a supported internal catalogue remains available to automatic scans.
 
 ### FTPS TLS failure
 

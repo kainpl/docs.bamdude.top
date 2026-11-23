@@ -440,6 +440,8 @@ When state / energy / power live on **the same topic** (Zigbee2MQTT default), us
 
     Power automation skips a plug with an empty command topic. It still reports measurements, while the queues can use a controllable plug to wake the printer. Obico reports the pause alone when its attempt to switch off the printer's mains did not succeed.
 
+    Changing a plug's type or linked printer cancels its pending automatic shutdown. If you edit the command topic of a controllable MQTT plug, a shutdown that is still pending uses the new topic.
+
 !!! tip "Per-print energy needs the Lifetime Energy block"
     Set **Lifetime JSON path** to a cumulative counter such as Zigbee2MQTT's `energy`. BamDude uses the difference between the start and end readings for per-print energy, including across midnight. A daily counter such as Tasmota's `ENERGY.Today` feeds the live daily reading and resets at midnight.
 
