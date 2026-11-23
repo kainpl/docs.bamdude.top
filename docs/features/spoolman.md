@@ -276,7 +276,7 @@ A few things differ from the built-in inventory:
 
 To remove a saved preset, use **Clear filament family or preset** in the spool editor. The spool still shows its catalog filament name in inventory. See [Filament Families](filament-families.md) for how copying a spool carries its preset forward.
 
-BamDude reads a known finish and color from Spoolman product names. For example, `Matte Scarlet Red` shows `Matte` as the subtype and `Scarlet Red` as the color. A saved color name takes priority. Editing a spool keeps the original catalog name when the material and subtype stay the same, including when a shared filament needs a separate catalog entry for the edited spool.
+BamDude reads a known finish and color from Spoolman product names. For example, `Matte Scarlet Red` shows `Matte` as the subtype and `Scarlet Red` as the color. Recognized finishes include `Aero`, `Lite` and `High Speed`. Extra spaces within a finish are normalized for display. A saved color name takes priority. Editing a spool keeps the original catalog name when the material and subtype stay the same, including when a shared filament needs a separate catalog entry for the edited spool.
 
 ### :material-history: Usage history and Forecast {#spoolman-usage-history}
 
