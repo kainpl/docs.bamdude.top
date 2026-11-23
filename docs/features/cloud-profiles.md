@@ -167,6 +167,8 @@ A cloud filament preset's **material** comes from the filament family the preset
 
 ## :material-pencil: CRUD on cloud presets
 
+The filament preset editor takes its **Filament Type** choices from **Settings → Slicer → Preferred Slicer**. For example, Bambu Studio offers `TPU-AMS` and OrcaSlicer offers `SBS`. A profile's current type stays selected when you switch slicers or edit an imported profile with a type outside the list.
+
 Cloud Profiles isn't read-only:
 
 | Action | Endpoint | Effect |

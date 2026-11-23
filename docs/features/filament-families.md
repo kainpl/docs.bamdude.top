@@ -61,6 +61,8 @@ AMS slots use the same support types as Bambu Studio. Support for PLA uses `PLA-
 
 After reconnecting, the printer may report the material before the family ID or color. BamDude keeps the spool linked when the reported details still match. A matching base material preserves an existing support type while the family ID is missing. BamDude checks again when the family ID or color arrives. If the printer confirms the same RFID spool, BamDude updates only the details the printer reports.
 
+For assignments made with an API key, **Manage Inventory** permits the assignment and **Use Bambu Cloud** permits using the active owner's cached cloud preset. BamDude also checks the owner's cloud permission when it configures an empty slot after a spool is inserted. When a private preset is unavailable, BamDude can use a shared preset or Generic for the spool's material.
+
 ## :material-link: Related pages
 
 - [Cloud Profiles](cloud-profiles.md) — the Bambu Cloud tab, sign-in and preset CRUD
