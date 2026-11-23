@@ -108,7 +108,8 @@ details.
     serial number, or access code clears the old warning. Run the check again
     by submitting the form. Choose **Save anyway** if you want to save the
     checked settings while the printer is unreachable. Use **Show access code**
-    to review the code you entered.
+    to review the code you entered. While a printer edit is saving, **Check again**
+    waits until the save finishes. If saving fails, you can run the check again.
 
 !!! tip "Model selection matters"
     BamDude derives several capabilities from the model — door-state
