@@ -57,7 +57,7 @@ A **filament you created** (Bambu Studio's *Create filament*, synced from your B
 
 A spool with no family at all — a quick-added one, or a Spoolman spool without a linked K-profile — is configured from its material. The slot keeps the spool's filament type: it gets a family of exactly that type, the generic one where the catalog has it (PLA, PETG, PA-CF…) and otherwise the catalog's own (a spool of PLA Aero gets *Bambu PLA Aero*). Words and qualifiers are understood — "PLA Aero" is PLA-AERO, `PLA+` and "PLA Matte" are PLA. For a type no profile exists for, such as ASA-GF, the base material's generic profile supplies the temperatures and the slot still says ASA-GF. A spool whose material is plain *Nylon*, *PA6* or *PA12* is configured with the Generic PA profile and keeps its own material name. The type matters because the queue matches spools to plates by it.
 
-AMS slots use the same support types as Bambu Studio. Support for PLA uses `PLA-S` and support for PA uses `PA-S`. This applies when you configure a slot or assign a spool from either inventory. Print matching checks these types separately from ordinary PLA and PA. AMS Backup can still normalize the color, and keeps the support type.
+AMS slots use the same support types as Bambu Studio. Support for PLA uses `PLA-S` and support for PA uses `PA-S`. BamDude uses the Bambu support family ID or an explicitly declared support type. Custom profiles with “Support” in the name keep their declared material. This applies when you configure a slot or assign a spool from either inventory. Print matching checks these types separately from ordinary PLA and PA. AMS Backup can still normalize the color, and keeps the support type.
 
 ## :material-link: Related pages
 
