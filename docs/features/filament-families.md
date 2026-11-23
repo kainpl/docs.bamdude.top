@@ -59,7 +59,7 @@ A spool with no family at all — a quick-added one, or a Spoolman spool without
 
 AMS slots use the same support types as Bambu Studio. Support for PLA uses `PLA-S` and support for PA uses `PA-S`. BamDude uses the Bambu support family ID or an explicitly declared support type. Custom profiles with “Support” in the name keep their declared material. This applies when you configure a slot or assign a spool from either inventory. Print matching checks these types separately from ordinary PLA and PA. AMS Backup can still normalize the color, and keeps the support type.
 
-After reconnecting, the printer may report the material before the color. BamDude keeps the spool linked when the reported details still match and checks again when the color arrives. If the printer confirms the same RFID spool, BamDude updates only the details the printer reports.
+After reconnecting, the printer may report the material before the family ID or color. BamDude keeps the spool linked when the reported details still match. A matching base material preserves an existing support type while the family ID is missing. BamDude checks again when the family ID or color arrives. If the printer confirms the same RFID spool, BamDude updates only the details the printer reports.
 
 ## :material-link: Related pages
 
