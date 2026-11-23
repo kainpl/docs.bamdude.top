@@ -23,7 +23,7 @@ Spools link to a family directly, and existing spools are migrated automatically
 
 When editing or copying a spool, use **Clear filament family or preset** next to the picker to remove its saved family or older slicer preset. The spool keeps its material and other details. Opening or searching the picker leaves the saved choice in place until you select a family or clear it.
 
-In Spoolman mode, a saved preset with only a name can also be cleared. Clearing the preset keeps the spool linked to its catalog filament. Copy Spool carries forward a saved preset unless you clear it. A catalog filament name on its own leaves the new spool without a preset.
+In Spoolman mode, a saved preset with only a name can also be cleared. Clearing the preset keeps the spool linked to its catalog filament. Copy Spool carries a saved preset to each new spool unless you clear it, including when Quantity is greater than one. A catalog filament name on its own leaves the new spool without a preset.
 
 ## :material-flask-plus: Creating your own filament
 
