@@ -134,7 +134,7 @@ sudo apt install v4l-utils
 v4l2-ctl --list-devices
 ```
 
-In **Settings → Camera → External Cameras**, select **USB Camera (V4L2)** for the printer. Choose the camera from **Detected USB devices**. Use **Refresh** after connecting a device or changing the container mapping. BamDude reports when the saved device is missing. Use **Enter device path manually** to supply a path such as `/dev/video2`, then save and use **Test** to check the source.
+In **Settings → Camera → External Cameras**, select **USB Camera (V4L2)** for the printer. Choose the camera from **Detected USB devices**. Use **Refresh** after connecting a device or changing the container mapping. BamDude checks whether the saved device node exists. Capture discovery can omit a present node, which you can select by entering its device path. Use **Enter device path manually** to supply a path such as `/dev/video2`, then save and use **Test** to check the source.
 
 For Docker, pass the device through:
 
