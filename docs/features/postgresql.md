@@ -326,11 +326,11 @@ Ranking needs a database that folds Unicode case itself (a UTF-8 locale). On a `
 
 | Setting | SQLite | PostgreSQL |
 |---------|--------|------------|
-| Pool size | 20 | 20 |
-| Max overflow | 200 | 80 |
+| Pool size | 10 | 20 |
+| Max overflow | 90 | 60 |
 | Pre-ping / recycle | — | on / 1800 s |
 
-Large farms can raise these with `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` and `DB_POOL_USE_LIFO`. If you use an external PostgreSQL, make sure its own `max_connections` comfortably exceeds `(pool_size + max_overflow) × workers` — the bundled server is configured with a generous `max_connections` for exactly this.
+Large farms can raise these with `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` and `DB_POOL_USE_LIFO`. On PostgreSQL, `DB_POOL_PRE_PING=false` skips the connection check at checkout: a connection the server has already closed then fails on its first use instead of being replaced. SQLite ignores it. If you use an external PostgreSQL, make sure its own `max_connections` comfortably exceeds `(pool_size + max_overflow) × workers` — the bundled server is configured with a generous `max_connections` for exactly this.
 
 ---
 
