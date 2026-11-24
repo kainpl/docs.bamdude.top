@@ -64,6 +64,14 @@ docker compose --profile all    up -d   # both
 
 A bare `docker compose up -d` (no profile) starts nothing — you must include `--profile orca`, `--profile bambu`, or `--profile all`. Then in BamDude → **Settings → Profiles → Slicer API**, fill the URL field for the slicer(s) you started (`http://localhost:3003` for Orca, `http://localhost:3001` for BambuStudio).
 
+### Publish on one host address
+
+Set `SIDECAR_BIND` in `slicer-api/.env` to choose one host address for both sidecar ports. Unset or empty keeps publication on all interfaces. When BamDude runs on the same machine with host networking, set `SIDECAR_BIND=127.0.0.1` and use the IPv4 loopback address in the sidecar URLs. For a bridged BamDude container or a remote server, use a host address that BamDude can reach. Use brackets with IPv6, for example `SIDECAR_BIND=[::1]`.
+
+### Run with an unprivileged UID
+
+Rebuild the sidecar images before switching to an unprivileged UID. In a local Compose override, set `user: "10001:10001"` and put `HOME: /app/data` under `environment` for each enabled sidecar service. Use your chosen UID and GID in place of 10001. Its mounted data directory and any existing files must be writable by that account. The main Compose recipe keeps the image's default user.
+
 !!! warning "Docker Desktop 4.71 first-build workaround"
     Docker Desktop 4.71 (engine 29.4.1 / compose v5.1.x / buildx 0.33.x-desktop) ships a broken `buildx bake` compose-bridge: `docker compose build` dies immediately with `failed to execute bake: exit status 1` and no further detail, regardless of profile shape. `COMPOSE_BAKE=false` does NOT disable it on this version.
 

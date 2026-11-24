@@ -64,6 +64,14 @@ docker compose --profile all    up -d   # обидва
 
 Голий `docker compose up -d` (без profile) не запустить нічого — треба явно вказати `--profile orca`, `--profile bambu` чи `--profile all`. Потім у BamDude → **Settings → Profiles → Slicer API** заповни URL для слайсерів, які запустив (`http://localhost:3003` для Orca, `http://localhost:3001` для BambuStudio).
 
+### Публікація портів на одній адресі
+
+Задайте `SIDECAR_BIND` у `slicer-api/.env`, щоб опублікувати порти обох sidecar’ів на одній адресі хоста. Порожнє або відсутнє значення зберігає публікацію на всіх інтерфейсах. Якщо BamDude працює на тій самій машині в мережі хоста, встановіть `SIDECAR_BIND=127.0.0.1` і вкажіть цю IPv4-адресу у URL sidecar’ів. Для BamDude в мережі bridge або на віддаленому сервері використайте адресу хоста, доступну з BamDude. IPv6-адресу беріть у квадратні дужки, наприклад `SIDECAR_BIND=[::1]`.
+
+### Запуск під непривілейованим UID
+
+Перезберіть образи sidecar’ів перед переходом на непривілейований UID. У локальному Compose override задайте `user: "10001:10001"` і вкажіть `HOME: /app/data` у секції `environment` для кожного ввімкненого sidecar’а. Підставте потрібні UID і GID замість 10001. Цей користувач має мати право запису в змонтований каталог даних і наявні файли. Основний Compose-файл зберігає користувача за замовчуванням із образу.
+
 !!! warning "Docker Desktop 4.71 — обхід для першого білда"
     Docker Desktop 4.71 (engine 29.4.1 / compose v5.1.x / buildx 0.33.x-desktop) має зламаний `buildx bake` compose-bridge: `docker compose build` миттєво падає з `failed to execute bake: exit status 1` без жодних деталей, незалежно від форми profiles. `COMPOSE_BAKE=false` НЕ вимикає bake на цій версії.
 
