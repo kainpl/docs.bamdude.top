@@ -87,7 +87,7 @@ A design has [limits](#limits) — how many boxes, how large, how much type. One
 | Element | Notes |
 |---|---|
 | **Text** | Size in mm, bold, italic, horizontal and vertical alignment, and a **fit** rule: `shrink` reduces the size until it fits, `clip` cuts it off, `wrap` continues it on another line. |
-| **QR** | Usually `{deeplink}` — scanning it opens that spool's row in BamDude on your phone. |
+| **QR** | Usually `{deeplink}` — scanning it opens the spool in BamDude. New built-in inventory labels also support [assignment by scanning](inventory.md#assign-by-scanning-a-label). |
 | **Barcode** | EAN-13, Code 128, Code 39, EAN-8, UPC-A or ITF. EAN-13 takes exactly twelve digits; anything else is reported rather than printed unscannable. |
 | **Colour swatch** | A block of the spool's colour, as a rectangle, a circle or a rounded rectangle. One band per colour on a multi-colour spool. |
 
@@ -122,7 +122,7 @@ Text and barcode content is written with placeholders in braces — the vocabula
 | `{lot}` | Lot | `3` |
 | `{material_number}` | Material number | `15` |
 | `{display_name}` | Display name — the spool's name under your naming template *(label only)* | `Polymaker PLA Ivory` |
-| `{deeplink}` | Deep link — the URL a phone scan opens *(label only)* | `https://bamdude.example/inventory?spool=42` |
+| `{deeplink}` | Deep link — the URL a phone scan opens *(label only)* | `https://bamdude.example/inventory?spool=42&src=local&v=2&key=…` |
 | `{ean}` | EAN-13 payload — twelve digits for a barcode *(label only)* | `200000000042` |
 | `{storage_location}` | Storage location — the shelf, box or dry cabinet entered for the spool *(label only)* | `Shelf B` |
 | `{nozzle_temp}` | Nozzle temperature *(label only)* | `220–240 °C` |

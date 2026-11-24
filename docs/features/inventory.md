@@ -560,7 +560,7 @@ Six pre-built templates:
 | **Avery L7160** | 38.1 × 63.5 mm | A4, 21 per sheet | EU sheet stock. Carries QR. |
 | **Avery 5160** | 25.4 × 66.7 mm | US Letter, 30 per sheet | US sheet stock. Carries QR. |
 
-Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand in **bold** at the top so it reads at arm's length, material/subtype, the colour **hex code** (`#RRGGBB`, alpha-stripped, uppercase) so near-identical colour+material spools are still tellable apart from up close, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that deep-links to `/inventory?spool=<id>` so a phone scan jumps straight back into BamDude at that spool's row.
+Every label carries the colour swatch (with multi-colour stripes for spools with `extra_colors`), brand in **bold** at the top so it reads at arm's length, material/subtype, the colour **hex code** (`#RRGGBB`, alpha-stripped, uppercase) so near-identical colour+material spools are still tellable apart from up close, the spool's display name, the **spool ID** as the killer at-a-glance field for telling 8 spools of "PLA White" apart, and (where the size allows) a QR code that a phone can use to open the spool in BamDude.
 
 ### Display name follows your template
 
@@ -568,13 +568,21 @@ The bold central line on each label reuses the same **Spool display name** templ
 
 ### How the QR deeplink resolves
 
-The QR encodes `<base>/inventory?spool=<id>`. The base is resolved in this order:
+New built-in inventory labels include a key tied to the original spool record. Renaming the spool or editing its lot keeps the label valid. Deleting the record invalidates its label even if SQLite later reuses the spool number. Existing number-only labels still open the inventory by number. Reprint them to use **Scan spool label**. Spoolman labels keep their existing links.
+
+The address printed in the link comes from the first available source below.
 
 1. The `external_url` setting (Settings → Network → External URL) — preferred so a phone scan reaches your public BamDude URL rather than an internal address.
 2. The `APP_URL` environment variable.
 3. The current request's scheme + host (whatever you'd see in your browser when you fired the export).
 
 For phone-scan workflows, set `external_url` once — then every label across every template prints the right deeplink.
+
+### Assign by scanning a label
+
+In the built-in inventory, open **Assign Spool** on the intended AMS slot and choose **Scan spool label**. To assign a storage location, open **Inventory → Locations** and use the scan button on the intended location's row.
+
+Choose **Use camera** or **Choose photo**. For camera access, open BamDude over HTTPS. Photo selection also works when the camera is unavailable. BamDude retries large photos at higher resolution if the first pass cannot read the QR code. Review the detected spool name and number, then confirm the assignment or move.
 
 ### Picker UX for large libraries
 
