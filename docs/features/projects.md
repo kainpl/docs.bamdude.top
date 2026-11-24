@@ -50,9 +50,19 @@ A line is **`product × quantity`**, plus three optional fields:
 
 Lines are ordered, and the order matters: it decides which line gets a shared plate's parts first (see [Which order a print belongs to](#which-order-a-print-belongs-to)).
 
+### Saved parts
+
+When you add a line, BamDude records the parts and their quantities for that line. Later catalog edits apply to new lines. Lines that already existed when BamDude was upgraded show **Captured during upgrade** and retain the parts visible at that time.
+
+To add a part to an active order, open the line menu and choose **Add part to line…**. The picker opens with parts for the saved variant. Select **All product parts** to include parts from other variants. Check the quantity and total before confirming. If only the order quantity changes, your entered quantity per unit stays in the dialog. Review the new total before confirming. If the selected part leaves the catalog, choose its replacement explicitly and check its suggested quantity. The dialog shows the saved variant used to select the available parts. It shows how adding the part affects any reservations you can view, including the name and quantity of each printed part that will be released. Adding a purchased part keeps individually reserved printed parts. If the reservation impact changes during review, check the refreshed values before confirming again. Reopen a closed order before changing its parts.
+
+Use the part configuration to edit saved quantities, including for parts removed from the catalog. Other saved parts keep their quantities and descriptions. A parts-only line must retain at least one part. When you change the variant, BamDude carries over manual additions and applies the quantities you enter. Review and confirm the proposed changes before saving a variant change or removing a part that has left the catalog. If the order or catalog changes during review, the editor refreshes the proposal and asks you to confirm again. A replacement catalog part starts with its own quantity.
+
+Finished stock tracks each physical kit separately. If two units have the same variant and different parts, the order can reserve the unit with the matching kit.
+
 ### Statuses and closing
 
-An order is `active`, `completed` or `cancelled`, and **only you close it**. When every line is covered by printed kits or kits allocated from stock, the page raises an *All lines are covered — close the order?* banner and stops there. A completed order can be reopened; a cancelled one keeps its whole history and is excluded from a customer's "done".
+An order is `active`, `completed` or `cancelled`, and **only you close it**. When every line is covered by printed kits or kits allocated from stock, the page raises an *All lines are covered — close the order?* banner and stops there. A completed or cancelled order must be reopened before you can change its saved parts. A cancelled order keeps its whole history and is excluded from a customer's "done".
 
 !!! tip "Pickers offer open orders"
     Anywhere an order is picked — the print dialog, the archive editor, the bulk archive action — the list is the **active** orders plus whatever is already bound, so an existing link is never hidden and never silently cleared by saving a dialog.
@@ -395,7 +405,7 @@ Deleting a part removes its ledger; **merging** two parts moves the movements on
 
 ### The Stock section
 
-**Projects → Stock** opens on **Finished goods**. Each stock position represents one product configuration, with its location, minimum, on-hand, reserved and available quantities. The list marks positions below their minimum. Open a position to see its reservations, other configurations and the parts its kit needs. Receive finished units, take stock, reserve them or issue them to a customer. **Assemble** uses free printed parts and adds finished units in one recorded movement.
+**Projects → Stock** opens on **Finished goods**. Each stock position represents one physical kit of a product variant and shows its location, minimum, on-hand, reserved and available quantities. Positions with the same variant can hold different kits. An order can reserve only a kit that matches its saved parts. The list marks positions below their minimum. Open a position to see its reservations, other configurations and the parts its kit needs. Receive finished units, take stock, reserve them or issue them to a customer. **Assemble** uses free printed parts and adds finished units in one recorded movement.
 
 **Free parts** shows the balance of each part, active order reservations and how many kits each configuration could make. A part with zero units per kit remains visible as *Out of kit*. The **Journal** pages through movements in both ledgers, with filters for product and operation.
 
