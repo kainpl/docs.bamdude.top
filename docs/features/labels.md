@@ -94,7 +94,7 @@ A design has [limits](#limits) — how many boxes, how large, how much type. One
 !!! warning "`shrink` inverts the hierarchy on real data"
     Factory designs keep their authored text size. Where space permits, the spool name gets a second line and the QR and spool number keep their positions. Shrinking makes a long brand name smaller than the short material line beneath it, which reads as the wrong thing being important. That is visible on a render and invisible in a test.
 
-Choose **Wrap** to continue text within its box. PDF and thermal output use at most three lines, with an ellipsis on the last line if space runs out. `shrink` and `clip` keep their single-line behaviour.
+Choose **Wrap** to continue text within its box. PDF and thermal output fit up to three complete lines inside the box, including the parts of letters that extend below the baseline. If the next line would not fit, the last visible line ends with an ellipsis. `shrink` and `clip` keep their single-line behaviour.
 
 ### Placeholders
 
