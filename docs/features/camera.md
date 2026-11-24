@@ -134,7 +134,7 @@ sudo apt install v4l-utils
 v4l2-ctl --list-devices
 ```
 
-BamDude reads `/dev/video0` by default. If your camera is at a different node (e.g. `/dev/video2`), enter the path directly into the External Camera URL field.
+In **Settings → Camera → External Cameras**, select **USB Camera (V4L2)** for the printer. Choose the camera from **Detected USB devices**. Use **Refresh** after connecting a device or changing the container mapping. BamDude reports when the saved device is missing. Use **Enter device path manually** to supply a path such as `/dev/video2`, then save and use **Test** to check the source.
 
 For Docker, pass the device through:
 
