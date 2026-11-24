@@ -21,6 +21,8 @@ A printer card is a thin client that sits in front of `PrinterManager` (`backend
 
 Most actions are gated by `printers:control`. Two subsets carve off lower-privilege actions: `printers:clear_plate` (just the post-print "next job ready" handshake) and `printers:read` (status + object lists, no commands).
 
+Tap a filled or empty AMS slot to open its details and actions. Tap the same slot again or tap outside to close it. With a keyboard, focus the slot and press Enter or Space. Escape closes the card and returns focus to the slot. With a mouse, you can still open the card by hovering.
+
 ---
 
 ## Confirmed actions for selected printers

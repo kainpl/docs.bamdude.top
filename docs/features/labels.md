@@ -86,13 +86,15 @@ A design has [limits](#limits) — how many boxes, how large, how much type. One
 
 | Element | Notes |
 |---|---|
-| **Text** | Size in mm, bold, italic, horizontal and vertical alignment, and a **fit** rule: `shrink` reduces the size until it fits, `clip` cuts it off. |
+| **Text** | Size in mm, bold, italic, horizontal and vertical alignment, and a **fit** rule: `shrink` reduces the size until it fits, `clip` cuts it off, `wrap` continues it on another line. |
 | **QR** | Usually `{deeplink}` — scanning it opens that spool's row in BamDude on your phone. |
 | **Barcode** | EAN-13, Code 128, Code 39, EAN-8, UPC-A or ITF. EAN-13 takes exactly twelve digits; anything else is reported rather than printed unscannable. |
 | **Colour swatch** | A block of the spool's colour, as a rectangle, a circle or a rounded rectangle. One band per colour on a multi-colour spool. |
 
 !!! warning "`shrink` inverts the hierarchy on real data"
-    The designs BamDude ships use `clip`, not `shrink`. Shrinking makes a long brand name smaller than the short material line beneath it, which reads as the wrong thing being important. That is visible on a render and invisible in a test.
+    Factory designs keep their authored text size. Where space permits, the spool name gets a second line and the QR and spool number keep their positions. Shrinking makes a long brand name smaller than the short material line beneath it, which reads as the wrong thing being important. That is visible on a render and invisible in a test.
+
+Choose **Wrap** to continue text within its box. PDF and thermal output use at most three lines, with an ellipsis on the last line if space runs out. `shrink` and `clip` keep their single-line behaviour.
 
 ### Placeholders
 
