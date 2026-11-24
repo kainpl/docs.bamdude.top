@@ -363,6 +363,8 @@ The panel works when re-slicing for a **different** printer, which is exactly
 where "Slice as designed" isn't offered. It also appears when re-printing from an
 archive.
 
+When you export a sliced 3MF using Bambu Studio with a built-in or stock Bambu Cloud process, BamDude records the process settings it changed. Bambu Studio uses that list to retain your overrides and selected designer settings when it reopens the project with the system preset.
+
 ### Filament slots your plate doesn't use
 
 In a multi-plate project each plate usually paints with only some of the
