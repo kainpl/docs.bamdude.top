@@ -310,7 +310,7 @@ Backups are **always in a portable SQLite format**, whatever backend you run:
 
 Create and restore from **Settings → Backup**. On backup, BamDude exports every table to a temporary SQLite file and packages it with your archives and other data into a ZIP; on restore it imports that SQLite back into the active backend with type conversion.
 
-The copy keeps the counters of tables whose numbers must never repeat, such as spools and stock items, so a number deleted before the backup is not handed out again after a restore. Restoring an **older** backup brings back that backup's counters: numbers created after it can be handed out again. QR labels then still find the right spool, because they name the record itself.
+The copy keeps the counters of tables whose numbers must never repeat, such as spools and stock items, so a number deleted before the backup is not handed out again after a restore. Restoring an **older** backup brings back that backup's counters: numbers created after it can be handed out again. A v2 QR label still matches only its original spool record. If that record is absent from the restored backup, the scan is refused even if another spool receives the same number.
 
 For a native PostgreSQL dump of an external server, use `pg_dump` directly — the web UI always produces the portable format.
 
