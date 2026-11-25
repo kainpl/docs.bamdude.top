@@ -344,6 +344,13 @@ Ranking needs a database that folds Unicode case itself (a UTF-8 locale). On a `
 
 Large farms can raise these with `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` and `DB_POOL_USE_LIFO`. On PostgreSQL, `DB_POOL_PRE_PING=false` skips the connection check at checkout: a connection the server has already closed then fails on its first use instead of being replaced. SQLite ignores it. If you use an external PostgreSQL, make sure its own `max_connections` comfortably exceeds `(pool_size + max_overflow) × workers` — the bundled server is configured with a generous `max_connections` for exactly this.
 
+
+PostgreSQL therefore permits 80 connections per engine by default; SQLite permits 100. Explicit environment overrides are retained. SQLite requests wait for a free connection up to the pool timeout (30 seconds by default), then fail rather than opening another connection. A larger pool is a trade-off: SQLite WAL can retain database file descriptors up to the peak concurrent connection count. BamDude does not record that peak.
+
+`DB_POOL_PRE_PING` applies only to PostgreSQL. Unset or `true` checks a pooled connection before handing it out; `false` skips that check. With `false`, the first request using a dead connection can fail; a later fresh connection can work. Interrupted transactions are never replayed. Restart BamDude after changing a pool environment variable.
+
+On supported Unix hosts BamDude tries to raise its own soft open-file limit, without lowering it or changing the hard limit. Support bundles report that process's descriptors and limits; they do not count the bundled database child's descriptors. The startup log records the limit result.
+
 ---
 
 ## :material-clock-alert: Slow first-boot migrations

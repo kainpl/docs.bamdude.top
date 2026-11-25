@@ -265,3 +265,14 @@ The rest are read-only env mirrors — set them via environment variables. See [
 | Refresh-cookie `Secure` flag | `AUTH_REFRESH_COOKIE_SECURE` env | Auto-detected from request scheme when unset. |
 | Trusted reverse-proxy IPs | `TRUSTED_PROXY_IPS` env | Comma-separated. Required for accurate per-IP rate limiting behind nginx / Caddy. |
 | MFA-secret encryption key | `MFA_ENCRYPTION_KEY` env | Plaintext fallback works without it but logs a warning. |
+
+
+## :material-database: Database connection environment
+
+These are process settings, not editable Settings rows. Restart after a change. See [PostgreSQL](../features/postgresql.md) for limits and dead-connection behavior.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `DB_POOL_SIZE` | SQLite `10`, PostgreSQL `20` | Persistent pooled connections per engine. |
+| `DB_MAX_OVERFLOW` | SQLite `90`, PostgreSQL `60` | Extra connections above the pool size. Explicit values retain their existing meaning. |
+| `DB_POOL_PRE_PING` | PostgreSQL `true` | Check a connection before use; SQLite ignores it. With `false` the first use of a dead connection can fail. No transaction replay. |
