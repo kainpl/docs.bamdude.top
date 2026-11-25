@@ -202,7 +202,7 @@ description: Кожен ключ налаштувань — загальні, д
 | Key | Default | Ефект |
 |---|---|---|
 | `prometheus_enabled` | `false` | Увімкнути [`/metrics` endpoint](../features/prometheus.uk.md). |
-| `prometheus_token` | пусто | Bearer-token, потрібний на metrics-endpoint. Пусто = без auth (для local-only деплоїв). |
+| `prometheus_token` | пусто | Bearer-token, потрібний на metrics-endpoint. Обов’язковий після увімкнення; стара порожня конфігурація повертає 503. |
 
 ### Zigbee-датчики
 

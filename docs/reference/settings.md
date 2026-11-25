@@ -202,7 +202,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | Key | Default | Effect |
 |---|---|---|
 | `prometheus_enabled` | `false` | Enable the [`/metrics` endpoint](../features/prometheus.md). |
-| `prometheus_token` | empty | Bearer token required on the metrics endpoint. Empty = no auth (local-only deployments). |
+| `prometheus_token` | empty | Bearer token required on the metrics endpoint. Required when enabled; blank legacy configurations return 503. |
 
 ### Zigbee sensors
 
