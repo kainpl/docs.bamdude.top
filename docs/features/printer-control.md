@@ -552,6 +552,8 @@ Live fan badges in the controls row, showing the speeds the printer reports — 
 
 **Every fan the printer reports appears, on every model.** Older machines (P1S, P1P, X1C, A1) do not describe an air duct at all, so BamDude builds the same picture from the speeds they do report — which is exactly what Bambu Studio does before drawing its own panel. Those printers have working fan control too, not three read-only numbers.
 
+**Each fan carries the name Bambu Studio gives it on that model**, from the printer's description: the same fan id is the left auxiliary fan on a P2S and the right one on an X2D. The enclosure fan is the **Exhaust Fan** unless the model renames it, as only the X1 family and the P1S do (**Chamber Fan**).
+
 **A fan that does not exist does not appear.** Whether a machine has an auxiliary or chamber fan is answered by the printer's own capability flags, not by a list of model names — an A1 Mini has part cooling only, and reports a speed for the other two anyway, so the reported speed cannot be the evidence.
 
 ### What the air-duct mode does to each fan

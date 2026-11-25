@@ -197,12 +197,13 @@ If the retry also fails, the row is marked unavailable for that fetch and the ca
 
 ## :material-format-letter-matches: Wiki anchor parsing
 
-Versions are detected from the Bambu Wiki's "Firmware release history" pages (`wiki.bambulab.com/<model>/manual/<model>-firmware-release-history`). The parser pulls section-heading anchor IDs:
+Versions are detected from the Bambu Wiki's "Firmware release history" pages (`wiki.bambulab.com/<model>/manual/<model>-firmware-release-history`; the H2D Pro, H3C and P3C pages drop the model prefix: `…/manual/firmware-release-history`). The parser pulls section-heading anchor IDs:
 
 | Format | Example | Models |
 |---|---|---|
-| Dashed | `id="h-01030000-20260303"` | X1 / X1C / X1E / P1 / A1 / A1-mini / H2D / H2C / H2S / X2D |
+| Dashed | `id="h-01030000-20260303"` | X1 / X1C / X1E / P1 / A1 / A1-mini / H2D / H2C / H2S / X2D / P3C |
 | Undashed | `id="h-0102000020260409"` | P2S, X2D variants |
+| OTA heading | `id="ota-01010300"` (no date) | H3C |
 
 A fallback heuristic also scans heading text for the pattern `XX.XX.XX.XX (YYYYMMDD)`, accepting both ASCII parens `()` and **full-width parens `（）`** (U+FF08/U+FF09) — the latter shows up on the A1 / A1-mini / P2S pages because Bambu's wiki editor sometimes injects CJK punctuation.
 

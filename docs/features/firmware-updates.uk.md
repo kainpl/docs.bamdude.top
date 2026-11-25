@@ -197,12 +197,13 @@ Stale `buildId` повертає 403 (Cloudflare challenge) або 404 (path mov
 
 ## :material-format-letter-matches: Wiki anchor parsing
 
-Версії детектяться зі сторінок "Firmware release history" Bambu Wiki (`wiki.bambulab.com/<model>/manual/<model>-firmware-release-history`). Парсер тягне section-heading anchor IDs:
+Версії детектяться зі сторінок "Firmware release history" Bambu Wiki (`wiki.bambulab.com/<model>/manual/<model>-firmware-release-history`; у H2D Pro, H3C і P3C сторінка без префікса моделі: `…/manual/firmware-release-history`). Парсер тягне section-heading anchor IDs:
 
 | Формат | Приклад | Моделі |
 |---|---|---|
-| Dashed | `id="h-01030000-20260303"` | X1 / X1C / X1E / P1 / A1 / A1-mini / H2D / H2C / H2S / X2D |
+| Dashed | `id="h-01030000-20260303"` | X1 / X1C / X1E / P1 / A1 / A1-mini / H2D / H2C / H2S / X2D / P3C |
 | Undashed | `id="h-0102000020260409"` | P2S, X2D-варіанти |
+| Заголовок OTA | `id="ota-01010300"` (без дати) | H3C |
 
 Fallback-heuristic також скан-ить heading-текст по патерну `XX.XX.XX.XX (YYYYMMDD)`, приймаючи і ASCII-парени `()`, і **full-width парени `（）`** (U+FF08/U+FF09) — останні з'являються на A1 / A1-mini / P2S сторінках, бо Bambu wiki editor іноді інжектить CJK-пунктуацію.
 

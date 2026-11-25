@@ -33,6 +33,13 @@ recognizes its model name and code in the mirrored catalog, but N8 connection,
 printing, and laser features have not been verified. It is therefore not in
 the supported-model table or feature matrix yet.
 
+BambuStudio `v02.09.02.62` adds the **H3C** (a nine-nozzle rack and an AMS 3H)
+and the **P3C** (a seven-nozzle rack). BamDude recognizes their names, model
+codes and firmware release pages, so they can be added with the right model and
+get the firmware update check. Their nozzle racks, the H3C's AMS 3H and their
+chambers are not supported yet, and nothing about them has been verified on a
+printer, so they are not in the tables either.
+
 ---
 
 ## :material-printer-3d: Feature Highlights by Series

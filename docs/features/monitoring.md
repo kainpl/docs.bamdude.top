@@ -108,9 +108,9 @@ H2 printers expose extended nozzle metadata on hover:
 
 | Printer | Card | What you see |
 |---------|------|--------------|
-| **H2D / H2D Pro** | L/R nozzle hover card | Side-by-side detail for both nozzles — diameter, type, flow, wear, max temp, serial. The active nozzle is highlighted **Active** vs **Idle**. |
+| **H2D / H2D Pro** | L/R nozzle hover card | Side-by-side detail for both nozzles — diameter, type, flow, wear, used time and switch count (when the firmware reports them), max temp, serial. The active nozzle is highlighted **Active** vs **Idle**. |
 | **H2S** | Single-nozzle hover card | Wear, serial, max temp on hover over the nozzle temp tile. |
-| **H2C** | Nozzle rack card | 6-position tool-changer dock — every slot with diameter + filament colour, and its position number 1–6 underneath (the **R1**–**R6** the print dialog's rack picker names). Empty slots are placeholder tiles and keep their number; hover for full detail. The card takes only the width its six slots need. |
+| **H2C** | Nozzle rack card | 6-position tool-changer dock — every slot with diameter + filament colour, and its position number 1–6 underneath (the **R1**–**R6** the print dialog's rack picker names). Empty slots are placeholder tiles and keep their number; hover for full detail, including how long the nozzle has printed and how many times it has been switched in, when the firmware reports them. The card takes only the width its six slots need. |
 
 !!! info "L/R semantics — Active vs mounted"
     The L/R card flags the nozzle the printer is **currently using**, not just which one is mounted. On dual-extruder jobs that swap mid-print the highlighting follows the live state.
@@ -350,6 +350,8 @@ Each card surfaces a WiFi-strength glyph from the printer's MQTT report:
 | :material-wifi-strength-1: | Weak |
 
 Weak signal is the most common cause of "printer drops mid-print" + intermittent FTP errors — fix the WiFi before chasing dispatch bugs.
+
+A printer with an Ethernet port (X1E, X2D, the H2 family) that is wired with Wi-Fi off shows an **Ethernet** badge instead of the glyph. The X1 Carbon, P1S and P2S have no Ethernet port and always show their Wi-Fi signal.
 
 ---
 
