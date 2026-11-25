@@ -144,13 +144,14 @@ Sidebar → Firmware → pick a version per model → Upgrade
 - **Grouped by model.** Printers split into per-model tabs (`P1P/P1S (4)`, `A1 mini (2)`, …) — the firmware file and the on-screen apply step differ per model.
 - **One version per model, either direction.** Pick the version for each model — newer **or** older (rollback is first-class). The list shows every published version plus any you already hold in the store.
 - **Download once, push in parallel.** Each model's firmware is downloaded **once**, then FTP'd to every selected printer's SD card concurrently, capped by **Settings → General → File Manager → bulk concurrency** (default **2** — Bambu controllers don't love many simultaneous TLS handshakes).
+- **Track each printer in Upgrade Status.** Printers that are waiting show **Pending**. During a transfer, the bar follows the bytes sent. **Transferred to SD card** appears after the printer confirms the transfer. Failed rows include the reason. Reopening the page restores the current batch. Printer cards also show active transfers and link back to this page.
 - **Mid-print printers are skipped**, flagged on their row, never touched. Each printer goes through the [same idle check](#idle-only) as a single upload, repeated immediately before its own upload starts — one that picked up a job after the run began gets a refusal on its row instead of the file. A failure on one printer **doesn't stop the rest** — every printer gets its own result.
 - **"Update all available"** preselects every printer with a pending update; you still confirm the per-model version before launching.
 - As with the single-printer flow, the final **apply** is a step on each printer's own screen — the run finishes by showing the model-specific instruction for the printers it uploaded to.
 
 ### Update log
 
-The Firmware page's **Update log** tab records every run — timestamp, source (`bulk` vs `single`), per-printer `from → to` version and result. **Single-printer updates from the per-printer modal are logged here too**, so the journal is the one place to see all firmware activity across the farm.
+The Firmware page's **Update log** tab records every run — timestamp, source (`bulk` vs `single`), printer name, `from → to` version and result. Single-printer uploads from the printer modal are logged here too.
 
 ---
 

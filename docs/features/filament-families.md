@@ -40,6 +40,8 @@ You pick **printer profiles**, the way the slicers do ("Bambu Lab P1S 0.4 nozzle
 
 ### Managing what you authored
 
+In **From an existing preset**, **Slicer for presets** defaults to your preferred slicer and switches the list between Orca Cloud and Bambu Cloud. Imported profiles stay available. The cloud you push the new family to is chosen separately.
+
 The **Authored families** block under **Profiles → Local** lists every family you created, with per-cloud push state (pushed / edited since push / not pushed) and explicit **push / re-push** buttons for Bambu Cloud and Orca Cloud.
 
 !!! note "Editing and deleting"

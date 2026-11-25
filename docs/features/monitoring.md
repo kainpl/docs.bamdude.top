@@ -411,7 +411,7 @@ An empty panel is not the only answer: the modal tells a folder that is empty fr
 | **The printer's file service did not answer, so this folder could not be listed.** … | No connection, a transfer that failed, or an answer with a line BamDude could not read. |
 | **The printer is taking longer than usual to list this folder.** … | The listing is still running. The refresh button (:material-refresh:) joins it instead of starting another one. |
 
-If the folder was listed completely before, a listing that did not answer or is still running keeps that last complete listing on screen, under a note that says so: **Showing the last complete listing of this folder.**
+A yellow banner at the top explains a slow or failed listing. If a complete listing is available from before, its entries stay below the banner, with the note **Showing the last complete listing of this folder.** The empty-folder message appears after a complete listing confirms the folder is empty.
 
 !!! note "One transfer at a time"
     A printer's file service handles one session at a time, and BamDude sends it one at a time: a long download — a large timelapse, a 3MF being recovered — makes a listing wait until it has finished. The SD card and built-in storage each have a channel of their own.

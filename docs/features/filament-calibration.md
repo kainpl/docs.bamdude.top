@@ -32,7 +32,7 @@ The sliced `.gcode.3mf` is then FTP'd to the printer and run as a **real print t
 
 ### Choosing the slicer, the plate and the presets { #choosing-presets }
 
-The page that prints and the download page share one set of controls: the slicer cards (the choice is remembered for this printer), **Bed plate**, **Saved settings**, the cloud status with **Refresh**, the **Preset source** segment — **All**, **My Presets**, **Built-in**, the same remembered choice as in the [slice dialog](slicer-api.md#preset-lists) — and the **Printer profile**, **Process profile** and **Filament profile** fields. Process and filament profiles made for another printer are hidden here rather than grouped: a calibration print for the wrong printer only wastes a bed.
+The page that prints and the download page share one set of controls: the slicer cards (the choice is remembered for this printer), **Bed plate**, **Saved settings**, the cloud status with **Refresh**, the **Preset source** segment — **All**, **My Presets**, **Built-in**, the same remembered choice as in the [slice dialog](slicer-api.md#preset-lists) — and the **Printer profile**, **Process profile** and **Filament profile** fields. Process and filament profiles made for another printer are hidden here rather than grouped: a calibration print for the wrong printer only wastes a bed. The selected slicer shows its own cloud alongside imported and bundled presets. A renamed process or filament preset can inherit its printer and nozzle compatibility from its base profile. Automatic picks prefer suitable profiles from the selected printer's source.
 
 **On the page that prints:**
 

@@ -27,7 +27,7 @@ That's the whole feature. It's a shortcut for repeatable work, not a dispatcher:
 
 ## :material-play-circle-outline: Saving and using one
 
-**Save one** straight from the Slice dialog with **Save these settings** — it captures the presets you've already picked there.
+Use **Save these settings** in the Slice dialog or in a printer row in **Assemble project** to save its presets and bed plate.
 
 **Use one** from the same dialog: pick it under **Apply saved settings** and all four selections fill in at once. Then slice as usual and queue the result however you normally would — [straight to a printer](print-queue.md) or [into the auto-queue](auto-queue.md).
 
@@ -35,18 +35,18 @@ A line under the picker says what the set changed — *"Applied "name". Changed:
 
 ### Where saved settings can be applied
 
-The same list, **Saved settings**, is offered in three places; each fills the fields it has. Saving a set is done in the Slice dialog only.
+The same **Saved settings** list is offered in Slice, filament calibration and Assemble project. Each fills the fields it has.
 
 | Place | Fills |
 |---|---|
 | Slice dialog | Printer, process, every filament slot the set names, bed plate. |
 | [Filament calibration](filament-calibration.md) — the page that prints | Printer, process and bed plate. Only sets whose printer profile fits this printer and the chosen nozzle are listed; the filament stays the one of the chosen slot. |
 | [Filament calibration](filament-calibration.md) — the download page | Printer, process, bed plate and the first filament. |
-| [Assemble project](assemble-project.md) | Printer, process and the first filament, into the row whose list you used. The bed plate is not a row's and is left alone. |
+| [Assemble project](assemble-project.md) | Printer, process, first filament and bed plate, in the row whose list you used. |
 
 ### When a saved preset has been deleted
 
-Presets change. If a saved set references one that no longer exists, BamDude **does not** apply that slot — the field is not filled from the set — it keeps what it holds, and an automatic pick follows the printer the set chose — and the affected fields are named in a warning under the picker.
+Presets change. If a saved set references a preset that disappeared or belongs to the other slicer's cloud, BamDude **does not** apply that slot — the field is not filled from the set — it keeps what it holds, and an automatic pick follows the printer the set chose — and the affected fields are named in a warning under the picker.
 
 This matters: silently applying a dead reference would leave that dropdown blank while the dialog still looked ready to slice, and you'd send a job with a preset you never chose. Re-pick the flagged slot by hand and the warning clears.
 

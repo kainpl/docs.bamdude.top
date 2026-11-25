@@ -11,8 +11,8 @@ The layout is denser than a slicer's own auto-arrange: small parts go **into the
 
 ## :material-cursor-default-click: Starting an assembly
 
-1. Select one or more **STL**, **OBJ** or **STEP / STP** files in the library.
-2. Press **Assemble project** in the selection bar.
+- For a single **STL**, **OBJ** or **STEP / STP** file, open its **⋮** menu and choose **Assemble project**. The dialog opens for that file even if you have other files selected.
+- To assemble selected files together, tick their checkboxes and press **Assemble project** in the selection bar.
 
 If the selection holds another kind of file (a sliced 3MF, a G-code file), the button is disabled and its tooltip names the files that do not fit — the dialog never opens on a silently shortened list.
 
@@ -30,10 +30,13 @@ Each selected file is a row:
 
 ## :material-printer-3d: Printers
 
-Each printer row is a set of three presets — **Printer**, **Process**, **Filament** — from the same lists the [slice dialog](slicer-api.md#preset-lists) uses: your local presets, Orca Cloud, Bambu Cloud and the standard ones, grouped by source, with profiles for another printer in a trailing **Other printers** group. **Add printer** adds another row, up to 8.
+**Slicer for presets** starts with your preferred slicer and selects either Orca Cloud or Bambu Cloud for all printer rows. Imported and standard profiles are available with either choice. If a manually chosen or recorded preset is from the other cloud, switch back or choose an available preset before assembling.
+
+Each printer row is a set of three presets — **Printer**, **Process**, **Filament** — from the same lists the [slice dialog](slicer-api.md#preset-lists) uses: your local presets, the selected slicer's cloud and the standard ones, grouped by source, with profiles for another printer in a trailing **Other printers** group. **Add printer** adds another row, up to 8. A renamed process or filament preset can inherit its printer and nozzle compatibility from its base profile. Automatic picks prefer suitable profiles from the selected printer's source.
 
 - **Above the rows**, once for all of them: the cloud status with **Refresh**, the **Preset source** segment (**All**, **My Presets**, **Built-in**) and the switches **Only models of my farm** and **Only filaments that are loaded** — the same ones as in the [slice dialog](slicer-api.md#farm-filters), and the same remembered choice. The loaded filaments are counted for each row's own printer.
-- **In each row**, **Saved settings** fills that row's printer, process and first filament from a [saved set](slicer-pipelines.md); the other rows stay as they are.
+- **In each row**, **Saved settings** fills the printer, process, first filament and bed plate from a [saved set](slicer-pipelines.md). **Save these settings** saves the current row's three presets and bed plate to the same list as the Slice dialog.
+- **Bed plate** picks the plate type to write into that row's 3MF. A new row starts with the last choice remembered in the browser, or **Textured PEI Plate**. **Textured Cool Plate** is available with OrcaSlicer.
 - **A new row** starts on a printer profile with a 0.4 mm nozzle (never on a bare model entry), the process that fits it best and a PLA filament — taken from all the lists, whatever the filters show.
 - **Changing a row's printer** picks that row's automatic process and filament again; a process or filament you chose yourself stays.
 - **A preset that is no longer in the lists** — the row's printer profile, or a process or filament chosen by hand, from a saved set or by the project being laid out again — holds the row: *A chosen preset is no longer available — choose another one*. It holds until you choose another, or until **Refresh** lists it again, when the row takes it back. An automatic process or filament that disappears is simply picked again.
@@ -82,7 +85,7 @@ The conversion is strict on purpose. A model is taken only whole: a file that re
 
 ## :material-refresh: Re-layout
 
-A project assembled here remembers what it was made from: the parts, their quantities, the presets and the layout settings. Its menu has **Re-layout**, which opens the same dialog with those values — change a quantity, the gap or the rotation and lay it out again. The models come from the project itself, so the original STL / STEP files may already be gone.
+A project assembled here remembers its parts, quantities, presets, bed plate and layout settings. **Re-layout** opens the same dialog with those values. Change a quantity, the gap or the rotation and lay it out again. The models come from the project itself, so the original STL / STEP files may already be gone.
 
 - **Move the previous file to the trash** (on by default) replaces the old project. It needs the right to delete that file; a file a print job is using is kept. A file in a linked external folder has no trash — it is removed from the library and stays on its share, and the summary says so.
 - For a project saved as a file per plate, re-layout works on the whole set and needs every file of it in the library.
