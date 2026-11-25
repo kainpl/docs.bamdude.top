@@ -288,6 +288,8 @@ Switching to either PostgreSQL (bundled or external) does the migration for you,
 
     Printer numbers are never handed out again either. PostgreSQL starts above the highest printer number the SQLite database remembers, including numbers that only the queues, records, API keys, order plans, AMS names or settings of deleted printers still carry.
 
+    This holds for every move that completes, within the same line of data, and for numbers up to 2,147,483,647. If the SQLite file holds a value PostgreSQL cannot store in its column, the move is refused and rolled back, and the PostgreSQL database stays as it was before the attempt.
+
 ### What does NOT migrate
 
 - FTS5 virtual tables (replaced by PostgreSQL `tsvector`)
