@@ -568,7 +568,7 @@ The bold central line on each label reuses the same **Spool display name** templ
 
 ### How the QR deeplink resolves
 
-New built-in inventory labels include a key tied to the original spool record. Renaming the spool or editing its lot keeps the label valid. The editor checks that record again when you save from a current label. Deleting the record invalidates its label even if SQLite later reuses the spool number. Existing number-only labels still open the inventory by number. Reprint them to use **Scan spool label**. Spoolman labels keep their existing links.
+New built-in inventory labels include a key tied to the original spool record. Renaming the spool or editing its lot keeps the label valid. The editor checks that record again when you save from a current label. Deleting the record invalidates its label. A deleted spool's number is not handed out again; a number reused before this rule, or after restoring an older backup, still cannot make the label find another spool. Existing number-only labels still open the inventory by number. Reprint them to use **Scan spool label**. Spoolman labels keep their existing links.
 
 The address printed in the link comes from the first available source below.
 

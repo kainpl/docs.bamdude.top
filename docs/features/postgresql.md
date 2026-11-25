@@ -284,10 +284,16 @@ Switching to either PostgreSQL (bundled or external) does the migration for you,
 
     BamDude keeps the SQLite database's migration history, applies pending migrations in PostgreSQL, and verifies the resulting schema before opening the farm.
 
+    Spool numbers are never handed out again. PostgreSQL starts above the highest number the SQLite database remembers, including numbers that only the usage history, label jobs or slot records of deleted spools still carry.
+
 ### What does NOT migrate
 
 - FTS5 virtual tables (replaced by PostgreSQL `tsvector`)
 - WAL/SHM files (SQLite-specific)
+- Usage history of spools deleted in older versions, before a used spool had to be archived. Their numbers stay reserved. The log names how many such rows the SQLite database held.
+
+!!! note "An existing PostgreSQL database"
+    The upgrade raises the spool number sequence only when it is a plain one: increment 1, cache 1, no cycle. BamDude always creates it that way. If someone has changed it, the upgrade stops and the log names the setting to put back.
 
 !!! tip "Reverting to SQLite"
     Remove `DATABASE_URL` (or set it empty) and restart. Your original data is still in `bamdude.db.migrated` — rename it back to `bamdude.db`.
@@ -303,6 +309,8 @@ Backups are **always in a portable SQLite format**, whatever backend you run:
 - no dependency on `pg_dump`.
 
 Create and restore from **Settings → Backup**. On backup, BamDude exports every table to a temporary SQLite file and packages it with your archives and other data into a ZIP; on restore it imports that SQLite back into the active backend with type conversion.
+
+The copy keeps the counters of tables whose numbers must never repeat, such as spools and stock items, so a number deleted before the backup is not handed out again after a restore. Restoring an **older** backup brings back that backup's counters: numbers created after it can be handed out again. A v2 QR label still matches only its original spool record. If that record is absent from the restored backup, the scan is refused even if another spool receives the same number.
 
 For a native PostgreSQL dump of an external server, use `pg_dump` directly — the web UI always produces the portable format.
 
