@@ -147,9 +147,12 @@ Click the trash icon. If the user owns content (archives, queue items, library f
 
 | Choice | Effect |
 |---|---|
-| **Delete user AND their items** | Hard-deletes archives, queue items, library files, and any other owned content. Cascades. |
+| **Delete user AND their items** | Removes eligible archives, library files and both queue tiers in one bounded transaction. Consumption and physical stock history survive. |
 | **Delete user, keep items** | Removes the user; their content becomes ownerless and only `*_all` holders can modify it afterwards. Activity-tracking history (e.g. "Started by alice") is preserved -- the username is shown as-recorded, even though the user row is gone. |
-| **Re-assign to admin** | Transfers ownership of every owned row to the chosen admin in one transaction. Useful for offboarding employees. |
+
+Deleting content is limited to 8 archive/library/queue parents, including referenced library sources and 1,000 affected rows, including credentials and sessions. Large accounts receive `409 user_content_delete_too_large`: remove content through its ordinary pages and retry. `409 user_content_delete_active` means printing, a plate answer, a SWAP debt, current queue occupancy or another retained execution must first be resolved through the normal queue/recovery controls. Other ownership and received-output rules can also refuse deletion. A refusal leaves the account and its content unchanged.
+
+Successful **Delete user AND their items** returns HTTP 200 with counts and affected order names. The UI names those orders: replan any pending work you still need, since removing it does not automatically return planned quantities. **Delete user, keep items** continues to return HTTP 204 with no body. Captured work owned by another user survives removal of its original navigation links.
 
 You cannot delete your own account. Removing a user from **Administrators** also clears their legacy admin role. An existing session uses the reduced permissions on its next request. BamDude refuses a demotion, deactivation, or deletion that would leave no active administrator.
 

@@ -158,6 +158,20 @@ Create custom groups for granular control. The interactive `/docs` browser shows
 
 ---
 
+### Deleting an account and its content
+
+`DELETE /api/v1/users/{user_id}?delete_items=true` requires an administrator with `users:delete`, and the normal filing/consequence rights for any affected order work. Success is **200 JSON**, not 204:
+
+```json
+{"deleted":true,"counts":{"archives":1,"library_files":0,"queue_items":0,"auto_queue_items":0},"affected_orders":[]}
+```
+
+`affected_orders` contains authorized `id`/`name` snapshots and removed `prints`/`jobs` counts. Replan removed pending work as needed; planned quantities are not automatically returned. The whole transaction refuses with **409** and `detail.error` equal to `user_content_delete_active`, `user_content_delete_too_large`, or `user_content_delete_changed`. Resolve retained/active work through ordinary queue or recovery controls; remove large content sets through their normal pages; retry a changed plan. The bound is 8 parents (including referenced library sources) and 1,000 affected rows, including account/session/key descendants. Filing or received-output refusals retain their own status and reason. A refusal changes no account/content rows and unlinks no files.
+
+With `delete_items=false` (the default), success remains **204 with no body** and content becomes ownerless. Self-deletion and removing the last administrator are refused in both modes. Physical stock/usage history and immutable completion facts are preserved.
+
+---
+
 ## :material-routes: Endpoint groups
 
 The 43 route modules under `backend/app/api/routes/` are registered under the `/api/v1` prefix. Major groups at a glance:
