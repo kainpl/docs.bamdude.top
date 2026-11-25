@@ -285,6 +285,7 @@ Spoolman keeps a spool's totals and no per-print log, so BamDude keeps its own r
 - **The record starts with the first print BamDude charges.** Prints charged before BamDude kept this record cannot be recovered from Spoolman, which stores no per-print data.
 - **Removing records does not touch Spoolman.** Deleting one record or clearing a spool's history removes BamDude's records only; the spool's weight in Spoolman is not changed.
 - **History belongs to a Spoolman address.** When the Spoolman URL changes, the records made for the previous address are kept aside and the views start empty for the new one; putting the previous address back brings its history back. If the new address is the same Spoolman database (the host was renamed or moved), **History** says how many records are kept aside and offers **Same database — keep the history** to bring them over.
+- **The address or database cannot change during a print.** While any print is accounted in Spoolman, saving a new Spoolman address or declaring a new database behind the same address is refused until the print ends — the spool numbers that print recorded belong to the database it started on. Switching Spoolman on or off and **Same database** still work. While a finished print is being charged, any change of these settings is refused for a moment.
 - **Forecast needs Spoolman.** The stock is kept in Spoolman, so while Spoolman does not answer there is no forecast to show.
 
 The [Git backup](backup.md) carries this history with the **Spool Inventory** category and restores it onto the Spoolman the restoring installation uses.
@@ -338,6 +339,7 @@ What an assignment does to the slot:
 - **A pressure-advance profile is selected by default.** When no profile was linked to the spool by hand, the slot gets the active calibration for that printer, filament, nozzle diameter, flow type and extruder — as in the built-in inventory.
 - **An archived spool cannot be assigned** to a slot.
 - **Archiving or deleting a spool releases its slot.** The slot is freed on the printer card and the next print from it is not charged to that spool. While the spool sits in a slot of a printer that is printing, archiving and deleting are refused until the print ends.
+- **A spool BamDude has printed with is archived, not deleted.** **Delete** is refused for a Spoolman spool that has usage history in BamDude for the current Spoolman address, that a running print can still charge (by its slot, its tray tag or the print's journal), or that a print is finishing with — archive it instead. A delete Spoolman confirms also removes the spool's slot and K-profile links in BamDude; if those could not be removed, or a slot of a running print keeps the spool until the print ends, the message says so. If Spoolman does not confirm a delete, BamDude says so and changes nothing locally — check the spool in Spoolman.
 - **While Spoolman is switched on but unreachable**, the printer card neither offers nor accepts an assignment — it says *Spoolman is unreachable. Spools can be assigned once it responds again.* Spools of the built-in inventory are not offered in its place.
 
 ### :material-flash: K-profile auto-reapply on AMS change
@@ -361,6 +363,7 @@ The full Spoolman inventory feature ships under `/api/v1/spoolman/inventory/*` (
 - `GET /spoolman/inventory/spools` + `GET /spoolman/inventory/spools/{id}` — list / single spool with BamDude joins (slot assignment, storage location, K-profile counts).
 - `POST /spoolman/inventory/spools` + `POST /spoolman/inventory/spools/bulk` + `PATCH /spoolman/inventory/spools/{id}` — create / bulk-create / update.
 - `POST /spoolman/inventory/spools/{id}/archive` + `/restore` — soft-delete via Spoolman's archive flag. Archiving releases the spool's slot and answers `409` while that slot feeds a running print.
+- `DELETE /spoolman/inventory/spools/{id}` + `POST /spoolman/inventory/spools/bulk-delete` — delete in Spoolman. Answers `409` with a code — `spool_in_use` (with `reasons`), `spool_feeds_print`, `print_closing`, `spool_state_changed` or `spoolman_source_changed` (try again) — and nothing is sent to Spoolman; `504` / `502` `spoolman_outcome_unknown` when Spoolman did not confirm. A confirmed delete answers `{"status": "deleted"}`, with a `warning` when its local cleanup has something to say. The bulk answer counts `deleted`, lists `warnings` and `errors` (with `code` and `reasons`); duplicates are ignored.
 - `POST /spoolman/inventory/slot-assignments` + `DELETE /spoolman/inventory/slot-assignments/{id}` — assign / unassign.
 - `GET /spoolman/inventory/slot-assignments` — list-all-enriched (joined with spool data).
 - `POST /spoolman/inventory/spools/{id}/sync-weight` — pull current AMS weight into the spool row.
