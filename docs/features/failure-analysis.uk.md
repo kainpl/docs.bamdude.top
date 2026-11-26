@@ -165,7 +165,7 @@ Failure Analysis каже вам, *що вже зламалося*. Щоб зу�
 
 | Інструмент | Коли |
 |------------|------|
-| [Obico AI Detection](obico.md) | Поки друк іде — захоплює камеру, класифікує кадри, тригерить notify / pause / pause+power-off |
+| [Obico AI Detection](obico.md) / [OctoEverywhere](octoeverywhere.md) | Поки друк іде — обраний детектор ферми перевіряє камеру й тригерить notify / pause / pause+power-off |
 | **Failure Analysis** | Постфактум — ріжете історію архіву на патерни |
 | [Notifications](notifications.md) | У момент fail'у — Telegram/Discord/email/Pushover/ntfy/HA push |
 

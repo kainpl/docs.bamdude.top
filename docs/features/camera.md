@@ -628,7 +628,7 @@ that remains the per-print choice made by the slicer or printer.
 
 ## :material-cctv: Other cameras (not tied to a printer)
 
-An external camera above is a **replacement** for one printer's camera: that printer's live view, finish photo, plate check and Obico frames all come through it. A camera that watches a room, a shelf or a filament dryer is a different thing, and lives in its own list.
+An external camera above is a **replacement** for one printer's camera: that printer's live view, finish photo, plate check and failure-detection frames all come through it. A camera that watches a room, a shelf or a filament dryer is a different thing, and lives in its own list.
 
 1. **Settings → Camera → Other cameras → Add camera.**
 2. Give it a **name** (it is what the tile, the button and the window title say, so it must be unique), pick the **type** — MJPEG, RTSP, Snapshot or USB — and enter the **URL** or device path. The same optional **Snapshot URL** override and **rotation** as above are available.
@@ -643,7 +643,7 @@ Where it then appears:
 **Show on the wall** switches a camera off without deleting it: the tile and the button disappear and its stream and snapshot routes stop answering, while the settings stay for later.
 
 !!! note "What a standalone camera never does"
-    It does not take finish photos, check the build plate, feed Obico's failure detection, record a layer timelapse, or switch a chamber light on: every one of those belongs to a printer, and this camera has none. It also never replaces a printer's camera — if you want that, use **External Cameras** above.
+    It does not take finish photos, check the build plate, feed failure detection, record a layer timelapse, or switch a chamber light on: every one of those belongs to a printer, and this camera has none. It also never replaces a printer's camera — if you want that, use **External Cameras** above.
 
 !!! tip "One connection per camera"
     Everyone watching the same standalone camera shares one upstream connection, so a USB camera — which allows exactly one reader — does not drop the first viewer when a second opens it. A snapshot taken while somebody is watching reuses the live frame rather than opening a competing reader. Closing one view of a standalone camera does not stop it for the others.
@@ -659,7 +659,7 @@ A dark chamber makes a dark photo. BamDude can switch the chamber light on for t
 
 1. **Settings → Camera → Light for the camera.** Off by default — nothing changes for a farm that does not switch it on. This is the master switch: with it off, nothing below applies.
 2. In the same card, the **External cameras** list, per printer: **Light for the camera** — *As on the farm* / *No*. The printer that must not glow towards the window says *No*. The selector is shown only while the farm toggle is on, and not for a connected printer that has reported no controllable light.
-3. **Also for Obico failure detection** — a separate toggle, off by default, shown only when the farm toggle is on and Obico detection is enabled. Obico looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
+3. **Also for the failure detector** — a separate toggle, off by default, shown only when the farm toggle is on and a failure detector (Obico or OctoEverywhere) is chosen. The detector looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
 
 Two rules make it safe to leave on:
 

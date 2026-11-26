@@ -194,7 +194,7 @@ BamDude обмежує частоту запитів на endpoint-ах авте
 | `/local-backup/*`, `/git-backup/*` | Провайдери бекапів | запуск, відновлення, розклад |
 | `/maintenance/*`, `/kprofiles/*` | Облік сервісного обслуговування + K-профілі | журнал, заплановане, CRUD |
 | `/external-links/*`, `/ams-history/*` | Різні UX | посилання дашборду, історія зміни слотів AMS |
-| `/metrics`, `/webhook/*`, `/obico/*`, `/virtual-printers/*` | Інтеграції | метрики Prometheus, вхідні webhook-и, Obico AI, віртуальний принтер (ціль для slicer-а) |
+| `/metrics`, `/webhook/*`, `/obico/*`, `/octoeverywhere/*`, `/failure-detection/*`, `/virtual-printers/*` | Інтеграції | метрики Prometheus, вхідні webhook-и, AI-виявлення збоїв (Obico, OctoEverywhere і спільний стан для карток принтерів), віртуальний принтер (ціль для slicer-а) |
 
 Повний перелік є в `/docs` — ця таблиця лише вказує, де шукати.
 

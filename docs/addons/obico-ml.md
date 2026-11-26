@@ -78,7 +78,7 @@ Do not reuse a full Obico installation directory. This script neither migrates n
     bash "$HOME/obico-ml/obico-ml.sh" token
     ```
 
-2. Open **Settings → AI failure detection** in BamDude. Set **Obico ML API URL** to `http://10.0.0.20:3333` and paste the token into **ML API token**. Use the base URL, without `/p/`, `/hc/` or `/api/v1/octo/`.
+2. Open **Settings → Failure Detection** in BamDude and choose **Obico (self-hosted)** in **Failure detector**. Set **Obico ML API URL** to `http://10.0.0.20:3333` and paste the token into **ML API token**. Use the base URL, without `/p/`, `/hc/` or `/api/v1/octo/`.
 3. Tell the ML container where to fetch camera frames from. On the same page, set **BamDude address for the ML API (optional)** to the address of **BamDude** as the ML container reaches it — for example, `http://10.0.0.10:8000` if BamDude is served on that address and port — and press **Save connection**. `localhost` inside the ML container means the container itself. The ML container this script creates runs in its own Compose project, so use BamDude's LAN address; a Docker service name such as `http://bamdude:8000` works only when you have put both containers on one Docker network. If you leave the field empty, **Settings → Network → External URL** is used instead, and then that address must be reachable from the ML container without a login page in front of it.
 4. Enable detection, choose the printers and use **Test**. Start with **Notify only** while assessing the camera view and sensitivity.
 5. During an active print, verify that the analysed-frame count increases. This confirms the camera → BamDude → ML path, beyond a successful health check.
