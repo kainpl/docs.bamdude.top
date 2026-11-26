@@ -129,6 +129,8 @@ The extra fields BamDude keeps on a spool (the RFID tag, the slicer preset, the 
 !!! warning "Switching the tracking mode removes slot assignments"
     Choosing **Built-in Inventory** or **Spoolman** under **Settings → Filament → General → Filament Tracking** removes every AMS slot assignment of the mode you leave — each mode keeps its own, and in the new one spools are assigned to slots anew. The page therefore asks before it switches, saying how many assignments go and which printers are printing right now: filament those prints use reaches neither inventory. Nothing is switched by the click alone.
 
+    A spool being put into a slot at that moment is waited for, and its assignment goes with the others; if that takes too long, the switch says so and asks to try again. An assignment that arrives during the switch is refused — make it again in the mode now in use. The same holds when the mode changes through a settings restore from Git.
+
     A print that finishes and cannot charge a slot it drew from — its assignment was removed during the print, or it never had one — sends a **Filament not charged** notification naming the slots and the grams. It rides the **Missing spool assignment** toggle of your notification providers.
 
 ### :material-sync-circle: What syncs
