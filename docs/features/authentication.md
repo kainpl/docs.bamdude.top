@@ -282,7 +282,7 @@ Keys are full LDAP group distinguished names (DNs), matched case-insensitively, 
 If no mapping matches, provisioning uses the configured default group; without a default, assign groups manually.
 
 !!! info "Group lookup"
-    Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. If the sync would remove the last active administrator, that sign-in is refused until the directory grants the admin group again or another active administrator is available. This does not add OIDC group synchronization.
+    Group lookup adapts to the directory's available schema: AD `memberOf`, OpenLDAP/lldap `member` or `uniqueMember`, and POSIX `memberUid`/`gidNumber`. A failed or incomplete lookup blocks that LDAP sign-in instead of treating missing results as an empty group list and granting the default group. A successfully provisioned user is not immediately synced a second time. Later logins replace only groups managed by the mapping/default-group configuration; manual assignments outside that set remain. If the sync would remove the last active administrator, that sign-in is refused until the directory grants the admin group again or another active administrator is available. OIDC providers sync groups the same way — see **Group sync** under OIDC / SSO below.
 
 ### Provisioning
 
@@ -495,10 +495,25 @@ BamDude supports OpenID Connect single sign-on against any standards-compliant p
 | **Client secret** | Fernet-encrypted at rest when `MFA_ENCRYPTION_KEY` is set. |
 | **Scopes** | Default `openid profile email`. Add provider-specific scopes if needed. |
 | **Claim mapping** | Which OIDC claim maps to BamDude username / email. |
-| **Auto-create users** | Off by default -- new logins must match an existing local user by email. On = auto-create the user automatically (placed in the group set by **Default group** below). |
-| **Default group** | Group new auto-created users land in. Defaults to **Viewers (read-only)** for safety; pick a custom group for tenant-internal SSO setups where read-only is too restrictive. The picker is sourced from the live group list, so any custom group you create in **Settings → Authentication → Groups** is selectable here. If the chosen group is later deleted, new logins fall back to **Viewers**. |
+| **Auto-create users** | Off by default -- new logins must match an existing local user by email. On = auto-create the user automatically (it gets the group set by **Default group** below at its first completed sign-in). |
+| **Default group** | Group an account created through OIDC gets at its first completed sign-in, together with its mapped groups. Defaults to **Viewers (read-only)** for safety; pick a custom group for tenant-internal SSO setups where read-only is too restrictive. The picker is sourced from the live group list, so any custom group you create in **Settings → Authentication → Groups** is selectable here. If the chosen group is later deleted, new logins fall back to **Viewers**. |
+| **Group claim** | The ID-token claim that carries the IdP groups. Default `groups`. |
+| **Group mapping** | IdP group → BamDude group. The mapped groups follow the IdP at every sign-in — see **Group sync** below. Empty = no sync. |
 
-The login page renders an "Sign in with `<provider>`" button per configured provider, below the password form.
+The login page renders an "Sign in with `<provider>`" button per configured provider, below the password form. A failed OIDC sign-in returns to the login page with the reason, and does not start the automatic SSO redirect again.
+
+### Group sync
+
+With a **Group mapping**, BamDude takes a user's groups from the identity provider at every OIDC sign-in.
+
+- **Managed groups** are the BamDude groups the mapping names. At every completed sign-in the user's managed groups become exactly the ones the IdP grants now; several IdP groups can point at one BamDude group. Groups outside the mapping stay as assigned by hand. Adding someone by hand to a managed group lasts until their next OIDC sign-in.
+- **When it applies.** Only when the sign-in completes: at the exchange, or after 2FA when the account has it. An abandoned, failed or refused sign-in changes nothing. Sessions already open and the owner's API keys read the new rights on their next request. Signing in with a password does not sync groups.
+- **The claim.** Set the IdP to send a JSON array of strings in the **Group claim** (`groups` by default). Names match exactly, case included, with surrounding spaces trimmed; a single string counts as one group. A missing claim means no groups, so the managed groups are removed. An incomplete list — Entra ID's group overage (`_claim_names`, `hasgroups`) — or groups in any other form refuse the sign-in and change nothing.
+- **Administrators.** When the mapping includes Administrators, the IdP decides admin rights, the legacy admin role included. A sign-in that would take them from the last active administrator is refused, and nothing changes. Keep a separate local administrator outside the mapping: `python -m backend.app.cli reset_admin` only works once no active administrator is left.
+- **Changing the mapping.** A group removed from the mapping is no longer managed, and users keep it until you remove them by hand. An empty mapping turns sync off and leaves the groups as they are.
+- **A sign-in in progress.** If the provider's settings change between the redirect to the IdP and the end of the sign-in — it is disabled, its issuer, client, secret, scopes, claims, mapping, default group or account-linking switches change, or it is deleted and created again — that sign-in is refused and has to be started again. A sign-in also expires 10 minutes after the IdP answers, or when its ID token expires if that comes first.
+- **New accounts.** An account created through OIDC has no groups at first; its default group and its mapped groups arrive together at its first completed sign-in. A first sign-in that is never completed leaves an account without rights.
+- **A damaged mapping** — one written into the database outside BamDude — refuses OIDC sign-in through that provider. Settings marks it as damaged; saving the form keeps it as it is, and **Replace the mapping** writes a new one.
 
 ### Declaring a provider in environment variables
 
@@ -525,6 +540,8 @@ The optional variables carry the same defaults they have in the UI:
 | `BAMDUDE_OIDC_ICON_URL` | *(empty)* |
 | `BAMDUDE_OIDC_AUTOLOGIN` | `false` |
 | `BAMDUDE_OIDC_DEFAULT_GROUP` | *(unset — falls back to the UI default)* |
+| `BAMDUDE_OIDC_GROUP_CLAIM` | `groups` |
+| `BAMDUDE_OIDC_GROUP_MAPPING` | *(unset — no group sync)*. A JSON object: IdP group → **exact** BamDude group name, e.g. `{"farm-admins": "Administrators", "farm-ops": "Operators"}` |
 
 Booleans accept `true/1/yes/on` and `false/0/no/off`.
 
@@ -538,6 +555,7 @@ Booleans accept `true/1/yes/on` and `false/0/no/off`.
     - Values are **trimmed** — a secret mounted from a file or written as a Kubernetes block scalar does not smuggle in a trailing newline that would only fail on the first sign-in attempt.
     - An **unrecognised** true/false value is refused with a log line instead of being guessed at, and the whole config is skipped: whatever was already running stays running.
     - `BAMDUDE_OIDC_DEFAULT_GROUP` is a group **name**, not an ID — IDs differ on every install. A name matching no group refuses the config rather than quietly falling back to Viewers.
+    - `BAMDUDE_OIDC_GROUP_MAPPING` names groups as well. A name matching no group, or a value that is not a JSON object of strings, refuses the config the same way. A full config without the group variables resets the claim to `groups` and the mapping to none.
     - A bad configuration **never stops the app from starting**.
 
 Everything above is also documented in `.env.example`.
