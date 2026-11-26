@@ -88,7 +88,7 @@ The loop polls each enabled, currently-printing printer at the configured interv
 
     | Action | What happens |
     |---|---|
-    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the detector, the confidence score, the action taken, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
+    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the detector, the confidence score, the action taken, what became of the pause and the power, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
     | `pause` | The same notification at the alert level; at the pause level, sends a pause MQTT command to the printer and notifies again, naming the pause. |
     | `pause_and_off` | As `pause`, and at the pause level also turns off the bound smart plug. Use this for overnight unattended workflows where you'd rather kill power than waste filament. |
 
