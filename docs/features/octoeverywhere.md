@@ -19,7 +19,7 @@ BamDude can watch running prints with [OctoEverywhere](https://octoeverywhere.co
 
 - While **Off** is chosen, both panels are shown so you can set either detector up before choosing it.
 - Before you choose OctoEverywhere, the field says which printers it would watch: all of them, or the ones in its list.
-- While a panel below is still saving its changes — say, a printer you just took off the list — the field waits, so a detector is never switched on with a list the server has not received yet.
+- While a panel below has changes that are not saved yet — say, a printer you just took off the list — its detector cannot be chosen, so a detector is never switched on with a list the server has not received. **Off** can always be chosen.
 - Switching detectors stops the old one before its next camera frame or API call. The new one starts watching the running prints from scratch.
 - A pause or a power cut happens **once per print for both detectors together**. Switching the detector mid-print may send another notification, never a second pause.
 
