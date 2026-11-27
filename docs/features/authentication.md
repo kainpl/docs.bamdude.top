@@ -181,14 +181,14 @@ System groups (Administrators / Operators / Viewers) cannot be deleted, and thei
 A group can be limited to some printers. Open **Settings → Authentication → Printer access** and work **By group** or **By printer**:
 
 - **Limit to selected printers** turns the limit on for a group. Pick printers one by one, or tick whole **Locations**: a location gives every printer standing in it or in any location below it, printers placed there later too.
-- A member of a limited group sees and controls only the printers the group reaches — the printer list, the queues, the print history, statistics, cameras, smart plugs, sensors, maintenance, firmware and notifications. Another printer answers as if it did not exist.
+- A member of a limited group sees and controls only the printers the group reaches — the printer list, the queues (Auto Queue jobs already handed to a printer included), the print history, statistics, the **Information** page, cameras, smart plugs, sensors, maintenance, firmware and notifications. Another printer answers as if it did not exist.
 - A group that is not limited limits nothing. A team group therefore combines with **Operators** or **Viewers** without widening them, and a person in no limited group keeps every printer. Several limited groups add up. **Administrators** is never limited.
 - **Who has access** in a printer card's menu opens the page on that printer.
 
 What follows the person:
 
 - an **API key** reaches the printers on its own list that its owner reaches ([API keys](api-keys.md));
-- a **Telegram chat** reaches the printers on its own list that its group reaches — the linked user adds nothing — and a chat limited to printers does not add Auto Queue jobs ([Telegram permissions](telegram-auth.md));
+- a **Telegram chat** reaches the printers on its own list that its group reaches — the linked user adds nothing; its daily digest lists only their events, and a chat limited to printers does not add Auto Queue jobs ([Telegram permissions](telegram-auth.md));
 - **Cam Wall**, streaming-overlay and status-monitor links show their owner's printers ([Camera](camera.md));
 - an **Auto Queue** job goes only to its author's printers, and waits with the reason when none of them fits ([Auto Queue](auto-queue.md#eligibility-rules)). When a limited person is deleted, their waiting jobs wait for an administrator to start them.
 

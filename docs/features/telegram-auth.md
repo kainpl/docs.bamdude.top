@@ -47,7 +47,7 @@ The bot middleware checks permissions before executing commands:
 3. Checks if the group has the required permission
 4. Allows or denies the action
 
-A chat's **printers** are those on its own printer list that its group reaches, when the group is limited to printers ([Printer access](authentication.md#printer-access)); the linked user adds nothing. A chat limited to printers — by its list or by its group — does not add Auto Queue jobs: it queues to a printer it reaches.
+A chat's **printers** are those on its own printer list that its group reaches, when the group is limited to printers ([Printer access](authentication.md#printer-access)); the linked user adds nothing. A chat limited to printers — by its list or by its group — does not add Auto Queue jobs: it queues to a printer it reaches. Its **daily digest** lists the events of those printers and the events of no printer.
 
 ### Permission Examples
 
