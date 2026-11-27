@@ -128,7 +128,7 @@ The dialog opens on the plate that was printed. Queueing an archive — to a pri
 
 When an urgent job arrives, choose its printer in the **Schedule Print** dialog, leave **ASAP** selected, then tick **Run next**. The new job goes before the other **pending** jobs on that printer. It does not interrupt a print that has already started or been claimed for dispatch.
 
-For a multi-plate file, every selected plate and its requested copies are inserted together in the order shown in the dialog. If you selected several printers, each queue is handled independently: one unavailable printer does not undo work accepted by another.
+For a multi-plate file, every selected plate and its requested copies are inserted together in the order shown in the dialog. If you selected several printers, each queue is handled independently: one unavailable printer does not undo work accepted by another. Several files scheduled in one run keep the order they were chosen in: each file's jobs go behind the ones the run already placed.
 
 **Run next** is intentionally unavailable for **Queue Only**, scheduled work, and the **Auto-Queue**. Those modes have their own dispatch semantics; the option does not reserve a printer or choose the first printer that will become free.
 

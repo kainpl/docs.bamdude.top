@@ -318,7 +318,11 @@ Queue sliced files for later printing without creating archives upfront. Archive
 
 Tick the files you want and press **Schedule**. The button only appears when the selection contains something sliced — an STL cannot be printed, so there is nothing to offer.
 
-There is no separate bulk dialog. The ordinary scheduling window opens for the first file, marked **1/3** beside its title, then for the next one, and so on. Every file keeps the full set of choices: a printer or several, or the auto-queue; which plates; filament mapping; print options; quantity; and when to start. Two files in one selection rarely want the same answers — different plates, different colours loaded on different machines — which is why the file, not the batch, is the unit.
+There is no separate bulk dialog: the ordinary scheduling window does the work, once per **group**. Each file's plates join the group of plates that would get the same answers — the same printer model, nozzle, build plate and filament types — and the window opens for the group's first file, with *group 1 of 3 · 5 items* beside its title. With **Apply to the rest of this group** ticked (the default) the group's other files go in with those settings without asking again; plates and filament are still matched per file. Untick it to see each file. What the group shares and what is checked per file: [One dialog per group](print-queue.md#one-dialog-per-group). When the plate information cannot be read, the window opens for each file in turn instead, marked **1/3**. Every window keeps the full set of choices: a printer or several, or the auto-queue; which plates; filament mapping; print options; quantity; and when to start.
+
+With **Run next**, the files of one run keep the order you chose them in: each file's jobs go behind the jobs the run already placed, still ahead of the printer's other pending work.
+
+Files sliced for different printer models? The window says so and offers **Calculate**: instead of a job per file, it works out the parts these files print and can split them between the models — see [Alternative files per printer model](projects.md#alternative-files-per-printer-model). It needs the right to create orders.
 
 Close the window at any point (**Cancel**, the ✕, or Escape) and the run stops there. Whatever you did not get to **stays selected**, so the ticks show what is left to distribute. Everything queued clears the selection.
 
