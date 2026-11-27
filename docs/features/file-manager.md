@@ -920,3 +920,5 @@ For a sliced 3MF, the server validates the selected plate and its used channels 
 Incomplete filament information, missing G-code, or missing required nozzle bindings means the file needs correction or re-slicing. A temporarily unavailable compatible printer means waiting in Auto-Queue. The form distinguishes these situations.
 
 Grouped additions retain common options, but do not transfer one file's channel choices to another without review. AMS, external-feed, color, and repeat rules are covered in [Filament Routing](filament-routing.md).
+
+Optional dense layout search and arbitrary in-plane rotations are described in [Assemble project](assemble-project.md).
