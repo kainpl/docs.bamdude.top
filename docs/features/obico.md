@@ -5,7 +5,7 @@ description: Optional ML-driven print-failure detection with notify / pause / pa
 
 # Obico AI Failure Detection
 
-BamDude has an optional integration with a **self-hosted** [Obico](https://github.com/TheSpaghettiDetective/obico-server) `ml_api` — a machine-learning service that watches camera frames during a print and flags spaghetti / failures before they get expensive. The integration is **off by default**; the farm runs one failure detector at a time — Obico, or the cloud [OctoEverywhere](octoeverywhere.md) — chosen in one field. While Obico is chosen, it polls camera frames, hands them to an Obico ML endpoint, smooths the result over time, and on a sustained failure either notifies you, pauses the print, or pauses and powers the printer off via a smart plug.
+BamDude has an optional integration with a **self-hosted** [Obico](https://github.com/TheSpaghettiDetective/obico-server) `ml_api` — a machine-learning service that watches camera frames during a print and flags spaghetti / failures before they get expensive. The integration is **off by default**. One provider runs at a time — Obico, or the cloud [OctoEverywhere](octoeverywhere.md): turning one on turns the other off. When enabled, it polls camera frames, hands them to an Obico ML endpoint, smooths the result over time, and on a sustained failure either notifies you, pauses the print, or pauses and powers the printer off via a smart plug.
 
 !!! info "Self-hosted only — no cloud, no obico.io"
     BamDude talks to **your own** Obico `ml_api` over HTTP on your local network. It never connects to obico.io, never registers a printer with Obico's web app, never opens a WebSocket, and never uploads frames anywhere outside your LAN. Frames live in a 30-second in-process cache; the only external recipient of a snapshot URL is the ML container that you control.
@@ -31,8 +31,9 @@ For installation, updates and troubleshooting, see [Standalone Obico ML server](
 ## :material-cog: Setup
 
 1. Self-host the Obico ML server using the linked guide above.
-2. Open **Settings → Failure Detection**.
-3. Fill in the Obico panel:
+2. Open **Settings → Failure Detection** and keep **Provider** on **Obico**.
+3. Tick **Enable Obico failure detection**.
+4. Fill in:
 
     | Setting | Notes |
     |---|---|
@@ -44,8 +45,7 @@ For installation, updates and troubleshooting, see [Standalone Obico ML server](
     | **Poll interval** | Seconds between frame captures (5–120). Shorter = faster reaction, more bandwidth + more ML cost. |
     | **Monitored Printers** | Per-printer toggle list. Leave all on, or restrict to specific printers (e.g. enable only on the unattended overnight printer). A printer you delete leaves this list with it. |
 
-4. The panel saves its fields on its own. The ML API URL, the token and the BamDude address are saved with their own **Save connection** button, and only an administrator can change them.
-5. In **Failure detector** at the top of the page, choose **Obico (self-hosted)**. The choice is saved at once, and only an administrator can change it. Detection starts on the next check of each running print.
+5. **Save**. The Obico loop starts immediately for any printer in `RUNNING` state. The ML API URL, the token and the BamDude address are saved with their own **Save connection** button, and only an administrator can change them.
 
 !!! warning "The ML API needs an address to fetch frames from"
     The ML container fetches every frame from BamDude itself, at `<address>/api/v1/obico/cached-frame/{nonce}`. That address is **BamDude address for the ML API** when it is filled in, otherwise **Settings → Network → External URL**. One of the two has to be set, and it must resolve from inside the ML container's network — not from your browser.
@@ -88,15 +88,11 @@ The loop polls each enabled, currently-printing printer at the configured interv
 
     | Action | What happens |
     |---|---|
-    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the detector, the confidence score, the action taken, what became of the pause and the power, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
+    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the provider, the confidence score, the action taken, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
     | `pause` | The same notification at the alert level; at the pause level, sends a pause MQTT command to the printer and notifies again, naming the pause. |
     | `pause_and_off` | As `pause`, and at the pause level also turns off the bound smart plug. Use this for overnight unattended workflows where you'd rather kill power than waste filament. |
 
-    A print is the run the printer reports. Its analysis lasts from its first frame to its end, through a pause; a new start — also a reprint of the same file — is the next print. After a reconnect BamDude waits for the printer's first real status and starts the analysis afresh; the printer's background stays.
-
-    A print that detection paused is **not paused again** — after you press Resume, after a reconnect, or after switching the detector or detection off and on: a pause or a power cut happens once per print for Obico and [OctoEverywhere](octoeverywhere.md) together. Its notification may come again after such a switch. Switching detection off, choosing another detector, or taking a printer off the monitored list forgets its analysis.
-
-    The action runs on its own once it is decided: a pause is sent only while the print is running, a power cut only while it is running or paused, and nothing at all when the print has ended, the printer has reconnected or was deleted in the meantime.
+    A print's detection state lasts from its first frame to its end — through a pause and through a reconnect. A print that detection paused is **not paused again** after you press Resume, and its notification is not repeated. The next print starts fresh, also when it is a reprint of the same file. Switching detection off, or taking a printer off the monitored list, forgets its print.
 
 ## :material-key-variant: Why is the cached-frame URL whitelisted?
 
@@ -116,7 +112,7 @@ The detection panel under **Settings → Failure Detection** is split into a Sta
 
 **Status card**
 
-- **Detection active** flag (green / red) — green only while Obico is the chosen detector with an ML URL, the camera worker is up and the loop is running. The same state colours the dot on the **Failure Detection** tab.
+- **Detection active** flag (green / red) — green only while Obico is enabled with an ML URL. The background loop itself starts with BamDude and merely sleeps while the feature is off; the flag does not report that loop.
 - **Low / High thresholds** after sensitivity scaling (so you can sanity-check Low / Medium / High really did adjust the numbers), and the **Pause level** — 1.75 × High, the score at which a pausing action acts.
 - For each currently-printing monitored printer:
     - Live classification — `safe` / `warning` (alert level) / `failure` (pause level)
@@ -141,11 +137,11 @@ Frames contain camera imagery and enter normal backups: grant access and retain 
 
 ### The AI badge on the printer cards
 
-You do not have to be on this page to watch detection track a print. Each card on the **Printers** page carries an **AI** badge next to the other health badges — grey while nothing is being watched, then green / amber / red as a monitored print is classified. It shows the chosen detector, whichever it is. The tooltip carries the current score; clicking it comes back here for the full status and history.
+You do not have to be on this page to watch detection track a print. Each card on the **Printers** page carries an **AI** badge next to the other health badges — grey while nothing is being watched, then green / amber / red as a monitored print is classified. The tooltip carries the current score; clicking it comes back here for the full status and history.
 
 A printer detection is **not** watching shows no badge at all, rather than one implying it is covered.
 
-The badge never claims a print is watched when it is not. While a monitored print waits for its first result it reads **AI starting** (grey). When the latest check produced no result — the ML server refused the token, could not be reached, the camera gave no frame, or no address is set for the ML API to fetch frames from — it reads **AI not checking** (amber), and its tooltip names the reason for that printer (the reason is shown to users with settings access; others see that the print is not being checked). No score is quoted without a result. While Obico cannot check at all — the camera worker is down, or the printer is disconnected — the badge reads **AI not watching**. A verdict is shown only while the print runs or is paused: when it ends or the printer disconnects, the badge drops it at once. The Active prints list on this page shows the same. **Test** checks the values in the form without saving them.
+The badge never claims a print is watched when it is not. While a monitored print waits for its first result it reads **AI starting** (grey). When the latest check produced no result — the ML server refused the token, could not be reached, the camera gave no frame, or no address is set for the ML API to fetch frames from — it reads **AI not checking** (amber), and its tooltip names the reason for that printer (the reason is shown to users with settings access; others see that the print is not being checked). No score is quoted without a result. The Active prints list on this page shows the same, and **Test** saves the form first, so a green result describes the configuration detection actually runs with.
 
 !!! info "The badge needs no settings permission"
     It is readable by anyone who can see printers. It deliberately carries no
@@ -161,7 +157,7 @@ The badge never claims a print is watched when it is not. While a monitored prin
 - **Public URL caveat under reverse-proxy auth.** The cached-frame route bypasses BamDude's always-on auth gate (the ML container can't send a bearer for a one-shot GET), so make sure your nginx / Caddy / Traefik isn't slapping its **own** auth layer on `/api/v1/obico/cached-frame/`. The route's own security surface is the 32-byte random nonce + 30-second TTL — without the nonce it 404s.
 - **Calibration prints are skipped.** The detection loop only runs while the print is in `RUNNING` state, so the calibration / first-layer phase isn't classified — Bambu's own calibration screens cause too many shapes that aren't real failures yet.
 - **First 30 frames ignored.** Even within `RUNNING`, the 30-frame warmup means the first ~5 minutes of every print are deliberately quiet — gives EWM time to stabilise before triggering anything.
-- **Once per print, at each level.** The notification goes out once per print and the pause happens once per print — for both detectors together; later scores in the same print don't re-trigger either. This is intentional — you don't want five "pause" commands stepping on each other when the spaghetti monster is already obvious, and a print you resumed after a detection pause is not paused again. The analysis lasts through pauses, starts afresh after a reconnect and is dropped when the print ends; the next print — also a reprint of the same file — starts fresh. The one thing that repeats is the reminder: a failure still suspected three hours after the last notification is told again. A reminder never pauses the printer.
+- **Once per print, at each level.** The notification goes out once per print and the pause happens once per print; later scores in the same print don't re-trigger either. This is intentional — you don't want five "pause" commands stepping on each other when the spaghetti monster is already obvious, and a print you resumed after a detection pause is not paused again. The state lasts through pauses and reconnects and is dropped when the print ends; the next print — also a reprint of the same file — starts fresh. The one thing that repeats is the reminder: a failure still suspected three hours after the last notification is told again. A reminder never pauses the printer.
 - **The background lives in memory.** Each printer's background and each print's state are not stored on disk. After BamDude restarts, the background is learned again and a print already running is treated as a new one.
 - **One printer's camera does not hold up the rest.** A printer whose camera cannot be read shows **AI not checking** with its own reason; the other monitored printers are checked as usual.
 - **Camera must be reachable.** The detection loop fetches frames from the printer's local camera the same way the main BamDude UI does. If the camera page in the UI doesn't show a stream, Obico won't get one either.
@@ -212,4 +208,4 @@ If Obico's API is unreachable or returns a non-2xx response:
 - The detection loop keeps going — a transient outage doesn't disable detection permanently.
 - No spurious "failure" action fires from a missing classification.
 
-If another detector or **Off** is chosen mid-print, Obico stops before its next camera frame or ML call; the print continues uninterrupted, and an action already decided runs to its end. What detection knew about the running prints is forgotten, so choosing Obico again starts each of them fresh — without a second pause for a print it already paused.
+If `obico_enabled` is toggled off mid-print, the loop stops on the next iteration; the print continues uninterrupted. What detection knew about the running prints is forgotten, so switching it back on starts each of them fresh.

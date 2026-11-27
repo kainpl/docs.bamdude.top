@@ -223,36 +223,32 @@ description: Кожен ключ налаштувань — загальні, д
 | `manyfold_client_id` | порожньо | **Client ID** OAuth-застосунку, створеного в Manyfold з областями `public` і `read`. |
 | `manyfold_client_secret` | порожньо | **Client secret** цього застосунку. Після збереження більше не показується, не потрапляє в Git-бекапи й запитується знову, коли змінюється адреса чи client ID. |
 
-## :material-robot-confused: AI-виявлення збоїв
+## :material-robot-confused: Obico AI
 
-Ферма працює з одним детектором водночас. Контекст — на сторінках [AI-детекція фейлів Obico](../features/obico.uk.md) і [Виявлення збоїв друку OctoEverywhere](../features/octoeverywhere.uk.md).
-
-| Key | Default | Ефект |
-|---|---|---|
-| `failure_detection_provider` | `off` | Детектор ферми: `off`, `obico` або `octoeverywhere`. Лише для адміністраторів. Замінює колишній `obico_enabled`; запис, що досі надсилає `obico_enabled`, відхиляється з 422. Повне відновлення перетворює `octoeverywhere` на `off`; Git-відновлення його ніколи не змінює. |
-
-### Obico
+Контекст на кожне — на сторінці [AI-детекція фейлів Obico](../features/obico.uk.md).
 
 | Key | Default | Ефект |
 |---|---|---|
-| `obico_ml_url` | пусто | URL ML API (наприклад `http://192.168.1.10:3333`). Лише для адміністраторів; зберігається кнопкою **Зберегти підключення**. |
-| `obico_ml_token` | пусто | **Токен ML API** — лише коли ML-контейнер запущено з `ML_API_TOKEN`. Лише для запису; лише для адміністраторів; зберігається кнопкою **Зберегти підключення**. |
+| `obico_enabled` | `false` | Master-toggle. Увімкнення вимикає `octoeverywhere_enabled`. |
+| `obico_ml_url` | пусто | URL ML API (наприклад `http://192.168.1.10:3333`). |
 | `obico_snapshot_base_url` | пусто | **Адреса BamDude для ML API (необов’язково)** — адреса, з якої ML API забирає кадри камери: адреса BamDude в локальній мережі або ім’я його сервісу Docker (наприклад `http://bamdude:8000`). Повна адреса з `http://` або `https://`, без логіна й пароля, параметрів запиту та фрагмента. Пусто = береться `external_url`. Стосується лише кадрів. Лише для адміністраторів; зберігається кнопкою **Зберегти підключення**. |
 | `obico_sensitivity` | `medium` | `low`, `medium` або `high`. Зсуває пороги Low / High, а з ними й рівень паузи (1,75 × High). |
 | `obico_action` | `notify` | `notify`, `pause` або `pause_and_off`. Сповіщення надсилається один раз за друк на рівні сповіщення, хай яка дія; `pause` і `pause_and_off` спрацьовують на сильнішому рівні паузи, теж один раз за друк. |
 | `obico_poll_interval` | `10` | Секунди між detection-перевірками під час друку. Діапазон 5 – 120. |
 | `obico_enabled_printers` | пусто | JSON-масив printer-ID, на яких детекція активна. Пусто = всі підключені принтери. Видалений принтер зі списку прибирається. |
-| `obico_save_detections` | `false` | **Зберігати кадри детекцій** — лишати проаналізований JPEG і рамки помітних перевірок у локальній історії. |
 
-### OctoEverywhere
+## :material-robot-confused: OctoEverywhere AI
+
+Див. [Виявлення збоїв друку OctoEverywhere](../features/octoeverywhere.uk.md).
 
 | Key | Default | Ефект |
 |---|---|---|
-| `octoeverywhere_api_key` | пусто | **Ключ Gadget API**. Лише для запису; лише для адміністраторів; зберігається кнопкою **Зберегти підключення**. Надсилається лише в OctoEverywhere. Git-відновлення його ніколи не відновлює. |
-| `octoeverywhere_confidence` | `medium` | `lowest`, `low`, `medium`, `high` або `highest` — наскільки певною має бути модель, перш ніж порадити попередження чи паузу. |
-| `octoeverywhere_action` | `notify` | `notify`, `pause` або `pause_and_off`. Попередження сповіщає один раз за друк, хай яка дія; пауза чи вимкнення живлення йде за порадою паузи від OctoEverywhere — один раз за друк для обох детекторів разом. |
-| `octoeverywhere_poll_interval` | `20` | Секунди між перевірками кожного принтера під час друку. Діапазон 5 – 30; OctoEverywhere може попросити довшу паузу. |
-| `octoeverywhere_enabled_printers` | пусто | JSON-масив printer-ID, за якими стежить OctoEverywhere. Пусто = усі принтери. Лише для адміністраторів. Видалений принтер зі списку прибирається; Git-відновлення його ніколи не змінює. |
+| `octoeverywhere_enabled` | `false` | Master-toggle. Лише для адміністраторів. Увімкнення вимикає `obico_enabled`; збереження, що вмикає обидва, відхиляється. Повне відновлення його вимикає; відновлення з Git ніколи його не записує. |
+| `octoeverywhere_api_key` | пусто | **Ключ API Gadget**. Лише для запису; лише для адміністраторів; зберігається кнопкою **Зберегти ключ**. Надсилається лише в OctoEverywhere. Відновлення з Git ніколи його не відновлює. |
+| `octoeverywhere_confidence` | `medium` | `lowest`, `low`, `medium`, `high` або `highest` — наскільки впевненою має бути модель, щоб порадити попередження чи паузу. |
+| `octoeverywhere_action` | `notify` | `notify`, `pause` або `pause_and_off`. Порада попередити надсилає сповіщення; `pause` і `pause_and_off` виконуються за порадою OctoEverywhere поставити паузу, один раз за друк. |
+| `octoeverywhere_poll_interval` | `20` | Секунди між перевірками кожного принтера, що друкує. Діапазон 5 – 30; OctoEverywhere може попросити довшу паузу. |
+| `octoeverywhere_enabled_printers` | пусто | JSON-масив printer-ID, на яких детекція активна. Пусто = всі підключені принтери. Видалений принтер зі списку прибирається. |
 
 ## :material-content-save: Локальні бекапи
 

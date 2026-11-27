@@ -659,7 +659,7 @@ A dark chamber makes a dark photo. BamDude can switch the chamber light on for t
 
 1. **Settings → Camera → Light for the camera.** Off by default — nothing changes for a farm that does not switch it on. This is the master switch: with it off, nothing below applies.
 2. In the same card, the **External cameras** list, per printer: **Light for the camera** — *As on the farm* / *No*. The printer that must not glow towards the window says *No*. The selector is shown only while the farm toggle is on, and not for a connected printer that has reported no controllable light.
-3. **Also for the failure detector** — a separate toggle, off by default, shown only when the farm toggle is on and a failure detector (Obico or OctoEverywhere) is chosen. The detector looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
+3. **Also for Obico failure detection** — a separate toggle, off by default, shown only when the farm toggle is on and Obico or OctoEverywhere detection is enabled; it covers both. The detector looks at the camera every few seconds for the whole print, so with this on the light stays on for the whole print.
 
 Two rules make it safe to leave on:
 

@@ -194,7 +194,7 @@ The 43 route modules under `backend/app/api/routes/` are registered under the `/
 | `/local-backup/*`, `/git-backup/*` | Backup providers | run, restore, schedule |
 | `/maintenance/*`, `/kprofiles/*` | Service tracking + K-profiles | log, due, CRUD |
 | `/external-links/*`, `/ams-history/*` | Misc UX | dashboard links, AMS slot change history |
-| `/metrics`, `/webhook/*`, `/obico/*`, `/octoeverywhere/*`, `/failure-detection/*`, `/virtual-printers/*` | Integrations | Prometheus metrics, inbound webhooks, AI failure detection (Obico, OctoEverywhere, and the printer cards' one status), virtual printer (slicer target) |
+| `/metrics`, `/webhook/*`, `/obico/*`, `/octoeverywhere/*`, `/virtual-printers/*` | Integrations | Prometheus metrics, inbound webhooks, AI failure detection (Obico, OctoEverywhere), virtual printer (slicer target) |
 
 The full enumerated list is in `/docs` — this table just shows where to look.
 
