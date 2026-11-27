@@ -152,9 +152,9 @@ Once an item is assigned to a printer, it disappears from the panel and shows up
 
 ---
 
-## :material-filter-variant: Eligibility rules
+## :material-filter-variant: Eligibility rules { #eligibility-rules }
 
-The printer must be active, unarchived, available to the router, and free to take new work. The route icon on its queue card lets you opt it out of automatic assignment without stopping its ordinary queue.
+The printer must be active, unarchived, available to the router, and free to take new work. It must also be one the job's **author** reaches, when a group limits the author to printers ([Printer access](authentication.md#printer-access)): a team's job stays on the team's printers, and waits with *among the printers its author may use* in its reason when none of them fits. A job with no author — from a Virtual Printer, or a chat with no linked user — may go to any printer. The route icon on its queue card lets you opt it out of automatic assignment without stopping its ordinary queue.
 
 A printer whose queue you paused gets no new work, and neither does one whose queue stopped after a failed or cancelled print, until you press **Resume queue**. The job is not placed in a stopped queue to wait — any other printer that can take it gets it. When none can, it waits in the Auto-Queue, and its reason names each printer stopped after a failed or cancelled print: *The printer's queue is stopped after a failed or cancelled print; resume it to give it new work.*
 

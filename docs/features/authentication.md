@@ -176,6 +176,31 @@ System groups (Administrators / Operators / Viewers) cannot be deleted, and thei
 
 ---
 
+## :material-printer-check: Printer access { #printer-access }
+
+A group can be limited to some printers. Open **Settings → Authentication → Printer access** and work **By group** or **By printer**:
+
+- **Limit to selected printers** turns the limit on for a group. Pick printers one by one, or tick whole **Locations**: a location gives every printer standing in it or in any location below it, printers placed there later too.
+- A member of a limited group sees and controls only the printers the group reaches — the printer list, the queues, the print history, statistics, cameras, smart plugs, sensors, maintenance, firmware and notifications. Another printer answers as if it did not exist.
+- A group that is not limited limits nothing. A team group therefore combines with **Operators** or **Viewers** without widening them, and a person in no limited group keeps every printer. Several limited groups add up. **Administrators** is never limited.
+- **Who has access** in a printer card's menu opens the page on that printer.
+
+What follows the person:
+
+- an **API key** reaches the printers on its own list that its owner reaches ([API keys](api-keys.md));
+- a **Telegram chat** reaches the printers on its own list that its group reaches — the linked user adds nothing — and a chat limited to printers does not add Auto Queue jobs ([Telegram permissions](telegram-auth.md));
+- **Cam Wall**, streaming-overlay and status-monitor links show their owner's printers ([Camera](camera.md));
+- an **Auto Queue** job goes only to its author's printers, and waits with the reason when none of them fits ([Auto Queue](auto-queue.md#eligibility-rules)). When a limited person is deleted, their waiting jobs wait for an administrator to start them.
+
+For an administrator only:
+
+- moving a printer — or a branch of locations — into or out of a location a limited group is given; the printer dialog names those groups before you save;
+- adding a printer, for someone who is limited.
+
+What belongs to no printer stays visible by permissions as before: a print of no printer, a smart plug not bound to one, storage locations and their sensors, spools, the library and orders. A sensor bound to a location of printers is shown when a printer you reach stands there (or below it), and can be changed only when you reach every printer there.
+
+---
+
 ## :material-email-fast: Advanced Auth via Email
 
 Optional SMTP layer that enables passwordless onboarding, admin-triggered password resets, and per-user print notifications. Toggle independently of basic auth.

@@ -73,7 +73,7 @@ Print time and queue time are separate. Times under an hour use minutes; longer 
 The default lifetime is 90 days, with a maximum of 365. Revoke a token in the same panel; the TV clears on its next request. Expiry, owner deactivation or loss of the owner's read permissions also ends access. Give each display its own token when you need to revoke them separately.
 
 !!! warning "The TV link grants access to the whole farm"
-    Anyone with the complete link can see operational data for **all non-archived printers**, including both monitor views. They cannot control printers, view cameras, or read filenames, job names, job IDs, owners or network credentials. Keep the complete link private.
+    Anyone with the complete link can see operational data for **all non-archived printers** the token's owner reaches ([Printer access](authentication.md#printer-access)), including both monitor views. They cannot control printers, view cameras, or read filenames, job names, job IDs, owners or network credentials. Keep the complete link private.
 
 The link carries the secret after `#token=`, not in a query parameter. Copy the generated link intact; the monitor sends that secret in a request header. It does not save it in local storage. TV mode has no links to management pages and never falls back to a browser's signed-in session.
 

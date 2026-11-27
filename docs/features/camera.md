@@ -357,7 +357,7 @@ one never changes what an existing token can do.
 | Scope | Reaches |
 |---|---|
 | **Camera stream only** | The camera stream and snapshot endpoints, nothing else. The right choice for Home Assistant, Frigate, or anything embedding a single camera. |
-| **Cam Wall** | Those same streams **plus** the read-only [Cam Wall feed](#cam-wall-on-a-tv-or-kiosk): every printer's name, connection state and print progress — but **never the print filename**. |
+| **Cam Wall** | Those same streams **plus** the read-only [Cam Wall feed](#cam-wall-on-a-tv-or-kiosk): the name, connection state and print progress of every printer the token's owner reaches ([Printer access](authentication.md#printer-access)) — but **never the print filename**. |
 | **Streaming Overlay** | One printer's camera stream **plus** the live print status the [OBS overlay](#obs-streaming-overlay) draws — which *does* include the filename shown on screen. |
 
 The boundaries are deliberate and enforced in both directions: a Camera-stream
@@ -367,7 +367,7 @@ bed, so folding the two together would silently widen every wall token already
 handed out) and vice versa. **None** of them exposes a printer's IP address,
 serial number or access code, or reaches any other BamDude API.
 
-**Status monitor** is a separate, metadata-only scope in the same panel. It opens the [operator monitor](status-monitor.md) for all non-archived printers, with no cameras, filenames or printer control. It cannot be used as a camera token, and camera scopes cannot open the status monitor.
+**Status monitor** is a separate, metadata-only scope in the same panel. It opens the [operator monitor](status-monitor.md) for all non-archived printers its owner reaches, with no cameras, filenames or printer control. It cannot be used as a camera token, and camera scopes cannot open the status monitor.
 
 #### Token properties
 
