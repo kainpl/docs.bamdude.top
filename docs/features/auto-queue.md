@@ -24,7 +24,7 @@ A row that has no captured copy of its own is a legacy row until a later operati
 1. On submission, BamDude validates the selected plate in the sliced 3MF, its matching G-code, model, and used channels. A source error blocks adding the job; a temporary lack of compatible printers does not.
 2. The background router reads pending work in queue order, or SJF order when enabled.
 3. It looks for a printer of the required model and location with a complete suitable set of feeds. With compatible-model fallback enabled, a compatible printer is considered when no ready exact-model printer can run the file. Each used channel needs its own source.
-4. Among eligible printers, a ready exact-model printer wins; otherwise a ready compatible printer may win. The job moves to that printer's queue with its routing rules; if no candidate exists, the panel shows a waiting reason.
+4. Among eligible printers, a ready exact-model printer wins; otherwise a ready compatible printer may win. Between equally fit printers the [printer order](#printer-order) decides. The job moves to that printer's queue with its routing rules; if no candidate exists, the panel shows a waiting reason.
 5. The printer queue applies its usual plate-clear, drying, staggered-start, and swap-macro gates. Filament and source checks run again before the actual start command.
 
 An active print or a due job that can start automatically keeps the printer out of the next placement pass. A future job or one waiting for manual start leaves the printer available. With equal readiness, model fit and colour match, the router prefers a printer without those jobs. *Assign now* keeps the job's scheduled time on the chosen printer, which can take another AutoQueue job before that time.
@@ -162,17 +162,32 @@ A job set to **Only run if the previous print succeeded** also passes over a pri
 
 It needs the exact model, the selected location, and a **complete mapping for every used channel**: material under the saved matching rule, nozzle, source rule, and required colours. One PLA slot does not satisfy two PLA channels. Manual physical selections cannot move arbitrarily between printers.
 
-Among eligible candidates, readiness comes first, then the best color match. See [Filament Routing](filament-routing.md#channels) for worked examples.
+Among eligible candidates, readiness comes first, then the best color match, then the [printer order](#printer-order). See [Filament Routing](filament-routing.md#channels) for worked examples.
 
 !!! note "Drain the emptiest spool first"
     When this setting is on, otherwise equally ranked printers with a known
     remaining level are ordered by the average reported percentage in the
     sources selected for this job. The lower average wins. This is a
-    tie-breaker after readiness, model, colour and staged work. A printer with
+    tie-breaker after readiness, model, colour, staged work and the printer order. A printer with
     unknown levels can still take the job. The setting also governs automatic
     source selection on the chosen printer. The AMS Filament Backup switch
     still governs lowest-remaining tray selection on BamDude's own dispatch
     paths. See [Print Queue](print-queue.md).
+
+### Which printer gets the job {#printer-order}
+
+When several printers can take a job equally well — ready, the right model, the same colour matches, no staged or future work — **Settings → Printing → Printer order for AutoQueue jobs** decides which one gets it:
+
+| Option | The printer picked first |
+|---|---|
+| With the fewest print hours (default) | The least worn machine, by the Maintenance counter including the baseline hours entered there. Spreads the wear over the farm. |
+| With the most print hours | The most worn machine, to use up the ones near replacement first. |
+| Idle the longest | The printer whose last finished print is the oldest; one that never printed goes first. Attempts that never started printing do not count. |
+| By the priority set on each printer | The lowest **Priority for AutoQueue jobs** (Edit Printer); a printer without one goes last. |
+
+Equal places go to the printer added first. A busy or offline printer, one whose queue is halted and one that cannot feed the job (material, colour, nozzle) are passed over whatever the order. The order decides before *Drain the emptiest spool first*, which then picks the trays on the chosen printer and separates only printers with an equal place in the order. Switching a printer on with an **Auto On** plug follows the same order, and so does the rebalancer when it forecasts where the rest of an order will go.
+
+**Priority for AutoQueue jobs** in Edit Printer is a whole number from 0; the lowest goes first, 0 included. Leave it empty to put the printer last.
 
 ### Color, material, and profile variant
 

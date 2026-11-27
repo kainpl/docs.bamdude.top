@@ -74,7 +74,7 @@ Only channels actually used by the selected plate count. An unused color in the 
 
 Compatibility comes before preference. BamDude first filters every source by source policy, material rule, variant rule where applicable, nozzle binding, and required colour. It then searches for a **complete, distinct-source mapping** across all used channels. This is not a greedy first-slot assignment: a flexible channel is not allowed to consume the only source that a pinned or colour-strict channel needs. A manually pinned source is never re-ranked.
 
-For Auto-Queue, a ready compatible printer wins over one that is only compatible but held by a start gate; the next preference is the number of exact colour matches. The “drain” setting chooses a source only after that printer and a complete compatible mapping exist — it does not decide which printer receives the job.
+For Auto-Queue, a ready compatible printer wins over one that is only compatible but held by a start gate; the next preference is the number of exact colour matches. Then the [printer order](auto-queue.md#printer-order) decides. The “drain” setting chooses the sources on the chosen printer and separates only printers with an equal place in that order.
 
 ### Drain the emptiest spool first
 

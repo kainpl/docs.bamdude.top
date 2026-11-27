@@ -66,6 +66,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `stagger_strict_for_direct_dispatch` | `false` | Print Now and Re-print are refused while the printer's stagger group has no free slot, instead of waiting for one. Queued prints always wait. |
 | `per_printer_mapping_expanded` | `false` | Expand the custom filament mapping section by default in the print modal. |
 | `auto_queue_compatible_models` | `false` | Let Auto Queue use a Bambu Studio compatible printer when no exact-model printer is ready. Manual compatible targets remain available when off. |
+| `model_dispatch_order` | `fewest_hours` | Which printer an AutoQueue job takes among equally fit ones: `fewest_hours`, `most_hours`, `least_recently_used` (idle the longest) or `priority` (each printer's *Priority for AutoQueue jobs*, lowest first, empty last). See [Which printer gets the job](../features/auto-queue.md#printer-order). |
 
 ## :material-printer-3d: Virtual printer
 
@@ -108,7 +109,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | `runout_purge_grams` | `0` | Grams charged to the backup spool for the purge of an AMS auto-switch. 0 disables it. |
 | `usage_events_retention_hours` | `72` | How long a finished print's usage-event journal (runout/tray timeline) is kept for troubleshooting. |
 | `disable_filament_warnings` | `false` | Master mute for low / out-of-filament alerts. |
-| `prefer_lowest_filament` | `true` | After compatibility and exact-colour preference, auto-assignment favours the lowest remaining source. Tracked AMS spools use grams and firmware-only sources use percentage in a separate tier. Among equally ranked AutoQueue printers, prefer the lower known average reported fill. |
+| `prefer_lowest_filament` | `true` | After compatibility and exact-colour preference, auto-assignment favours the lowest remaining source. Tracked AMS spools use grams and firmware-only sources use percentage in a separate tier. Among AutoQueue printers with an equal place in the [printer order](../features/auto-queue.md#printer-order), prefer the lower known average reported fill. |
 | `default_filament_cost` | `25.0` | Per-kg fallback cost when a spool's `cost` field is unset. |
 | `auto_add_unknown_rfid` | `true` | Auto-add a spool to inventory when an AMS reads an unknown RFID tag. Off → a confirmation card (material / colour pre-filled) is shown instead of silent creation. See [Spool Inventory](../features/inventory.md). |
 | `ams_humidity_good` | `40` | Green-zone humidity threshold (%) on AMS cards (≤ this value). |
