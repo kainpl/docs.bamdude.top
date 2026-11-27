@@ -5,7 +5,7 @@ description: Multi-provider push notifications for print events
 
 # Notifications
 
-Eleven delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a twelfth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
+Twelve delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a thirteenth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
 
 ---
 
@@ -20,6 +20,7 @@ Eleven delivery channels, one editor, one routing config. Subscribe each provide
 | **ntfy** | Easy | Topic-based, optional bearer token, image attachments. |
 | **Bark** | Easy | iOS-only, no account. Interruption levels — **Critical** delivers through Silent mode and Focus. Public relay or your own `bark-server`. |
 | **Gotify** | Easy | Your own Gotify server — app token in a header, per-event priority, photo as a link. |
+| **Notify!** | Easy | iOS app (also Mac, browser, groups) — device ID and token; iOS Live Activities and Lock Screen widgets; photo as a link. |
 | **CallMeBot** | Easy | WhatsApp / Signal bridge — phone + API key, URL-encoded message. |
 | **Signal CLI API** | Medium | Self-hosted [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) — recipient numbers or one group, image attachments. |
 | **Home Assistant** | Easy | `persistent_notification.create` or any `notify.*` service. Single global HA URL/token from Settings (or `HA_URL` / `HA_TOKEN` env). |
@@ -152,6 +153,24 @@ A self-hosted `bark-server` is subject to the same address rules as a self-hoste
 Gotify priorities run from 0 to 10. Pick a level per event in the **Event priority (Gotify)** section (see [Per-event priority](#per-event-priority) below): Min, Low, Default, High and Urgent go to Gotify as `0`, `2`, `5`, `8` and `10`. An event left at Default goes out at `5`. In the Gotify Android app, Default and above play a sound, and High and Urgent pop up.
 
 With the **External URL** setting, the camera frame arrives as a large picture in the Android app (see [Photos in notifications](#photos-in-notifications)). A self-hosted Gotify is subject to the same address rules as a self-hosted ntfy: on your own network is fine, anything that is not a real HTTP service is refused.
+
+### Notify! (iOS)
+
+[Notify!](https://getnotifyapp.com/) is a push app for iOS, also on Mac, in a browser and for groups; its own server delivers what BamDude sends. Copy the device (or group) ID and the token from the app.
+
+| Field | Value |
+|---|---|
+| **Device or group ID** | 8–32 letters and digits — **required**. IDs that start with `GRP` (group), `WB` (browser) or `MC` (Mac) get push notifications only. |
+| **Notify! token** | The token the app shows next to the ID — **required**. It is kept like every other provider secret, bound to this ID. |
+| **Icon URL** | Optional, HTTPS. |
+| **Notification thread** | Optional. Left blank, the pushes are grouped by printer; a value of your own puts them all in one thread. |
+| **Time Sensitive problem alerts** | Sends failed and stopped prints, printer errors and AI failure detection as Time Sensitive; other pushes stay normal. |
+
+**Live Activities (iOS).** With the switch on, each running print gets a tile on the Lock Screen and in the Dynamic Island, with a countdown to the end. A fault, a pause, running out of filament or a lost connection replaces the countdown with the problem. **Live Activity appearance** sets the rest: hide the file name, show the print stage, the progress style (bar, segments or none), up to six metrics (progress, ETA, layer, nozzle, bed, chamber) in place of the file-name line, a dashboard button (HTTPS), the symbol and the colour. The tile follows each print by itself: the event switches control pushes only, quiet hours stop new tiles while existing ones still update and end, and the daily digest never delays them. A tile you dismiss stays dismissed for that print, and tiles survive a BamDude restart. Notify! allows five tiles per device, and a tile ends after eight hours. Its texts follow the interface language.
+
+**Lock Screen widgets (iOS).** With the switch on, each active, non-archived printer the provider covers gets a widget with its status and progress, without a live countdown. Add it from iOS's Lock Screen customisation and pick a printer. iOS refreshes widgets on its own schedule, roughly every 15 minutes. Notify! allows ten widgets per device, so *All printers* creates at most ten.
+
+The camera frame goes as a link, which needs an HTTPS **External URL**; browser and group recipients get text only. **Send Test** sends a push; a Live Activity starts only when a print does. If you ran the notify-bambuddy companion container, stop it before turning Live Activities on here, or each print gets two tiles.
 
 ### SMTP / Gmail
 
@@ -525,7 +544,7 @@ This is independent of the daily digest / quiet hours pipeline below — a quiet
 
 Configuration shape varies by provider type — the Telegram bot is special.
 
-**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify)** carry both settings on the provider row itself:
+**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify / notify)** carry both settings on the provider row itself:
 
 | Setting | Where | Effect |
 |---|---|---|
@@ -555,7 +574,7 @@ The Templates tab groups the default templates by purpose so a glance tells you 
 
 Each card carries a small UPPERCASE channel badge:
 
-- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify). The entries in the first 4 groups.
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify / notify). The entries in the first 4 groups.
 - **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
 - **Amber `TEST`** — internal test-button helper.
 
@@ -693,7 +712,7 @@ Click **Reset to default** in the editor to restore the original template from `
 Events that have a camera frame carry it: the finish photo on print completion and failure, the first-layer snapshot, the frame the detector flagged on **AI Failure Detection**, the frame the check judged on **Plate Not Empty**, and a snapshot with a printer error.
 
 - **Most channels receive the picture itself** — Telegram, Discord, Pushover, ntfy, Signal and generic-format webhooks. Email embeds the finish photo when its template uses `{finish_photo_url}` (see below).
-- **Home Assistant, Bark, Gotify and Slack / Mattermost-format webhooks receive a link** to a copy of that one picture, because these services fetch it themselves. Home Assistant gets it only with a custom `notify.*` service, as `data.image` — unless your **Data (JSON)** field sets its own `image`. Bark shows it as the notification's icon, Gotify as a large picture in its Android app. This needs the **External URL** setting; without it these channels get text only.
+- **Home Assistant, Bark, Gotify, Notify! and Slack / Mattermost-format webhooks receive a link** to a copy of that one picture, because these services fetch it themselves. Home Assistant gets it only with a custom `notify.*` service, as `data.image` — unless your **Data (JSON)** field sets its own `image`. Bark shows it as the notification's icon, Gotify as a large picture in its Android app, Notify! as the notification's picture (an HTTPS link only; browser and group recipients get none). This needs the **External URL** setting; without it these channels get text only.
 - **Attach photos** — every channel has this switch, on by default. Off, that channel gets text only.
 
 The copy a link points to has an unguessable address, needs nothing but the link to open, and stops working after 3 days. It opens that one picture only — not the archive and not a camera.

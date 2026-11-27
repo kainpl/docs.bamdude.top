@@ -119,7 +119,7 @@ G-code макроси, що активуються подіями друку, з
 
 <div class="feature-card" markdown>
 ### [:material-bell-ring: Сповіщення](notifications.uk.md)
-Одинадцять каналів доставки — Telegram, Discord, Email, Pushover, ntfy, Bark, Gotify, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, власні webhook. Тихі години, щоденний digest і шаблони — кожному провайдеру свої.
+Дванадцять каналів доставки — Telegram, Discord, Email, Pushover, ntfy, Bark, Gotify, Notify!, CallMeBot (WhatsApp), Signal CLI API, Home Assistant, власні webhook. Тихі години, щоденний digest і шаблони — кожному провайдеру свої.
 </div>
 
 <div class="feature-card" markdown>
