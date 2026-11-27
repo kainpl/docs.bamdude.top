@@ -77,6 +77,8 @@ Beside each saved file sits a **Slice** button. It opens the [Slice dialog](slic
 - A printer row whose preset could not be read fails alone, too.
 - When you closed the dialog and something did not work out for one of the printers, the tracker asks you to acknowledge it instead of showing a green "done".
 
+**Edit and try again** returns from a completed or failed assembly to the same inputs. It starts no new job and keeps the previous result. Adjust the settings, then press **Assemble** or **Re-layout** to submit another attempt. Moving previous outputs to the trash must be opted into again.
+
 ## :material-cube-scan: STEP models
 
 A STEP or STP file is converted on the server before packing, at the precision Bambu Studio imports STEP with, so round surfaces stay round. It needs the same optional component as [STEP thumbnails](file-manager.md#step-thumbnails): the Docker image and the Windows installer carry it, a native install chooses it at install time. Without it, a selection with a STEP file is refused with a message saying so, and STL / OBJ assemblies work as usual.
