@@ -252,7 +252,7 @@ Archive, Restore and Delete ask for confirmation first.
 **Archiving a spool takes it out of its AMS slot.** The slot is released on the printer card, and the next print from it is no longer charged to the archived spool. A spool in a slot a running print feeds from cannot be archived until that print ends: a single archive is refused, and a bulk archive skips such spools and says how many were kept — archive them when the print ends. An archived spool that is still shown in a slot leaves it once its printer is idle.
 
 !!! warning "A used spool is archived, not deleted"
-    **Delete** removes only a spool that nothing refers to. A spool that has usage history, sits in a slot or belongs to a running print is refused, with a hint to archive it instead — its records, and the prints costed from them, would otherwise lose their spool. In a bulk delete the spools that can go are deleted and the refused ones are reported. Use **Archive** for a reel you have finished.
+    **Delete** removes only a spool that nothing refers to. With the built-in inventory, a spool that has usage history, sits in a slot or belongs to a running print is refused, with a hint to archive it instead — its records, and the prints costed from them, would otherwise lose their spool. In **Spoolman mode** a spool is refused when it has usage history in BamDude for the Spoolman database in use, or when a running print can still charge it (by its slot, its tray tag or the print's journal); a spool without that history in a slot no running print charges from can be deleted, and its slot is released — see [Spoolman](spoolman.md). In a bulk delete the spools that can go are deleted and the refused ones are reported. Use **Archive** for a reel you have finished.
 
 All of this works in **Spoolman mode** as well as with the built-in inventory. Because Spoolman is a separate service that can be briefly unreachable, individual rows can fail: when that happens you get an honest **"7 done, 2 failed"** rather than a success message, and the selection is kept so you can retry the rest.
 
@@ -608,7 +608,7 @@ Both accept `{spools: [{id, display_name?}], template}` and return `application/
 |---|---|
 | `inventory:read` | View spool list and AMS assignments; **render PDF labels**. |
 | `inventory:create` | Add new spools. |
-| `inventory:update` | Edit spool fields, assign to slots, set spool-specific K-profile overrides, archive and restore spools — and **delete** them, one at a time or in bulk. A spool with usage history, in a slot or in a running print cannot be deleted and is archived instead — see [Mass actions](#mass-actions). |
+| `inventory:update` | Edit spool fields, assign to slots, set spool-specific K-profile overrides, archive and restore spools — and **delete** them, one at a time or in bulk. A spool BamDude still refers to cannot be deleted and is archived instead: with the built-in inventory one with usage history, in a slot or in a running print; in Spoolman mode one with usage history for the Spoolman database in use or one a running print can still charge — see [Mass actions](#mass-actions). |
 | `inventory:delete` | Listed in the group editor and held by the default Administrators and Operators groups, but no inventory action checks it: deleting spools is covered by `inventory:update`. |
 | `inventory:view_assignments` | Specifically the spool-on-slot indicators rendered on printer cards. Granted to Viewers separately so a non-operator can see "what's loaded where" without getting `inventory:read`. |
 
