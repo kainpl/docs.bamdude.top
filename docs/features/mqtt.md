@@ -138,7 +138,7 @@ All payloads are JSON objects. Example printer status payload:
   "active_extruder": 0,
   "tray_now": 2,
   "ams": [
-    {"id": 0, "humidity": 4, "temp": 25.0, "tray": [{"id": 0, "tray_type": "PLA", "tray_color": "FF0000FF"}]}
+    {"id": 0, "humidity": 31, "temp": 25.0, "tray": [{"id": 0, "tray_type": "PLA", "tray_color": "FF0000FF"}]}
   ],
   "vt_tray": [],
   "hms_errors": [],
@@ -148,7 +148,7 @@ All payloads are JSON objects. Example printer status payload:
 
 The status payload is throttled to roughly 1/second — the printer-side MQTT can fire several times per second on heavy prints, so BamDude coalesces. A printer going offline or coming back is published at once, never held back by the throttle.
 
-`door_open`, `active_extruder`, `tray_now`, `ams`, `vt_tray` and `hms_errors` are the same values, in the same shape, as the printer's REST status (`GET /api/v1/printers/{id}/status`) and the web interface receive; the AMS example above is shortened. `ams` is `null` on a printer without an AMS; `vt_tray` and `hms_errors` are empty lists when there is nothing to report.
+`door_open`, `active_extruder`, `tray_now`, `ams`, `vt_tray` and `hms_errors` are built by the same code as the printer's REST status (`GET /api/v1/printers/{id}/status`) and the web interface's live updates, in the same shape; the AMS example above is shortened. Two cases read differently from the REST answer: on a printer without an AMS `ams` is `null` (REST: `[]`), and while a drying cycle started from BamDude runs, a unit's `dry_filament` and `dry_target_temp` are filled only when its loaded spools agree on one material — the cycle's own values are in the REST status. `vt_tray` and `hms_errors` are empty lists when there is nothing to report.
 
 ---
 
