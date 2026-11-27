@@ -117,6 +117,21 @@ For BamDude's own metrics endpoint, see [Prometheus](prometheus.md).
 | Icon | `printer` |
 | Open in new tab | yes |
 
+## :material-numeric: A count on the link {#external-link-badge}
+
+The app a link points at can show a number on that link, the way the queue shows how many jobs wait — open requests in a helpdesk, alerts in a monitoring tool, anything the app counts. The app reports the count for its own address:
+
+```bash
+curl -X PUT http://bamdude.local:8000/api/v1/external-links/badge \
+  -H "X-API-Key: bd_..." -H "Content-Type: application/json" \
+  -d '{"url": "http://helpdesk.lan:8080", "count": 3}'
+```
+
+- **The key** needs *Send notifications as an external app* (`can_send_notifications`) and an owner allowed to manage notifications — the same right [messages from external apps](notifications.md#external-app-messages) use. A browser session cannot set a count. The key reads and changes nothing else: neither the links nor their names.
+- **Which links:** every sidebar link with the same address — scheme, host, port and path; a login in the address, a default port written out and a trailing slash don't count. No link at that address answers `404`.
+- **How long it shows:** while the app keeps reporting. A count not reported again for ten minutes disappears, so an app that stopped leaves no old number. Report `0` to clear it at once. The sidebar reads the counts every 30 seconds.
+- **Deleting a link or changing its address** drops its count; renaming it or moving it to another group keeps it.
+
 ## :material-backup-restore: Backup and restore
 
 External links are part of the standard BamDude database, so they ride along with every backup. See [Backup](backup.md) for the full backup/restore protocol.
@@ -147,6 +162,7 @@ All endpoints live under `/api/v1/external-links` and require the matching permi
 | `PATCH` | `/external-links/{id}` | Update one or more fields. |
 | `DELETE` | `/external-links/{id}` | Delete a link (and its custom icon file, if any). |
 | `PUT` | `/external-links/reorder` | Body: `{ids: [...]}`. Reassigns `sort_order` based on list position. |
+| `PUT` | `/external-links/badge` | Body: `{url, count}`. The app's [count on its link](#external-link-badge); an API key with *Send notifications as an external app* only. Answers `{links: n}`, `404` when no link has that address. |
 | `POST` | `/external-links/{id}/icon` | Multipart upload of a custom icon. |
 | `DELETE` | `/external-links/{id}/icon` | Remove the custom icon and revert to the Lucide preset. |
 | `GET` | `/external-links/{id}/icon` | Returns the icon file. **Unauthenticated** by design — `<img>` tags can't send bearer tokens. |
