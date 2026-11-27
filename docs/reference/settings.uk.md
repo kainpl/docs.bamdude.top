@@ -137,7 +137,7 @@ description: Кожен ключ налаштувань — загальні, д
 | Key | Default | Ефект |
 |---|---|---|
 | `spoolman_enabled` | `false` | Увімкнути [Spoolman two-way sync](../features/spoolman.uk.md). |
-| `spoolman_url` | пусто | URL Spoolman-сервера (наприклад `http://localhost:7912`). |
+| `spoolman_url` | пусто | URL Spoolman-сервера (наприклад `http://localhost:7912`). Зберігається кнопкою **Зберегти адресу** після підтвердження, ніколи автоматично: нова непорожня адреса знімає всі призначення слотів і K-зв’язки Spoolman ([Підключення](../features/spoolman.uk.md#spoolman-connecting)). |
 | `spoolman_sync_mode` | `auto` | `auto` синкає одразу на кожну зміну; `manual` чекає кнопки. |
 | `spoolman_disable_weight_sync` | `false` | Не пушити BamDude-tracked usage назад у Spoolman — оновлювати лише локацію. |
 | `spoolman_report_partial_usage` | `true` | Звітувати оцінену витрату на failed / cancelled друках за progress-у шарів. |

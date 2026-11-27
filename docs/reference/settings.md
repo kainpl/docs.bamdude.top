@@ -137,7 +137,7 @@ The source of truth is `backend/app/schemas/settings.py::AppSettings`. If a sett
 | Key | Default | Effect |
 |---|---|---|
 | `spoolman_enabled` | `false` | Enable [Spoolman two-way sync](../features/spoolman.md). |
-| `spoolman_url` | empty | Spoolman server URL (e.g. `http://localhost:7912`). |
+| `spoolman_url` | empty | Spoolman server URL (e.g. `http://localhost:7912`). Saved with **Save address** after a confirmation, never auto-saved: a new non-empty address removes every Spoolman slot assignment and K-profile link ([Connecting](../features/spoolman.md#spoolman-connecting)). |
 | `spoolman_sync_mode` | `auto` | `auto` syncs immediately on changes; `manual` requires explicit button press. |
 | `spoolman_disable_weight_sync` | `false` | Don't push BamDude-tracked usage back to Spoolman — only update location. |
 | `spoolman_report_partial_usage` | `true` | Report estimated usage on failed / cancelled prints based on layer progress. |

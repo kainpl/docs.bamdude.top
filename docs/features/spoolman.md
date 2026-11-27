@@ -102,11 +102,13 @@ Optional. Connect BamDude to a [Spoolman](https://github.com/Donkie/Spoolman) in
 
 If you only run BamDude, the built-in inventory above already does everything Spoolman does. The integration is for users who **already** have Spoolman because some other host in their setup needs it.
 
-### :material-link: Connecting
+### :material-link: Connecting {#spoolman-connecting}
 
 1. **Settings** → **Filament** → **General** → **Filament Tracking** → **Spoolman**
-2. Set the **Spoolman URL** (e.g. `http://192.168.1.50:7912` or a docker-compose service alias like `http://spoolman:7912`)
-3. **Save**
+2. Type the **Spoolman URL** (e.g. `http://192.168.1.50:7912` or a docker-compose service alias like `http://spoolman:7912`)
+3. **Save address**
+
+The address is saved only with **Save address** — never while you type, and never together with another setting. BamDude cannot tell whether a new address leads to the same Spoolman database, so it treats it as another one: before saving, the page says how many slot assignments and K-profile links made in Spoolman mode will be removed, and saves only when you confirm. Assign spools to the slots again afterwards. Emptying the address removes nothing.
 
 There is no API-key field: BamDude talks to Spoolman's open HTTP API, so a Spoolman behind an authenticating proxy has to be reachable from BamDude without credentials.
 
@@ -286,7 +288,7 @@ Spoolman keeps a spool's totals and no per-print log, so BamDude keeps its own r
 
 - **The record starts with the first print BamDude charges.** Prints charged before BamDude kept this record cannot be recovered from Spoolman, which stores no per-print data.
 - **Removing records does not touch Spoolman.** Deleting one record or clearing a spool's history removes BamDude's records only; the spool's weight in Spoolman is not changed.
-- **History belongs to a Spoolman address.** When the Spoolman URL changes, the records made for the previous address are kept aside and the views start empty for the new one; putting the previous address back brings its history back. If the new address is the same Spoolman database (the host was renamed or moved), **History** says how many records are kept aside and offers **Same database — keep the history** to bring them over.
+- **History belongs to a Spoolman address.** When the Spoolman URL changes, the records made for the previous address are kept aside and the views start empty for the new one; putting the previous address back brings its history back. If the new address is the same Spoolman database (the host was renamed or moved), **History** says how many records are kept aside and offers **Same database — keep the history** to bring them over. A new address also removes every slot assignment and K-profile link made in Spoolman mode (see [Connecting](#spoolman-connecting)); **Same database** brings the history over, not the assignments.
 - **The address or database cannot change during a print.** While any print is accounted in Spoolman, saving a new Spoolman address or declaring a new database behind the same address is refused until the print ends — the spool numbers that print recorded belong to the database it started on. Switching Spoolman on or off and **Same database** still work. While a finished print is being charged, any change of these settings is refused for a moment.
 - **Forecast needs Spoolman.** The stock is kept in Spoolman, so while Spoolman does not answer there is no forecast to show.
 
@@ -310,8 +312,8 @@ Spoolman keeps how much filament a full spool holds on the spool itself and fall
 
 | Where | What | Why it isn't on Spoolman directly |
 |-------|------|-----------------------------------|
-| `spoolman_slot_assignments` (BamDude DB) | Which Spoolman spool ID lives in `(printer_id, ams_id, tray_id)`. AMS 0..7 + 255 (external feed). One spool per slot. | Spoolman's own `location` is free text — using it as the source of truth for "this spool is in printer X AMS A slot 3" loses structure (e.g. you can't filter inventory by "all spools currently loaded"). The structured table is queryable and gets cleared automatically on slot empty. |
-| `spoolman_k_profile` (BamDude DB) | Pressure-advance + setting_id per `(spoolman_spool_id, printer_id, extruder, nozzle_diameter)`. Single + dual extruder. | A K-profile is bound to physical filament ↔ physical printer + nozzle, not to a Spoolman row alone. Storing it BamDude-side means re-tapping the same Bambu RFID on a different printer doesn't lose the calibration done elsewhere. |
+| `spoolman_slot_assignments` (BamDude DB) | Which Spoolman spool ID lives in `(printer_id, ams_id, tray_id)`, with that spool's Spoolman creation stamp. AMS 0..7 + 255 (external feed). One spool per slot. | Spoolman's own `location` is free text — using it as the source of truth for "this spool is in printer X AMS A slot 3" loses structure (e.g. you can't filter inventory by "all spools currently loaded"). The structured table is queryable and gets cleared automatically on slot empty. |
+| `spoolman_k_profile` (BamDude DB) | Pressure-advance + setting_id per `(spoolman_spool_id, printer_id, extruder, nozzle_diameter)`, with the spool's Spoolman creation stamp. Single + dual extruder. | A K-profile is bound to physical filament ↔ physical printer + nozzle, not to a Spoolman row alone. Storing it BamDude-side means re-tapping the same Bambu RFID on a different printer doesn't lose the calibration done elsewhere. |
 | `spool.storage_location` (BamDude DB column) | Free-form label like `Drybox 3`, `Shelf A4`, `Workshop / locker 2`. | Mirrors the Spoolman `location` field but lives BamDude-side too so it shows in the Inventory page columns + the spool form even on Spoolman-mode installs. |
 
 The Spoolman `location` field is left untouched on Spoolman's side — operators can still populate it manually from Spoolman's own UI as a free-text label. BamDude's structured assignment table is the source of truth for "what's currently in printer X".
@@ -343,6 +345,15 @@ What an assignment does to the slot:
 - **Archiving or deleting a spool releases its slot.** The slot is freed on the printer card and the next print from it is not charged to that spool. While the spool sits in a slot of a printer that is printing, archiving and deleting are refused until the print ends.
 - **A spool BamDude has printed with is archived, not deleted.** **Delete** is refused for a Spoolman spool that has usage history in BamDude for the Spoolman database in use (records kept aside for a previous address, or made before a new database was declared behind the same address, do not count), or that a running print can still charge (by its slot, its tray tag or the print's journal) — archive it instead. While a finished print is being charged, every delete is refused for a moment; try again. A delete Spoolman confirms also removes the spool's slot and K-profile links in BamDude; if those could not be removed, or a slot of a running print keeps the spool until the print ends, the message says so. If Spoolman does not confirm a delete, BamDude says so and changes nothing locally — check the spool in Spoolman.
 - **While Spoolman is switched on but unreachable**, the printer card neither offers nor accepts an assignment — it says *Spoolman is unreachable. Spools can be assigned once it responds again.* Spools of the built-in inventory are not offered in its place.
+
+### :material-shield-check: Assignments know their spool {#spoolman-binding-identity}
+
+Spoolman gives the number of a deleted spool to the next spool it creates, and another Spoolman database uses the same numbers, so a number alone does not say which spool an assignment was made for. BamDude remembers the spool of every slot assignment and K-profile link by Spoolman's own creation stamp, and checks it before it charges a print, writes a weight from the AMS, records drying, re-applies slots after a backup-compatibility change or picks a K-profile:
+
+- **An assignment whose number now names another spool — or a spool deleted in Spoolman — is not charged.** The print sends **Filament not charged: spool changed** (through the *Missing spool assignment* notification), and the slot's assignment and that number's K-profile links made for the other spool are removed. While the printer's print is still being accounted, the assignment stays until the print ends, and that print's own record is checked at its end.
+- **Sync** moves an assignment to the spool whose tag is in the tray. For a tray without a tag it only checks the assignment against the spool its number names now.
+- **Assignments and links made before this check** are trusted the first time they are read and remembered from then on.
+- **A 404 from a reverse proxy** in front of a restarting Spoolman is Spoolman not answering, not a deleted spool: nothing is removed.
 
 ### :material-flash: K-profile auto-reapply on AMS change
 
