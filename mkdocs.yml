@@ -259,6 +259,8 @@ hooks:
   - hooks/sitemap_lastmod.py
   # Open Graph / Twitter / JSON-LD per page, printed by overrides/main.html.
   - hooks/seo_head.py
+  # llms.txt + llms-full.txt for AI tools, from the English nav; see the hook.
+  - hooks/llms_txt.py
 
 extra_css:
   - stylesheets/extra.css

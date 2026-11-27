@@ -77,6 +77,8 @@ def on_page_context(context, page, config, nav):
             "@type": "Organization",
             "@id": org_id,
             "name": "BamDude",
+            # The Cyrillic spellings, as on the landing's Organization (src/layouts/BaseLayout.astro).
+            "alternateName": ["БамДуд", "Бамдудь"],
             "url": f"{LANDING}/",
             "logo": {
                 "@type": "ImageObject",
