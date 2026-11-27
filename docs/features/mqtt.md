@@ -52,7 +52,7 @@ All topics are prefixed with your configured prefix. **The default prefix is `ba
 
 | Topic | Description |
 |-------|-------------|
-| `bambuddy/printers/{serial}/status` | Real-time printer state (throttled, retained), including `awaiting_plate_clear` |
+| `bambuddy/printers/{serial}/status` | Real-time printer state (throttled, retained), including the door, the active extruder, the loaded tray, the AMS, the external spool, active HMS errors and `awaiting_plate_clear` |
 | `bambuddy/printers/{serial}/plate_clear` | Retained plate-clear gate: `awaiting: true` means waiting for an operator to clear the plate; refreshed after reconnect, including offline printers |
 | `bambuddy/printers/{serial}/online` | Printer just came online. Fires on the **connection edge**, so it is a transition, not a heartbeat. |
 | `bambuddy/printers/{serial}/offline` | Printer just went offline — the same edge, the other direction. |
@@ -134,11 +134,21 @@ All payloads are JSON objects. Example printer status payload:
   "big_fan2_speed": 50,
   "left_aux_fan_speed": null,
   "exhaust_fan_present": null,
+  "door_open": false,
+  "active_extruder": 0,
+  "tray_now": 2,
+  "ams": [
+    {"id": 0, "humidity": 4, "temp": 25.0, "tray": [{"id": 0, "tray_type": "PLA", "tray_color": "FF0000FF"}]}
+  ],
+  "vt_tray": [],
+  "hms_errors": [],
   "awaiting_plate_clear": false
 }
 ```
 
-The status payload is throttled to roughly 1/second — the printer-side MQTT can fire several times per second on heavy prints, so BamDude coalesces.
+The status payload is throttled to roughly 1/second — the printer-side MQTT can fire several times per second on heavy prints, so BamDude coalesces. A printer going offline or coming back is published at once, never held back by the throttle.
+
+`door_open`, `active_extruder`, `tray_now`, `ams`, `vt_tray` and `hms_errors` are the same values, in the same shape, as the printer's REST status (`GET /api/v1/printers/{id}/status`) and the web interface receive; the AMS example above is shortened. `ams` is `null` on a printer without an AMS; `vt_tray` and `hms_errors` are empty lists when there is nothing to report.
 
 ---
 

@@ -52,7 +52,7 @@ BamDude може публікувати події до зовнішнього M
 
 | Топік | Опис |
 |-------|------|
-| `bambuddy/printers/{serial}/status` | Стан принтера (з обмеженням частоти, retained), включно з `awaiting_plate_clear` |
+| `bambuddy/printers/{serial}/status` | Стан принтера (з обмеженням частоти, retained), включно з дверцятами, активним екструдером, заправленим лотком, AMS, зовнішньою котушкою, активними помилками HMS і `awaiting_plate_clear` |
 | `bambuddy/printers/{serial}/plate_clear` | Retained-стан очищення плити: `awaiting: true` означає очікування підтвердження оператора; оновлюється після перепідключення, зокрема для офлайн-принтерів |
 | `bambuddy/printers/{serial}/online` | Принтер щойно зайшов у мережу. Спрацьовує на **межі з'єднання**, тобто це перехід, а не heartbeat. |
 | `bambuddy/printers/{serial}/offline` | Принтер щойно вийшов із мережі — та сама межа, в інший бік. |
@@ -134,11 +134,21 @@ BamDude може публікувати події до зовнішнього M
   "big_fan2_speed": 50,
   "left_aux_fan_speed": null,
   "exhaust_fan_present": null,
+  "door_open": false,
+  "active_extruder": 0,
+  "tray_now": 2,
+  "ams": [
+    {"id": 0, "humidity": 4, "temp": 25.0, "tray": [{"id": 0, "tray_type": "PLA", "tray_color": "FF0000FF"}]}
+  ],
+  "vt_tray": [],
+  "hms_errors": [],
   "awaiting_plate_clear": false
 }
 ```
 
-Status payload throttle-нутий приблизно до 1/секунди — printer-side MQTT може фірити кілька разів на секунду на важких друках, тож BamDude коалесить.
+Status payload throttle-нутий приблизно до 1/секунди — printer-side MQTT може фірити кілька разів на секунду на важких друках, тож BamDude коалесить. Принтер, що зник зі зв'язку чи повернувся, публікується одразу — обмеження частоти його не затримує.
+
+`door_open`, `active_extruder`, `tray_now`, `ams`, `vt_tray` і `hms_errors` — ті самі значення й у тому самому вигляді, що в REST-статусі принтера (`GET /api/v1/printers/{id}/status`) і в інтерфейсі; приклад AMS вище скорочено. На принтері без AMS `ams` — `null`; `vt_tray` і `hms_errors` — порожні списки, коли нічого немає.
 
 ---
 
