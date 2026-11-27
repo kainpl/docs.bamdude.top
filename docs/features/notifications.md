@@ -329,7 +329,7 @@ The pause-state is also visualised on the Printers page in real time — a pause
 |-------|------------|
 | `printer_offline` | MQTT disconnect |
 | `printer_error` | An HMS fault of severity Fatal or Serious appeared (BamDude includes the human-readable translation). Each fault is announced once per appearance — see [HMS notifications](monitoring.md#hms-notifications). A smart plug's [power alert](smart-plugs.md#power-alerts) arrives through this event too. |
-| `ai_failure_detection` | AI failure detection (Obico) flags a likely print failure — **opt-in, off by default**. Split out of `printer_error` so you can be paged on AI alerts without every HMS hardware code. It has its own template, its own per-provider toggle, and its own per-chat Telegram item; the body carries the printer, job name, confidence score, and the action BamDude took (notify / pause / pause + power off), and the notification carries the frame the detector flagged. |
+| `ai_failure_detection` | AI failure detection (Obico or OctoEverywhere) flags a likely print failure — **opt-in, off by default**. Split out of `printer_error` so you can be paged on AI alerts without every HMS hardware code. It has its own template, its own per-provider toggle, and its own per-chat Telegram item; the body carries the printer, job name, the provider, Obico's confidence score or OctoEverywhere's print quality (the other reads N/A), and the action BamDude took (notify / pause / pause + power off), and the notification carries the frame the detector flagged. |
 | `plate_not_empty` | Bed-occupancy gate caught the next-print start (auto-pause). Carries the frame the check judged. |
 | `maintenance_due` | Scheduled maintenance interval reached |
 

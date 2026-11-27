@@ -5,7 +5,7 @@ description: Optional ML-driven print-failure detection with notify / pause / pa
 
 # Obico AI Failure Detection
 
-BamDude has an optional integration with a **self-hosted** [Obico](https://github.com/TheSpaghettiDetective/obico-server) `ml_api` — a machine-learning service that watches camera frames during a print and flags spaghetti / failures before they get expensive. The integration is **off by default**. When enabled, it polls camera frames, hands them to an Obico ML endpoint, smooths the result over time, and on a sustained failure either notifies you, pauses the print, or pauses and powers the printer off via a smart plug.
+BamDude has an optional integration with a **self-hosted** [Obico](https://github.com/TheSpaghettiDetective/obico-server) `ml_api` — a machine-learning service that watches camera frames during a print and flags spaghetti / failures before they get expensive. The integration is **off by default**. One provider runs at a time — Obico, or the cloud [OctoEverywhere](octoeverywhere.md): turning one on turns the other off. When enabled, it polls camera frames, hands them to an Obico ML endpoint, smooths the result over time, and on a sustained failure either notifies you, pauses the print, or pauses and powers the printer off via a smart plug.
 
 !!! info "Self-hosted only — no cloud, no obico.io"
     BamDude talks to **your own** Obico `ml_api` over HTTP on your local network. It never connects to obico.io, never registers a printer with Obico's web app, never opens a WebSocket, and never uploads frames anywhere outside your LAN. Frames live in a 30-second in-process cache; the only external recipient of a snapshot URL is the ML container that you control.
@@ -31,7 +31,7 @@ For installation, updates and troubleshooting, see [Standalone Obico ML server](
 ## :material-cog: Setup
 
 1. Self-host the Obico ML server using the linked guide above.
-2. Open **Settings → Failure Detection**.
+2. Open **Settings → Failure Detection** and keep **Provider** on **Obico**.
 3. Tick **Enable Obico failure detection**.
 4. Fill in:
 
@@ -88,7 +88,7 @@ The loop polls each enabled, currently-printing printer at the configured interv
 
     | Action | What happens |
     |---|---|
-    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the confidence score, the action taken, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
+    | `notify` | At the alert level, fires the dedicated **AI Failure Detection** notification event — a separate, **opt-in** trigger (off by default) with its own template, split out of `printer_error` so you can page on AI alerts without also being paged for every HMS hardware code. The alert carries the printer, the job name, the provider, the confidence score, the action taken, and the camera frame the detector flagged. Subscribe to it independently: each provider has its own **AI Failure Detection** toggle, and Telegram adds a matching per-chat notify item. |
     | `pause` | The same notification at the alert level; at the pause level, sends a pause MQTT command to the printer and notifies again, naming the pause. |
     | `pause_and_off` | As `pause`, and at the pause level also turns off the bound smart plug. Use this for overnight unattended workflows where you'd rather kill power than waste filament. |
 

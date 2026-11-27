@@ -229,13 +229,26 @@ See [Obico AI Failure Detection](../features/obico.md) for context on each.
 
 | Key | Default | Effect |
 |---|---|---|
-| `obico_enabled` | `false` | Master toggle. |
+| `obico_enabled` | `false` | Master toggle. Turning it on turns `octoeverywhere_enabled` off. |
 | `obico_ml_url` | empty | ML API endpoint URL (e.g. `http://192.168.1.10:3333`). |
 | `obico_snapshot_base_url` | empty | **BamDude address for the ML API (optional)** — the address the ML API fetches camera frames from: BamDude's LAN address or its Docker service name (e.g. `http://bamdude:8000`). A full `http://` or `https://` address without credentials, query parameters or a fragment. Empty = `external_url` is used. Only frame fetching uses it. Administrators only; saved with **Save connection**. |
 | `obico_sensitivity` | `medium` | `low`, `medium`, or `high`. Scales the Low / High thresholds, and the Pause level (1.75 × High) with them. |
 | `obico_action` | `notify` | `notify`, `pause`, or `pause_and_off`. A notification is sent once per print at the alert level whatever the action; `pause` and `pause_and_off` act at the stronger Pause level, also once per print. |
 | `obico_poll_interval` | `10` | Seconds between detection checks while a print is running. Range 5 – 120. |
 | `obico_enabled_printers` | empty | JSON array of printer IDs to monitor. Empty = monitor every connected printer. A deleted printer is removed from the list. |
+
+## :material-robot-confused: OctoEverywhere AI
+
+See [OctoEverywhere AI Failure Detection](../features/octoeverywhere.md).
+
+| Key | Default | Effect |
+|---|---|---|
+| `octoeverywhere_enabled` | `false` | Master toggle. Administrators only. Turning it on turns `obico_enabled` off; a save that turns both on is refused. A full restore turns it off; a Git restore never writes it. |
+| `octoeverywhere_api_key` | empty | **Gadget API key**. Write-only; administrators only; saved with **Save key**. Sent only to OctoEverywhere. A Git restore never restores it. |
+| `octoeverywhere_confidence` | `medium` | `lowest`, `low`, `medium`, `high` or `highest` — how certain the model has to be before it suggests a warning or a pause. |
+| `octoeverywhere_action` | `notify` | `notify`, `pause` or `pause_and_off`. A suggested warning notifies; `pause` and `pause_and_off` follow OctoEverywhere's pause suggestion, once per print. |
+| `octoeverywhere_poll_interval` | `20` | Seconds between checks of each printing printer. Range 5 – 30; OctoEverywhere may ask for a longer pause. |
+| `octoeverywhere_enabled_printers` | empty | JSON array of printer IDs to monitor. Empty = monitor every connected printer. A deleted printer is removed from the list. |
 
 ## :material-content-save: Local backups
 

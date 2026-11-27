@@ -229,13 +229,26 @@ description: Кожен ключ налаштувань — загальні, д
 
 | Key | Default | Ефект |
 |---|---|---|
-| `obico_enabled` | `false` | Master-toggle. |
+| `obico_enabled` | `false` | Master-toggle. Увімкнення вимикає `octoeverywhere_enabled`. |
 | `obico_ml_url` | пусто | URL ML API (наприклад `http://192.168.1.10:3333`). |
 | `obico_snapshot_base_url` | пусто | **Адреса BamDude для ML API (необов’язково)** — адреса, з якої ML API забирає кадри камери: адреса BamDude в локальній мережі або ім’я його сервісу Docker (наприклад `http://bamdude:8000`). Повна адреса з `http://` або `https://`, без логіна й пароля, параметрів запиту та фрагмента. Пусто = береться `external_url`. Стосується лише кадрів. Лише для адміністраторів; зберігається кнопкою **Зберегти підключення**. |
 | `obico_sensitivity` | `medium` | `low`, `medium` або `high`. Зсуває пороги Low / High, а з ними й рівень паузи (1,75 × High). |
 | `obico_action` | `notify` | `notify`, `pause` або `pause_and_off`. Сповіщення надсилається один раз за друк на рівні сповіщення, хай яка дія; `pause` і `pause_and_off` спрацьовують на сильнішому рівні паузи, теж один раз за друк. |
 | `obico_poll_interval` | `10` | Секунди між detection-перевірками під час друку. Діапазон 5 – 120. |
 | `obico_enabled_printers` | пусто | JSON-масив printer-ID, на яких детекція активна. Пусто = всі підключені принтери. Видалений принтер зі списку прибирається. |
+
+## :material-robot-confused: OctoEverywhere AI
+
+Див. [Виявлення збоїв друку OctoEverywhere](../features/octoeverywhere.uk.md).
+
+| Key | Default | Ефект |
+|---|---|---|
+| `octoeverywhere_enabled` | `false` | Master-toggle. Лише для адміністраторів. Увімкнення вимикає `obico_enabled`; збереження, що вмикає обидва, відхиляється. Повне відновлення його вимикає; відновлення з Git ніколи його не записує. |
+| `octoeverywhere_api_key` | пусто | **Ключ API Gadget**. Лише для запису; лише для адміністраторів; зберігається кнопкою **Зберегти ключ**. Надсилається лише в OctoEverywhere. Відновлення з Git ніколи його не відновлює. |
+| `octoeverywhere_confidence` | `medium` | `lowest`, `low`, `medium`, `high` або `highest` — наскільки впевненою має бути модель, щоб порадити попередження чи паузу. |
+| `octoeverywhere_action` | `notify` | `notify`, `pause` або `pause_and_off`. Порада попередити надсилає сповіщення; `pause` і `pause_and_off` виконуються за порадою OctoEverywhere поставити паузу, один раз за друк. |
+| `octoeverywhere_poll_interval` | `20` | Секунди між перевірками кожного принтера, що друкує. Діапазон 5 – 30; OctoEverywhere може попросити довшу паузу. |
+| `octoeverywhere_enabled_printers` | пусто | JSON-масив printer-ID, на яких детекція активна. Пусто = всі підключені принтери. Видалений принтер зі списку прибирається. |
 
 ## :material-content-save: Локальні бекапи
 

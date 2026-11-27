@@ -146,6 +146,7 @@ plugins:
             "G-code Injection": "Інжекція G-code"
             Notifications: Сповіщення
             "Obico AI Failure Detection": "AI-детекція фейлів Obico"
+            "OctoEverywhere AI Failure Detection": "Виявлення збоїв OctoEverywhere"
             "Library, Inventory & Orders": "Бібліотека, інвентар і замовлення"
             "Spool Inventory": "Інвентар котушок"
             "Orders, Products & Stock": "Замовлення, вироби та залишок"
@@ -319,6 +320,7 @@ nav:
       - G-code Injection: features/gcode-injection.md
       - Notifications: features/notifications.md
       - Obico AI Failure Detection: features/obico.md
+      - OctoEverywhere AI Failure Detection: features/octoeverywhere.md
     - Library, Inventory & Orders:
       - Spool Inventory: features/inventory.md
       - Spool Labels: features/labels.md

@@ -165,7 +165,7 @@ Failure Analysis tells you *what already broke*. To stop a print mid-failure rat
 
 | Tool | When |
 |------|------|
-| [Obico AI Detection](obico.md) | While the print is running — captures the camera feed, classifies frames, fires a notify / pause / pause+power-off action |
+| [Obico AI Detection](obico.md) / [OctoEverywhere](octoeverywhere.md) | While the print is running — the detector that is on checks the camera feed and fires a notify / pause / pause+power-off action |
 | **Failure Analysis** | After the fact — slice the archive history to find systemic patterns |
 | [Notifications](notifications.md) | At the moment of failure — Telegram/Discord/email/Pushover/ntfy/HA push |
 
