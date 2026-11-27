@@ -51,6 +51,7 @@ The File Manager lets you:
 - **Print directly** to any printer
 - **Add to Queue** sliced files for later printing
 - **Rename** and **delete** files and folders
+- **Share** a folder with everyone, or keep it to yourself — see [Folder owners and shared folders](#folder-owners)
 
 ---
 
@@ -77,11 +78,32 @@ Two top-level entries sit above the folder tree, keeping your own uploads and li
 
 The split stops a linked NAS that auto-imported hundreds of files from drowning your own uploads. Clicking an individual folder in the tree always scopes to just that folder.
 
+### Folder owners and shared folders {#folder-owners}
+
+A folder belongs to whoever made it. A folder can also be **shared with everyone**: every library user sees it and can add files and subfolders to it. A shared folder carries a people icon in the tree.
+
+What you see and where you may add depends on your group:
+
+| Your group may read | You see | You add files and subfolders to |
+|---|---|---|
+| The whole library (`library:read_all`, every default group) | every folder | every folder |
+| Only your own files (`library:read_own`) | your own folders, shared folders, every folder holding one of your files, and the folders above those | your own folders, shared folders and the library root |
+
+A folder you only see because a file of yours lies somewhere below it is **view only**: it is there so you can reach your file, and dialogs that choose a destination grey it out as *view only*. Another user's private folder does not appear at all, and opening it by its address answers *Folder not found* — the same as another user's file.
+
+**Share with everyone** and **Make private** sit in the folder's three-dot menu. The folder's owner can use them (with `library:update_own`), and so can anyone holding `library:update_all`, for any folder. External folders and their subfolders are always shared: their files have no owner and every library reader sees them anyway, so making one private would hide nothing.
+
+Some folders are created shared and without an owner, because they belong to everyone: the folders a MakerWorld or Manyfold import or a file sent to the Telegram bot lands in by default, the folder of an imported product, and the subfolders a scan of an external folder finds. A folder created inside an external folder is shared too.
+
+When BamDude is updated to a version with folder owners, each existing folder whose files — in all its subfolders, the trash included — belong to one user becomes that user's, together with the empty folders inside it. Every other folder becomes shared: empty ones, folders with files of several users or files without an owner, external folders, folders linked to a product, a Virtual Printer's folder, and the import folders above. So a folder several people used stays visible to all of them; a user limited to their own files no longer sees a folder that holds only someone else's files.
+
+A result made from a file — a slice, an assembled project, a new layout of one — is saved next to its source while you may still add to that folder. If the folder was made private or deleted while the job ran, the result goes to the library root.
+
 ### Moving folders {#moving-folders}
 
 A folder moves together with its subfolders and files. There are two ways to move one:
 
-- **Move…** in the folder's three-dot menu opens a tree of targets with **Library root** at the top. Pick a target and confirm. A target that cannot work is greyed out and says why: *already here*, *this folder*, *its own subfolder*, *external*.
+- **Move…** in the folder's three-dot menu opens a tree of targets with **Library root** at the top. Pick a target and confirm. A target that cannot work is greyed out and says why: *already here*, *this folder*, *its own subfolder*, *external*, *view only*.
 - **Drag** the folder onto another folder in the tree, or onto the library root. While you drag, a folder that can take the drop is outlined in green and one that cannot is dimmed. A drag resting on a collapsed folder for a moment opens its branch, so a target deep in the tree is reachable in one drag.
 
 Files are dragged the same way — onto a folder of the tree, a folder in the [Columns view](#columns-view), or the library root. Dragging a ticked file takes the whole ticked selection with it. A file can be dragged by whoever may edit it; a target marked *changes products* is refused for a user without `products:update`, exactly as in the **Move** dialog.
@@ -93,7 +115,7 @@ What cannot be moved:
 - **An external folder and its subfolders** — they are directories of their share. The menu entry is disabled and says *An external folder and its subfolders cannot be moved.*
 - A folder **into an external folder**, **into itself** or **into one of its own subfolders**.
 
-Folders have no owner, so moving one needs `library:update_all` — the same right as renaming one. The server checks every move again, whatever the dialog showed: a target that has disappeared meanwhile is refused with *The target folder no longer exists.*
+Moving a folder needs the same right as renaming it: `library:update_all` for any folder, or `library:update_own` for a folder of your own — and the target must be a folder you may add to. The server checks every move again, whatever the dialog showed: a target that has disappeared meanwhile is refused with *The target folder no longer exists.*
 
 ---
 
@@ -695,6 +717,8 @@ It is gated exactly like Rename: a user holding only the `*_own` library permiss
 
 ### Renaming a folder
 
+A folder can be renamed by its owner (with `library:update_own`) and by anyone holding `library:update_all`. For any other folder **Rename** is disabled and says *Only the folder’s owner can rename it*.
+
 1. Hover over the folder in the sidebar
 2. Click the three-dot menu
 3. Select **Rename**
@@ -708,16 +732,17 @@ The same menu holds **Move…** — see [Moving folders](#moving-folders).
 
 ### Deleting a folder
 
-Folders have no owner, so what deleting one needs depends on what it holds — a user who creates a folder and deletes their own files out of it does not have to ask an administrator to clear the empty shell.
+What deleting a folder needs depends on whose it is and what it holds. The files inside go to the trash.
 
 | Folder | Permission needed |
 |---|---|
-| **Empty** | `library:delete_own` — the ordinary delete permission |
-| Holds files or subfolders | `library:delete_all` |
+| **Your own**, and everything in it — subfolders and files, the trash included — is yours | `library:delete_own` |
+| **Without an owner** and empty | `library:delete_own` |
+| Holds another user's folder or file | `library:delete_all` |
 | An external / mapped folder | `library:delete_all` |
-| Linked to a project or an archive | `library:delete_all` |
+| Linked to a product, or holding a folder that is | `library:delete_all` |
 
-Removing any of the last three affects more than the folder, which is why they still need an administrator.
+Removing any of the last three affects more than your own work, which is why they still need an administrator. A folder you may not delete has **Delete** disabled in its menu.
 
 !!! warning "'Empty' is decided by the server, not by what you can see"
     A folder holding a file **somebody else** has deleted looks empty in the tree.
@@ -766,7 +791,7 @@ The folder is automatically scanned and files appear immediately.
 
 ### Who sees external files
 
-Files a scan finds have no owner — nobody uploaded them. They are therefore **visible to every library reader**, including users limited to their own files (`library:read_own`), who see them beside their own uploads. Changing or deleting such a file follows the ordinary edit and delete rights.
+Files a scan finds have no owner — nobody uploaded them. They are therefore **visible to every library reader**, including users limited to their own files (`library:read_own`), who see them beside their own uploads. Changing or deleting such a file follows the ordinary edit and delete rights. For the same reason an external folder and its subfolders are always [shared](#folder-owners) and cannot be made private.
 
 ### Scanning & refreshing
 
@@ -863,13 +888,13 @@ The library is fully accessible via the REST API — useful for scripted ingesti
 | `/api/v1/library/files/{id}/notes` | `GET` · `POST` | List the file's notes — `library:read` · add one — `library:notes_write` |
 | `/api/v1/library/notes/{note_id}` | `PATCH` · `DELETE` | Edit · delete a note — `library:notes_write`, and the note must be yours or have no author |
 | `/api/v1/library/generate-stl-thumbnails` | `POST` | Generate thumbnails for STL / OBJ / PDF files — `library:update_all`, or `library:update_own` on your own files |
-| `/api/v1/library/folders` | `POST` | Create folder |
-| `/api/v1/library/folders/{id}` | `PUT` | Rename or move a folder (`parent_id`; `0` is the library root) — `library:update_all`. A move into or out of an external folder, into itself, into its own subfolder or to a parent that does not exist is refused |
+| `/api/v1/library/folders` | `POST` | Create folder — `library:upload`, inside a folder you may add to; it is yours |
+| `/api/v1/library/folders/{id}` | `PUT` | Rename or move a folder (`parent_id`; `0` is the library root), or share it (`"shared": true` / `false`) — `library:update_all`, or `library:update_own` for your own folder; changing its products needs `library:update_all`. A move into or out of an external folder, into itself, into its own subfolder, into a folder you may not add to or to a parent that does not exist is refused; an external folder cannot be made private |
 | `/api/v1/library/folders/external` | `POST` | Link an external folder — `settings:update`; not available to API keys |
 | `/api/v1/library/folders/{id}/scan` | `POST` | Start a scan of an external folder — `library:upload`; answers `202` with a `job_id` |
 | `/api/v1/library/scan-jobs/{job_id}` | `GET` | One scan's state and counters — `library:read_all` / `library:read_own` |
 
-All endpoints require an authenticated session (JWT bearer or `X-API-Key` header). The required permission depends on the action — `library:read_all` / `library:read_own` for reads, `library:upload` for uploads, `library:update_all` / `library:update_own` for changes, `library:delete_all` / `library:delete_own` for deletes, `library:purge` for the bulk purge action. With the `_own` variant a user reaches their own files — and, for reading, the ownerless files of external folders. See [Authentication](authentication.md) and the full [API reference](../reference/api.md).
+All endpoints require an authenticated session (JWT bearer or `X-API-Key` header). The required permission depends on the action — `library:read_all` / `library:read_own` for reads, `library:upload` for uploads, `library:update_all` / `library:update_own` for changes, `library:delete_all` / `library:delete_own` for deletes, `library:purge` for the bulk purge action. With the `_own` variant a user reaches their own files — and, for reading, the ownerless files of external folders — and the folders described in [Folder owners and shared folders](#folder-owners). Every folder in an answer carries `created_by_id`, `shared` and what the caller may do with it: `can_write`, `can_rename`, `can_share`, `can_delete`. See [Authentication](authentication.md) and the full [API reference](../reference/api.md).
 
 ---
 
