@@ -5,7 +5,7 @@ description: Multi-provider push notifications for print events
 
 # Notifications
 
-Nine delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a tenth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
+Eleven delivery channels, one editor, one routing config. Subscribe each provider to whichever events you actually want, set per-provider quiet hours and a daily digest, customise templates per language. And a twelfth destination that never leaves the farm: the [notification centre](#the-notification-centre) behind the sidebar Bell, which fills for each person who logs in whether or not a single provider is configured.
 
 ---
 
@@ -19,6 +19,7 @@ Nine delivery channels, one editor, one routing config. Subscribe each provider 
 | **Pushover** | Easy | Priority levels, image attachment up to 2.5 MB. |
 | **ntfy** | Easy | Topic-based, optional bearer token, image attachments. |
 | **Bark** | Easy | iOS-only, no account. Interruption levels — **Critical** delivers through Silent mode and Focus. Public relay or your own `bark-server`. |
+| **Gotify** | Easy | Your own Gotify server — app token in a header, per-event priority, photo as a link. |
 | **CallMeBot** | Easy | WhatsApp / Signal bridge — phone + API key, URL-encoded message. |
 | **Signal CLI API** | Medium | Self-hosted [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) — recipient numbers or one group, image attachments. |
 | **Home Assistant** | Easy | `persistent_notification.create` or any `notify.*` service. Single global HA URL/token from Settings (or `HA_URL` / `HA_TOKEN` env). |
@@ -100,7 +101,7 @@ Per-user push service with native iOS/Android apps and on-device priority escala
 | **User key** | From your Pushover account page |
 | **API token** | From the Application you just created |
 
-Pushover has one **Priority** per provider (`-2…+2`, `0` = normal), applied to everything that provider sends. Per-event priority is ntfy's alone (see below).
+Pushover has one **Priority** per provider (`-2…+2`, `0` = normal), applied to everything that provider sends. Per-event priority is ntfy's and Gotify's (see below).
 
 !!! info "Priority 2 (Emergency) needs two extra fields"
     Pushover *mandates* a retry interval and an expiry for Emergency alerts — they re-alert until you acknowledge them, so it refuses any priority-2 message that doesn't say how often and for how long. Set **Priority** to `2` and two fields appear:
@@ -138,6 +139,19 @@ A self-hosted `bark-server` is subject to the same address rules as a self-hoste
 
 !!! info "An 'OK' that isn't one"
     `bark-server` reports some failures *inside* an HTTP 200 body. BamDude reads the body rather than trusting the status, so a wrong device key is reported as a failure in **Send Test** instead of showing as sent and never arriving.
+
+### Gotify
+
+[Gotify](https://gotify.net/) is a push server you run yourself; its Android app shows the messages. Create an application in the Gotify web UI and copy its token.
+
+| Field | Value |
+|---|---|
+| **Server URL** | Your Gotify server, e.g. `http://192.168.1.50:8080` — **required**. Pasting the full `/message` endpoint from Gotify's docs is tolerated — BamDude strips it back to the base. |
+| **App Token** | The token of the Gotify application BamDude posts as — **required**. It travels in the `X-Gotify-Key` header, never in the URL. |
+
+Gotify priorities run from 0 to 10. Pick a level per event in the **Event priority (Gotify)** section (see [Per-event priority](#per-event-priority) below): Min, Low, Default, High and Urgent go to Gotify as `0`, `2`, `5`, `8` and `10`. An event left at Default goes out at `5`. In the Gotify Android app, Default and above play a sound, and High and Urgent pop up.
+
+With the **External URL** setting, the camera frame arrives as a large picture in the Android app (see [Photos in notifications](#photos-in-notifications)). A self-hosted Gotify is subject to the same address rules as a self-hosted ntfy: on your own network is fine, anything that is not a real HTTP service is refused.
 
 ### SMTP / Gmail
 
@@ -488,7 +502,7 @@ See [Telegram Bot Setup](telegram-bot.md) for full configuration.
 
 ---
 
-## :material-priority-high: Per-event priority (ntfy)
+## :material-priority-high: Per-event priority { #per-event-priority }
 
 ntfy supports priority levels from `1` (min) to `5` (urgent). BamDude lets you pick the priority **per event type** on each ntfy provider, so a finished print doesn't push to the lock-screen but a print failure does:
 
@@ -501,6 +515,8 @@ ntfy supports priority levels from `1` (min) to `5` (urgent). BamDude lets you p
 
 Configure in the ntfy provider's edit form: the **Event priority (ntfy)** section lists the events the provider is subscribed to, each with its own dropdown. Every event starts at `default` (3) — escalate only where it matters. Pushover takes one priority for the whole provider instead (see [Pushover](#pushover)).
 
+A [Gotify](#gotify) provider has the same section, titled **Event priority (Gotify)**: the five levels go to Gotify as `0`, `2`, `5`, `8` and `10`, and an event without a level goes out at `5`.
+
 This is independent of the daily digest / quiet hours pipeline below — a quiet-hour-suppressed event isn't sent at any priority; an active event still respects the per-event priority you picked.
 
 ---
@@ -509,7 +525,7 @@ This is independent of the daily digest / quiet hours pipeline below — a quiet
 
 Configuration shape varies by provider type — the Telegram bot is special.
 
-**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal)** carry both settings on the provider row itself:
+**Non-telegram providers (email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify)** carry both settings on the provider row itself:
 
 | Setting | Where | Effect |
 |---|---|---|
@@ -539,7 +555,7 @@ The Templates tab groups the default templates by purpose so a glance tells you 
 
 Each card carries a small UPPERCASE channel badge:
 
-- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal). The entries in the first 4 groups.
+- **Green `ALL`** — fan-out to every provider type that wants the event (TG / email / ntfy / pushover / discord / webhook / homeassistant / callmebot / signal / gotify). The entries in the first 4 groups.
 - **Blue `EMAIL`** — SMTP-only flow. The 4 `user_print_*` job-owner emails plus `user_created` / `password_reset`.
 - **Amber `TEST`** — internal test-button helper.
 
@@ -677,7 +693,7 @@ Click **Reset to default** in the editor to restore the original template from `
 Events that have a camera frame carry it: the finish photo on print completion and failure, the first-layer snapshot, the frame the detector flagged on **AI Failure Detection**, the frame the check judged on **Plate Not Empty**, and a snapshot with a printer error.
 
 - **Most channels receive the picture itself** — Telegram, Discord, Pushover, ntfy, Signal and generic-format webhooks. Email embeds the finish photo when its template uses `{finish_photo_url}` (see below).
-- **Home Assistant, Bark and Slack / Mattermost-format webhooks receive a link** to a copy of that one picture, because these services fetch it themselves. Home Assistant gets it only with a custom `notify.*` service, as `data.image` — unless your **Data (JSON)** field sets its own `image`. Bark shows it as the notification's icon. This needs the **External URL** setting; without it these channels get text only.
+- **Home Assistant, Bark, Gotify and Slack / Mattermost-format webhooks receive a link** to a copy of that one picture, because these services fetch it themselves. Home Assistant gets it only with a custom `notify.*` service, as `data.image` — unless your **Data (JSON)** field sets its own `image`. Bark shows it as the notification's icon, Gotify as a large picture in its Android app. This needs the **External URL** setting; without it these channels get text only.
 - **Attach photos** — every channel has this switch, on by default. Off, that channel gets text only.
 
 The copy a link points to has an unguessable address, needs nothing but the link to open, and stops working after 3 days. It opens that one picture only — not the archive and not a camera.
