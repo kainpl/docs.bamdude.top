@@ -34,11 +34,21 @@ printing, and laser features have not been verified. It is therefore not in
 the supported-model table or feature matrix yet.
 
 BambuStudio `v02.09.02.62` adds the **H3C** (a nine-nozzle rack and an AMS 3H)
-and the **P3C** (a seven-nozzle rack). BamDude recognizes their names, model
-codes and firmware release pages, so they can be added with the right model and
-get the firmware update check. Their nozzle racks, the H3C's AMS 3H and their
-chambers are not supported yet, and nothing about them has been verified on a
-printer, so they are not in the tables either.
+and the **P3C** (a seven-nozzle rack and an AMS 3P). BamDude recognizes their
+names, model codes and firmware release pages, and reads them the way Bambu
+Studio does: the printer card shows the rack AMS with one slot per PrintTool
+and its drying zone, the nozzle rack by PrintTool with the hotend on the
+toolhead marked, one external input per PrintTool (`Ext-1` … `Ext-9`), the
+slot in use and the toolhead temperature — see
+[AMS 3H and AMS 3P](../features/ams.md#rack-ams). Spools can be assigned to
+those slots, and a finished print is charged to the slots it used.
+
+BamDude does not send these printers anything yet. A print to one is refused
+with *Printing on H3C and P3C printers is not supported yet* (a queued job
+waits with that reason), and slot configuration, load and unload, RFID re-read
+and drying are not offered on their rack slots and external inputs. Nothing
+about them has been verified on a printer, so they are not in the tables
+either.
 
 ---
 

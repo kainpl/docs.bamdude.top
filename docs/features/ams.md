@@ -318,6 +318,23 @@ BamDude auto-discovers AMS units when a printer connects — no manual configura
 
 A unit the printer itself reports as gone leaves the printer card and, through a [Virtual Printer](virtual-printer.md), the slicer. Its spools stay assigned to their slots: plug the AMS back in and they are still there. A different reel in one of those slots is noticed as usual.
 
+### AMS 3H and AMS 3P (H3C, P3C) {#rack-ams}
+
+The H3C and the P3C have one toolhead and a rack of hotends — nine and seven
+PrintTools. Their AMS (the AMS 3H, and the P3C's AMS 3P) is one unit with a slot
+per PrintTool: slot *n* feeds PrintTool *n*. The card draws it across the whole
+row, slots 1 … 9 (1 … 7), with the slots of its drying zone framed and the
+zone's temperature and humidity beside it. Each PrintTool also has its own
+external input, shown as `Ext-1` … `Ext-9` in PrintTool order. There are no
+L / R badges: these printers have one toolhead.
+
+Spools can be assigned to these slots — from the built-in inventory or
+Spoolman — and a finished print is charged to the slots it used. BamDude does
+not yet configure them on the printer: an assignment there is kept and waits,
+as on an empty slot, and the slot has no menu (configure, RFID re-read, load,
+unload) and no drying button. Printing on these printers is not supported yet
+either — see [Supported Printers](../reference/printers.md).
+
 ### Dual-nozzle wiring {#dual-nozzle-wiring-h2d-h2d-pro}
 
 On dual-nozzle printers each AMS unit is physically wired to either the left or right nozzle. BamDude shows the wiring diagram on the printer card so you can plan multi-material prints.
