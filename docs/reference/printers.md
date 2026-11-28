@@ -43,12 +43,14 @@ slot in use and the toolhead temperature — see
 [AMS 3H and AMS 3P](../features/ams.md#rack-ams). Spools can be assigned to
 those slots, and a finished print is charged to the slots it used.
 
-BamDude does not send these printers anything yet. A print to one is refused
-with *Printing on H3C and P3C printers is not supported yet* (a queued job
-waits with that reason), and slot configuration, load and unload, RFID re-read
-and drying are not offered on their rack slots and external inputs. Nothing
-about them has been verified on a printer, so they are not in the tables
-either.
+BamDude does not print on these printers yet, and sends no command to a rack
+slot or a PrintTool's input. A print or a filament calibration is refused with
+*Printing on H3C and P3C printers is not supported yet* (a queued job waits
+with that reason), and slot configuration, load and unload, RFID re-read and
+drying are not offered on their rack slots and external inputs. The printer's
+other controls — stop, pause, light, fans, temperatures, G-code — work as on
+any printer, and the camera streams over RTSP. Nothing about them has been
+verified on a printer, so they are not in the tables either.
 
 ---
 

@@ -332,8 +332,9 @@ Spools can be assigned to these slots — from the built-in inventory or
 Spoolman — and a finished print is charged to the slots it used. BamDude does
 not yet configure them on the printer: an assignment there is kept and waits,
 as on an empty slot, and the slot has no menu (configure, RFID re-read, load,
-unload) and no drying button. Printing on these printers is not supported yet
-either — see [Supported Printers](../reference/printers.md).
+unload) and no drying button. Printing and filament calibration on these
+printers are not supported yet either — see
+[Supported Printers](../reference/printers.md).
 
 ### Dual-nozzle wiring {#dual-nozzle-wiring-h2d-h2d-pro}
 
