@@ -185,7 +185,7 @@ When several printers can take a job equally well — ready, the right model, th
 | Idle the longest | The printer whose last finished print is the oldest; one that never printed goes first. Attempts that never started printing do not count. |
 | By the priority set on each printer | The lowest **Priority for AutoQueue jobs** (Edit Printer); a printer without one goes last. |
 
-Equal places go to the printer added first. A busy or offline printer, one whose queue is halted and one that cannot feed the job (material, colour, nozzle) are passed over whatever the order. The order decides before *Drain the emptiest spool first*, which then picks the trays on the chosen printer and separates only printers with an equal place in the order. Switching a printer on with an **Auto On** plug follows the same order, and so does the rebalancer when it forecasts where the rest of an order will go.
+Equal places go to the printer whose sources hold the least filament (with *Drain the emptiest spool first*), then to the printer added first. A busy or offline printer, one whose queue is halted and one that cannot feed the job (material, colour, nozzle) are passed over whatever the order. The order decides before *Drain the emptiest spool first*, which then picks the trays on the chosen printer and separates only printers with an equal place in the order. Switching a printer on with an **Auto On** plug follows the same order, and so does the rebalancer when it forecasts where the rest of an order will go.
 
 **Priority for AutoQueue jobs** in Edit Printer is a whole number from 0; the lowest goes first, 0 included. Leave it empty to put the printer last.
 
