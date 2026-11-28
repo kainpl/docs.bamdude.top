@@ -71,7 +71,8 @@ retain the previous frame and retry. Live streams keep the LIVE badge.
 Each tile shows:
 
 - an **offline chip** when the printer isn't connected;
-- an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles;
+- an optional **status overlay** — *off*, a compact **state chip**, or **full** with progress %, layer count, and time remaining on printing/paused tiles. **Full** also shows every connected tile's nozzle (both on a dual-nozzle printer), bed and chamber temperatures — a heater the printer has no sensor for is left out — and a printing tile adds its finish time beside the time left (a paused one has none: it moves with the pause);
+- **Pause / Resume**, **Stop** and the **chamber light** on a printer's tile, with the same confirmations as the printer card. They need the `printers:control` permission; a user without it, an offline printer and a token (kiosk) wall get none. They appear on hover — or always, see [Wall settings](#wall-settings) — and a touch screen always shows them;
 - an **HMS-error badge** when the printer has active (non-noise) HMS errors;
 - **click** switches the tile between its live stream and snapshots; the card button on a printer's tile opens that printer's card. In the signed-in wall's full overlay, the job label falls back from the printer's subtask to its current print title and then its uploaded filename, so a firmware that omits one field does not leave a running tile anonymous.
 - a **live tile whose stream ends** shows **Reconnecting…** and opens the stream again by itself. After several attempts in a row without a picture it shows **No signal** with a **Retry** button, instead of holding a frozen frame until the page is reloaded — see [Cameras reconnect by themselves](#cameras-reconnect).
@@ -82,7 +83,7 @@ The **S / M / L / XL** switch sets how many tiles fit in a row; **XL** is one ti
 
 ### Wall settings
 
-A gear button on the wall opens per-browser settings: **snapshot interval** (2–60 s) and **status overlay** mode (*off* / *compact* / *full*) — and, on `/camwall`, the **tile size**. They persist in the browser's local storage: per-device, not synced to the account.
+A gear button on the wall opens per-browser settings: **snapshot interval** (2–60 s), **status overlay** mode (*off* / *compact* / *full*) and **Tile controls** (*On hover* / *Always*) — and, on `/camwall`, the **tile size**. They persist in the browser's local storage: per-device, not synced to the account.
 
 !!! note "Permission"
     The Cam wall toggle needs the `camera:view` permission — the same one the camera viewer uses. Without it the toggle is disabled.
