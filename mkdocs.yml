@@ -164,6 +164,7 @@ plugins:
             Integrations: Інтеграції
             Spoolman: Spoolman
             MQTT: MQTT
+            WLED: WLED
             Prometheus: Prometheus
             Settings: Налаштування
             Authentication: Автентифікація
@@ -341,6 +342,7 @@ nav:
     - Integrations:
       - Spoolman: features/spoolman.md
       - MQTT: features/mqtt.md
+      - WLED: features/wled.md
       - Prometheus: features/prometheus.md
     - Settings:
       - Authentication: features/authentication.md

@@ -7,6 +7,8 @@ description: Publish events to external MQTT brokers
 
 BamDude can publish events to an external MQTT broker, enabling integration with **Home Assistant**, **Node-RED**, and other MQTT-based systems.
 
+Status lights need no broker: BamDude drives a [WLED](wled.md) controller directly.
+
 !!! info "Three different MQTT roles"
     BamDude touches MQTT in three independent places:
 
